@@ -83,6 +83,23 @@ function jzPickDecor(rng, st, en, fx) {
     }
     return out;
 }
+/* character index (in the line text) where each unit starts — units are chunks joined without the original spaces */
+function jzUnitCharStarts(text, units) {
+    var T = jzChars(text), out = [], cur = 0, u, q, U;
+    for (u = 0; u < units.length; u++) {
+        while (cur < T.length && /\s/.test(T[cur])) cur++;
+        out.push(cur); U = jzChars(units[u].text);
+        for (q = 0; q < U.length; q++) { if (/\s/.test(U[q])) continue; while (cur < T.length && /\s/.test(T[cur])) cur++; if (T[cur] !== U[q]) return null; cur++; }
+    }
+    return out;
+}
+/* time a character is sung, interpolated between word marks (after the last mark: towards tEnd) */
+function jzMarkTime(marks, ci, N, tEnd) {
+    if (ci <= marks[0].ci) return marks[0].t;
+    var i = 0; while (i + 1 < marks.length && marks[i + 1].ci <= ci) i++;
+    var a = marks[i], b = marks[i + 1] || { t: Math.max(a.t, tEnd), ci: Math.max(N, a.ci + 1) };
+    return a.t + (b.t - a.t) * jzClamp((ci - a.ci) / Math.max(1, b.ci - a.ci), 0, 1);
+}
 function jzPartition(chunks, k) {
     var lens = [], tot = 0, i;
     for (i = 0; i < chunks.length; i++) { lens.push(jzChars(chunks[i]).length + 1); tot += lens[i]; }
@@ -122,7 +139,7 @@ function jzMakePlan(o) {
         if (nbk && nbk.at != null) ends.push(Math.max(starts[i] + 0.35, Math.min(nbk.at, starts[i + 1])));
         else if (i < lines.length - 1) ends.push(Math.max(starts[i] + 0.35, starts[i + 1]));
         else if (outro && outro.at != null) ends.push(Math.max(starts[i] + 0.35, outro.at));
-        else { var nl = jzChars(lines[i].text).length, dl = jzClamp(0.8 + nl * 0.17, 1.5, 5.2) * (o.lineScale || 1); if (beat) dl = Math.max(2, Math.round(dl / beat)) * beat; ends.push(starts[i] + dl); }
+        else { var nl = jzChars(lines[i].text).length, dl = jzClamp(0.8 + nl * 0.17, 1.5, 5.2) * (o.lineScale || 1); if (beat) dl = Math.max(2, Math.round(dl / beat)) * beat; var lmk = lines[i].marks; ends.push(Math.max(starts[i] + dl, lmk && lmk.length ? lmk[lmk.length - 1].t + 0.4 : 0)); } // word times: the last line lasts until its last sung word
     }
     var duration = o.duration || ((ends.length ? ends[ends.length - 1] : 3) + (outro ? (outro.sec != null ? outro.sec : 4) : 0.9));
     var plan = { version: 1, generator: 'JIZURA-AE', title: title, artist: artist, W: o.width, H: o.height, width: o.width, height: o.height, fps: o.fps, duration: duration, style: st, styleKey: o.style, fx: fx, lines: [], cuts: [], events: [], hud: fx.hud };
@@ -143,6 +160,9 @@ function jzMakePlan(o) {
             if (beat) dn = Math.max(2, Math.round(dn / beat)) * beat;
             visEnd = Math.min(visEnd, s0 + dn);
         }
+        // word times (<mm:ss.xx>): keep the line up until its last sung word
+        var mk = ln.marks && ln.marks.length ? ln.marks : null;
+        if (mk) visEnd = Math.min(e0, Math.max(visEnd, mk[mk.length - 1].t + 0.4));
         var D = visEnd - s0;
         plan.lines.push({ index: li, text: ln.text, start: s0, end: e0, visEnd: visEnd, note: ln.note, impact: ln.impact });
         var chunks = ln.manual || jzChunk(ln.text), L = jzLerp(1.3, 0.5, fx.density), nC = Math.round(D / L);
@@ -150,11 +170,17 @@ function jzMakePlan(o) {
         var nG = Math.min(nC, chunks.length), groups = [];
         if (nG <= 1) groups = [ln.text];
         else { var pg = jzPartition(chunks, nG); for (i = 0; i < pg.length; i++) groups.push(pg[i].join(/[A-Za-z]/.test(pg[i].join('')) ? ' ' : '')); }
-        var recap = nC > groups.length && groups.length >= 2, units = [], tot = 0;
+        var recap = !mk && nC > groups.length && groups.length >= 2, units = [], tot = 0;
         for (i = 0; i < groups.length; i++) { units.push({ text: groups[i], w: jzChars(groups[i]).length + 1.6 }); tot += units[i].w; }
         if (recap) { var rw = tot / units.length * 1.25; units.push({ text: ln.text, w: rw, recap: true }); tot += rw; }
         var bounds = [s0], acc = s0;
         for (i = 0; i < units.length; i++) { acc += D * units[i].w / tot; bounds.push(i === units.length - 1 ? visEnd : acc); }
+        // with word times each cut starts when its first word is sung
+        var uci = mk ? jzUnitCharStarts(ln.text, units) : null;
+        if (uci) {
+            for (i = 1; i < units.length; i++) bounds[i] = jzMarkTime(mk, uci[i], jzChars(ln.text).length, visEnd);
+            for (i = 1; i < bounds.length - 1; i++) bounds[i] = jzClamp(bounds[i], bounds[i - 1] + 0.22, bounds[i + 1] - 0.22);
+        }
         if (nS > 1 && li > 0 && rng.chance(fx.bgSwitch * (ln.impact ? 1.8 : 1))) schemeIdx = (schemeIdx + 1 + rng.int(0, nS - 2)) % nS;
         for (var k = 0; k < units.length; k++) {
             var u = units[k], cs = bounds[k], ce = bounds[k + 1], dur = ce - cs, nn = jzCount(u.text);

@@ -92,6 +92,12 @@ function jzParseLyrics(raw) {
         s = jzTrim(s);
         var note = null, bar = s.indexOf('|');
         if (bar >= 0) { note = jzTrim(s.substr(bar + 1)) || null; s = jzTrim(s.substr(0, bar)); }
+        // extended LRC word times: <mm:ss.xx> before a word marks when it is sung (kept as \u0001 until the text is final)
+        var WT = /<(\d+):(\d+(?:[.:]\d+)?)>[ \t]*/g, wt = [];
+        if (note) note = jzTrim(note.replace(WT, '')) || null;
+        s = s.replace(WT, function (all, a, b) { wt.push(parseInt(a, 10) * 60 + parseFloat(b.replace(':', '.'))); return '\u0001'; });
+        var wtail = '';
+        if (wt.length) { var wtm = s.match(/\s*\u0001+$/); if (wtm) { wtail = wtm[0]; s = s.substr(0, s.length - wtail.length); } }
         var impact = false;
         if (s.length > 1 && s.charAt(s.length - 1) === '!') { impact = true; s = jzTrim(s.substr(0, s.length - 1)); }
         var emph = [];
@@ -102,11 +108,22 @@ function jzParseLyrics(raw) {
             for (var p = 0; p < parts.length; p++) { var tp = jzTrim(parts[p]); if (tp) mp.push(tp); }
             manual = mp; s = mp.join(/[A-Za-z]/.test(s) ? ' ' : '');
         }
+        var marks = null;
+        if (wt.length) {
+            s += wtail.replace(/\s/g, '');
+            marks = []; var cs0 = jzChars(s), mci = 0, mq = 0;
+            for (var mc = 0; mc < cs0.length; mc++) { if (cs0[mc] === '\u0001') marks.push({ t: wt[mq++], ci: mci }); else mci++; }
+            s = jzTrim(s.replace(/\u0001/g, ''));
+            if (manual) { var mp2 = []; for (var mi = 0; mi < manual.length; mi++) { var mx = manual[mi].replace(/\u0001/g, ''); if (mx) mp2.push(mx); } manual = mp2; }
+            for (var ei = 0; ei < emph.length; ei++) emph[ei] = emph[ei].replace(/\u0001/g, '');
+            if (!times.length && marks.length) times.push(marks[0].t);
+        }
         if (!s) continue;
         outro = null; // [마무리] only counts after the last line
         var base = { text: s, note: note, impact: impact, emph: emph, manual: manual, gapBefore: gap, breakBefore: brk, lrc: null };
         gap = false; brk = null;
-        if (times.length) { for (var t = 0; t < times.length; t++) { var c = jzCopy(base); c.lrc = times[t]; lines.push(c); } }
+        // a repeated line ([00:10][00:40]…) reuses its word times shifted to each start
+        if (times.length) { for (var t = 0; t < times.length; t++) { var c = jzCopy(base); c.lrc = times[t]; if (marks) { c.marks = []; for (var mk2 = 0; mk2 < marks.length; mk2++) c.marks.push({ t: marks[mk2].t + times[t] - times[0], ci: marks[mk2].ci }); } lines.push(c); } }
         else lines.push(base);
     }
     return { lines: lines, meta: meta, outro: outro };

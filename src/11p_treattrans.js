@@ -237,6 +237,11 @@ reg('treat', 'waterline', { name: '수위', tags: ['emotional', 'pop', 'calm'], 
   } });
 
 /* ---- karaoke: a colour wipe runs through the words over the length of the cut ---- */
+const syncAt = (S, t) => {
+  if (t <= S[0][0]) return 0;
+  for (let k = 1; k < S.length; k++) if (t < S[k][0]) return J.lerp(S[k - 1][1], S[k][1], (t - S[k - 1][0]) / Math.max(1e-3, S[k][0] - S[k - 1][0]));
+  return 1;
+};
 reg('treat', 'karaoke', { name: '가라오케', tags: ['emotional', 'pop', 'editorial'], w: 0.9,
   plan: rng => ({ sp: rng.range(0.7, 0.85), ol: rng.chance(0.55) }),
   apply(env, it, P) {
@@ -251,7 +256,8 @@ reg('treat', 'karaoke', { name: '가라오케', tags: ['emotional', 'pop', 'edit
     addPost(it, (e, i) => {
       if (e.pass !== 'main' || tracing(i)) return;
       const t0 = cut.inDur * 0.6, T = Math.max(0.3, (cut.dur - cut.outDur - t0) * P.sp);
-      const q = E.inOutSine(clamp((e.lt - (i.delay || 0) - t0) / T));
+      // with word times (확장 LRC) the wipe follows the sung words instead of the cut length
+      const q = cut.sync ? syncAt(cut.sync, e.lt) : E.inOutSine(clamp((e.lt - (i.delay || 0) - t0) / T));
       if (q <= 0) return;
       const spans = lineSpans(i); if (!spans.length) return;
       const s = i.size, sx = i.sx || 1, sy = i.sy || 1, pad = s * 0.12;
