@@ -183,6 +183,11 @@ class Renderer {
       if (cam.skx) X.transform(1, 0, Math.tan(cam.skx * J.DEG), 1, 0, 0);
       X.scale(cs * (cam.sx ?? 1), cs * (cam.sy ?? 1)); X.translate(-W / 2, -H / 2);
       if (P.pass !== 'main') X.globalCompositeOperation = J.lum(csc.bg) > 0.55 ? 'multiply' : 'source-over';
+      if (cut.area) {
+        const a = cut.area;
+        X.beginPath(); X.rect(a.x * W, a.y * H, a.w * W, a.h * H); X.clip();
+        X.translate(a.x * W, a.y * H); X.scale(a.w, a.h);
+      }
       this.drawCut(env);
       X.restore();
       if (P.pass === 'main') { mainEnv = env; }

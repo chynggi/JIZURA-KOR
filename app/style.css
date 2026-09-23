@@ -113,6 +113,10 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .ln .no { font: 500 11px var(--mono); color: var(--faint); text-align: right; }
 .ln .time { width: 100%; padding: 3px 5px; font-size: 12px; }
 .ln .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.lyric-area-thumb { grid-column: 3; grid-row: 1; justify-self: end; width: 43px; height: 26px; padding: 0; position: relative; border: 1px solid var(--line2); background: #0e1015; cursor: pointer; }
+.lyric-area-thumb::before { content: ''; position: absolute; inset: 3px; border: 1px solid #4f5260; }
+.lyric-area-thumb i { position: absolute; display: block; box-sizing: border-box; background: rgba(245,165,12,0.32); border: 1px solid var(--amber); }
+.lyric-ln .txt { grid-column: 3; grid-row: 1; padding-right: 47px; min-width: 0; }
 .ln .meta { grid-column: 2 / 4; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
 .ln .tools { display: flex; gap: 4px; flex: none; }
 .ln .tools select { padding: 2px 4px; font-size: 11px; max-width: 92px; }
@@ -134,6 +138,11 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .col-stage { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; min-width: 0; }
 .viewport { position: relative; width: 100%; background: #000; border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; }
 .viewport canvas { display: block; width: 100%; height: auto; max-height: 68vh; object-fit: contain; }
+.area-edit-overlay { position: absolute; z-index: 4; cursor: crosshair; touch-action: none; background: rgba(0,0,0,0.32); }
+.area-edit-rect { position: absolute; box-sizing: border-box; border: 2px solid var(--amber); background: rgba(245,165,12,0.12); box-shadow: 0 0 0 1px #000; pointer-events: none; }
+.area-edit-hint { position: absolute; top: 8px; left: 8px; color: #fff; font-size: 12px; background: rgba(0,0,0,0.8); padding: 4px 7px; pointer-events: none; }
+.area-edit-controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 8px; border: 1px solid var(--amber); border-radius: var(--r); background: var(--panel); font-size: 12px; }
+.area-edit-controls span { flex: 1 1 100%; color: var(--muted); }
 .overlay-msg { position: absolute; left: 12px; bottom: 12px; background: rgba(12,12,14,0.85); border: 1px solid var(--line2); padding: 6px 10px; border-radius: var(--r); font-size: 12px; }
 .transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .transport .tc { font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }

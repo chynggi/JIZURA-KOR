@@ -12,7 +12,7 @@ const ICON = {
   lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>',
 };
 
-const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
+const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, areaEdit: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
 
 /* WebAudio player (works inside sandboxed pages where blob media may be blocked) */
 const AP = {
@@ -137,13 +137,18 @@ function sizeViewport() {
   const pw = Math.round(Math.min(S.plan.W, cssW * dpr)), ph = Math.round(pw / ar);
   if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
   c.style.width = cssW + 'px'; c.style.height = cssH + 'px';
+  positionAreaEditor();
   S.need = true;
 }
 function draw() {
   const c = $('view'), ctx = c.getContext('2d');
   J.syncMediaPreview(S.plan, S.t, S.playing);
   const t0 = performance.now();
-  S.renderer.frame(ctx, S.plan, S.t, { scale: c.width / S.plan.W, fast: S.playing && S.slow });
+  const previewCuts = S.areaEdit && S.areaEdit.draft ? S.plan.cuts.filter(cut => cut.line === S.areaEdit.index) : [];
+  const previousAreas = previewCuts.map(cut => cut.area);
+  previewCuts.forEach(cut => { cut.area = S.areaEdit.draft; });
+  try { S.renderer.frame(ctx, S.plan, S.t, { scale: c.width / S.plan.W, fast: S.playing && S.slow }); }
+  finally { previewCuts.forEach((cut, i) => { cut.area = previousAreas[i]; }); }
   const dt = performance.now() - t0;
   S.slow = S.playing ? (dt > 30 ? true : dt < 14 ? false : S.slow) : false;
   updateTimeUI(); drawTimeline(); updateCutInfo();
@@ -289,11 +294,13 @@ function renderLines() {
   const layoutOpts = '<option value="">自動</option>' + J.LAYOUT_ORDER.map(k => `<option value="${k}">${J.LAYOUTS[k].name}</option>`).join('');
   S.plan.lines.forEach((ln, i) => {
     const o = ov[i] || {};
-    const li = document.createElement('li'); li.className = 'ln';
+    const li = document.createElement('li'); li.className = 'ln lyric-ln';
     const manual = S.project.timing.lineTimes && S.project.timing.lineTimes[i] != null;
+    const area = J.lyricArea(o.area) || { x: 0, y: 0, w: 1, h: 1 };
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span>
       <input class="time mono" type="number" step="0.01" min="0" value="${ln.start.toFixed(2)}" title="開始（秒）${manual ? '・手動' : '・自動'}" aria-label="${i + 1}行目の開始秒" style="${manual ? 'border-color:var(--cyan)' : ''}">
       <span class="txt" title="${escapeHtml(ln.text)}">${escapeHtml(ln.text)}</span>
+      <button class="lyric-area-thumb" title="${i + 1}行目の歌詞表示エリアを編集" aria-label="${i + 1}行目の歌詞表示エリアを編集"><i style="left:${area.x * 100}%;top:${area.y * 100}%;width:${area.w * 100}%;height:${area.h * 100}%"></i></button>
       <div class="meta"><span class="cuts"></span>
       <span class="tools">
         <select aria-label="レイアウト指定">${layoutOpts}</select>
@@ -308,6 +315,7 @@ function renderLines() {
       replan();
     });
     li.querySelector('.txt').addEventListener('click', () => seek(ln.start + 0.001));
+    li.querySelector('.lyric-area-thumb').addEventListener('click', () => openAreaEditor(i));
     li.querySelector('select').addEventListener('change', e => { setOv(i, { layout: e.target.value || undefined }); replan(); });
     li.querySelector('.dice').addEventListener('click', () => { const cur = ov[i] || {}; setOv(i, { seed: (cur.seed | 0) + 1, lock: false }); replan(); seek(ln.start + 0.001); });
     li.querySelector('.lock').addEventListener('click', () => {
@@ -327,6 +335,49 @@ function renderLines() {
   });
   $('linesInfo').textContent = `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
   syncSourceTab();
+}
+function positionAreaEditor() {
+  if (!S.areaEdit) return;
+  const view = $('view').getBoundingClientRect(), viewport = $('viewport').getBoundingClientRect(), overlay = $('areaEditOverlay');
+  Object.assign(overlay.style, { left: `${view.left - viewport.left}px`, top: `${view.top - viewport.top}px`, width: `${view.width}px`, height: `${view.height}px` });
+}
+function showAreaDraft() {
+  const area = S.areaEdit && S.areaEdit.draft, rect = $('areaEditRect');
+  rect.hidden = !area;
+  if (area) Object.assign(rect.style, { left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%` });
+  $('areaApplyOne').disabled = !area;
+  $('areaApplyFollowing').disabled = !area;
+  S.need = true;
+}
+function openAreaEditor(index) {
+  if (S.exporting || S.tap) return;
+  if (S.areaEdit) cancelAreaEditor();
+  const line = S.plan.lines[index]; if (!line) return;
+  pause();
+  S.areaEdit = { index, oldTime: S.t, draft: J.lyricArea((S.project.overrides[index] || {}).area), start: null };
+  const cut = S.plan.cuts.find(c => c.line === index);
+  seek(cut ? cut.start + Math.min(cut.dur * 0.6, cut.inDur + 0.25) : line.start);
+  $('areaEditTitle').textContent = `${index + 1}行目「${line.text}」の表示エリア`;
+  $('areaEditOverlay').hidden = false; $('areaEditControls').hidden = false;
+  positionAreaEditor(); showAreaDraft();
+}
+function cancelAreaEditor() {
+  if (!S.areaEdit) return;
+  const oldTime = S.areaEdit.oldTime;
+  S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
+  seek(oldTime);
+}
+function applyAreaEditor(following) {
+  if (!S.areaEdit || !S.areaEdit.draft) return;
+  const { index, draft } = S.areaEdit;
+  remember();
+  for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: draft });
+  S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
+  replan(); commit();
+}
+function areaPointer(ev) {
+  const box = $('areaEditOverlay').getBoundingClientRect();
+  return { x: J.clamp((ev.clientX - box.left) / box.width), y: J.clamp((ev.clientY - box.top) / box.height) };
 }
 function syncSourceTab() {
   const layer = activeMediaLayer(), media = !!layer, m = media && S.project[layer];
@@ -813,9 +864,33 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
-  $('sourceLyrics').addEventListener('click', () => { S.sourceTab = 'lyrics'; syncSourceTab(); });
-  $('sourceMedia').addEventListener('click', () => { S.sourceTab = 'media'; renderMediaList(); renderMediaLines(); });
-  $('sourceForeground').addEventListener('click', () => { S.sourceTab = 'foreground'; renderMediaList(); renderMediaLines(); });
+  $('sourceLyrics').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'lyrics'; syncSourceTab(); });
+  $('sourceMedia').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'media'; renderMediaList(); renderMediaLines(); });
+  $('sourceForeground').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'foreground'; renderMediaList(); renderMediaLines(); });
+  const areaOverlay = $('areaEditOverlay');
+  areaOverlay.addEventListener('pointerdown', e => {
+    if (!S.areaEdit) return;
+    e.preventDefault(); areaOverlay.setPointerCapture(e.pointerId);
+    S.areaEdit.start = areaPointer(e); S.areaEdit.previous = S.areaEdit.draft;
+    S.areaEdit.draft = null; showAreaDraft();
+  });
+  areaOverlay.addEventListener('pointermove', e => {
+    if (!S.areaEdit || !S.areaEdit.start) return;
+    const a = S.areaEdit.start, b = areaPointer(e);
+    S.areaEdit.draft = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
+    showAreaDraft();
+  });
+  areaOverlay.addEventListener('pointerup', e => {
+    if (!S.areaEdit || !S.areaEdit.start) return;
+    const a = S.areaEdit.start, b = areaPointer(e), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+    S.areaEdit.draft = w >= 0.04 && h >= 0.04 ? J.lyricArea({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w, h }) : S.areaEdit.previous;
+    S.areaEdit.start = null; showAreaDraft();
+  });
+  areaOverlay.addEventListener('pointercancel', () => { if (S.areaEdit) { S.areaEdit.draft = S.areaEdit.previous; S.areaEdit.start = null; showAreaDraft(); } });
+  $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
+  $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
+  $('areaCancel').addEventListener('click', cancelAreaEditor);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.areaEdit) { e.preventDefault(); cancelAreaEditor(); } });
   $('mediaFiles').addEventListener('change', async e => {
     const layer = activeMediaLayer() || 'media', m = S.project[layer];
     for (const file of e.target.files || []) {
