@@ -496,6 +496,7 @@ function renderFx() {
   $('fxKoma').value = String(J.komaOf(S.project.fx));
   $('fxHud').value = S.project.fx.hud || 'auto';
   $('fxInterCount').value = S.project.fx.interCount || 'auto';
+  $('fxInterCredit').checked = !!S.project.fx.interCredit;
   $('seed').value = S.project.seed;
 }
 
@@ -679,6 +680,7 @@ function bind() {
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
   $('fxInterCount').addEventListener('change', e => { S.project.fx.interCount = e.target.value; replan(); });
+  $('fxInterCredit').addEventListener('change', e => { S.project.fx.interCredit = e.target.checked; replan(); });
   $('seed').addEventListener('change', e => { S.project.seed = parseInt(e.target.value, 10) || 0; replan(); });
   $('btnSeed').addEventListener('click', () => { S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); });
   const colorToggle = (flag, keys) => e => {

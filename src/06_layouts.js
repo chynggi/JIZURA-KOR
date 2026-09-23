@@ -633,6 +633,16 @@ J.LAYOUTS = {
     render(env) {
       const { W, H, sc } = env, P = env.cut.params, lb = env.ltb;
       const fs = J.clamp(H * 0.022, 12, 22);
+      // 첫 간주에 크레딧: song title large + artist, over the rings
+      if (P.variant === 'credit') {
+        for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.26 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k)), null, sc.sub, 1.2, 0.35, false);
+        const font = env.st.fonts.display[0], size = Math.min(J.fitSize(env.cut.text, font, W * 0.7, H * 0.18, { track: 0.08 }), H * 0.14);
+        const bb = J.mainDraw(env, { text: env.cut.text, font, size, x: W / 2, y: H / 2, track: 0.08, color: sc.fg });
+        const ns = J.clamp(H * 0.03, 16, 32);
+        if (env.cut.note) env.draw({ text: env.cut.note, font: env.st.fonts.body[0], size: ns, x: W / 2, y: H / 2 + size * 0.95, track: 0.3, color: sc.sub, alpha: E.outCubic(J.clamp((env.lt - 0.3) / 0.4)) * (1 - env.pOut), ghost: false });
+        // keep decor clear of the artist line too
+        return bb ? Object.assign({}, bb, { y1: Math.max(bb.y1, env.cut.note ? H / 2 + size * 0.95 + ns * 0.7 : bb.y1) }) : null;
+      }
       if (P.variant === 'counter') {
         const remain = Math.max(0, env.cut.dur - env.lt);
         env.draw({ text: remain.toFixed(1), font: env.st.fonts.display[0], size: H * 0.36, x: W / 2, y: H / 2, color: sc.fg, alpha: 0.9 });

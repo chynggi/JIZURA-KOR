@@ -118,13 +118,15 @@ function jzMakePlan(o) {
     }
     var outro = parsed.outro && lines.length ? parsed.outro : null;
     for (i = 0; i < lines.length; i++) {
-        if (i < lines.length - 1) ends.push(Math.max(starts[i] + 0.35, starts[i + 1]));
+        var nbk = i < lines.length - 1 ? lines[i + 1].breakBefore : null;
+        if (nbk && nbk.at != null) ends.push(Math.max(starts[i] + 0.35, Math.min(nbk.at, starts[i + 1])));
+        else if (i < lines.length - 1) ends.push(Math.max(starts[i] + 0.35, starts[i + 1]));
         else if (outro && outro.at != null) ends.push(Math.max(starts[i] + 0.35, outro.at));
         else { var nl = jzChars(lines[i].text).length, dl = jzClamp(0.8 + nl * 0.17, 1.5, 5.2) * (o.lineScale || 1); if (beat) dl = Math.max(2, Math.round(dl / beat)) * beat; ends.push(starts[i] + dl); }
     }
     var duration = o.duration || ((ends.length ? ends[ends.length - 1] : 3) + (outro ? (outro.sec != null ? outro.sec : 4) : 0.9));
     var plan = { version: 1, generator: 'JIZURA-AE', title: title, artist: artist, W: o.width, H: o.height, width: o.width, height: o.height, fps: o.fps, duration: duration, style: st, styleKey: o.style, fx: fx, lines: [], cuts: [], events: [], hud: fx.hud };
-    var hist = [], schemeIdx = 0, nS = st.schemes.length;
+    var hist = [], schemeIdx = 0, nS = st.schemes.length, creditDone = false;
     function ev(t, type, amp, dur) { plan.events.push({ t: t, type: type, amp: amp, dur: dur }); }
     if (title && starts.length && starts[0] >= 1.1) {
         var tr = new JzRng(jzHash(o.seed, 999));
@@ -134,7 +136,9 @@ function jzMakePlan(o) {
         var ln = lines[li], s0 = starts[li], e0 = ends[li], rng = new JzRng(jzHash(o.seed, li + 1));
         var nch = jzCount(ln.text), visEnd = Math.min(e0, s0 + Math.max(3.6, nch * 0.5 + 1.2));
         // before a marked [간주] the line only keeps its natural length, the rest of the gap becomes the interlude
-        if (li < lines.length - 1 && lines[li + 1].breakBefore) {
+        // (with a timestamp on the marker the line already ends there)
+        var nb = li < lines.length - 1 ? lines[li + 1].breakBefore : null;
+        if (nb && nb.at == null) {
             var dn = jzClamp(0.8 + jzChars(ln.text).length * 0.17, 1.3, 5.2) * (o.lineScale || 1);
             if (beat) dn = Math.max(2, Math.round(dn / beat)) * beat;
             visEnd = Math.min(visEnd, s0 + dn);
@@ -182,11 +186,15 @@ function jzMakePlan(o) {
             if (dur > 0.8 && rng.chance(g * 0.4)) ev(cs + rng.range(0.35, 0.8) * dur, 'slice', 0.4 + g * 0.4, 2 / o.fps);
         }
         // interlude in long gaps, or wherever the lyrics mark one with [간주]
-        var marked = li < lines.length - 1 && !!lines[li + 1].breakBefore;
-        if (li < lines.length - 1 && starts[li + 1] - visEnd > (marked ? 0.3 : 1.3)) {
+        var marked = !!nb, iStart = nb && nb.at != null ? Math.max(visEnd, e0) : visEnd;
+        if (li < lines.length - 1 && starts[li + 1] - iStart > (marked ? 0.3 : 1.3)) {
             var r2 = new JzRng(jzHash(o.seed, li, 404));
-            if (marked) ev(visEnd, r2.pick(['chroma', 'shake', 'zoom']), 1, 0.25); // one random screen effect, no lyric text
-            plan.cuts.push({ index: plan.cuts.length, text: title || '', lineText: '', line: li, start: visEnd, end: starts[li + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: { variant: fx.interCount === 'on' ? 'counter' : fx.interCount === 'off' ? 'rings' : r2.pick(['counter', 'rings']) }, decor: jzPickDecor(r2, st, en.decor, { decor: 1 }), scheme: schemeIdx, seed: jzHash(o.seed, li, 405) % 1000000 });
+            if (marked) ev(iStart, r2.pick(['chroma', 'shake', 'zoom']), 1, 0.25); // one random screen effect, no lyric text
+            var variant = fx.interCount === 'on' ? 'counter' : fx.interCount === 'off' ? 'rings' : r2.pick(['counter', 'rings']);
+            // 첫 간주에 크레딧: the first interlude long enough shows the song title and artist
+            var credit = fx.interCredit && title && !creditDone && starts[li + 1] - iStart >= 2;
+            if (credit) { variant = 'credit'; creditDone = true; }
+            plan.cuts.push({ index: plan.cuts.length, text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, start: iStart, end: starts[li + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: { variant: variant }, decor: jzPickDecor(r2, st, en.decor, { decor: 1 }), scheme: schemeIdx, seed: jzHash(o.seed, li, 405) % 1000000 });
         }
     }
     // end card for [마무리]: title (or END) + artist from the last line's end to the end of the comp

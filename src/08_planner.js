@@ -18,7 +18,7 @@ J.defaultProject = () => ({
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
   seed: 20260922,
   aspect: '16:9', res: 1080, fps: 24,
-  fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', interCount: 'auto', bgSwitch: 0.35 },
+  fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', interCount: 'auto', interCredit: false, bgSwitch: 0.35 },
   enabled: Object.fromEntries(J.GROUP_KEYS.map(g => [g, Object.fromEntries(J.order(g).map(k => [k, true]))])),
   timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, lineScale: 1 },
   overrides: {},
@@ -43,9 +43,10 @@ J.parseLyrics = (raw) => {
     if (s0.startsWith('#')) continue;
     const mm = s0.match(/^\[(ti|ar|al|by|offset):(.*)\]$/i);
     if (mm) { meta[mm[1].toLowerCase()] = mm[2].trim(); continue; }
-    // [간주] / [간주 8] / [간주 8초] : interlude before the next line (N = extra seconds for auto timing)
-    const bm = s0.match(/^\[(?:간주|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
-    if (bm) { pendingBreak = { sec: bm[1] != null ? +bm[1] : null }; continue; }
+    // [간주] / [간주 8] / [간주 8초] / [간주 8 | 문구] / [01:20.00][간주] : interlude before the next line
+    // (N = extra seconds for auto timing, 문구 = small caption, timestamp = the previous line ends and the interlude starts there)
+    const bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:간주|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
+    if (bm) { pendingBreak = { sec: bm[3] != null ? +bm[3] : null, at: bm[1] != null ? +bm[1] * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] || null }; continue; }
     // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
     const om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
     if (om) { outro = { at: om[1] != null ? +om[1] * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] != null ? +om[3] : null }; continue; }
@@ -157,6 +158,8 @@ J.computeTiming = (project, parsed, audio) => {
   });
   const outro = parsed.outro && lines.length ? parsed.outro : null;
   const ends = starts.map((s, i) => {
+    const nb = i < starts.length - 1 ? lines[i + 1].breakBefore : null;
+    if (nb && nb.at != null) return Math.max(s + 0.35, Math.min(nb.at, starts[i + 1]));
     if (i < starts.length - 1) return Math.max(s + 0.35, starts[i + 1]);
     if (outro && outro.at != null) return Math.max(s + 0.35, outro.at);
     const n = [...lines[i].text].length;
@@ -200,7 +203,7 @@ J.plan = (project, audio) => {
     return best;
   };
   const history = [], bgHistory = [], fxHistory = [];
-  let schemeIdx = 0;
+  let schemeIdx = 0, creditDone = false;
   const nSchemes = st.schemes.length;
   const addEvent = (t, type, amp, dur) => plan.events.push({ t, type, amp, dur });
 
@@ -219,7 +222,9 @@ J.plan = (project, audio) => {
     const n = [...ln.text.replace(/\s+/g, '')].length;
     let visEnd = Math.min(e, s + Math.max(3.6, n * 0.5 + 1.2));
     // before a marked [간주] the line only keeps its natural length, the rest of the gap becomes the interlude
-    if (li < parsed.lines.length - 1 && parsed.lines[li + 1].breakBefore) {
+    // (with a timestamp on the marker the line already ends there)
+    const nb = li < parsed.lines.length - 1 ? parsed.lines[li + 1].breakBefore : null;
+    if (nb && nb.at == null) {
       const T = project.timing || {}, beat = T.bpm > 0 ? 60 / T.bpm : 0;
       let d = J.clamp(0.8 + [...ln.text].length * 0.17, 1.3, 5.2) * (T.lineScale || 1);
       if (beat) d = Math.max(2, Math.round(d / beat)) * beat;
@@ -323,12 +328,17 @@ J.plan = (project, audio) => {
     });
     // interlude in long gaps, or wherever the lyrics mark one with [간주]
     const nextStart = li < parsed.lines.length - 1 ? tm.starts[li + 1] : null;
-    const marked = nextStart != null && !!parsed.lines[li + 1].breakBefore;
-    if (nextStart != null && nextStart - visEnd > (marked ? 0.3 : 1.3)) {
+    const marked = !!nb;
+    const iStart = nb && nb.at != null ? Math.max(visEnd, e) : visEnd;
+    if (nextStart != null && nextStart - iStart > (marked ? 0.3 : 1.3)) {
       const r2 = J.rng(J.h(lineSeed, 404));
       // marked interlude: one random screen effect from the library, no lyric text
-      if (marked) { const pick = pickFx(r2, st, en, fx, true, fxHistory, 'force'); if (pick) { const D2 = J.FXE[pick]; addEvent(visEnd - (D2.pre ? D2.pre / 24 : 0), pick, D2.amp || 1, (D2.dur || 4) / 24); fxHistory.push(pick); } }
-      plan.cuts.push(makeCut({ text: title || '', lineText: '', line: li, start: visEnd, end: nextStart, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: Object.assign(J.LAYOUTS.interlude.plan(r2), fx.interCount === 'on' ? { variant: 'counter' } : fx.interCount === 'off' ? { variant: 'rings' } : {}), decor: pickDecor(r2, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: schemeIdx, seed: J.h(lineSeed, 405) }));
+      if (marked) { const pick = pickFx(r2, st, en, fx, true, fxHistory, 'force'); if (pick) { const D2 = J.FXE[pick]; addEvent(iStart - (D2.pre ? D2.pre / 24 : 0), pick, D2.amp || 1, (D2.dur || 4) / 24); fxHistory.push(pick); } }
+      const params = Object.assign(J.LAYOUTS.interlude.plan(r2), fx.interCount === 'on' ? { variant: 'counter' } : fx.interCount === 'off' ? { variant: 'rings' } : {});
+      // 첫 간주에 크레딧: the first interlude long enough shows the song title and artist
+      const credit = fx.interCredit && title && !creditDone && nextStart - iStart >= 2;
+      if (credit) { params.variant = 'credit'; creditDone = true; }
+      plan.cuts.push(makeCut({ text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, start: iStart, end: nextStart, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(r2, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: schemeIdx, seed: J.h(lineSeed, 405) }));
     }
   });
   // end card for [마무리]: title (or END) + artist from the last line's end to the end of the video

@@ -80,9 +80,10 @@ function jzParseLyrics(raw) {
         if (s0.charAt(0) === '#') continue;
         var mm = s0.match(/^\[(ti|ar|al|by|offset):(.*)\]$/i);
         if (mm) { meta[mm[1].toLowerCase()] = jzTrim(mm[2]); continue; }
-        // [간주] / [간주 8] / [간주 8초] : interlude before the next line (N = extra seconds for auto timing)
-        var bm = s0.match(/^\[(?:간주|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
-        if (bm) { brk = { sec: bm[1] ? parseFloat(bm[1]) : null }; continue; }
+        // [간주] / [간주 8] / [간주 8초] / [간주 8 | 문구] / [01:20.00][간주] : interlude before the next line
+        // (N = extra seconds for auto timing, 문구 = small caption, timestamp = the previous line ends and the interlude starts there)
+        var bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:간주|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
+        if (bm) { brk = { sec: bm[3] ? parseFloat(bm[3]) : null, at: bm[1] ? parseInt(bm[1], 10) * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] || null }; continue; }
         // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
         var om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
         if (om) { outro = { at: om[1] ? parseInt(om[1], 10) * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] ? parseFloat(om[3]) : null }; continue; }
