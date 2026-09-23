@@ -313,8 +313,10 @@ function syncSourceTab() {
   $('sourceLyrics').setAttribute('aria-selected', String(!media)); $('sourceMedia').setAttribute('aria-selected', String(media));
   $('lyricsPane').hidden = media; $('mediaPane').hidden = !media;
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
-  $('linesInfo').textContent = media ? `${S.plan.media.cuts.length}素材 / ${S.plan.media.cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
+  $('linesInfo').textContent = media ? `${S.project.media.items.length}素材 / ${S.plan.media.cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
   $('mediaRandom').disabled = S.project.media.items.length < 2;
+  $('mediaLoop').disabled = S.project.media.items.length === 0;
+  $('mediaCutCountField').hidden = !S.project.media.loop || S.project.media.items.length === 0;
 }
 function mediaThumb(item, cls = '') {
   const asset = J.mediaAssets.get(item.id);
@@ -329,6 +331,7 @@ function renderMediaList() {
     row.querySelector('button').addEventListener('click', () => {
       S.project.media.items.splice(i, 1);
       S.project.media.timing.lineTimes = {};
+      S.project.media.cutOverrides = {};
       delete S.project.media.overrides[item.id];
       const asset = J.mediaAssets.get(item.id); if (asset) { URL.revokeObjectURL(asset.url); J.mediaAssets.delete(item.id); }
       J.removeMedia(item.id).catch(() => {}); replan();
@@ -341,31 +344,34 @@ function renderMediaList() {
       const from = S.project.media.items.findIndex(x => x.id === e.dataTransfer.getData('text/plain'));
       if (from < 0 || from === i) return;
       const [moved] = S.project.media.items.splice(from, 1); S.project.media.items.splice(i, 0, moved);
-      S.project.media.timing.lineTimes = {}; replan();
+      S.project.media.timing.lineTimes = {}; S.project.media.cutOverrides = {}; replan();
     });
     box.appendChild(row);
   });
   $('mediaRandom').checked = !!S.project.media.randomOrder;
+  $('mediaLoop').checked = !!S.project.media.loop;
+  $('mediaCutCount').min = String(Math.max(1, S.project.media.items.length));
+  $('mediaCutCount').value = String(S.project.media.cutCount || S.project.media.items.length * 2 || 1);
   $('mediaBlend').value = S.project.media.blend;
   $('mediaOpacity').value = S.project.media.opacity;
 }
-function mediaOv(id, patch) {
-  const o = Object.assign({}, S.project.media.overrides[id] || {}, patch);
+function mediaOv(index, patch) {
+  const o = Object.assign({}, S.project.media.cutOverrides[index] || {}, patch);
   for (const k of Object.keys(o)) if (o[k] === undefined || o[k] === '') delete o[k];
-  if (Object.keys(o).length) S.project.media.overrides[id] = o; else delete S.project.media.overrides[id];
+  if (Object.keys(o).length) S.project.media.cutOverrides[index] = o; else delete S.project.media.cutOverrides[index];
 }
 function renderMediaLines() {
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
   const select = (key, obj, val) => `<select aria-label="${key}"><option value="">自動</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
   S.plan.media.cuts.forEach((cut, i) => {
-    const item = S.project.media.items.find(x => x.id === cut.itemId), ov = S.project.media.overrides[cut.itemId] || {};
+    const item = S.project.media.items.find(x => x.id === cut.itemId), ov = Object.assign({}, S.project.media.overrides[cut.itemId] || {}, S.project.media.cutOverrides[i] || {});
     const li = document.createElement('li'); li.className = 'ln media-ln';
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span></span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span></div>`;
     li.querySelector('.time').addEventListener('change', e => { S.project.media.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.txt').addEventListener('click', () => seek(cut.start + 0.001));
-    ['layout', 'enter', 'hold', 'exit', 'treat'].forEach((key, n) => li.querySelectorAll('select')[n].addEventListener('change', e => { mediaOv(cut.itemId, { [key]: e.target.value || undefined }); replan(); }));
-    li.querySelector('.dice').addEventListener('click', () => { mediaOv(cut.itemId, { seed: (ov.seed | 0) + 1, lock: false }); replan(); seek(cut.start + 0.001); });
-    li.querySelector('.lock').addEventListener('click', () => { mediaOv(cut.itemId, ov.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }); replan(); });
+    ['layout', 'enter', 'hold', 'exit', 'treat'].forEach((key, n) => li.querySelectorAll('select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || undefined }); replan(); }));
+    li.querySelector('.dice').addEventListener('click', () => { mediaOv(i, { seed: (ov.seed | 0) + 1, lock: false }); replan(); seek(cut.start + 0.001); });
+    li.querySelector('.lock').addEventListener('click', () => { mediaOv(i, ov.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }); replan(); });
     ol.appendChild(li); S.mediaLineEls.push(li);
   });
   syncSourceTab();
@@ -765,6 +771,15 @@ function bind() {
     e.target.value = ''; replan();
   });
   $('mediaRandom').addEventListener('change', e => { S.project.media.randomOrder = e.target.checked; replan(); });
+  $('mediaLoop').addEventListener('change', e => {
+    S.project.media.loop = e.target.checked;
+    if (e.target.checked && !S.project.media.cutCount) S.project.media.cutCount = Math.min(1000, S.project.media.items.length * 2);
+    replan();
+  });
+  $('mediaCutCount').addEventListener('change', e => {
+    S.project.media.cutCount = J.clamp(Math.floor(+e.target.value || 0), Math.max(1, S.project.media.items.length), 1000);
+    replan();
+  });
   $('mediaBlend').addEventListener('change', e => { S.project.media.blend = e.target.value; replan(); });
   $('mediaOpacity').addEventListener('change', e => { S.project.media.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; replanSoon(260); });

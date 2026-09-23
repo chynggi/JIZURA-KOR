@@ -7,42 +7,49 @@ J.MEDIA_HOLD = { still: '静止', push: 'ゆっくり拡大', pan: '横移動' }
 J.MEDIA_EXIT = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム', cut: '即時' };
 J.MEDIA_TREAT = { none: 'なし', mono: 'モノクロ', sepia: 'セピア', contrast: '高コントラスト', blur: 'ぼかし' };
 J.mediaAssets = new Map();
-const defaults = () => ({ items: [], randomOrder: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, blend: 'normal', opacity: 100 });
+const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
   const o = Object.assign(defaults(), m || {});
   o.items = Array.isArray(o.items) ? o.items.filter(x => x && x.id && x.name && ['image', 'video'].includes(x.type)) : [];
   o.timing = Object.assign({ lineTimes: {} }, o.timing || {});
   o.overrides = o.overrides || {};
+  o.cutOverrides = o.cutOverrides || {};
+  o.loop = !!o.loop;
+  o.cutCount = J.clamp(Math.floor(+o.cutCount || 0), 0, 1000);
   if (!['normal', 'multiply', 'screen'].includes(o.blend)) o.blend = 'normal';
   o.opacity = J.clamp(+o.opacity || 0, 0, 100);
   return o;
 };
 J.planMedia = (project, lyricPlan, audioDuration) => {
   const m = J.normalizeMedia(project.media), items = m.items.slice();
-  const duration = Math.max(lyricPlan.duration, audioDuration || 0,
-    lyricPlan.lines.length ? 0 : items.reduce((n, x) => n + (x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
+  const count = items.length ? (m.loop ? Math.max(items.length, m.cutCount || items.length * 2) : items.length) : 0;
   const order = items.map((_, i) => i);
   if (m.randomOrder && order.length > 1) {
     const rng = J.rng(J.h(project.seed, m.seed));
     for (let i = order.length - 1; i > 0; i--) { const j = rng.int(0, i); [order[i], order[j]] = [order[j], order[i]]; }
   }
-  const starts = items.map((_, i) => {
+  const itemAt = i => items[order[i % items.length]];
+  const duration = Math.max(lyricPlan.duration, audioDuration || 0,
+    lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
+  const lyricCount = Math.min(count, lyricPlan.lines.length);
+  const starts = Array.from({ length: count }, (_, i) => {
     const v = m.timing.lineTimes[i];
     if (v != null && isFinite(+v)) return J.clamp(+v, 0, duration);
     if (lyricPlan.lines[i]) return lyricPlan.lines[i].start;
-    return i * duration / Math.max(1, items.length);
+    if (lyricCount) return lyricPlan.lines[lyricCount - 1].start + (duration - lyricPlan.lines[lyricCount - 1].start) * (i - lyricCount + 1) / (count - lyricCount + 1);
+    return i * duration / Math.max(1, count);
   });
   for (let i = 1; i < starts.length; i++) starts[i] = Math.max(starts[i], starts[i - 1] + 0.04);
-  const cuts = items.map((_, i) => {
-    const item = items[order[i]], ov = m.overrides[item.id] || {};
+  const cuts = Array.from({ length: count }, (_, i) => {
+    const item = itemAt(i), ov = Object.assign({}, m.overrides[item.id] || {}, m.cutOverrides[i] || {});
     const seed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, m.seed, i, ov.seed | 0);
     const rng = J.rng(seed);
-    return { index: i, itemId: item.id, name: item.name, type: item.type, start: starts[i], end: i + 1 < items.length ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
+    return { index: i, itemId: item.id, name: item.name, type: item.type, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
       layout: ov.layout || rng.pick(Object.keys(J.MEDIA_LAYOUT)), enter: ov.enter || rng.pick(Object.keys(J.MEDIA_ENTER)),
       hold: ov.hold || rng.pick(Object.keys(J.MEDIA_HOLD)), exit: ov.exit || rng.pick(Object.keys(J.MEDIA_EXIT)),
       treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)), seed };
   });
-  return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder };
+  return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder, loop: m.loop };
 };
 J.mediaAt = (plan, t) => plan.media && plan.media.cuts.find(c => t >= c.start && t < c.end) || null;
 
