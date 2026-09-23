@@ -22,7 +22,7 @@ ap.add_argument('--texts', default='')
 A = ap.parse_args()
 os.makedirs(A.out, exist_ok=True)
 
-TEXTS = A.texts.split('|') if A.texts else ['透明', '夜明けの色を', 'ほどけた声が遠くで', 'ねえ、まだ間に合うかな、きっと']
+TEXTS = A.texts.split('|') if A.texts else ['투명', '새벽의 색을', '풀린 목소리가 멀리', '야, 아직 늦지 않았을까, 분명']
 FX = {'decor': 0, 'glitch': 0.0, 'motion': 0.7, 'chroma': 0.6, 'density': 0.5, 'texture': 0.4, 'flash': False, 'onTwos': True, 'koma': 12, 'hud': 'off', 'bgSwitch': 0}
 try:
     FONT = ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', 13)
@@ -83,7 +83,7 @@ async def main():
         pg.on('pageerror', lambda e: logs.append(f'PAGEERROR: {e}'))
         await pg.goto(f'http://localhost:8765/{A.page}.html')
         await pg.wait_for_timeout(400)
-        await pg.evaluate("p => T.setup(p)", proj(['テスト'], {}))
+        await pg.evaluate("p => T.setup(p)", proj(['테스트'], {}))
         ids = A.ids.split(',') if A.ids else await pg.evaluate('g => T.ids(g)', A.group)
         worst = (0, '')
         for gid in ids:

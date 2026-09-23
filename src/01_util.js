@@ -145,8 +145,9 @@ J.randomPalette = (bg, rnd = Math.random) => {
   return { accent: acc, ghostA: a, ghostB: b, mode };
 };
 
-/* ---- script classes for Japanese text ---- */
-J.isKanji = c => /[㐀-鿿豈-﫿々〆ヶ]/.test(c);
+/* ---- script classes for Japanese / Korean text ---- */
+J.isHangul = c => /[ᄀ-ᇿ㄰-㆏가-힣ꥼ-꥿ꥼ-ힿ]/.test(c);
+J.isKanji = c => /[㐀-鿿豈-﫿々〆ヶ]/.test(c) || J.isHangul(c);
 J.isHira = c => /[ぁ-ゟ]/.test(c);
 J.isKata = c => /[゠-ヿㇰ-ㇿｦ-ﾟ]/.test(c);
 J.isSmallKana = c => 'ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ'.includes(c);
@@ -154,8 +155,17 @@ J.isPunct = c => /[、。，．,.!?！？…‥・「」『』（）()【】〈�
 J.isLatin = c => /[A-Za-z0-9]/.test(c);
 J.VERT_ROTATE = 'ー〜～…‥―—-()（）「」『』【】〈〉《》〔〕[]［］→←:：;；=＝';
 
-/* ---- kana → romaji (for annotation labels; kanji left out) ---- */
+/* ---- kana → romaji, hangul → latin (for annotation labels; kanji left out) ---- */
 (() => {
+  const CHO = ['g', 'kk', 'n', 'd', 'tt', 'r', 'm', 'b', 'pp', 's', 'ss', '', 'j', 'jj', 'ch', 'k', 't', 'p', 'h'];
+  const JUNG = ['a', 'ae', 'ya', 'yae', 'eo', 'e', 'yeo', 'ye', 'o', 'wa', 'wae', 'oe', 'yo', 'u', 'wo', 'we', 'wi', 'yu', 'eu', 'ui', 'i'];
+  const JONG = ['', 'k', 'kk', 'k', 'n', 'n', 'n', 't', 'l', 'k', 'm', 'p', 'l', 'l', 'p', 'l', 'm', 'p', 'p', 't', 't', 'ng', 't', 't', 'k', 't', 'p', 'h'];
+  const syll = c => {
+    const i = c.codePointAt(0) - 0xAC00;
+    if (i < 0 || i > 11171) return null;
+    const jong = i % 28;
+    return CHO[((i / 588) | 0)] + JUNG[(((i % 588) / 28) | 0)] + JONG[jong];
+  };
   const base = { あ: 'a', い: 'i', う: 'u', え: 'e', お: 'o', か: 'ka', き: 'ki', く: 'ku', け: 'ke', こ: 'ko', さ: 'sa', し: 'shi', す: 'su', せ: 'se', そ: 'so', た: 'ta', ち: 'chi', つ: 'tsu', て: 'te', と: 'to', な: 'na', に: 'ni', ぬ: 'nu', ね: 'ne', の: 'no', は: 'ha', ひ: 'hi', ふ: 'fu', へ: 'he', ほ: 'ho', ま: 'ma', み: 'mi', む: 'mu', め: 'me', も: 'mo', や: 'ya', ゆ: 'yu', よ: 'yo', ら: 'ra', り: 'ri', る: 'ru', れ: 're', ろ: 'ro', わ: 'wa', を: 'wo', ん: 'n', が: 'ga', ぎ: 'gi', ぐ: 'gu', げ: 'ge', ご: 'go', ざ: 'za', じ: 'ji', ず: 'zu', ぜ: 'ze', ぞ: 'zo', だ: 'da', ぢ: 'ji', づ: 'zu', で: 'de', ど: 'do', ば: 'ba', び: 'bi', ぶ: 'bu', べ: 'be', ぼ: 'bo', ぱ: 'pa', ぴ: 'pi', ぷ: 'pu', ぺ: 'pe', ぽ: 'po', ぁ: 'a', ぃ: 'i', ぅ: 'u', ぇ: 'e', ぉ: 'o', ゔ: 'vu' };
   const yo = { ゃ: 'ya', ゅ: 'yu', ょ: 'yo' };
   J.romaji = s => {
@@ -167,7 +177,7 @@ J.VERT_ROTATE = 'ー〜～…‥―—-()（）「」『』【】〈〉《》〔
       if (c === 'っ') { const nx = base[n] || ''; out += nx ? nx[0] : ''; i++; continue; }
       if (c === 'ー') { out += out.slice(-1); i++; continue; }
       if (n && yo[n] && base[c]) { const b = base[c]; out += (b.length > 1 && (b.endsWith('i')) ? b.slice(0, -1) : b) + (b === 'shi' || b === 'chi' || b === 'ji' ? yo[n].slice(1) : yo[n]); i += 2; continue; }
-      if (base[c]) out += base[c]; else if (/[A-Za-z0-9 ]/.test(c)) out += c; else return null;
+      if (base[c]) out += base[c]; else if (/[A-Za-z0-9 ]/.test(c)) out += c; else { const hl = syll(c); if (hl === null) return null; out += hl; }
       i++;
     }
     return out;

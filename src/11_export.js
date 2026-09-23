@@ -64,7 +64,7 @@ J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signa
   const px = w * h * fps;
   const bitrate = Math.round(px * (quality === 'max' ? 0.42 : quality === 'high' ? 0.28 : 0.16));
   const vc = await J.pickVideoCodec(w, h, fps, bitrate);
-  if (!vc) throw new Error('このブラウザは動画エンコード（WebCodecs）に対応していません。Chrome か Edge の最新版で開いてください。');
+  if (!vc) throw new Error('이 브라우저는 영상 인코딩(WebCodecs)을 지원하지 않습니다. 최신 버전의 Chrome 또는 Edge에서 여세요.');
   let ac = null;
   if (audio && audio.buffer && project.includeAudio !== false) ac = await J.pickAudioCodec(48000, Math.min(2, audio.buffer.numberOfChannels));
   const target = new Mp4Muxer.ArrayBufferTarget();
@@ -82,19 +82,19 @@ J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signa
   const prevRes = J.glyphs.maxRes; J.glyphs.maxRes = h >= 1000 ? 768 : 512;
   try {
   for (let i = 0; i < total; i++) {
-    if (signal && signal.aborted) { try { venc.close(); } catch (e) {} throw new Error('キャンセルしました'); }
+    if (signal && signal.aborted) { try { venc.close(); } catch (e) {} throw new Error('취소했습니다'); }
     if (err) throw err;
     R.frame(ctx, plan, i / fps, { scale });
     const vf = new VideoFrame(canvas, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
     venc.encode(vf, { keyFrame: i % (fps * 2) === 0 });
     vf.close();
     while (venc.encodeQueueSize > 4) await new Promise(r => setTimeout(r, 2));
-    if (i % 3 === 0) { onProgress && onProgress(i / total, `フレーム ${i + 1}/${total}`); await new Promise(r => setTimeout(r, 0)); }
+    if (i % 3 === 0) { onProgress && onProgress(i / total, `프레임 ${i + 1}/${total}`); await new Promise(r => setTimeout(r, 0)); }
   }
   } finally { J.glyphs.maxRes = prevRes; }
   await venc.flush(); venc.close();
   if (ac) {
-    onProgress && onProgress(0.99, '音声をエンコード中');
+    onProgress && onProgress(0.99, '오디오 인코딩 중');
     const rs = await resample(audio.buffer, ac.sr, plan.duration);
     const chn = rs.numberOfChannels;
     const aenc = new AudioEncoder({ output: (chunk, meta) => muxer.addAudioChunk(chunk, meta), error: e => { err = e; } });
@@ -112,7 +112,7 @@ J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signa
     if (err) throw err;
   }
   muxer.finalize();
-  onProgress && onProgress(1, '完了');
+  onProgress && onProgress(1, '완료');
   return { blob: new Blob([target.buffer], { type: 'video/mp4' }), codec: vc.label, audio: ac ? ac.mux : null, width: w, height: h };
 };
 
@@ -152,13 +152,13 @@ J.exportPNGZip = async ({ plan, project, transparent, onProgress, signal, every 
   const zip = new ZipWriter();
   const scale = w / plan.W;
   for (let i = 0; i < total; i += every) {
-    if (signal && signal.aborted) throw new Error('キャンセルしました');
+    if (signal && signal.aborted) throw new Error('취소했습니다');
     R.frame(ctx, plan, i / fps, { scale, transparent });
     const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
     zip.add(`jizura_${String(i).padStart(5, '0')}.png`, new Uint8Array(await blob.arrayBuffer()));
     onProgress && onProgress(i / total, `PNG ${i + 1}/${total}`);
   }
-  onProgress && onProgress(1, '完了');
+  onProgress && onProgress(1, '완료');
   return zip.finish();
 };
 
@@ -195,7 +195,7 @@ J.planForAE = (plan, project) => {
   }
   const AE_FX = ['chroma', 'shake', 'slice', 'block', 'invert', 'flash', 'zoom', 'mosaic'];
   clean.events = clean.events.map(ev => { const FX = J.FXE[ev.type]; if (!FX || FX.builtin) return ev; const t = J.AE_MAP.fx[ev.type] || (AE_FX.includes(FX.ae) ? FX.ae : null); return t ? Object.assign({}, ev, { type: t, webType: ev.type }) : null; }).filter(Boolean);
-  if (subs) clean.aeNote = `ブラウザ版の新しい表現 ${subs} 箇所を、AEパネルにある近い表現に置き換えています（文字加工・背景・カメラ・カット間のつなぎはAE版では未対応）`;
+  if (subs) clean.aeNote = `브라우저 버전의 새 표현 ${subs}곳을 AE 패널의 비슷한 표현으로 바꿨습니다(글자 가공·배경·카메라·컷 간 전환은 AE 버전 미지원)`;
   clean.width = J.outputSize(project)[0]; clean.height = J.outputSize(project)[1];
   clean.fonts = {};
   for (const [role, keys] of Object.entries(plan.style.fonts)) clean.fonts[role] = keys.map(k => J.FONTS[k] ? J.FONTS[k].label : k);

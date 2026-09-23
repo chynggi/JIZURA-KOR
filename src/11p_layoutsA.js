@@ -189,10 +189,10 @@ const inkBox = (font, ch) => memo('ink|' + font + '|' + ch, () => {
 const rowW = (text, font, size) => { let w = 0; for (const ch of text) w += J.metrics.adv(font, ch) * size; return w; };
 
 /* ======================================================================
-   1  lowerThird — 下部テロップ
+   1  lowerThird — 하단 자막
    ====================================================================== */
 reg('lowerThird', {
-  name: '下部テロップ', tags: ['editorial', 'calm', 'emotional'], w: 1.1, fits: n => n <= 20, portrait: 0.9,
+  name: '하단 자막', tags: ['editorial', 'calm', 'emotional'], w: 1.1, fits: n => n <= 20, portrait: 0.9,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'display', 'serif'])), side: rng.pick(['left', 'left', 'right']), bar: rng.pick(['line', 'tab', 'line']), label: rng.pick(['romaji', 'no', 'copy']), lift: rng.range(0, 0.04) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -246,10 +246,10 @@ reg('lowerThird', {
 });
 
 /* ======================================================================
-   2  corners — 対角配置
+   2  corners — 대각 배치
    ====================================================================== */
 reg('corners', {
-  name: '対角配置', tags: ['graphic', 'editorial', 'calm'], w: 1, fits: n => n >= 2 && n <= 18,
+  name: '대각 배치', tags: ['graphic', 'editorial', 'calm'], w: 1, fits: n => n >= 2 && n <= 18,
   plan: (rng, cut, st) => ({ chunks: splitK(cut.text, 2, 2), font: rng.pick(fontsOf(st, ['display', 'serif'])), diag: rng.pick(['main', 'main', 'anti']), link: rng.pick(['elbow', 'straight', 'elbow']), ratio: rng.pick([1, 1, 0.76]) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -308,10 +308,10 @@ reg('corners', {
 });
 
 /* ======================================================================
-   3  staircase — 階段
+   3  staircase — 계단
    ====================================================================== */
 reg('staircase', {
-  name: '階段', tags: ['graphic', 'pop', 'editorial'], w: 1, fits: n => n >= 2 && n <= 18,
+  name: '계단', tags: ['graphic', 'pop', 'editorial'], w: 1, fits: n => n >= 2 && n <= 18,
   plan: (rng, cut, st) => {
     const port = cut.H > cut.W * 1.08, n = cut.n;
     const latin = /[A-Za-z]/.test(cut.text);
@@ -373,10 +373,10 @@ reg('staircase', {
 });
 
 /* ======================================================================
-   4  zigzag — ジグザグ
+   4  zigzag — 지그재그
    ====================================================================== */
 reg('zigzag', {
-  name: 'ジグザグ', tags: ['pop', 'graphic'], w: 0.9, fits: n => n >= 3 && n <= 16,
+  name: '지그재그', tags: ['pop', 'graphic'], w: 0.9, fits: n => n >= 3 && n <= 16,
   plan: (rng, cut, st) => {
     const port = cut.H > cut.W * 1.08;
     return { font: rng.pick(fontsOf(st, ['display'])), orient: port && cut.n > 5 ? 'v' : 'h', amp: rng.range(0.24, 0.34), phase: rng.pick([1, -1]), rails: rng.pick(['under', 'both', 'under', 'over']), tilt: rng.chance(0.35) };
@@ -428,10 +428,10 @@ reg('zigzag', {
 });
 
 /* ======================================================================
-   5  arcTop — 虹の弧
+   5  arcTop — 무지개 호
    ====================================================================== */
 reg('arcTop', {
-  name: '虹の弧', tags: ['pop', 'emotional', 'graphic'], w: 0.9, fits: n => n >= 3 && n <= 16,
+  name: '무지개 호', tags: ['pop', 'emotional', 'graphic'], w: 0.9, fits: n => n >= 3 && n <= 16,
   plan: (rng, cut, st) => { const port = cut.H > cut.W * 1.08; return { font: rng.pick(fontsOf(st, ['display', 'serif', 'display'])), span: port ? rng.range(150, 190) : rng.range(105, 145), guide: rng.pick(['double', 'ticks', 'double']), under: rng.pick(['copy', 'romaji', 'no']) }; },
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env);
@@ -491,10 +491,10 @@ reg('arcTop', {
 });
 
 /* ======================================================================
-   6  spiral — 螺旋
+   6  spiral — 나선
    ====================================================================== */
 reg('spiral', {
-  name: '螺旋', tags: ['emotional', 'graphic', 'calm'], w: 0.8, fits: n => n >= 2 && n <= 16,
+  name: '나선', tags: ['emotional', 'graphic', 'calm'], w: 0.8, fits: n => n >= 2 && n <= 16,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, -1]), speed: rng.range(4, 9), guide: rng.chance(0.7), fill: cut.n <= 7 ? 'repeat' : cut.n <= 11 ? rng.pick(['repeat', 'single']) : 'single' }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env);
@@ -502,7 +502,7 @@ reg('spiral', {
     const seq = chars.map((c, i) => ({ c, main: true, i }));
     if (p.fill === 'repeat') {
       const reps = Math.max(1, Math.ceil(20 / (n + 1)) - 1);
-      for (let r = 0; r < reps && seq.length < 40; r++) { seq.push({ c: '・', main: false }); chars.forEach(c => seq.push({ c, main: false })); }
+      for (let r = 0; r < reps && seq.length < 40; r++) { seq.push({ c: '·', main: false }); chars.forEach(c => seq.push({ c, main: false })); }
     }
     const N = seq.length;
     const f = p.fill === 'repeat' ? 0.8 : 0.58;
@@ -556,10 +556,10 @@ reg('spiral', {
 });
 
 /* ======================================================================
-   7  gridCells — 升目
+   7  gridCells — 격자칸
    ====================================================================== */
 reg('gridCells', {
-  name: '升目', tags: ['graphic', 'editorial', 'pop'], w: 1, fits: n => n >= 2 && n <= 18, treat: 'safe',
+  name: '격자칸', tags: ['graphic', 'editorial', 'pop'], w: 1, fits: n => n >= 2 && n <= 18, treat: 'safe',
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif'])), gap: rng.pick([0, 0, 0.1, 0.16]), acc: rng.int(0, 99), fill: rng.pick(['outline', 'outline', 'ink']), nums: rng.chance(0.6) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -607,10 +607,10 @@ reg('gridCells', {
 });
 
 /* ======================================================================
-   8  dropCap — 大きな頭文字
+   8  dropCap — 큰 첫 글자
    ====================================================================== */
 reg('dropCap', {
-  name: '大きな頭文字', tags: ['editorial', 'emotional', 'calm'], w: 1, enterBias: { blur: 1.4, wipe: 1.3, type: 1.2 }, fits: n => n >= 3 && n <= 24, portrait: 0.8,
+  name: '큰 첫 글자', tags: ['editorial', 'emotional', 'calm'], w: 1, enterBias: { blur: 1.4, wipe: 1.3, type: 1.2 }, fits: n => n >= 3 && n <= 24, portrait: 0.8,
   plan: (rng, cut, st) => ({ capFont: rng.pick(fontsOf(st, ['serif', 'display'])), font: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), cap: rng.pick(['fill', 'accent', 'outline']), rules: rng.chance(0.65), meta: rng.chance(0.7) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -686,10 +686,10 @@ reg('dropCap', {
 });
 
 /* ======================================================================
-   9  justified — 版面
+   9  justified — 본문 조판
    ====================================================================== */
 reg('justified', {
-  name: '版面', tags: ['editorial', 'calm', 'emotional'], w: 0.8, fits: n => n >= 2 && n <= 22, busy: true, treat: 'safe',
+  name: '본문 조판', tags: ['editorial', 'calm', 'emotional'], w: 0.8, fits: n => n >= 2 && n <= 22, busy: true, treat: 'safe',
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif'])), fillFont: rng.pick(fontsOf(st, ['body', 'serif'])), mark: rng.pick(['band', 'under', 'bracket']), pos: rng.pick([0.28, 0.5, 0.66]), dens: rng.range(0.062, 0.078) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env);
@@ -755,10 +755,10 @@ reg('justified', {
 });
 
 /* ======================================================================
-   10  frameBox — 額縁
+   10  frameBox — 액자
    ====================================================================== */
 reg('frameBox', {
-  name: '額縁', tags: ['editorial', 'calm', 'graphic'], w: 1.1, fits: n => n <= 20,
+  name: '액자', tags: ['editorial', 'calm', 'graphic'], w: 1.1, fits: n => n <= 20,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif', 'serif'])), style: rng.pick(['full', 'double', 'corners']), caps: rng.pick(['tl-br', 'top-bottom']), shape: rng.pick(['tight', 'wide']) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -800,7 +800,7 @@ reg('frameBox', {
 });
 
 /* ======================================================================
-   11  bubble — 吹き出し
+   11  bubble — 말풍선
    ====================================================================== */
 function bubblePoly(shape, cx, cy, w, h, size, tailSide) {
   const x0 = cx - w / 2, y0 = cy - h / 2, x1 = cx + w / 2, y1 = cy + h / 2;
@@ -826,7 +826,7 @@ function bubblePoly(shape, cx, cy, w, h, size, tailSide) {
   return { pts, tip: [tipX, tipY] };
 }
 reg('bubble', {
-  name: '吹き出し', tags: ['pop', 'emotional'], w: 0.9, enterBias: { pop: 2, drop: 1.4, spin: 0.5 }, fits: n => n <= 20, treat: 'safe',
+  name: '말풍선', tags: ['pop', 'emotional'], w: 0.9, enterBias: { pop: 2, drop: 1.4, spin: 0.5 }, fits: n => n <= 20, treat: 'safe',
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'body'])), shape: rng.pick(['round', 'ellipse', 'thought', 'round']), style: rng.pick(['fill', 'outline', 'fill']), tail: rng.pick([1, -1]), off: rng.range(-0.05, 0.05), tilt: rng.range(-3, 3), burst: rng.chance(0.6) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -872,10 +872,10 @@ reg('bubble', {
 });
 
 /* ======================================================================
-   12  subtitleBar — 字幕帯
+   12  subtitleBar — 자막 바
    ====================================================================== */
 reg('subtitleBar', {
-  name: '字幕帯', tags: ['emotional', 'calm', 'editorial'], w: 0.9, fits: n => n <= 26, busy: true, treat: 'safe', portrait: 0.7,
+  name: '자막 바', tags: ['emotional', 'calm', 'editorial'], w: 0.9, fits: n => n <= 26, busy: true, treat: 'safe', portrait: 0.7,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['body', 'serif'])), bigFont: rng.pick(fontsOf(st, ['display', 'serif'])), big: rng.pick(['dim', 'outline']), bar: rng.range(0.1, 0.13), tc: rng.pick(['rec', 'scene']), place: rng.pick(['bar', 'band']), drift: rng.pick([1, -1]) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -937,10 +937,10 @@ reg('subtitleBar', {
 });
 
 /* ======================================================================
-   13  ticker — ティッカー
+   13  ticker — 티커
    ====================================================================== */
 reg('ticker', {
-  name: 'ティッカー', tags: ['pop', 'glitch', 'graphic'], w: 0.9, enterBias: { wipe: 1.6, slice: 1.4, type: 1.2 }, fits: n => n <= 18,
+  name: '티커', tags: ['pop', 'glitch', 'graphic'], w: 0.9, enterBias: { wipe: 1.6, slice: 1.4, type: 1.2 }, fits: n => n <= 18,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display'])), tag: rng.pick(['LIVE', 'NOW', 'ON AIR', 'LIVE']), speed: rng.range(0.8, 1.3), main: rng.pick(['center', 'left', 'center']), bug: rng.chance(0.6) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1004,10 +1004,10 @@ reg('ticker', {
 });
 
 /* ======================================================================
-   14  splitScreen — 二分割
+   14  splitScreen — 2분할
    ====================================================================== */
 reg('splitScreen', {
-  name: '二分割', tags: ['graphic', 'pop', 'editorial'], w: 0.9, emph: 1.6, enterBias: { wipe: 1.5, slice: 1.4, stretch: 1.2 }, fits: n => n <= 14, busy: true, treat: false,
+  name: '2분할', tags: ['graphic', 'pop', 'editorial'], w: 0.9, emph: 1.6, enterBias: { wipe: 1.5, slice: 1.4, stretch: 1.2 }, fits: n => n <= 14, busy: true, treat: false,
   plan: (rng, cut, st) => { const port = cut.H > cut.W * 1.08; return { font: rng.pick(fontsOf(st, ['display'])), split: port ? rng.pick(['h', 'diag', 'h']) : rng.pick(['v', 'diag', 'v', 'h']), plate: rng.pick(['fg', 'accent', 'fg']), side: rng.pick([1, -1]), tilt: rng.range(12, 22) }; },
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1059,10 +1059,10 @@ reg('splitScreen', {
 });
 
 /* ======================================================================
-   15  mirror — 鏡像
+   15  mirror — 거울상
    ====================================================================== */
 reg('mirror', {
-  name: '鏡像', tags: ['calm', 'emotional', 'graphic'], w: 1, fits: n => n <= 16,
+  name: '거울상', tags: ['calm', 'emotional', 'graphic'], w: 1, fits: n => n <= 16,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif'])), strength: rng.range(0.34, 0.5), squash: rng.pick([1, 0.7, 0.85]), ripple: rng.chance(0.5), ticks: rng.chance(0.6) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1109,10 +1109,10 @@ reg('mirror', {
 });
 
 /* ======================================================================
-   16  sideways — 縦倒し
+   16  sideways — 세로 눕힘
    ====================================================================== */
 reg('sideways', {
-  name: '縦倒し', tags: ['editorial', 'graphic', 'pop'], w: 1, emph: 1.3, enterBias: { wipe: 1.4, slice: 1.3, stretch: 1.3 }, fits: n => n >= 3 && n <= 16, portrait: 1.3,
+  name: '세로 눕힘', tags: ['editorial', 'graphic', 'pop'], w: 1, emph: 1.3, enterBias: { wipe: 1.4, slice: 1.3, stretch: 1.3 }, fits: n => n >= 3 && n <= 16, portrait: 1.3,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'display', 'serif'])), side: rng.pick(['left', 'right']), copy: rng.pick(['stack', 'number']), rule: rng.chance(0.75) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1165,11 +1165,11 @@ reg('sideways', {
 });
 
 /* ======================================================================
-   17  edgeFrame — 外周
+   17  edgeFrame — 외곽 테두리
    ====================================================================== */
 reg('edgeFrame', {
-  name: '外周', tags: ['graphic', 'editorial', 'glitch'], w: 0.9, fits: n => n <= 16, busy: true,
-  plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif'])), edgeFont: rng.pick(['body', 'mono']), sep: rng.pick(['　／　', '　・　', '　—　']), speed: rng.range(0.6, 1.2) * rng.pick([1, -1]), corner: rng.pick(['square', 'cross']), inner: rng.chance(0.6) }),
+  name: '외곽 테두리', tags: ['graphic', 'editorial', 'glitch'], w: 0.9, fits: n => n <= 16, busy: true,
+  plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif'])), edgeFont: rng.pick(['body', 'mono']), sep: rng.pick(['　／　', '　·　', '　—　']), speed: rng.range(0.6, 1.2) * rng.pick([1, -1]), corner: rng.pick(['square', 'cross']), inner: rng.chance(0.6) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
     const d = u * 0.045, es = u * 0.024, band = es * 1.7;
@@ -1211,10 +1211,10 @@ reg('edgeFrame', {
 });
 
 /* ======================================================================
-   18  perspective — 奥行き
+   18  perspective — 깊이
    ====================================================================== */
 reg('perspective', {
-  name: '奥行き', tags: ['graphic', 'emotional', 'glitch'], w: 0.9, emph: 1.3, enterBias: { zoom: 1.6, stretch: 1.3 }, fits: n => n <= 14,
+  name: '깊이', tags: ['graphic', 'emotional', 'glitch'], w: 0.9, emph: 1.3, enterBias: { zoom: 1.6, stretch: 1.3 }, fits: n => n <= 14,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display'])), mode: rng.pick(['floor', 'side', 'floor']), copies: rng.int(4, 6), speed: rng.range(0.25, 0.45), guides: rng.chance(0.7), vx: rng.pick([1, -1]) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1258,7 +1258,7 @@ reg('perspective', {
 });
 
 /* ======================================================================
-   19  hanko — 落款
+   19  hanko — 낙관
    ====================================================================== */
 function sealGlyphs(text) {
   const g = [...strip(text)].filter(c => !J.isPunct(c) && !J.isSmallKana(c));
@@ -1268,7 +1268,7 @@ function sealGlyphs(text) {
   return g.slice(0, 2);
 }
 reg('hanko', {
-  name: '落款', tags: ['calm', 'emotional', 'editorial'], w: 0.8, emph: 1.3, enterBias: { blur: 1.6, wipe: 1.3, type: 1.2 }, fits: n => n >= 1 && n <= 10, portrait: 1.2,
+  name: '낙관', tags: ['calm', 'emotional', 'editorial'], w: 0.8, emph: 1.3, enterBias: { blur: 1.6, wipe: 1.3, type: 1.2 }, fits: n => n >= 1 && n <= 10, portrait: 1.2,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['serif'])), sealFont: rng.pick(fontsOf(st, ['serif', 'display'])), vert: cut.H > cut.W * 1.08 ? true : rng.chance(0.6), seal: rng.pick(['haku', 'shu', 'haku']), rot: rng.range(-7, 7) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1335,10 +1335,10 @@ reg('hanko', {
 });
 
 /* ======================================================================
-   20  genkou — 原稿用紙
+   20  genkou — 원고지
    ====================================================================== */
 reg('genkou', {
-  name: '原稿用紙', tags: ['calm', 'editorial', 'emotional'], w: 0.8, enterBias: { type: 2.2, blur: 1.4, assemble: 1.3 }, fits: n => n <= 22, portrait: 1.2,
+  name: '원고지', tags: ['calm', 'editorial', 'emotional'], w: 0.8, enterBias: { type: 2.2, blur: 1.4, assemble: 1.3 }, fits: n => n <= 22, portrait: 1.2,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['serif'])), lineC: rng.pick(['accent', 'sub']), indent: rng.chance(0.5), pad: rng.int(2, 4) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1387,7 +1387,7 @@ reg('genkou', {
 });
 
 /* ======================================================================
-   21  panels — コマ割り
+   21  panels — 컷 분할
    ====================================================================== */
 function clipHalf(poly, nx, ny, c) {            // keep the part with nx*x + ny*y <= c
   const out = [];
@@ -1401,7 +1401,7 @@ function clipHalf(poly, nx, ny, c) {            // keep the part with nx*x + ny*
 }
 const pathOf = (ctx, poly) => { ctx.beginPath(); poly.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.closePath(); };
 reg('panels', {
-  name: 'コマ割り', tags: ['pop', 'graphic', 'emotional'], w: 0.9, emph: 1.4, enterBias: { pop: 1.4, zoom: 1.3, slice: 1.2 }, fits: n => n >= 2 && n <= 18, busy: true, treat: 'safe',
+  name: '컷 분할', tags: ['pop', 'graphic', 'emotional'], w: 0.9, emph: 1.4, enterBias: { pop: 1.4, zoom: 1.3, slice: 1.2 }, fits: n => n >= 2 && n <= 18, busy: true, treat: 'safe',
   plan: (rng, cut, st) => { const k = cut.n >= 6 ? 3 : 2; return { chunks: splitK(cut.text, k, 2), font: rng.pick(fontsOf(st, ['display', 'serif'])), acc: rng.int(0, 2), fx: rng.pick(['focus', 'tone', 'focus', 'none']), slant: rng.range(5, 11), widths: [rng.range(0.8, 1.25), rng.range(0.8, 1.25), rng.range(0.8, 1.25)] }; },
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1474,10 +1474,10 @@ reg('panels', {
 });
 
 /* ======================================================================
-   22  filmstrip — フィルム
+   22  filmstrip — 필름
    ====================================================================== */
 reg('filmstrip', {
-  name: 'フィルム', tags: ['emotional', 'calm', 'graphic'], w: 0.8, fits: n => n >= 1 && n <= 18, busy: true, treat: 'safe', portrait: 0.8,
+  name: '필름', tags: ['emotional', 'calm', 'graphic'], w: 0.8, fits: n => n >= 1 && n <= 18, busy: true, treat: 'safe', portrait: 0.8,
   plan: (rng, cut, st) => ({ chunks: splitK(cut.text, Math.min(3, cut.n), cut.n <= 4 ? 3 : 2), font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, -1]), tone: rng.pick(['ink', 'fg']), codes: rng.chance(0.75), tilt: rng.pick([0, 0, -3, 3]) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1547,10 +1547,10 @@ reg('filmstrip', {
 });
 
 /* ======================================================================
-   23  quote — 引用
+   23  quote — 인용
    ====================================================================== */
 reg('quote', {
-  name: '引用', tags: ['editorial', 'emotional', 'calm'], w: 1, emph: 1.2, enterBias: { blur: 1.4, type: 1.3, wipe: 1.2 }, fits: n => n <= 20,
+  name: '인용', tags: ['editorial', 'emotional', 'calm'], w: 1, emph: 1.2, enterBias: { blur: 1.4, type: 1.3, wipe: 1.2 }, fits: n => n <= 20,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['serif', 'display'])), markFont: rng.pick(fontsOf(st, ['serif'])), marks: /[A-Za-z]/.test(cut.text) ? 'latin' : rng.pick(['kagi', 'double', 'kagi']), markC: rng.pick(['accent', 'sub']), attrib: rng.chance(0.75) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1589,14 +1589,14 @@ reg('quote', {
 });
 
 /* ======================================================================
-   24  ruler — 寸法線
+   24  ruler — 치수선
    ====================================================================== */
 function arrowHead(env, x, y, ang, s, col, a) {
   const c = Math.cos(ang), sn = Math.sin(ang);
   env.poly([[x, y], [x - c * s + sn * s * 0.35, y - sn * s - c * s * 0.35], [x - c * s - sn * s * 0.35, y - sn * s + c * s * 0.35]], col, a, false);
 }
 reg('ruler', {
-  name: '寸法線', tags: ['graphic', 'editorial', 'glitch'], w: 0.8, fits: n => n <= 16,
+  name: '치수선', tags: ['graphic', 'editorial', 'glitch'], w: 0.8, fits: n => n <= 16,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif', 'body'])), dims: rng.pick(['topRight', 'bottomLeft']), ticks: rng.chance(0.7), guides: rng.chance(0.8), unit: rng.pick(['px', 'pt', 'px']) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1655,14 +1655,14 @@ reg('ruler', {
 });
 
 /* ======================================================================
-   25  searchBar — 検索窓
+   25  searchBar — 검색창
    ====================================================================== */
 function magnifier(env, x, y, r, col, lw, a) {
   env.circle(x - r * 0.15, y - r * 0.15, r * 0.62, null, col, lw, a, false);
   env.line([[x + r * 0.3, y + r * 0.3], [x + r * 0.8, y + r * 0.8]], col, lw * 1.2, a, false);
 }
 reg('searchBar', {
-  name: '検索窓', tags: ['pop', 'graphic'], w: 0.6, enterBias: { type: 3, scramble: 1.5, cut: 1.5 }, fits: n => n <= 18, treat: 'safe', portrait: 0.8,
+  name: '검색창', tags: ['pop', 'graphic'], w: 0.6, enterBias: { type: 3, scramble: 1.5, cut: 1.5 }, fits: n => n <= 18, treat: 'safe', portrait: 0.8,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['body', 'display'])), shape: rng.pick(['pill', 'rect']), fill: rng.pick(['outline', 'filled']), sugg: rng.int(3, 4), pos: rng.pick(['center', 'upper']) }),
   render(env) {
     const { W, H, sc } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1719,10 +1719,10 @@ reg('searchBar', {
 });
 
 /* ======================================================================
-   26  chat — チャット
+   26  chat — 채팅
    ====================================================================== */
 reg('chat', {
-  name: 'チャット', tags: ['pop', 'emotional'], w: 0.6, enterBias: { pop: 2, cut: 1.5, type: 1.3 }, fits: n => n <= 22, treat: 'safe',
+  name: '채팅', tags: ['pop', 'emotional'], w: 0.6, enterBias: { pop: 2, cut: 1.5, type: 1.3 }, fits: n => n <= 22, treat: 'safe',
   plan: (rng, cut, st) => { const nw = (J.chunkText ? J.chunkText(cut.text) : [cut.text]).length; return { msgs: cut.n <= 4 ? [cut.text.trim()] : splitK(cut.text, J.clamp(nw, 2, cut.n > 12 ? 4 : 3)), font: rng.pick(fontsOf(st, ['body', 'display'])), side0: rng.pick([1, -1]), alt: rng.chance(0.55) }; },
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1778,7 +1778,7 @@ reg('chat', {
 });
 
 /* ======================================================================
-   27  notification — 通知
+   27  notification — 알림
    ====================================================================== */
 function noteIcon(env, x, y, s, col, a) {
   env.circle(x - s * 0.18, y + s * 0.2, s * 0.17, col, null, 0, a, false);
@@ -1786,7 +1786,7 @@ function noteIcon(env, x, y, s, col, a) {
   env.poly([[x + s * 0.04, y - s * 0.32], [x + s * 0.3, y - s * 0.18], [x + s * 0.04, y - s * 0.12]], col, a, false);
 }
 reg('notification', {
-  name: '通知', tags: ['pop', 'emotional', 'calm'], w: 0.5, enterBias: { cut: 1.6, type: 1.3, blur: 1.2 }, fits: n => n <= 24, treat: 'safe',
+  name: '알림', tags: ['pop', 'emotional', 'calm'], w: 0.5, enterBias: { cut: 1.6, type: 1.3, blur: 1.2 }, fits: n => n <= 24, treat: 'safe',
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['body', 'display'])), pos: rng.pick(['banner', 'lock', 'center']), stack: rng.chance(0.5), app: rng.pick(['MUSIC', 'LYRICS', 'MESSAGE']) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);
@@ -1833,7 +1833,7 @@ reg('notification', {
 });
 
 /* ======================================================================
-   28  ticket — チケット
+   28  ticket — 티켓
    ====================================================================== */
 function ticketParts(x0, y0, w, h, px, nr, r) {
   const seg = 6, x1 = x0 + w, y1 = y0 + h;
@@ -1843,7 +1843,7 @@ function ticketParts(x0, y0, w, h, px, nr, r) {
   return { main, stub };
 }
 reg('ticket', {
-  name: 'チケット', tags: ['pop', 'graphic', 'editorial'], w: 0.6, fits: n => n <= 18, treat: 'safe', portrait: 0.6,
+  name: '티켓', tags: ['pop', 'graphic', 'editorial'], w: 0.6, fits: n => n <= 18, treat: 'safe', portrait: 0.6,
   plan: (rng, cut, st) => ({ font: rng.pick(fontsOf(st, ['display', 'serif'])), fill: rng.pick(['accent', 'ink', 'outline']), tilt: rng.range(-5, 5), label: rng.pick(['ADMIT ONE', 'LIVE', 'TICKET']), serial: rng.int(1, 999999) }),
   render(env) {
     const { W, H, sc, ctx } = env, p = env.cut.params, u = U(env), port = isPort(env);

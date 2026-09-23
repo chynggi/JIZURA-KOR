@@ -149,7 +149,7 @@ const X = {};
 
 /* ---- masks ---- */
 X.sinkMask = {
-  name: '沈む', tags: ['calm', 'editorial', 'graphic'], w: 1,
+  name: '가라앉기', tags: ['calm', 'editorial', 'graphic'], w: 1,
   apply(env, it, p) {
     const ord = orderOf(env, it), sy = it.sy || 1;
     addC(it, (i, g, n) => {
@@ -163,7 +163,7 @@ X.sinkMask = {
 };
 
 X.riseOut = {
-  name: '上へ抜ける', tags: ['calm', 'emotional', 'editorial'], w: 1,
+  name: '위로 빠짐', tags: ['calm', 'emotional', 'editorial'], w: 1,
   apply(env, it, p) {
     const seed = it.seed | 0, sy = it.sy || 1;
     addC(it, (i, g) => {
@@ -194,12 +194,12 @@ function slideOut(dir, name) {
     },
   };
 }
-X.slideOutL = slideOut(-1, '左へ流れる');
-X.slideOutR = slideOut(1, '右へ流れる');
+X.slideOutL = slideOut(-1, '왼쪽으로 흐름');
+X.slideOutR = slideOut(1, '오른쪽으로 흐름');
 
 /* ---- flips / folds ---- */
 X.flipOutX = {
-  name: '扉が閉まる', tags: ['graphic', 'pop', 'editorial'], w: 1,
+  name: '문 닫힘', tags: ['graphic', 'pop', 'editorial'], w: 1,
   apply(env, it, p) {
     const ord = orderOf(env, it), sx0 = it.sx || 1, c0 = colOf(it), bg = env.sc.bg;
     const dir = cutBit(env, 1) ? 1 : -1;                      // hinge side
@@ -214,7 +214,7 @@ X.flipOutX = {
 };
 
 X.flipOutY = {
-  name: 'パタン倒れ', tags: ['pop', 'graphic'], w: 0.9,
+  name: '툭 넘어짐', tags: ['pop', 'graphic'], w: 0.9,
   apply(env, it, p) {
     const seed = it.seed | 0, sy0 = it.sy || 1, c0 = colOf(it), bg = env.sc.bg;
     addC(it, (i, g) => {
@@ -229,7 +229,7 @@ X.flipOutY = {
 };
 
 X.foldOut = {
-  name: '折り畳み', tags: ['graphic', 'editorial'], w: 0.9,
+  name: '차곡 접기', tags: ['graphic', 'editorial'], w: 0.9,
   outDur: dur => J.clamp(dur * 0.34, 0.28, 0.65),
   apply(env, it, p) {
     const ord = orderOf(env, it), back = mixC(colOf(it), env.sc.accent, 0.75);
@@ -252,7 +252,7 @@ X.foldOut = {
 };
 
 X.squash = {
-  name: '潰れる', tags: ['glitch', 'pop', 'graphic'], w: 0.9,
+  name: '눌려 퍼짐', tags: ['glitch', 'pop', 'graphic'], w: 0.9,
   apply(env, it, p) {
     const b0 = box(it), sz = it.size, col = colOf(it);
     const N = cutN(env), single = layOf(it).N === 1 && N > 1;
@@ -279,7 +279,7 @@ X.squash = {
 };
 
 X.trackOutWide = {
-  name: '字間が開く', tags: ['calm', 'emotional', 'editorial'], w: 1,
+  name: '자간 벌어짐', tags: ['calm', 'emotional', 'editorial'], w: 1,
   apply(env, it, p) {
     const b = box(it), ox = b.cx - it.x, oy = b.cy - it.y, sx = it.sx || 1, sy = it.sy || 1, vert = !!it.vertical;
     const k = E.inQuad(p) * 1.6 + p * 0.3, thin = 1 - 0.6 * E.inQuad(p);
@@ -293,7 +293,7 @@ X.trackOutWide = {
 };
 
 X.collapse = {
-  name: '吸い込み', tags: ['pop', 'graphic'], w: 0.9,
+  name: '빨려들기', tags: ['pop', 'graphic'], w: 0.9,
   apply(env, it, p) {
     const dir = cutBit(env, 2) ? 1 : -1;
     const r = 1 - E.inQuad(p), turn = dir * E.inQuad(p) * DEG, sc = Math.max(0.02, 1 - E.inQuad(p) * 0.94);
@@ -315,7 +315,7 @@ X.collapse = {
 };
 
 X.zoomThrough = {
-  name: '手前へ抜ける', tags: ['emotional', 'pop'], w: 1,
+  name: '앞으로 빠짐', tags: ['emotional', 'pop'], w: 1,
   apply(env, it, p) {
     const sz0 = it.size, single = layOf(it).N === 1 && cutN(env) > 1;
     const maxK = Math.max(1.3, Math.max(env.W, env.H) * (single ? 0.8 : 1.6) / Math.max(1, sz0));
@@ -329,7 +329,7 @@ X.zoomThrough = {
 };
 
 X.zoomFar = {
-  name: '奥へ遠ざかる', tags: ['emotional', 'calm'], w: 1,
+  name: '뒤로 멀어짐', tags: ['emotional', 'calm'], w: 1,
   apply(env, it, p) {
     const sz0 = it.size, e = 1 - Math.pow(1 - p, 2.6);      // fast recede, slow settle
     sizeAbout(it, 1 - 0.9 * e);
@@ -341,7 +341,7 @@ X.zoomFar = {
 };
 
 X.spinOut = {
-  name: '回って消える', tags: ['pop'], w: 0.9,
+  name: '돌며 사라짐', tags: ['pop'], w: 0.9,
   apply(env, it, p) {
     const ord = orderOf(env, it), dir = cutBit(env, 3) ? 1 : -1, sy = it.sy || 1;
     addC(it, (i, g, n) => {
@@ -355,7 +355,7 @@ X.spinOut = {
 };
 
 X.twist = {
-  name: 'ねじれ', tags: ['pop', 'graphic'], w: 0.8,
+  name: '비틀림', tags: ['pop', 'graphic'], w: 0.8,
   apply(env, it, p) {
     const ord = orderOf(env, it), vert = !!it.vertical, back = mixC(colOf(it), env.sc.bg, 0.5);
     const flat = 1 - E.inQuad(J.clamp((p - 0.55) / 0.45));  // the ribbon finally goes edge-on
@@ -371,7 +371,7 @@ X.twist = {
 };
 
 X.waveOut = {
-  name: '波で崩れる', tags: ['pop', 'emotional'], w: 0.9,
+  name: '물결 무너짐', tags: ['pop', 'emotional'], w: 0.9,
   apply(env, it, p) {
     const ord = orderOf(env, it), sz = it.size;
     addC(it, (i, g, n) => {
@@ -385,7 +385,7 @@ X.waveOut = {
 };
 
 X.blurOutStagger = {
-  name: '字ごとボケ', tags: ['calm', 'emotional'], w: 1,
+  name: '글자별 흐림', tags: ['calm', 'emotional'], w: 1,
   apply(env, it, p) {
     const ord = orderOf(env, it), sz = it.size, bmax = env.pass === 'main' ? Math.min(sz * 0.09, Math.min(env.W, env.H) * 0.02) : 0;   // blur only on the main pass (ghosts just fade)
     addC(it, (i, g, n) => {
@@ -400,7 +400,7 @@ X.blurOutStagger = {
 
 /* ---- line work ---- */
 X.undraw = {
-  name: '線に戻る', tags: ['editorial', 'calm', 'graphic'], w: 1,
+  name: '선으로 복귀', tags: ['editorial', 'calm', 'graphic'], w: 1,
   outDur: dur => J.clamp(dur * 0.36, 0.25, 0.7),
   apply(env, it, p) {
     const a = J.clamp(p / 0.3), b = J.clamp((p - 0.24) / 0.76);
@@ -413,7 +413,7 @@ X.undraw = {
 };
 
 X.outlineOut = {
-  name: '塗りが抜ける', tags: ['graphic', 'emotional'], w: 0.9,
+  name: '채움 빠짐', tags: ['graphic', 'emotional'], w: 0.9,
   apply(env, it, p) {
     const ord = orderOf(env, it), lw = Math.max(1, it.size * 0.024), acc = env.sc.accent;
     const Q = (i, n) => win(p, ord(i, n), 0.35);
@@ -436,7 +436,7 @@ X.outlineOut = {
 
 /* ---- clip shapes ---- */
 X.irisClose = {
-  name: 'アイリス', tags: ['graphic', 'pop', 'editorial'], w: 1,
+  name: '아이리스', tags: ['graphic', 'pop', 'editorial'], w: 1,
   apply(env, it, p) {
     const b = box(it), c = toD(it, b.cx - it.x, b.cy - it.y);
     const R0 = Math.hypot(b.w, b.h) * 0.5 + it.size * 0.12;
@@ -449,7 +449,7 @@ X.irisClose = {
 };
 
 X.diagWipeOut = {
-  name: '斜めワイプ', tags: ['graphic', 'editorial'], w: 1,
+  name: '사선 와이프', tags: ['graphic', 'editorial'], w: 1,
   apply(env, it, p) {
     // one screen-wide diagonal edge per cut (direction from the cut seed), so every item of the cut is wiped by the same line
     const bb = dBox(it, it.size * 0.15), v = (J.h(env.cut.seed | 0, 77) >>> 3) & 3, W = env.W, H = env.H;
@@ -471,7 +471,7 @@ X.diagWipeOut = {
 };
 
 X.blindsClose = {
-  name: 'ブラインド', tags: ['graphic', 'editorial'], w: 0.9,
+  name: '블라인드', tags: ['graphic', 'editorial'], w: 0.9,
   apply(env, it, p) {
     const bb = dBox(it, it.size * 0.2), vert = !!it.vertical;
     const span = vert ? bb.x1 - bb.x0 : bb.y1 - bb.y0;
@@ -491,7 +491,7 @@ X.blindsClose = {
 };
 
 X.checkerOut = {
-  name: '市松', tags: ['graphic', 'glitch'], w: 0.8,
+  name: '체크무늬', tags: ['graphic', 'glitch'], w: 0.8,
   apply(env, it, p) {
     const bb = dBox(it, it.size * 0.15), w = bb.x1 - bb.x0, h = bb.y1 - bb.y0;
     let cell = Math.max(4, it.size * 0.26);
@@ -511,7 +511,7 @@ X.checkerOut = {
 
 /* ---- splits / slices ---- */
 X.splitApart = {
-  name: '上下に割れる', tags: ['graphic', 'pop'], w: 1,
+  name: '상하 갈라짐', tags: ['graphic', 'pop'], w: 1,
   apply(env, it, p) {
     const vert = !!it.vertical, sz = it.size;
     const crack = J.clamp(p / 0.2), u = J.clamp((p - 0.16) / 0.84), e = E.outCubic(u);
@@ -535,7 +535,7 @@ X.splitApart = {
 };
 
 X.vSliceDrop = {
-  name: '縦スライス落下', tags: ['graphic', 'glitch'], w: 0.9,
+  name: '세로 슬라이스 낙하', tags: ['graphic', 'glitch'], w: 0.9,
   outDur: dur => J.clamp(dur * 0.34, 0.25, 0.62),
   apply(env, it, p) {
     const bb = dBox(it, it.size * 0.35), seed = it.seed | 0, w = bb.x1 - bb.x0;
@@ -553,7 +553,7 @@ X.vSliceDrop = {
 };
 
 X.melt = {
-  name: '溶ける', tags: ['emotional', 'glitch'], w: 0.8,
+  name: '녹아 사라짐', tags: ['emotional', 'glitch'], w: 0.8,
   outDur: dur => J.clamp(dur * 0.4, 0.3, 0.8), minDur: 0.9,
   apply(env, it, p) {
     const b0 = box(it), seed = it.seed | 0, sz = it.size;
@@ -573,7 +573,7 @@ X.melt = {
 
 /* ---- dissolves ---- */
 X.dissolve = {
-  name: 'ほろほろ', tags: ['calm', 'emotional'], w: 0.9, pieces: true,
+  name: '부스러짐', tags: ['calm', 'emotional'], w: 0.9, pieces: true,
   apply(env, it, p) {
     const seed = it.seed | 0, sz = it.size, b = dBox(it, 0), bw = Math.max(1, b.x1 - b.x0);
     it.shatter = true;
@@ -592,7 +592,7 @@ X.dissolve = {
 };
 
 X.backspace = {
-  name: 'バックスペース', tags: ['editorial', 'glitch'], w: 0.8, cursor: true, minDur: 0.9,
+  name: '백스페이스', tags: ['editorial', 'glitch'], w: 0.8, cursor: true, minDur: 0.9,
   outDur: (dur, n) => J.clamp(0.2 + n * 0.035, 0.3, Math.max(0.3, Math.min(0.9, dur * 0.45))),
   apply(env, it, p) {
     const lay = layOf(it), n = lay.N; if (!n) return;
@@ -656,7 +656,7 @@ X.backspace = {
 };
 
 X.scrambleOut = {
-  name: '記号化', tags: ['glitch'], w: 0.9,
+  name: '기호화', tags: ['glitch'], w: 0.9,
   apply(env, it, p) {
     const ord = orderOf(env, it), seed = it.seed | 0, step = env.step, acc = env.sc.accent;
     addC(it, (i, g, n) => {
@@ -670,7 +670,7 @@ X.scrambleOut = {
 };
 
 X.glitchDissolve = {
-  name: 'ブロック化', tags: ['glitch'], w: 0.8,
+  name: '블록화', tags: ['glitch'], w: 0.8,
   apply(env, it, p) {
     const seed = it.seed | 0, step = env.step, sz = it.size, lay = layOf(it), sx = it.sx || 1, sy = it.sy || 1;
     const acc = env.sc.accent, c0 = colOf(it), cols = [c0, acc, env.sc.ghostA || acc, env.sc.ghostB || c0];
@@ -701,7 +701,7 @@ X.glitchDissolve = {
 };
 
 X.echoOut = {
-  name: '残響', tags: ['emotional', 'calm'], w: 0.9,
+  name: '잔향', tags: ['emotional', 'calm'], w: 0.9,
   apply(env, it, p) {
     const b = box(it), ax = b.cx - it.x, ay = b.cy - it.y, a0 = it.alpha ?? 1, sz = it.size;
     const lw = Math.max(1, sz * 0.016), col = colOf(it), acc = env.sc.accent;
@@ -722,7 +722,7 @@ X.echoOut = {
 };
 
 X.whipOut = {
-  name: 'ホイップ', tags: ['pop', 'graphic'], w: 1,
+  name: '휩', tags: ['pop', 'graphic'], w: 1,
   apply(env, it, p) {
     const b = box(it), vert = !!it.vertical, sz = it.size;
     const dir = cutBit(env, 4) ? 1 : -1;
@@ -742,7 +742,7 @@ X.whipOut = {
 };
 
 X.gravity = {
-  name: '重力落下', tags: ['pop', 'emotional'], w: 1,
+  name: '중력 낙하', tags: ['pop', 'emotional'], w: 1,
   outDur: dur => J.clamp(dur * 0.38, 0.3, 0.75),
   apply(env, it, p) {
     const seed = it.seed | 0, sz = it.size, bb = dBox(it, 0), [dsx, dsy] = downI(it);
@@ -760,7 +760,7 @@ X.gravity = {
 };
 
 X.popOut = {
-  name: '弾ける', tags: ['pop'], w: 1,
+  name: '톡 터짐', tags: ['pop'], w: 1,
   apply(env, it, p) {
     const ord = orderOf(env, it), seed = it.seed | 0, acc = env.sc.accent, c0 = colOf(it);
     const lay = layOf(it), sz = it.size, sx = it.sx || 1, sy = it.sy || 1;
@@ -790,7 +790,7 @@ X.popOut = {
 };
 
 X.burn = {
-  name: '焼失', tags: ['emotional', 'glitch'], w: 0.8,
+  name: '타들어감', tags: ['emotional', 'glitch'], w: 0.8,
   outDur: dur => J.clamp(dur * 0.36, 0.28, 0.7),
   apply(env, it, p) {
     const ord0 = orderOf(env, it), seed = it.seed | 0, rev = cutBit(env, 5);
@@ -823,7 +823,7 @@ X.burn = {
 };
 
 X.sweepCover = {
-  name: 'バーで隠す', tags: ['graphic', 'editorial', 'pop'], w: 1,
+  name: '바로 가림', tags: ['graphic', 'editorial', 'pop'], w: 1,
   outDur: dur => J.clamp(dur * 0.34, 0.26, 0.6),
   apply(env, it, p) {
     const lines = lineExt(it), vert = !!it.vertical, sz = it.size, acc = env.sc.accent;
@@ -851,7 +851,7 @@ X.sweepCover = {
 };
 
 X.shatterLite = {
-  name: '四分割飛散', tags: ['pop', 'glitch'], w: 0.8,
+  name: '사분할 파편', tags: ['pop', 'glitch'], w: 0.8,
   apply(env, it, p) {
     const seed = it.seed | 0, sz = it.size, dist = sz * 1.7;
     const quad = (qx, qy, id) => (i) => {
@@ -878,7 +878,7 @@ for (const k of Object.keys(X)) {
 const H = {};
 
 H.float = {
-  name: 'ふわふわ', tags: ['calm', 'emotional'], w: 0.8,
+  name: '나풀나풀', tags: ['calm', 'emotional'], w: 0.8,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb, seed = it.seed | 0, A = it.size * 0.075 * k, ph = (seed % 97) * 0.13;
@@ -887,7 +887,7 @@ H.float = {
 };
 
 H.sway = {
-  name: 'ゆらぎ', tags: ['calm', 'emotional'], w: 0.6,
+  name: '흔들거림', tags: ['calm', 'emotional'], w: 0.6,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const b = box(it), ang = Math.sin(env.ltb * TAU / 3.2 + ((it.seed | 0) % 7)) * 2.6 * k;
@@ -896,7 +896,7 @@ H.sway = {
 };
 
 H.pulse = {
-  name: '脈動', tags: ['pop', 'graphic'], w: 0.6,
+  name: '맥동', tags: ['pop', 'graphic'], w: 0.6,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const f = 1 + 0.055 * Math.exp(-beatSince(env, 0.5) * 9) * k;
@@ -905,7 +905,7 @@ H.pulse = {
 };
 
 H.shimmer = {
-  name: 'きらめき', tags: ['emotional', 'calm'], w: 0.5,
+  name: '반짝임', tags: ['emotional', 'calm'], w: 0.5,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb, seed = it.seed | 0, step = env.step, acc = env.sc.accent, c0 = colOf(it);
@@ -918,7 +918,7 @@ H.shimmer = {
 };
 
 H.colorRun = {
-  name: '色が走る', tags: ['pop', 'graphic'], w: 0.5,
+  name: '색 흐르기', tags: ['pop', 'graphic'], w: 0.5,
   apply(env, it, amt) {
     const k = amt * Math.min(1, motionK(env)); if (k < 0.01) return;
     const c0 = colOf(it), acc = env.sc.accent; if (!isHex(c0) || !isHex(acc)) return;
@@ -933,7 +933,7 @@ H.colorRun = {
 };
 
 H.rotateSlow = {
-  name: 'ゆっくり回転', tags: ['calm', 'editorial'], w: 0.4,
+  name: '느린 회전', tags: ['calm', 'editorial'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const dir = ((it.seed | 0) >>> 1) & 1 ? 1 : -1, b = box(it);
@@ -942,7 +942,7 @@ H.rotateSlow = {
 };
 
 H.trackBreathe = {
-  name: '字間の呼吸', tags: ['calm', 'editorial'], w: 0.5,
+  name: '자간 호흡', tags: ['calm', 'editorial'], w: 0.5,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const b = box(it), ox = b.cx - it.x, oy = b.cy - it.y, sx = it.sx || 1, sy = it.sy || 1, vert = !!it.vertical;
@@ -952,7 +952,7 @@ H.trackBreathe = {
 };
 
 H.skewWobble = {
-  name: '斜め揺れ', tags: ['pop', 'glitch'], w: 0.4,
+  name: '사선 흔들림', tags: ['pop', 'glitch'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const b = box(it), oy = b.cy - it.y, s0 = it.skew || 0, s1 = s0 + Math.sin(env.ltb * TAU / 1.9) * 12 * k;
@@ -962,7 +962,7 @@ H.skewWobble = {
 };
 
 H.beatHop = {
-  name: '拍で跳ねる', tags: ['pop'], w: 0.5,
+  name: '박자 튀기', tags: ['pop'], w: 0.5,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const len = beatLen(env, 0.45), u = beatSince(env, 0.45) / (len * 0.85); if (u >= 1) return;
@@ -976,7 +976,7 @@ H.beatHop = {
 };
 
 H.hWave = {
-  name: '横波', tags: ['pop', 'emotional'], w: 0.4,
+  name: '가로 물결', tags: ['pop', 'emotional'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb, sz = it.size;
@@ -985,7 +985,7 @@ H.hWave = {
 };
 
 H.heartbeat = {
-  name: '鼓動', tags: ['emotional', 'pop'], w: 0.4,
+  name: '박동', tags: ['emotional', 'pop'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const u = env.beat ? (env.beat.index % 2) * env.beat.len + env.beat.since : ((env.ltb % 1.05) + 1.05) % 1.05;
@@ -997,7 +997,7 @@ H.heartbeat = {
 };
 
 H.orbitSmall = {
-  name: '小さな円運動', tags: ['calm', 'pop'], w: 0.5,
+  name: '작은 원 운동', tags: ['calm', 'pop'], w: 0.5,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb * TAU / 1.7, r = it.size * 0.05 * k, dir = ((it.seed | 0) >>> 2) & 1 ? 1 : -1;
@@ -1006,7 +1006,7 @@ H.orbitSmall = {
 };
 
 H.jelly = {
-  name: 'ゼリー', tags: ['pop'], w: 0.4,
+  name: '젤리', tags: ['pop'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const sy0 = it.sy || 1, t = env.ltb, bs = env.beat ? env.beat.since : null;
@@ -1019,7 +1019,7 @@ H.jelly = {
 };
 
 H.scanBand = {
-  name: '走査帯', tags: ['glitch', 'graphic'], w: 0.4,
+  name: '스캔 바', tags: ['glitch', 'graphic'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     if (it.bands || it.vbands) return;                        // an entrance is already slicing this item
@@ -1034,7 +1034,7 @@ H.scanBand = {
 };
 
 H.noiseDrift = {
-  name: 'ノイズ漂流', tags: ['calm', 'emotional'], w: 0.6,
+  name: '노이즈 표류', tags: ['calm', 'emotional'], w: 0.6,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb * 0.35, seed = it.seed | 0, A = it.size * 0.075 * k;
@@ -1043,7 +1043,7 @@ H.noiseDrift = {
 };
 
 H.tilt = {
-  name: 'シーソー', tags: ['calm', 'editorial'], w: 0.4,
+  name: '시소', tags: ['calm', 'editorial'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const b = box(it), ox = b.cx - it.x, oy = b.cy - it.y, sx = it.sx || 1, sy = it.sy || 1, vert = !!it.vertical;
@@ -1053,7 +1053,7 @@ H.tilt = {
 };
 
 H.zoomSlow = {
-  name: 'じわ寄り', tags: ['calm', 'emotional', 'editorial'], w: 0.8,
+  name: '점점 가까짐', tags: ['calm', 'emotional', 'editorial'], w: 0.8,
   apply(env, it, amt, ctx) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const u = J.clamp(env.ltb / Math.max(0.3, (ctx && ctx.dur) || env.cut.dur || 1));
@@ -1063,7 +1063,7 @@ H.zoomSlow = {
 };
 
 H.stretchPulse = {
-  name: '横伸び拍', tags: ['pop', 'graphic'], w: 0.4,
+  name: '가로 신축', tags: ['pop', 'graphic'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const kick = Math.exp(-beatSince(env, 0.5) * 8) * k;
@@ -1072,7 +1072,7 @@ H.stretchPulse = {
 };
 
 H.glitchJump = {
-  name: '時々ずれる', tags: ['glitch'], w: 0.4,
+  name: '가끔 어긋남', tags: ['glitch'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const seed = it.seed | 0, step = env.step, slot = Math.floor(step / 8), ph = step - slot * 8;
@@ -1088,7 +1088,7 @@ H.glitchJump = {
 };
 
 H.echoTrail = {
-  name: '残像を引く', tags: ['emotional', 'glitch'], w: 0.4,
+  name: '잔상 끌기', tags: ['emotional', 'glitch'], w: 0.4,
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb, sz = it.size, w = TAU / 3.4, ph = ((it.seed | 0) % 100) * 0.1;

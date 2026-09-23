@@ -5,31 +5,39 @@ function jzN(x) { return String(Math.round(x * 10000) / 10000); }
 
 // ---- fonts: map JIZURA font keys to PostScript names, verify when the API exists
 var JZ_FONT_CANDIDATES = {
-    gothic_black: ['NotoSansJP-Black', 'NotoSansCJKjp-Black', 'SourceHanSansJP-Heavy', 'KozGoPr6N-Heavy', 'YuGothic-Bold', 'Meiryo-Bold'],
-    gothic_bold: ['NotoSansJP-Bold', 'NotoSansCJKjp-Bold', 'SourceHanSansJP-Bold', 'KozGoPr6N-Bold', 'YuGothic-Bold', 'Meiryo-Bold'],
-    gothic_med: ['NotoSansJP-Medium', 'NotoSansCJKjp-Medium', 'SourceHanSansJP-Medium', 'KozGoPr6N-Medium', 'YuGothic-Medium', 'Meiryo'],
-    gothic_light: ['NotoSansJP-Light', 'NotoSansCJKjp-Light', 'KozGoPr6N-Light', 'YuGothic-Light', 'Meiryo'],
-    dela: ['DelaGothicOne-Regular', 'NotoSansJP-Black', 'KozGoPr6N-Heavy', 'YuGothic-Bold'],
-    zenkaku: ['ZenKakuGothicNew-Black', 'NotoSansJP-Black', 'KozGoPr6N-Heavy', 'YuGothic-Bold'],
-    mincho_black: ['ZenOldMincho-Black', 'NotoSerifJP-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold'],
-    mincho_bold: ['NotoSerifJP-Bold', 'NotoSerifCJKjp-Bold', 'SourceHanSerifJP-Bold', 'KozMinPr6N-Bold', 'YuMincho-Demibold'],
-    mincho: ['NotoSerifJP-Medium', 'NotoSerifCJKjp-Medium', 'SourceHanSerifJP-Medium', 'KozMinPr6N-Medium', 'YuMincho-Regular', 'MS-Mincho'],
-    mincho_light: ['NotoSerifJP-Light', 'NotoSerifCJKjp-Light', 'KozMinPr6N-Light', 'YuMincho-Light', 'YuMincho-Regular'],
-    tokumin: ['KaiseiTokumin-ExtraBold', 'ZenOldMincho-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold'],
-    round: ['MPLUSRounded1c-ExtraBold', 'RoundedMplus1c-Black', 'NotoSansJP-Black', 'YuGothic-Bold'],
-    pop: ['MochiyPopOne-Regular', 'MPLUSRounded1c-ExtraBold', 'YuGothic-Bold'],
-    dot: ['DotGothic16-Regular', 'MS-Gothic', 'YuGothic-Regular'],
-    brush: ['YujiSyuku-Regular', 'YuMincho-Demibold'],
-    mono: ['IBMPlexMono-Medium', 'Consolas', 'CourierNewPSMT'],
-    sansui: ['IBMPlexSansJP-Medium', 'NotoSansJP-Medium', 'YuGothic-Medium', 'Meiryo'],
-    reggae: ['ReggaeOne-Regular', 'DelaGothicOne-Regular', 'NotoSansJP-Black', 'YuGothic-Bold'],
-    rampart: ['RampartOne-Regular', 'NotoSansJP-Black', 'YuGothic-Bold'],
-    potta: ['PottaOne-Regular', 'MochiyPopOne-Regular', 'YuGothic-Bold'],
-    kiwi: ['KiwiMaru-Medium', 'MPLUSRounded1c-ExtraBold', 'YuGothic-Medium'],
-    klee: ['KleeOne-SemiBold', 'YuMincho-Demibold'],
-    shippori: ['ShipporiMinchoB1-ExtraBold', 'ZenOldMincho-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold']
+    kr_black: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'NanumGothic-Bold'],
+    kr_bold: ['NotoSansKR-Bold', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'NanumGothic-Bold'],
+    kr_med: ['NotoSansKR-Medium', 'AppleSDGothicNeo-Medium', 'MalgunGothic-Regular', 'NanumGothic-Regular'],
+    kr_light: ['NotoSansKR-Light', 'AppleSDGothicNeo-Regular', 'MalgunGothic-Regular', 'NanumGothic-Regular'],
+    kr_display: ['BlackHanSans-Regular', 'Jua-Regular', 'MalgunGothic-Bold'],
+    kr_serif_bold: ['NotoSerifKR-Bold', 'NanumMyeongjo-Bold', 'Batang-Bold'],
+    kr_serif: ['NotoSerifKR-Medium', 'NanumMyeongjo-Regular', 'Batang'],
+    kr_ui: ['IBMPlexSansKR-Medium', 'NotoSansKR-Medium', 'MalgunGothic-Regular'],
+    gothic_black: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'NanumGothic-Bold', 'NotoSansJP-Black', 'NotoSansCJKjp-Black', 'SourceHanSansJP-Heavy', 'KozGoPr6N-Heavy', 'YuGothic-Bold', 'Meiryo-Bold'],
+    gothic_bold: ['NotoSansKR-Bold', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'NanumGothic-Bold', 'NotoSansJP-Bold', 'NotoSansCJKjp-Bold', 'SourceHanSansJP-Bold', 'KozGoPr6N-Bold', 'YuGothic-Bold', 'Meiryo-Bold'],
+    gothic_med: ['NotoSansKR-Medium', 'AppleSDGothicNeo-Medium', 'MalgunGothic-Regular', 'NanumGothic-Regular', 'NotoSansJP-Medium', 'NotoSansCJKjp-Medium', 'SourceHanSansJP-Medium', 'KozGoPr6N-Medium', 'YuGothic-Medium', 'Meiryo'],
+    gothic_light: ['NotoSansKR-Light', 'AppleSDGothicNeo-Regular', 'MalgunGothic-Regular', 'NanumGothic-Regular', 'NotoSansJP-Light', 'NotoSansCJKjp-Light', 'KozGoPr6N-Light', 'YuGothic-Light', 'Meiryo'],
+    dela: ['BlackHanSans-Regular', 'Jua-Regular', 'MalgunGothic-Bold', 'DelaGothicOne-Regular', 'NotoSansJP-Black', 'KozGoPr6N-Heavy', 'YuGothic-Bold'],
+    zenkaku: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'ZenKakuGothicNew-Black', 'NotoSansJP-Black', 'KozGoPr6N-Heavy', 'YuGothic-Bold'],
+    mincho_black: ['NotoSerifKR-Black', 'NanumMyeongjo-Bold', 'Batang-Bold', 'ZenOldMincho-Black', 'NotoSerifJP-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold'],
+    mincho_bold: ['NotoSerifKR-Bold', 'NanumMyeongjo-Bold', 'Batang-Bold', 'NotoSerifJP-Bold', 'NotoSerifCJKjp-Bold', 'SourceHanSerifJP-Bold', 'KozMinPr6N-Bold', 'YuMincho-Demibold'],
+    mincho: ['NotoSerifKR-Medium', 'NanumMyeongjo-Regular', 'Batang', 'NotoSerifJP-Medium', 'NotoSerifCJKjp-Medium', 'SourceHanSerifJP-Medium', 'KozMinPr6N-Medium', 'YuMincho-Regular', 'MS-Mincho'],
+    mincho_light: ['NotoSerifKR-Light', 'NanumMyeongjo-Regular', 'Batang', 'NotoSerifJP-Light', 'NotoSerifCJKjp-Light', 'KozMinPr6N-Light', 'YuMincho-Light', 'YuMincho-Regular'],
+    tokumin: ['NotoSerifKR-Bold', 'NanumMyeongjo-Bold', 'Batang-Bold', 'KaiseiTokumin-ExtraBold', 'ZenOldMincho-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold'],
+    round: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'MPLUSRounded1c-ExtraBold', 'RoundedMplus1c-Black', 'NotoSansJP-Black', 'YuGothic-Bold'],
+    pop: ['BlackHanSans-Regular', 'Jua-Regular', 'MalgunGothic-Bold', 'MochiyPopOne-Regular', 'MPLUSRounded1c-ExtraBold', 'YuGothic-Bold'],
+    dot: ['NotoSansKR-Medium', 'MalgunGothic-Regular', 'DotGothic16-Regular', 'MS-Gothic', 'YuGothic-Regular'],
+    brush: ['NanumBrushScript-Regular', 'NanumPenScript-Regular', 'YujiSyuku-Regular', 'YuMincho-Demibold'],
+    mono: ['IBMPlexSansKR-Medium', 'NotoSansKR-Medium', 'MalgunGothic-Regular', 'IBMPlexMono-Medium', 'Consolas', 'CourierNewPSMT'],
+    sansui: ['IBMPlexSansKR-Medium', 'NotoSansKR-Medium', 'MalgunGothic-Regular', 'IBMPlexSansJP-Medium', 'NotoSansJP-Medium', 'YuGothic-Medium', 'Meiryo'],
+    reggae: ['BlackHanSans-Regular', 'MalgunGothic-Bold', 'ReggaeOne-Regular', 'DelaGothicOne-Regular', 'NotoSansJP-Black', 'YuGothic-Bold'],
+    rampart: ['BlackHanSans-Regular', 'MalgunGothic-Bold', 'RampartOne-Regular', 'NotoSansJP-Black', 'YuGothic-Bold'],
+    potta: ['BlackHanSans-Regular', 'MalgunGothic-Bold', 'PottaOne-Regular', 'MochiyPopOne-Regular', 'YuGothic-Bold'],
+    kiwi: ['NotoSansKR-Bold', 'MalgunGothic-Bold', 'KiwiMaru-Medium', 'MPLUSRounded1c-ExtraBold', 'YuGothic-Medium'],
+    klee: ['NotoSerifKR-Medium', 'NanumMyeongjo-Regular', 'KleeOne-SemiBold', 'YuMincho-Demibold'],
+    shippori: ['NotoSerifKR-Black', 'NanumMyeongjo-Bold', 'Batang-Bold', 'ShipporiMinchoB1-ExtraBold', 'ZenOldMincho-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold']
 };
-var JZ_ROLE_DEFAULT = { display: 'YuGothic-Bold', serif: 'YuMincho-Demibold', body: 'YuGothic-Medium', mono: 'Consolas' };
+var JZ_ROLE_DEFAULT = { display: 'MalgunGothic-Bold', serif: 'Batang-Bold', body: 'MalgunGothic-Regular', mono: 'Consolas' };
 var JZ_FONT_CACHE = {};
 function jzFontExists(ps) {
     if (JZ_FONT_CACHE.hasOwnProperty(ps)) return JZ_FONT_CACHE[ps];
@@ -40,9 +48,9 @@ function jzFontExists(ps) {
 }
 function jzRoleOf(key) {
     if (!key) return 'display';
-    if (/mincho|tokumin|brush|shippori|klee/.test(key)) return 'serif';
+    if (/mincho|tokumin|brush|serif|shippori|klee/.test(key)) return 'serif';
     if (/mono/.test(key)) return 'mono';
-    if (/med|light|sansui/.test(key)) return 'body';
+    if (/med|light|sansui|kr_ui/.test(key)) return 'body';
     return 'display';
 }
 // resolve: explicit user role font > key candidates that exist > role default

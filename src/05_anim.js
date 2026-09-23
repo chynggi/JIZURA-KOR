@@ -7,7 +7,7 @@
 'use strict';
 const E = J.E;
 
-const SCRAMBLE_POOL = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン愛哀夢嘘声光影空夜星雨涙心恋罪神嘘壊叫虚★◆▲●■※＃＄％＆01234567ABCDEFGHJKLMNPQRSTUVWXYZ';
+const SCRAMBLE_POOL = '가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호구누두루무부수우주추쿠투푸후그느드르므브스으즈츠크트프히빛꿈소리마음별바다눈물사랑죄신이름울음새벽섬불바람파도그림자시간영혼길열기★◆▲●■※＃＄％＆01234567ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 /* bands helper: horizontal slices covering the item's vertical extent */
 J.itemBands = (env, it, n, dxFn) => {
@@ -40,10 +40,10 @@ J.itemBox = (it) => {
 
 /* ---------------- ENTRANCES ---------------- */
 J.ENTER = {
-  cut: { name: 'カット', apply() {} },
+  cut: { name: '컷', apply() {} },
 
   assemble: {
-    name: '分解→集合', pieces: true,
+    name: '분해→조립', pieces: true,
     apply(env, it, p, ctx) {
       const dur = ctx.inDur, lt = env.lt - (it.delay || 0);
       const spread = it.size * 3.2 * (0.6 + env.fx.motion * 0.7), seed = it.seed | 0;
@@ -63,7 +63,7 @@ J.ENTER = {
   },
 
   slice: {
-    name: 'スライス',
+    name: '슬라이스',
     apply(env, it, p) {
       const W = env.W;
       it.bands = J.itemBands(env, it, 7, (i) => (1 - E.outExpo(p * 1.2 - 0.05 * i)) * (i % 2 ? 1 : -1) * W * 0.9);
@@ -71,7 +71,7 @@ J.ENTER = {
   },
 
   type: {
-    name: 'タイプ', cursor: true,
+    name: '타이핑', cursor: true,
     apply(env, it, p, ctx) {
       const n = (it._m || (it._m = J.measure(it))).lay.N;
       const k = Math.floor(p * (n + 0.999));
@@ -81,7 +81,7 @@ J.ENTER = {
   },
 
   pop: {
-    name: 'ポップ',
+    name: '팝',
     apply(env, it, p) {
       const seed = it.seed | 0;
       it.charFns.push((i, g, n) => {
@@ -94,7 +94,7 @@ J.ENTER = {
   },
 
   drop: {
-    name: '落下',
+    name: '낙하',
     apply(env, it, p) {
       const size = it.size, seed = it.seed | 0;
       it.charFns.push((i, g, n) => {
@@ -108,7 +108,7 @@ J.ENTER = {
   },
 
   stretch: {
-    name: '伸縮',
+    name: '신축',
     apply(env, it, p) {
       const e = E.outExpo(p);
       it.sx = (it.sx || 1) * J.lerp(4.2, 1, e);
@@ -117,7 +117,7 @@ J.ENTER = {
   },
 
   wipe: {
-    name: 'ワイプ', bar: true,
+    name: '와이프', bar: true,
     apply(env, it, p) {
       const e = E.inOutExpo(p);
       const m = it._m || (it._m = J.measure(it));
@@ -130,7 +130,7 @@ J.ENTER = {
   },
 
   blur: {
-    name: 'ブラー',
+    name: '블러',
     apply(env, it, p) {
       const e = E.outCubic(p);
       it.blur = (it.blur || 0) + (1 - e) * 26;
@@ -142,7 +142,7 @@ J.ENTER = {
   },
 
   spin: {
-    name: '回転',
+    name: '회전',
     apply(env, it, p) {
       const seed = it.seed | 0;
       it.charFns.push((i, g, n) => {
@@ -156,7 +156,7 @@ J.ENTER = {
   },
 
   flicker: {
-    name: '点滅',
+    name: '점멸',
     apply(env, it, p) {
       const seed = it.seed | 0, step = env.step;
       it.charFns.push((i) => (p >= 1 ? null : (J.r(seed, step, i) < p * 1.25 ? null : { hide: true })));
@@ -164,7 +164,7 @@ J.ENTER = {
   },
 
   scramble: {
-    name: 'スクランブル',
+    name: '스크램블',
     apply(env, it, p) {
       const seed = it.seed | 0, step = env.step;
       it.charFns.push((i, g, n) => {
@@ -178,7 +178,7 @@ J.ENTER = {
   },
 
   zoom: {
-    name: 'ズーム',
+    name: '줌',
     apply(env, it, p) {
       const e = E.outExpo(p);
       it.size *= J.lerp(1.7, 1, e);
@@ -197,9 +197,9 @@ function bounce(x) {
 
 /* ---------------- HOLDS (whole cut; amplitude eased in) ---------------- */
 J.HOLD = {
-  still: { name: '静止', apply() {} },
+  still: { name: '정지', apply() {} },
   jitter: {
-    name: 'ジッター',
+    name: '지터',
     apply(env, it, amt) {
       const seed = it.seed | 0, step = env.step, a = it.size * 0.025 * amt * env.fx.motion;
       if (a < 0.2) return;
@@ -207,7 +207,7 @@ J.HOLD = {
     },
   },
   drift: {
-    name: 'ドリフト',
+    name: '드리프트',
     apply(env, it, amt, ctx) {
       const u = env.lt / Math.max(0.3, ctx.dur);
       const dir = (it.seed | 0) % 2 ? 1 : -1;
@@ -216,21 +216,21 @@ J.HOLD = {
     },
   },
   breathe: {
-    name: '呼吸',
+    name: '호흡',
     apply(env, it, amt) {
       it.size *= 1 + 0.035 * Math.sin(env.lt * J.TAU * 0.9) * amt;
       it.track = (it.track || 0) + 0.03 * Math.sin(env.lt * J.TAU * 0.6) * amt;
     },
   },
   wave: {
-    name: 'ウェーブ',
+    name: '웨이브',
     apply(env, it, amt) {
       const size = it.size, t = env.lt;
       it.charFns.push((i) => ({ dy: Math.sin(t * 7 + i * 0.75) * size * 0.07 * amt, rot: Math.cos(t * 7 + i * 0.75) * 5 * amt }));
     },
   },
   glitchtick: {
-    name: 'グリッチ',
+    name: '글리치',
     apply(env, it, amt) {
       const seed = it.seed | 0, step = env.step;
       if (J.r(seed, step, 77) < 0.22 * env.fx.glitch * amt + 0.02) {
@@ -242,10 +242,10 @@ J.HOLD = {
 
 /* ---------------- EXITS ---------------- */
 J.EXIT = {
-  cut: { name: 'カット', apply() {} },
+  cut: { name: '컷', apply() {} },
 
   explode: {
-    name: '爆散', pieces: true, shatter: true,
+    name: '산산조각', pieces: true, shatter: true,
     apply(env, it, p, ctx) {
       const seed = it.seed | 0, dur = ctx.outDur, lt = env.lt - (ctx.dur - ctx.outDur);
       const spread = Math.max(env.W, env.H) * 0.9 * (0.5 + env.fx.motion * 0.6);
@@ -266,7 +266,7 @@ J.EXIT = {
   },
 
   fall: {
-    name: '崩落', pieces: true, shatter: true,
+    name: '붕락', pieces: true, shatter: true,
     apply(env, it, p, ctx) {
       const seed = it.seed | 0, lt = env.lt - (ctx.dur - ctx.outDur), g = env.H * 5.5;
       it.shatter = true;
@@ -284,7 +284,7 @@ J.EXIT = {
   },
 
   drift: {
-    name: '霧散', pieces: true, shatter: true,
+    name: '증발', pieces: true, shatter: true,
     apply(env, it, p, ctx) {
       const seed = it.seed | 0, dur = ctx.outDur, lt = env.lt - (ctx.dur - ctx.outDur), dist0 = it.size * 1.6;
       it.shatter = true;
@@ -299,7 +299,7 @@ J.EXIT = {
   },
 
   slice: {
-    name: 'スライス退場',
+    name: '슬라이스 퇴장',
     apply(env, it, p) {
       const e = E.inExpo(p);
       it.bands = J.itemBands(env, it, 7, (i) => e * (i % 2 ? -1 : 1) * env.W * 1.1 * (0.6 + 0.4 * J.r(it.seed | 0, i, 41)));
@@ -307,7 +307,7 @@ J.EXIT = {
   },
 
   wipe: {
-    name: 'ワイプ退場', bar: true,
+    name: '와이프 퇴장', bar: true,
     apply(env, it, p) {
       const e = E.inOutExpo(p);
       const m = it._m || (it._m = J.measure(it));
@@ -319,7 +319,7 @@ J.EXIT = {
   },
 
   shrink: {
-    name: '収縮',
+    name: '수축',
     apply(env, it, p) {
       const e = E.inCubic(p);
       it.size *= 1 - e * 0.96;
@@ -329,7 +329,7 @@ J.EXIT = {
   },
 
   blur: {
-    name: 'ブラー退場',
+    name: '블러 퇴장',
     apply(env, it, p) {
       const e = E.inQuad(p);
       it.blur = (it.blur || 0) + e * 30;
@@ -339,7 +339,7 @@ J.EXIT = {
   },
 
   stretch: {
-    name: '伸縮退場',
+    name: '신축 퇴장',
     apply(env, it, p) {
       const e = E.inExpo(p);
       it.sx = (it.sx || 1) * J.lerp(1, 6, e);
@@ -350,7 +350,7 @@ J.EXIT = {
   },
 
   scatter: {
-    name: '飛散',
+    name: '비산',
     apply(env, it, p) {
       const seed = it.seed | 0, W = env.W;
       it.charFns.push((i, g, n) => {
@@ -363,7 +363,7 @@ J.EXIT = {
   },
 
   glitch: {
-    name: 'グリッチ退場',
+    name: '글리치 퇴장',
     apply(env, it, p) {
       const seed = it.seed | 0, step = env.step;
       const amp = it.size * (0.3 + p * 2.2);

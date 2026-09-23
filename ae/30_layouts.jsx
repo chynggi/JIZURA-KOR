@@ -224,7 +224,7 @@ JZ_LAYOUTS.ring = function (ctx) {
         bb = jzBB(jzMain(ctx, text, { font: fontC, size: 200, color: sc.fg, x: cx, y: cy, maxW: R * 1.3, maxH: R * 0.85, maxSize: H * 0.22 }));
     }
     var sizeRing = Math.min(H * 0.07, 2 * Math.PI * R / ((n + 1) * 1.25));
-    var unit = text + '・', probe = jzText(ctx, unit, { font: font, size: sizeRing, x: -9999, y: -9999, color: sc.fg });
+    var unit = text + '·', probe = jzText(ctx, unit, { font: font, size: sizeRing, x: -9999, y: -9999, color: sc.fg });
     var uw = Math.max(10, jzSize(probe)[0]); probe.remove();
     var reps = Math.max(1, Math.floor(2 * Math.PI * R / uw)), s = '';
     for (var i = 0; i < reps; i++) s += unit;

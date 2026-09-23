@@ -34,7 +34,8 @@ function jzChars(s) {
     return out;
 }
 function jzCode(ch) { return ch.charCodeAt(0); }
-function jzIsKanji(ch) { var c = jzCode(ch); return (c >= 0x3400 && c <= 0x9FFF) || (c >= 0xF900 && c <= 0xFAFF) || ch === '\u3005' || ch === '\u3006'; }
+function jzIsHangul(ch) { var c = jzCode(ch); return (c >= 0xAC00 && c <= 0xD7A3) || (c >= 0x3130 && c <= 0x318F) || (c >= 0x1100 && c <= 0x11FF); }
+function jzIsKanji(ch) { var c = jzCode(ch); return jzIsHangul(ch) || (c >= 0x3400 && c <= 0x9FFF) || (c >= 0xF900 && c <= 0xFAFF) || ch === '\u3005' || ch === '\u3006'; }
 function jzIsHira(ch) { var c = jzCode(ch); return c >= 0x3041 && c <= 0x309F; }
 function jzIsKata(ch) { var c = jzCode(ch); return (c >= 0x30A0 && c <= 0x30FF) || (c >= 0x31F0 && c <= 0x31FF); }
 function jzIsLatin(ch) { return /[A-Za-z0-9]/.test(ch); }

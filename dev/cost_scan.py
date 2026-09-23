@@ -9,7 +9,7 @@ async (TH) => {
   const cv = document.createElement('canvas'); const ctx = cv.getContext('2d'); const r = new J.Renderer();
   const out = [];
   const time = (ov, aspect, style, phase, lines) => {
-    lines = lines || ['ほどけた声が鳴った'];
+    lines = lines || ['새벽의 색을기억해'];
     const ovs = Object.fromEntries(lines.map((_, i) => [i, Object.assign({ single: true, enter: 'cut', exit: 'cut', hold: 'still', treat: 'none', bg: 'none', cam: 'push', decor: [] }, i === lines.length - 1 ? ov : {})]));
     const p = Object.assign(J.defaultProject(), { lyrics: lines.join('\n'), style, aspect, seed: 5, overrides: ovs,
       timing: { bpm: 0, offset: 0, snap: false, tail: 0.5, lineTimes: Object.fromEntries(lines.map((_, i) => [i, i * 2.5])), lineScale: 1 } });
@@ -34,7 +34,7 @@ async (TH) => {
   for (const k of G('bg')) cases.push(['bg', k, { bg: k }, 'hold']);
   for (const k of G('cam')) cases.push(['cam', k, { cam: k }, 'hold']);
   for (const k of G('fx')) if (!J.FXE[k].builtin) cases.push(['fx', k, { fx: k }, 'fx']);
-  for (const k of G('trans')) cases.push(['trans', k, { trans: k }, 'trans', ['夜明けの色を', 'ほどけた声が鳴った']]);
+  for (const k of G('trans')) cases.push(['trans', k, { trans: k }, 'trans', ['새벽의 색을', '기억해남은 두 컷']]);
   const base = Math.max(time({}, '16:9', 'paper', 'hold'), time({}, '9:16', 'noir', 'hold'));
   for (const [g, k, ov, ph, lines] of cases) {
     const a = time(ov, '16:9', 'paper', ph, lines), b = time(ov, '9:16', 'noir', ph, lines);
@@ -46,7 +46,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(); pg = await b.new_page()
         await pg.goto(f'http://localhost:8765/{PAGE}.html'); await pg.wait_for_timeout(300)
-        await pg.evaluate("p => T.setup(p)", {'lyrics': 'テスト'})
+        await pg.evaluate("p => T.setup(p)", {'lyrics': '테스트'})
         r = await pg.evaluate(JS, TH)
         print('baseline frame', r['base'], 'ms;', len(r['heavy']), f'entries over {TH}ms (16:9 paper / 9:16 noir):')
         for h in r['heavy']: print('  ', h)

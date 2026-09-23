@@ -6,13 +6,13 @@ const ctx = makeContext(); vm.createContext(ctx);
 vm.runInContext(src, ctx, { filename: 'JIZURA_AE.jsx' });
 const JZ = ctx.__jz;
 const D = JZ.JZ_DATA;
-const lyrics = '夜明けの色を/覚えてる\nほどけた声が遠くで鳴った\nねえ、まだ間に合うかな\n*透明*なままじゃ終われない!\n\n朝焼けのまま|asayake\nきっと届くよ\nGood night, またね';
+const lyrics = '새벽의 색을/기억해\n풀린 목소리가 멀리서 울렸다\n야, 아직 늦지 않았을까\n*투명*한 채로는 끝내지 못해!\n\n밤의 끝|bam-ui-kkeut\n반드시 거짓말 아냐\nLove is over, 안녕';
 function en() { const e = { layout: {}, enter: {}, exit: {}, hold: {}, decor: {} }; for (const [g, o] of [['layout', D.layoutOrder], ['enter', D.enterOrder], ['exit', D.exitOrder], ['hold', D.holdOrder], ['decor', D.decorOrder]]) o.forEach(k => e[g][k] = true); return e; }
 let builds = 0, warnings = [];
 const counts = { layout: {}, enter: {}, exit: {} };
 for (const style of D.styleOrder) {
   for (const seed of [1, 7, 42]) {
-    const o = { lyrics, title: 'テスト', artist: 'me', style, seed, fx: { motion: 0.7, glitch: 0.6, chroma: 0.7, decor: 0.7, density: 0.6, texture: 0.6, bgSwitch: 0.4, onTwos: true, flash: true, hud: true }, width: 1920, height: 1080, fps: 24, bpm: 0, starts: null, enabled: en(), offset: 0.4, lineScale: 1, duration: null };
+    const o = { lyrics, title: '테스트', artist: 'me', style, seed, fx: { motion: 0.7, glitch: 0.6, chroma: 0.7, decor: 0.7, density: 0.6, texture: 0.6, bgSwitch: 0.4, onTwos: true, flash: true, hud: true }, width: 1920, height: 1080, fps: 24, bpm: 0, starts: null, enabled: en(), offset: 0.4, lineScale: 1, duration: null };
     const plan = JZ.jzMakePlan(o);
     plan.hud = true;
     plan.cuts.forEach(c => { counts.layout[c.layout] = (counts.layout[c.layout] || 0) + 1; counts.enter[c.enter] = (counts.enter[c.enter] || 0) + 1; counts.exit[c.exit] = (counts.exit[c.exit] || 0) + 1; });
@@ -24,7 +24,7 @@ for (const style of D.styleOrder) {
 // forced layouts x all enters/exits
 const L = D.layoutOrder.concat(['title', 'interlude']);
 for (const lay of L) for (let k = 0; k < D.enterOrder.length; k++) {
-  const o = { lyrics: '夜明けの色を覚えてる', title: 't', artist: '', style: 'noir', seed: k, fx: { motion: 0.7, glitch: 0.6, chroma: 0.7, decor: 1, density: 0.2, texture: 0.6, bgSwitch: 0.4, onTwos: true, flash: true, hud: false }, width: 1080, height: 1920, fps: 30, bpm: 120, starts: [0.5], enabled: en(), offset: 0.4, lineScale: 1, duration: 5 };
+  const o = { lyrics: '새벽의 색을기억해', title: 't', artist: '', style: 'noir', seed: k, fx: { motion: 0.7, glitch: 0.6, chroma: 0.7, decor: 1, density: 0.2, texture: 0.6, bgSwitch: 0.4, onTwos: true, flash: true, hud: false }, width: 1080, height: 1920, fps: 30, bpm: 120, starts: [0.5], enabled: en(), offset: 0.4, lineScale: 1, duration: 5 };
   const plan = JZ.jzMakePlan(o);
   plan.cuts.forEach((c, i) => { c.layout = lay; c.enter = D.enterOrder[k]; c.exit = D.exitOrder[k % D.exitOrder.length]; c.hold = D.holdOrder[k % D.holdOrder.length]; });
   JZ.jzBuild(plan, {}); builds++;
@@ -40,5 +40,5 @@ console.log('unknown matchNames', [...stats.unknown]);
 console.log('expr errors', stats.exprErrors.length); stats.exprErrors.slice(0, 5).forEach(e => console.log('  ', e));
 console.log('warnings', warnings.length); [...new Set(warnings.map(w => w.replace(/^[^:]+: /, '')))].slice(0, 20).forEach(w => console.log('  ', w));
 console.log('layouts used', counts.layout); console.log('enters', counts.enter); console.log('exits', counts.exit);
-console.log('chunks', JSON.stringify(JZ.jzChunk('透明なままじゃ終われない')), JSON.stringify(JZ.jzChunk('ほどけた声が遠くで鳴った')));
+console.log('chunks', JSON.stringify(JZ.jzChunk('투명한채로는끝내지못해')), JSON.stringify(JZ.jzChunk('풀린목소리가멀리서울렸다')));
 console.log('alerts', ctx.__alerts.length);

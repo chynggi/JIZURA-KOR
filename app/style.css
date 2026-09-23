@@ -13,9 +13,9 @@
   --cyan: #16f4d4;
   --rose: #ff6f9c;
   --danger: #ff5a6a;
-  --ui: "IBM Plex Sans JP", "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  --ui: "IBM Plex Sans KR", "Noto Sans KR", "IBM Plex Sans JP", "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
   --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-  --brand: "Zen Old Mincho", "Noto Serif JP", "Yu Mincho", serif;
+  --brand: "Zen Old Mincho", "Noto Serif JP", "Noto Serif KR", "Yu Mincho", serif;
   --r: 4px;
 }
 html, body { height: 100%; }

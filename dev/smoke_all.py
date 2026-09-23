@@ -9,7 +9,7 @@ async () => {
   const warn = console.warn, err = console.error; let cur = '';
   console.warn = (...a) => { out.problems.push(cur + ' :: ' + a.map(String).join(' ').slice(0, 200)); };
   console.error = (...a) => { out.problems.push(cur + ' :: ERR ' + a.map(String).join(' ').slice(0, 200)); };
-  const texts = ['愛', '透明', 'ほどけた声が鳴った', 'Hello world', 'ねえ、まだ間に合うかな'];
+  const texts = ['밤', '투명', '새벽의 색을기억해', 'Hello world', '야, 아직 늦지 않았을까, 분명'];
   const aspects = ['16:9', '9:16', '4:3', '3:4', '1:1', '21:9'];
   const styles = J.STYLE_ORDER;
   const cv = document.createElement('canvas'); const ctx = cv.getContext('2d');

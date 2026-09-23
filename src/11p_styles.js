@@ -1,13 +1,13 @@
-/* JIZURA pack: styles — twelve more style packs (配色セット: colour schemes, font roles, texture, tendencies) */
+/* JIZURA pack: styles — twelve more style packs (색 배합 세트: colour schemes, font roles, texture, tendencies) */
 (() => {
 'use strict';
 
 /* scheme: bg, fg, sub, accent, accent2, ink (sticker / plate colour — text on it is drawn in bg), dim (faint bg text),
    ghostA, ghostB (chromatic ghost passes: drawn source-over on dark backgrounds, multiplied on light ones), grad?, paper? */
 const S = {
-  /* ---------------------------------------------------------------- 桜 */
+  /* ---------------------------------------------------------------- 벚꽃 */
   sakura: {
-    name: 'サクラ', desc: '淡い桜色・深い梅紫・夜桜・丸文字と明朝', moods: ['emotional', 'calm'],
+    name: '벚꽃', desc: '연한 벚꽃색·깊은 매실보라·밤벚꽃·둥근 글꼴과 명조', moods: ['emotional', 'calm'],
     schemes: [
       { bg: '#F8E4EB', fg: '#4A1434', sub: '#8A4A69', accent: '#D93A74', accent2: '#6F8F4E', ink: '#4A1434', dim: '#F0D3DE', ghostA: '#EC6A9A', ghostB: '#9A8AE6', paper: true },
       { bg: '#26091B', fg: '#FCE8F0', sub: '#D69DB6', accent: '#FF86B0', accent2: '#B9E0A2', ink: '#FCE8F0', dim: '#351127', ghostA: '#FF5C95', ghostB: '#8A78FF' },
@@ -28,9 +28,9 @@ const S = {
     decor: { petals: 1.6, bokeh: 1, twinkle: 0.8, lightLeak: 0.7, waveLine: 0.6, glitchRects: 0.1, barcode: 0.1 }, hud: false, glow: 0.9,
   },
 
-  /* ---------------------------------------------------------------- 深海 */
+  /* ---------------------------------------------------------------- 심해 */
   ocean: {
-    name: '深海', desc: '濃紺の深海・シアンの発光・泡と細いゴシック', moods: ['calm', 'emotional'],
+    name: '심해', desc: '짙은 남색 심해·시안 발광·방울과 가는 고딕', moods: ['calm', 'emotional'],
     schemes: [
       { bg: '#031A2E', fg: '#E4FAFF', sub: '#7FB2C8', accent: '#1FD2E6', accent2: '#4C7DFF', ink: '#E4FAFF', dim: '#0A2842', ghostA: '#1FD2E6', ghostB: '#3B5BFF' },
       { bg: '#0B5566', fg: '#FFFFFF', sub: '#A9E3EA', accent: '#04182A', accent2: '#7FF3FF', ink: '#E4FAFF', dim: '#0E6173', ghostA: '#27E3F2', ghostB: '#031A2E' },
@@ -51,9 +51,9 @@ const S = {
     decor: { risingParticles: 1.6, bokeh: 1.1, waveLine: 1.2, orbitDots: 0.7, beatRing: 0.6, rings: 0.6, sparks: 0.2 }, hud: false, glow: 1.6,
   },
 
-  /* ---------------------------------------------------------------- 夕焼け */
+  /* ---------------------------------------------------------------- 노을 */
   sunset: {
-    name: '夕焼けグラデ', desc: '橙から菫へのグラデーション・太い明朝・逆光', moods: ['emotional', 'pop'],
+    name: '노을 그라데이션', desc: '주황에서 보라로 잇는 그러데이션·굵은 명조·역광', moods: ['emotional', 'pop'],
     schemes: [
       { bg: '#2A0F44', fg: '#FFF0DC', sub: '#E6A98F', accent: '#FF7A30', accent2: '#FF4A86', ink: '#FFB347', dim: '#361456', ghostA: '#FF7A30', ghostB: '#B84BFF', grad: ['#FFC15E', '#FF4A7A'] },
       { bg: '#FF8A3D', fg: '#2A0F44', sub: '#5A1F55', accent: '#2A0F44', accent2: '#FFF0DC', ink: '#2A0F44', dim: '#F57F32', ghostA: '#E0306A', ghostB: '#7A2BC0', grad: ['#6A1B9A', '#2A0F44'] },
@@ -74,9 +74,9 @@ const S = {
     decor: { lightLeak: 1.4, lineBurst: 1, bokeh: 0.8, twinkle: 0.7, halftonePatch: 0.6, waveLine: 0.5 }, hud: false, glow: 1.3, useGrad: true,
   },
 
-  /* ---------------------------------------------------------------- 森 */
+  /* ---------------------------------------------------------------- 숲 */
   forest: {
-    name: '森の手帖', desc: '苔と生成り・樹皮の茶・鉛筆の手書き文字', moods: ['calm', 'editorial', 'emotional'],
+    name: '숲의 수첩', desc: '이끼와 생백이·나무껍질 갈색·연필 손글씨', moods: ['calm', 'editorial', 'emotional'],
     schemes: [
       { bg: '#1D291B', fg: '#EFE9D6', sub: '#A8B08A', accent: '#B7C95A', accent2: '#C4833F', ink: '#EFE9D6', dim: '#263423', ghostA: '#8FB04A', ghostB: '#C4833F' },
       { bg: '#EDE6D1', fg: '#22301F', sub: '#5D6647', accent: '#4F7A35', accent2: '#8A5A32', ink: '#22301F', dim: '#E1D9C2', ghostA: '#6F9A45', ghostB: '#B0703A', paper: true },
@@ -97,9 +97,9 @@ const S = {
     decor: { scribbleUnder: 1.2, scribbleCircle: 1, waveLine: 1, risingParticles: 0.9, tapePieces: 0.7, constellation: 0.6, plusGrid: 0.5, guides: 0.4 }, hud: false,
   },
 
-  /* ---------------------------------------------------------------- ヴェイパー */
+  /* ---------------------------------------------------------------- 베이퍼 */
   vapor: {
-    name: 'ヴェイパー', desc: '薄紫とパステルのピンク/水色・明朝・VHSのにじみ', moods: ['pop', 'emotional', 'glitch'],
+    name: '베이퍼', desc: '연보라와 파스텔 핑크·하늘색·명조·VHS 번짐', moods: ['pop', 'emotional', 'glitch'],
     schemes: [
       { bg: '#3A2A6E', fg: '#FFFFFF', sub: '#D6C8FF', accent: '#FF8FD8', accent2: '#7DF9FF', ink: '#7DF9FF', dim: '#45347C', ghostA: '#FF71CE', ghostB: '#01CDFE', grad: ['#FF8FD8', '#7DF9FF'] },
       { bg: '#FFC6EC', fg: '#3A2A6E', sub: '#74489A', accent: '#7A3BFF', accent2: '#0F9FC8', ink: '#3A2A6E', dim: '#F7B8E2', ghostA: '#2EC8F0', ghostB: '#B04BFF', grad: ['#7A3BFF', '#0B7FB0'] },
@@ -120,9 +120,9 @@ const S = {
     decor: { checkerStrip: 1.3, twinkle: 1.1, triangleSpin: 1, shapes: 0.9, lightLeak: 0.7, halftonePatch: 0.6, orbitDots: 0.5 }, hud: false, glow: 1.2, useGrad: true,
   },
 
-  /* ---------------------------------------------------------------- 新聞 */
+  /* ---------------------------------------------------------------- 신문 */
   newsprint: {
-    name: '新聞', desc: '灰色の更紙・墨と赤・見出し明朝・CMYの版ズレと網点', moods: ['editorial', 'graphic'],
+    name: '신문', desc: '회색 갱지·먹과 붉은색·제목 명조·CMY 판 어긋남·망점', moods: ['editorial', 'graphic'],
     schemes: [
       { bg: '#E6E5E0', fg: '#111111', sub: '#4E4E4C', accent: '#D8141B', accent2: '#0A82C8', ink: '#111111', dim: '#D8D7D1', ghostA: '#E4007F', ghostB: '#00A0E9', paper: true },
       { bg: '#111111', fg: '#F2F2EE', sub: '#A5A5A0', accent: '#F5D300', accent2: '#E4007F', ink: '#F2F2EE', dim: '#1F1F1F', ghostA: '#E4007F', ghostB: '#00A0E9', paper: true },
@@ -142,9 +142,9 @@ const S = {
     decor: { halftonePatch: 1.4, indexNum: 1.2, rulerEdge: 1, verticalStrip: 1, cropMarks: 0.9, dateStamp: 0.8, crossOut: 0.6, highlightMark: 0.6, bokeh: 0.1, confetti: 0.1 }, hud: false,
   },
 
-  /* ---------------------------------------------------------------- シンセ */
+  /* ---------------------------------------------------------------- 신스 */
   synth80: {
-    name: 'シンセ80s', desc: '黒地にネオンのマゼンタ/シアン・立体文字・走査線', moods: ['pop', 'glitch', 'emotional'],
+    name: '신스80s', desc: '검은 바탕 네온 마젠타·시안·입체 글자·스캔선', moods: ['pop', 'glitch', 'emotional'],
     schemes: [
       { bg: '#0B0414', fg: '#FF4FD8', sub: '#A98BFF', accent: '#22E6FF', accent2: '#FFE45C', ink: '#22E6FF', dim: '#1A0B2E', ghostA: '#22E6FF', ghostB: '#6A3BFF' },
       { bg: '#0B0414', fg: '#22E6FF', sub: '#8FA8FF', accent: '#E62EBE', accent2: '#FFE45C', ink: '#FF4FD8', dim: '#140A28', ghostA: '#FF4FD8', ghostB: '#FFE45C' },
@@ -165,9 +165,9 @@ const S = {
     decor: { triangleSpin: 1.2, beatRing: 1.1, lineBurst: 1, twinkle: 0.8, speedCorner: 0.8, reticle: 0.6, petals: 0.1, tapePieces: 0.1 }, hud: true, glow: 1.9, glitchBoost: 1.15,
   },
 
-  /* ---------------------------------------------------------------- クラフト紙 */
+  /* ---------------------------------------------------------------- 크라프트지 */
   kraft: {
-    name: 'クラフト紙', desc: 'クラフト紙と生成り・スタンプの朱と藍・マステ', moods: ['pop', 'editorial', 'graphic'],
+    name: '크라프트지', desc: '크라프트지와 생백이·도장의 주홍과 남색·마스킹 테이프', moods: ['pop', 'editorial', 'graphic'],
     schemes: [
       { bg: '#C49A6C', fg: '#1A1410', sub: '#46301E', accent: '#B8361B', accent2: '#F3E9D2', ink: '#1A1410', dim: '#B98F62', ghostA: '#C33A1F', ghostB: '#2E5E8C', paper: true },
       { bg: '#F1E6CF', fg: '#1A1410', sub: '#6A5540', accent: '#C33A1F', accent2: '#2E5E8C', ink: '#1A1410', dim: '#E6D8BC', ghostA: '#C33A1F', ghostB: '#2E5E8C', paper: true },
@@ -188,9 +188,9 @@ const S = {
     decor: { tapePieces: 1.8, seal: 1.1, scribbleCircle: 1, dateStamp: 1, bracketsJP: 0.8, cropMarks: 0.6, qrBlock: 0.5, arrows: 0.6, glitchRects: 0.1 }, hud: false,
   },
 
-  /* ---------------------------------------------------------------- キャンディ */
+  /* ---------------------------------------------------------------- 캔디 */
   candy: {
-    name: 'キャンディ', desc: 'ミント/いちご/レモン/ぶどうのパステル・丸く弾む文字', moods: ['pop'],
+    name: '캔디', desc: '민트·딸기·레몬·포도 파스텔·동그랗게 튀는 글자', moods: ['pop'],
     schemes: [
       { bg: '#BDF0E2', fg: '#3E2A8C', sub: '#5A4A9A', accent: '#EE3A88', accent2: '#FFB020', ink: '#3E2A8C', dim: '#AEE8D8', ghostA: '#FF5FA2', ghostB: '#8A6BFF' },
       { bg: '#FFDDEB', fg: '#7A2BB8', sub: '#A2468E', accent: '#EE3A88', accent2: '#2FC2B8', ink: '#7A2BB8', dim: '#FDD0E2', ghostA: '#FF5FA2', ghostB: '#3FB8FF' },
@@ -211,9 +211,9 @@ const S = {
     decor: { confetti: 1.6, heartsStars: 1.6, dots: 1, twinkle: 1, shapes: 1, sparks: 0.8, bokeh: 0.5, glitchRects: 0.1, barcode: 0.1 }, hud: false, glow: 0.4,
   },
 
-  /* ---------------------------------------------------------------- アシッド */
+  /* ---------------------------------------------------------------- 애시드 */
   acid: {
-    name: 'アシッド', desc: '黒×酸性グリーン×マゼンタ・荒い書体と壊れた画面', moods: ['glitch', 'graphic'],
+    name: '애시드', desc: '검정·산성 초록·마젠타·거친 서체와 부서진 화면', moods: ['glitch', 'graphic'],
     schemes: [
       { bg: '#050505', fg: '#C6FF00', sub: '#86A800', accent: '#FF2BD6', accent2: '#FFFFFF', ink: '#C6FF00', dim: '#111A00', ghostA: '#FF2BD6', ghostB: '#3D5BFF' },
       { bg: '#C6FF00', fg: '#050505', sub: '#2A3A00', accent: '#050505', accent2: '#FF2BD6', ink: '#050505', dim: '#B8F000', ghostA: '#FF2BD6', ghostB: '#2B3DFF' },
@@ -234,9 +234,9 @@ const S = {
     decor: { glitchRects: 1.6, qrBlock: 1.2, reticle: 1, barcode: 1, bars: 1, crosshair: 0.8, timecodeBar: 0.7, petals: 0.1, heartsStars: 0.1, confetti: 0.1 }, hud: true, glow: 0.8, glitchBoost: 1.6,
   },
 
-  /* ---------------------------------------------------------------- 墨 */
+  /* ---------------------------------------------------------------- 먹 */
   sumi: {
-    name: '墨と朱', desc: '和紙の生成り・墨の筆文字・朱の落款', moods: ['calm', 'emotional', 'editorial'],
+    name: '먹과 주칠', desc: '와시지의 생백이·먹 붓글씨·붉은 낙관', moods: ['calm', 'emotional', 'editorial'],
     schemes: [
       { bg: '#EFE5CF', fg: '#16130F', sub: '#5E574C', accent: '#B83A22', accent2: '#16130F', ink: '#16130F', dim: '#E3D8BF', ghostA: '#9A9284', ghostB: '#CC4A2E', paper: true },
       { bg: '#121110', fg: '#EFE8D8', sub: '#9A9286', accent: '#D9402A', accent2: '#EFE8D8', ink: '#EFE8D8', dim: '#1E1C1A', ghostA: '#5C5750', ghostB: '#D9402A', paper: true },
@@ -257,9 +257,9 @@ const S = {
     decor: { brushStroke: 1.8, seal: 1.6, watermarkKanji: 1.2, verticalStrip: 1, blobs: 0.9, petals: 0.4, confetti: 0.1, heartsStars: 0.1, glitchRects: 0.1 }, hud: false, glow: 0.4,
   },
 
-  /* ---------------------------------------------------------------- 金夜 */
+  /* ---------------------------------------------------------------- 금빛 밤 */
   gold: {
-    name: '金夜', desc: '漆黒と金箔・象牙の明朝・きらめく光', moods: ['emotional', 'calm', 'editorial'],
+    name: '금빛 밤', desc: '칠흑과 금박·상아색 명조·반짝이는 빛', moods: ['emotional', 'calm', 'editorial'],
     schemes: [
       { bg: '#0A0907', fg: '#F3E7C4', sub: '#B39A62', accent: '#D4AF37', accent2: '#F3E7C4', ink: '#D4AF37', dim: '#17140E', ghostA: '#D4AF37', ghostB: '#7A5230', grad: ['#FFE9A8', '#B8862B'] },
       { bg: '#C9A24A', fg: '#0A0907', sub: '#3A2C12', accent: '#0A0907', accent2: '#FFF4D6', ink: '#0A0907', dim: '#BD9740', ghostA: '#8A5A1A', ghostB: '#3A2C12', grad: ['#2A1E08', '#0A0907'] },

@@ -16,8 +16,8 @@ try:
     FONT = ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', 14)
 except Exception:
     FONT = ImageFont.load_default()
-TEXT = 'ほどけた声が鳴った'
-TEXT2 = '夜明けの色を'
+TEXT = '새벽의 색을기억해'
+TEXT2 = '새벽의 색을'
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
