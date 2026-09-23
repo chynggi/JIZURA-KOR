@@ -132,6 +132,9 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .ln .tools select { padding: 2px 4px; font-size: 11px; max-width: 92px; }
 .media-ln .tools { flex: 1 1 100%; flex-wrap: wrap; }
 .media-ln .tools select { max-width: 78px; }
+.media-zoom-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
+.media-zoom-controls label { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: var(--muted); min-width: 0; }
+.media-zoom-controls input, .media-zoom-controls select { width: 100%; padding: 3px 5px; font-size: 11px; }
 .ln .cuts { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; }
 .ln .cuts span { font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--line2); color: var(--muted); cursor: pointer; }
 .ln .cuts span:hover { color: var(--text); border-color: var(--amber); }
@@ -3569,6 +3572,11 @@ J.MEDIA_ENTER = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム'
 J.MEDIA_HOLD = { still: '静止', push: 'ゆっくり拡大', pan: '横移動' };
 J.MEDIA_EXIT = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム', cut: '即時' };
 J.MEDIA_TREAT = { none: 'なし', mono: 'モノクロ', sepia: 'セピア', contrast: '高コントラスト', blur: 'ぼかし' };
+J.MEDIA_FOCUS = { tl: '左上', tc: '上', tr: '右上', ml: '左', mc: '中央', mr: '右', bl: '左下', bc: '下', br: '右下' };
+J.mediaFocusPoint = (focus, w, h) => {
+  const index = Object.keys(J.MEDIA_FOCUS).indexOf(focus);
+  return { x: ((index < 0 ? 4 : index) % 3 - 1) * w / 3, y: (Math.floor((index < 0 ? 4 : index) / 3) - 1) * h / 3 };
+};
 J.mediaAssets = new Map();
 const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
@@ -3610,7 +3618,9 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
     return { index: i, itemId: item.id, name: item.name, type: item.type, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
       layout: ov.layout || rng.pick(Object.keys(J.MEDIA_LAYOUT)), enter: ov.enter || rng.pick(Object.keys(J.MEDIA_ENTER)),
       hold: ov.hold || rng.pick(Object.keys(J.MEDIA_HOLD)), exit: ov.exit || rng.pick(Object.keys(J.MEDIA_EXIT)),
-      treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)), seed };
+      treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)),
+      zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : rng.pick([100, 110, 125, 140, 160]),
+      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)), seed };
   });
   return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder, loop: m.loop };
 };
@@ -3683,7 +3693,7 @@ J.drawMedia = (ctx, plan, t) => {
   const fade = Math.min(1, (t - cut.start) / Math.min(0.45, d * 0.3));
   const out = Math.min(1, (cut.end - t) / Math.min(0.45, d * 0.3));
   let alpha = (cut.enter === 'fade' ? fade : 1) * (cut.exit === 'fade' ? out : 1);
-  let z = cut.hold === 'push' ? 1 + p * 0.12 : 1;
+  let z = (cut.zoom || 100) / 100 * (cut.hold === 'push' ? 1 + p * 0.12 : 1);
   if (cut.enter === 'zoom') z *= 1 + (1 - fade) * 0.16;
   if (cut.exit === 'zoom') z *= 1 + (1 - out) * 0.16;
   let dx = cut.hold === 'pan' ? (0.5 - p) * w * 0.12 : 0;
@@ -3693,7 +3703,8 @@ J.drawMedia = (ctx, plan, t) => {
     const s = cut.layout === 'contain' ? Math.min(w / sw, h / sh) : Math.max(w / sw, h / sh);
     return [sw * s, sh * s];
   })();
-  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(w / 2 + dx, h / 2); ctx.scale(z, z);
+  const focus = J.mediaFocusPoint(cut.focus, w, h);
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(w / 2 + dx, h / 2); ctx.translate(focus.x, focus.y); ctx.scale(z, z); ctx.translate(-focus.x, -focus.y);
   ctx.filter = ({ mono: 'grayscale(1)', sepia: 'sepia(1)', contrast: 'contrast(1.6)', blur: 'blur(8px)' })[cut.treat] || 'none';
   ctx.drawImage(src, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();
   return true;
@@ -29185,7 +29196,7 @@ function updateCutInfo() {
     cut.bg && cut.bg !== 'none' ? chip('b', '背景', n(J.BG, cut.bg)) : '',
     cut.cam && cut.cam !== 'push' ? chip('c', 'カメラ', n(J.CAMERA, cut.cam)) : '',
     cut.trans ? chip('c', 'つなぎ', n(J.TRANS, cut.trans)) : '',
-  ] : []).concat(mc ? [chip('b', '画像・動画', escapeHtml(mc.name)), chip('l', '表示', J.MEDIA_LAYOUT[mc.layout]), chip('e', '登場', J.MEDIA_ENTER[mc.enter]), chip('h', '保持', J.MEDIA_HOLD[mc.hold]), chip('x', '退場', J.MEDIA_EXIT[mc.exit]), chip('t', '加工', J.MEDIA_TREAT[mc.treat])] : []).join('');
+  ] : []).concat(mc ? [chip('b', '画像・動画', escapeHtml(mc.name)), chip('l', '表示', J.MEDIA_LAYOUT[mc.layout]), chip('e', '登場', J.MEDIA_ENTER[mc.enter]), chip('h', '保持', J.MEDIA_HOLD[mc.hold]), chip('x', '退場', J.MEDIA_EXIT[mc.exit]), chip('t', '加工', J.MEDIA_TREAT[mc.treat]), chip('c', 'ズーム', `${mc.zoom}%・${J.MEDIA_FOCUS[mc.focus]}`)] : []).join('');
 }
 
 /* ---------------- line list ---------------- */
@@ -29288,14 +29299,17 @@ function mediaOv(index, patch) {
 }
 function renderMediaLines() {
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const select = (key, obj, val) => `<select aria-label="${key}"><option value="">自動</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
+  const select = (key, obj, val) => `<select aria-label="${key}"><option value="">おまかせ</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
   S.plan.media.cuts.forEach((cut, i) => {
     const item = S.project.media.items.find(x => x.id === cut.itemId), ov = Object.assign({}, S.project.media.overrides[cut.itemId] || {}, S.project.media.cutOverrides[i] || {});
+    const zoomValue = ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : '';
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span></span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span></div>`;
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span></span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span><span class="media-zoom-controls"><label>ズーム率（％）<input class="media-zoom" type="number" min="100" max="300" step="1" placeholder="おまかせ" value="${zoomValue}" aria-label="${i + 1}カット目のズーム率"></label><label>ズーム対象${select('ズーム対象', J.MEDIA_FOCUS, ov.focus)}</label></span></div>`;
     li.querySelector('.time').addEventListener('change', e => { S.project.media.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.txt').addEventListener('click', () => seek(cut.start + 0.001));
     ['layout', 'enter', 'hold', 'exit', 'treat'].forEach((key, n) => li.querySelectorAll('select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || undefined }); replan(); }));
+    li.querySelector('.media-zoom').addEventListener('change', e => { mediaOv(i, { zoom: e.target.value === '' ? undefined : J.clamp(+e.target.value || 100, 100, 300) }); replan(); });
+    li.querySelector('select[aria-label="ズーム対象"]').addEventListener('change', e => { mediaOv(i, { focus: e.target.value || undefined }); replan(); });
     li.querySelector('.dice').addEventListener('click', () => { mediaOv(i, { seed: (ov.seed | 0) + 1, lock: false }); replan(); seek(cut.start + 0.001); });
     li.querySelector('.lock').addEventListener('click', () => { mediaOv(i, ov.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }); replan(); });
     ol.appendChild(li); S.mediaLineEls.push(li);

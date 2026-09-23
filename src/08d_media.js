@@ -6,6 +6,11 @@ J.MEDIA_ENTER = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム'
 J.MEDIA_HOLD = { still: '静止', push: 'ゆっくり拡大', pan: '横移動' };
 J.MEDIA_EXIT = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム', cut: '即時' };
 J.MEDIA_TREAT = { none: 'なし', mono: 'モノクロ', sepia: 'セピア', contrast: '高コントラスト', blur: 'ぼかし' };
+J.MEDIA_FOCUS = { tl: '左上', tc: '上', tr: '右上', ml: '左', mc: '中央', mr: '右', bl: '左下', bc: '下', br: '右下' };
+J.mediaFocusPoint = (focus, w, h) => {
+  const index = Object.keys(J.MEDIA_FOCUS).indexOf(focus);
+  return { x: ((index < 0 ? 4 : index) % 3 - 1) * w / 3, y: (Math.floor((index < 0 ? 4 : index) / 3) - 1) * h / 3 };
+};
 J.mediaAssets = new Map();
 const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
@@ -47,7 +52,9 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
     return { index: i, itemId: item.id, name: item.name, type: item.type, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
       layout: ov.layout || rng.pick(Object.keys(J.MEDIA_LAYOUT)), enter: ov.enter || rng.pick(Object.keys(J.MEDIA_ENTER)),
       hold: ov.hold || rng.pick(Object.keys(J.MEDIA_HOLD)), exit: ov.exit || rng.pick(Object.keys(J.MEDIA_EXIT)),
-      treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)), seed };
+      treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)),
+      zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : rng.pick([100, 110, 125, 140, 160]),
+      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)), seed };
   });
   return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder, loop: m.loop };
 };
@@ -120,7 +127,7 @@ J.drawMedia = (ctx, plan, t) => {
   const fade = Math.min(1, (t - cut.start) / Math.min(0.45, d * 0.3));
   const out = Math.min(1, (cut.end - t) / Math.min(0.45, d * 0.3));
   let alpha = (cut.enter === 'fade' ? fade : 1) * (cut.exit === 'fade' ? out : 1);
-  let z = cut.hold === 'push' ? 1 + p * 0.12 : 1;
+  let z = (cut.zoom || 100) / 100 * (cut.hold === 'push' ? 1 + p * 0.12 : 1);
   if (cut.enter === 'zoom') z *= 1 + (1 - fade) * 0.16;
   if (cut.exit === 'zoom') z *= 1 + (1 - out) * 0.16;
   let dx = cut.hold === 'pan' ? (0.5 - p) * w * 0.12 : 0;
@@ -130,7 +137,8 @@ J.drawMedia = (ctx, plan, t) => {
     const s = cut.layout === 'contain' ? Math.min(w / sw, h / sh) : Math.max(w / sw, h / sh);
     return [sw * s, sh * s];
   })();
-  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(w / 2 + dx, h / 2); ctx.scale(z, z);
+  const focus = J.mediaFocusPoint(cut.focus, w, h);
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(w / 2 + dx, h / 2); ctx.translate(focus.x, focus.y); ctx.scale(z, z); ctx.translate(-focus.x, -focus.y);
   ctx.filter = ({ mono: 'grayscale(1)', sepia: 'sepia(1)', contrast: 'contrast(1.6)', blur: 'blur(8px)' })[cut.treat] || 'none';
   ctx.drawImage(src, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();
   return true;

@@ -30,4 +30,13 @@ const noLoop = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), loop: f
 assert.equal(noLoop.cuts.length, 2);
 const shuffled = J.planMedia({ seed: 42, media: { items, loop: true, cutCount: 8, randomOrder: true } }, { duration: 10, lines: [] });
 assert.deepEqual(Array.from(shuffled.cuts.slice(0, 3).map(c => c.itemId)), Array.from(shuffled.cuts.slice(3, 6).map(c => c.itemId)));
+const zoomed = J.planMedia({ seed: 1, media: { items: items.slice(0, 1), loop: true, cutCount: 2, cutOverrides: { 0: { zoom: 225, focus: 'tr' }, 1: { zoom: 100, focus: 'bl' } } } }, { duration: 8, lines: [] });
+assert.equal(zoomed.cuts[0].zoom, 225);
+assert.equal(zoomed.cuts[0].focus, 'tr');
+assert.equal(zoomed.cuts[1].zoom, 100);
+assert.equal(zoomed.cuts[1].focus, 'bl');
+assert.deepEqual(JSON.parse(JSON.stringify(J.mediaFocusPoint('tr', 900, 900))), { x: 300, y: -300 });
+assert.deepEqual(JSON.parse(JSON.stringify(J.mediaFocusPoint('mc', 900, 900))), { x: 0, y: 0 });
+assert.equal(a.cuts[0].zoom, b.cuts[0].zoom, 'automatic zoom is deterministic');
+assert.equal(a.cuts[0].focus, b.cuts[0].focus, 'automatic focus is deterministic');
 console.log('Media planning tests passed');
