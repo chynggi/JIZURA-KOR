@@ -481,7 +481,7 @@ function setMode(m) {
 }
 
 /* ---------------- fx tab ---------------- */
-const FX = [['motion', '움직임 강도'], ['glitch', '글리치'], ['chroma', '색 어긋남'], ['decor', '장식 양'], ['density', '컷 촘촘함'], ['texture', '질감'], ['bgSwitch', '배경 전환']];
+const FX = [['motion', '움직임 강도'], ['glitch', '글리치'], ['chroma', '색 어긋남'], ['decor', '장식 양'], ['density', '컷 촘촘함'], ['texture', '질감'], ['bgSwitch', '배경 전환'], ['react', '음악 반응']];
 function renderFx() {
   const box = $('fxSliders'); box.innerHTML = '';
   FX.forEach(([k, label]) => {

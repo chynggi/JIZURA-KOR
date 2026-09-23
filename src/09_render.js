@@ -101,10 +101,20 @@ class Renderer {
       const b = prevBeat(plan.beats, t);
       if (b != null && t - b < 0.25) beatPulse = 0.9 * Math.exp(-(t - b) * 16);
     }
-    const chroma = (fx.chroma ?? 0.7) * (st.ghost ?? 1) * (1 + spike + beatPulse);
+    const energy = plan.energy ? plan.energy[Math.min(plan.energy.length - 1, Math.max(0, Math.floor(t * plan.energyRate)))] : null;
+    // 음악 반응: the song's beats and loudness push the whole picture (scale, chromatic offset, shake)
+    const react = fx.react ?? 0;
+    let rPulse = 0, rLevel = 0;
+    if (react > 0) {
+      const b = plan.beats && plan.beats.length ? prevBeat(plan.beats, t) : null;
+      if (b != null) rPulse = Math.exp(-(t - b) * 9);
+      rLevel = energy ?? 0;
+      shake += react * 0.35 * rPulse * (fx.motion ?? 0.7);
+    }
+    const chroma = (fx.chroma ?? 0.7) * (st.ghost ?? 1) * (1 + spike + beatPulse) * (1 + react * (1.2 * rPulse + 0.8 * rLevel));
+    const reactScale = 1 + react * (0.035 * rPulse + 0.03 * rLevel);
     const step = Math.floor(tq / clock + 1e-6);
     const beatInfo = plan.beats && plan.beats.length ? beatAt(plan.beats, tq) : null;
-    const energy = plan.energy ? plan.energy[Math.min(plan.energy.length - 1, Math.max(0, Math.floor(t * plan.energyRate)))] : null;
     // ---------- background graphic (per line) ----------
     if (!opt.transparent && mainCut && mainCut.bg && mainCut.bg !== 'none' && J.BG[mainCut.bg]) {
       const env = this.makeEnv(ctx, plan, mainCut, sc, { pass: 'main', t: tq, lt: tq - mainCut.start, ltb: tq - mainCut.start, step, scale, allowFilter, energy, beat: beatInfo, bgOnly: true });
@@ -155,7 +165,7 @@ class Renderer {
       const CD = J.CAMERA[cut.cam] || J.CAMERA.push;
       try { cam = CD.get(env, cut.camP || {}); } catch (e) { cam = null; }
       cam = cam || {};
-      const cs = cam.s ?? 1;
+      const cs = (cam.s ?? 1) * reactScale;
       X.translate(W / 2 + shx + P.off[0] + (cam.x || 0), H / 2 + shy + P.off[1] + (cam.y || 0));
       if (cam.rot) X.rotate(cam.rot * J.DEG);
       if (cam.skx) X.transform(1, 0, Math.tan(cam.skx * J.DEG), 1, 0, 0);
