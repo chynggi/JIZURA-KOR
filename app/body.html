@@ -13,6 +13,7 @@
       <label class="file" title="保存したプロジェクト(.json)を開く">開く<input id="fileProject" type="file" accept=".json,application/json"></label>
       <button id="btnSave" title="プロジェクトを .json で保存">保存</button>
       <button id="btnAE" title="After Effects パネル用の構成データを書き出す">AE用に書き出し</button>
+      <button id="btnTerms" class="ghost terms-open" title="出力物の権利とライセンス">利用について</button>
     </div>
   </header>
 
@@ -101,6 +102,10 @@
             <span id="histPos" class="muted mono"></span>
             <button id="btnNext2" class="ghost">次の案 ▶</button>
           </div>
+          <div class="pick-sets">
+            <label class="check"><input id="eExtra" class="extra-toggle" type="checkbox"><span>追加分の演出も使う<small>最初の公開版のあとに追加した約350の演出・配色セット12・書体6も、おまかせやシャッフルの候補にします（オフのときは最初の公開版の演出だけ）</small></span></label>
+            <label class="check"><input id="eWa" class="wa-toggle" type="checkbox" checked><span>和風の演出も使う<small>提灯・はがき・障子・扇・家紋・青海波・桜の花びらなどの和風グラフィック。オフにすると、おまかせやシャッフルで選ばれません</small></span></label>
+          </div>
         </div>
         <div class="easy-sec">
           <h3>いまの案</h3>
@@ -123,6 +128,7 @@
             <label class="field">fps<select id="eFps"><option>24</option><option>30</option><option>60</option></select></label>
           </div>
           <div class="outbtns"><button id="eMP4" class="primary">MP4 を書き出す</button></div>
+          <button class="terms-open linkish">書き出した動画の権利について</button>
           <div class="exp-box" hidden>
             <div class="progress"><i class="exp-bar"></i></div>
             <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">中止</button></div>
@@ -172,6 +178,10 @@
       </div>
 
       <div class="tabpane" data-pane="tech" hidden>
+        <div class="pick-sets">
+          <label class="check"><input id="tExtra" class="extra-toggle" type="checkbox"><span>追加分の演出も使う<small>「追加」印の手法・スタイル・書体。オフのときは、おまかせやシャッフルで最初の公開版の演出だけを使います</small></span></label>
+          <label class="check"><input id="tWa" class="wa-toggle" type="checkbox" checked><span>和風の演出も使う<small>「和」印の手法とスタイル。オフにすると、おまかせやシャッフルでは選ばれません（追加分の判定のあとに適用。行ごとに手動で指定した場合は使えます）</small></span></label>
+        </div>
         <div class="row" style="margin-bottom:10px"><input id="techFilter" type="text" placeholder="手法を名前で絞り込み" style="flex:1" aria-label="手法を名前で絞り込み"><span id="techTotal" class="muted mono"></span></div>
         <div id="techLists"></div>
       </div>
@@ -193,8 +203,26 @@
           <div class="progress"><i class="exp-bar"></i></div>
           <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">中止</button></div>
         </div>
+        <button class="terms-open linkish" style="margin-top:10px">書き出した動画・画像の権利とライセンスについて</button>
         <p class="note" id="codecNote">書き出しはこのブラウザの中で行われます（Chrome / Edge 推奨）。</p>
       </div>
     </section>
   </main>
 </div>
+
+<dialog id="termsDlg" class="terms" aria-labelledby="termsTitle">
+  <form method="dialog">
+    <h2 id="termsTitle">利用について</h2>
+    <div class="terms-main">
+      <p class="terms-big">このツールで作った<strong>動画や画像（出力物）の権利は、作った人</strong>に帰属します。</p>
+      <p class="terms-sub">※ 使った歌詞や曲の権利は、それぞれの権利者に帰属します。</p>
+    </div>
+    <p>ツール本体は <strong>MIT ライセンス</strong>で公開しています。詳細なライセンスはこちら：</p>
+    <p><a href="https://github.com/852wa/JIZURA" target="_blank" rel="noopener">https://github.com/852wa/JIZURA</a></p>
+    <p class="muted terms-note">通常の機能では歌詞や曲はブラウザ内で処理されます。Jevで作る場合は歌詞と任意の追加指示を Jev API に送信します。曲の音声ファイルは送信しません。</p>
+    <details class="terms-oss"><summary>使用しているオープンソース</summary>
+      <p>MP4 書き出し：mp4-muxer（MIT License）<br>フォント：Google Fonts 配布の各書体（SIL Open Font License 1.1）</p>
+    </details>
+    <div class="terms-foot"><span class="muted mono">© 2026 hakoniwa · MIT</span><button value="close" class="primary" autofocus>閉じる</button></div>
+  </form>
+</dialog>

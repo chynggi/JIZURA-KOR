@@ -19,8 +19,9 @@ J.jevSuggest = async (project, signal) => {
   const userDirection = String(project.jevPrompt || '').trim().slice(0, 1000);
   const directionRule = userDirection ? '歌詞とユーザーの追加指示の両方を考慮する。' : '歌詞を考慮する。';
   const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
-  const styleOptions = Object.fromEntries(J.STYLE_ORDER.map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
-  const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(keys, J.registry(g))]));
+  const allowed = (g, k) => !J.randomOk || J.randomOk(project, g, k);
+  const styleOptions = Object.fromEntries(J.STYLE_ORDER.filter(k => allowed('style', k)).map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
+  const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(keys.filter(k => allowed(g, k)), J.registry(g))]));
   const selections = { lines: {} };
   // Keep each request bounded; later batches use the globally chosen look as context.
   for (let start = 0; start < lines.length; start += 12) {
@@ -74,7 +75,7 @@ J.applyJev = (project, selections, rnd = Math.random) => {
   const overrides = look.overrides;
   for (const [index, picks] of Object.entries(selections.lines || {})) {
     if (overrides[index] && overrides[index].lock) continue;
-    overrides[index] = Object.fromEntries(Object.entries(picks).filter(([g, key]) => CORE[g] && CORE[g].includes(key) && J.registry(g)[key]));
+    overrides[index] = Object.fromEntries(Object.entries(picks).filter(([g, key]) => CORE[g] && CORE[g].includes(key) && J.registry(g)[key] && (!J.randomOk || J.randomOk(project, g, key))));
   }
   return look;
 };

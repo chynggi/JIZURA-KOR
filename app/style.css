@@ -216,6 +216,24 @@ button.omakase:disabled { box-shadow: none; }
 .toast.in { opacity: 1; transform: translate(-50%, 0); }
 .toast.out { opacity: 0; transform: translate(-50%, -6px); }
 
+/* ---------- 利用について ---------- */
+button.linkish { background: none; border: 0; padding: 4px 0; color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; justify-self: start; }
+button.linkish:hover { color: var(--text); background: none; }
+dialog.terms { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; padding: 22px 24px 18px; background: var(--panel); color: var(--text); border: 1px solid var(--line2); border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.55); }
+dialog.terms::backdrop { background: rgba(6,6,8,0.66); }
+dialog.terms h2 { font-size: 15px; letter-spacing: 0.08em; color: var(--text); margin: 0 0 14px; }
+dialog.terms p { margin: 0 0 10px; line-height: 1.75; font-size: 13px; }
+dialog.terms a { color: var(--cyan); word-break: break-all; }
+.terms-main { border-left: 3px solid var(--amber); background: var(--raised); padding: 12px 14px 4px; border-radius: 0 var(--r) var(--r) 0; margin-bottom: 14px; }
+.terms-main .terms-big { font-size: 15px; }
+.terms-main strong { color: var(--amber); font-weight: 700; }
+.terms-sub { color: var(--muted); font-size: 12px !important; }
+.terms-note { font-size: 12px !important; }
+.terms-oss { font-size: 12px; color: var(--muted); margin: 4px 0 14px; }
+.terms-oss summary { cursor: pointer; }
+.terms-oss p { font-size: 12px !important; margin-top: 6px; }
+.terms-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+
 /* ---------- responsive ---------- */
 @media (max-width: 1180px) {
   .work { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -234,3 +252,16 @@ button.omakase:disabled { box-shadow: none; }
   #app.is-easy .col-left { order: 1; }
   .transport .hist-btns { display: none; }
 }
+
+/* 追加分 / 和風 switches + badges */
+.pick-sets { margin: 12px 0 6px; text-align: left; }
+.pick-sets label.check { margin-bottom: 6px; }
+.easy-hero .pick-sets { margin-top: 14px; }
+.set-badge { display: inline-block; margin-left: 4px; padding: 0 4px; border: 1px solid var(--amber); border-radius: 3px; color: var(--amber); font-size: 10px; line-height: 15px; vertical-align: 1px; }
+.set-badge.ex { border-color: var(--cyan, #4cc9d9); color: var(--cyan, #4cc9d9); }
+.checks label.set-off { opacity: 0.45; }
+.checks label.set-off .set-badge { border-color: var(--muted); color: var(--muted); }
+.stile { position: relative; }
+.stile .badges { position: absolute; top: 4px; left: 4px; padding: 0; display: flex; gap: 3px; }
+.stile .set-badge { margin: 0; padding: 0 4px; font-size: 10px; line-height: 15px; background: rgba(0,0,0,0.55); }
+.stile.set-off { opacity: 0.55; }

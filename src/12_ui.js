@@ -45,9 +45,14 @@ function mergeProject(p) {
   for (const uf of o.userFonts) if (!J.FONTS[uf.key]) J.addUserFont(uf.key, uf.label, uf.family, uf.weight || 400);
   return o;
 }
+function setBadges(d) {
+  return (d && d.extra ? '<span class="set-badge ex" title="最初の公開版のあとに追加">追加</span>' : '') + (d && d.wa ? '<span class="set-badge" title="和風の演出">和</span>' : '');
+}
 function loadLocal() { try { const s = localStorage.getItem(LS_KEY); if (s) return mergeProject(JSON.parse(s)); } catch (e) {} return mergeProject(null); }
 let saveTimer = 0;
-function autosave() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(S.project)); } catch (e) {} }, 700); }
+function autosave() { clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 700); }
+function flushSave() { clearTimeout(saveTimer); try { localStorage.setItem(LS_KEY, JSON.stringify(S.project)); } catch (e) {} }
+window.addEventListener('pagehide', () => { if (S.project) flushSave(); });
 
 /* ---------------- planning ---------------- */
 function audioLike() {
@@ -93,14 +98,21 @@ function warm() {
 let replanTimer = 0;
 const replanSoon = (ms = 220) => { clearTimeout(replanTimer); replanTimer = setTimeout(replan, ms); };
 let fontKey = '';
+let thumbFonts = null;
 async function ensureFonts() {
   const txt = S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS;
-  const key = txt + '|' + Object.keys(J.FONTS).length;
+  const keys = J.fontsOfPlan(S.plan);                       // only the faces this plan draws with
+  const key = txt + '|' + keys.join(',') + '|' + Object.keys(J.FONTS).length;
   if (key === fontKey) return;
   fontKey = key;
   showMsg('フォントを読み込み中…');
-  try { await J.ensureFonts(txt, null); } catch (e) {}
-  showMsg(null); S.need = true; drawStyleGrid();
+  try { await J.ensureFonts(txt, keys); } catch (e) {}
+  showMsg(null); S.need = true; drawStyleGrid(); loadThumbFonts();
+}
+// style thumbnails need two glyphs of every style's display face — fetched only once the style grid is actually shown
+function loadThumbFonts() {
+  if (thumbFonts || !$('styleGrid').offsetParent) return;
+  thumbFonts = J.ensureFonts('字面', [...new Set(J.STYLE_ORDER.map(k => J.STYLES[k].fonts.display[0]))]).then(() => drawStyleGrid()).catch(() => {});
 }
 function showMsg(m) { const el = $('viewMsg'); if (!m) { el.hidden = true; return; } el.textContent = m; el.hidden = false; }
 
@@ -222,6 +234,7 @@ function updateCutInfo() {
     cut.treat && cut.treat !== 'none' ? chip('t', '加工', n(J.TREAT, cut.treat)) : '',
     cut.bg && cut.bg !== 'none' ? chip('b', '背景', n(J.BG, cut.bg)) : '',
     cut.cam && cut.cam !== 'push' ? chip('c', 'カメラ', n(J.CAMERA, cut.cam)) : '',
+    cut.trans ? chip('c', 'つなぎ', n(J.TRANS, cut.trans)) : '',
   ].join('');
 }
 
@@ -284,7 +297,7 @@ function drawStyleGrid() {
     J.STYLE_ORDER.forEach(k => {
       const b = document.createElement('button'); b.className = 'stile'; b.dataset.k = k;
       b.title = J.STYLES[k].desc;
-      b.innerHTML = `<canvas width="192" height="108"></canvas><span>${J.STYLES[k].name}</span>`;
+      b.innerHTML = `<canvas width="192" height="108"></canvas><span>${J.STYLES[k].name}</span><span class="badges">${setBadges(J.STYLES[k])}</span>`;
       b.addEventListener('click', () => { remember(); S.project.style = k; S.project.colors.enabled = false; syncUI(); replan(); commit(); });
       g.appendChild(b);
     });
@@ -292,6 +305,9 @@ function drawStyleGrid() {
   [...g.children].forEach(b => {
     const k = b.dataset.k, st = J.STYLES[k], sc = st.schemes[0], cv = b.querySelector('canvas'), x = cv.getContext('2d');
     b.setAttribute('aria-pressed', S.project.style === k ? 'true' : 'false');
+    const off = !J.randomOk(S.project, 'style', k);
+    b.classList.toggle('set-off', off);
+    b.title = st.desc + (off ? (st.extra && S.project.extra !== true ? '（追加分がオフのため、おまかせでは選ばれません）' : '（和風の演出がオフのため、おまかせでは選ばれません）') : '');
     x.fillStyle = sc.bg; x.fillRect(0, 0, 192, 108);
     st.schemes.slice(1, 4).forEach((s2, i) => { x.fillStyle = s2.bg; x.fillRect(192 - 14 * (i + 1), 0, 14, 10); });
     const f = st.fonts.display[0];
@@ -434,7 +450,8 @@ function rerollPart(part) {
   const P = S.project;
   let msg = '';
   if (part === 'style') {
-    const pool = J.STYLE_ORDER.filter(k => k !== P.style);
+    let pool = J.STYLE_ORDER.filter(k => k !== P.style && J.randomOk(P, 'style', k));
+    if (!pool.length) pool = J.STYLE_ORDER.filter(k => k !== P.style);
     P.style = pool[Math.floor(Math.random() * pool.length)];
     P.colors.enabled = false;
     msg = `スタイル：${J.STYLES[P.style].name}`;
@@ -485,7 +502,7 @@ function setMode(m) {
   $('modePro').setAttribute('aria-pressed', String(!easy));
   try { localStorage.setItem('jizura.mode', S.mode); } catch (e) {}
   if (easy) { showNow(); syncOut(); codecNote(); }
-  sizeViewport(); drawTimeline();
+  sizeViewport(); drawTimeline(); loadThumbFonts();
 }
 
 /* ---------------- fx tab ---------------- */
@@ -507,7 +524,7 @@ function renderFx() {
 }
 
 /* ---------------- technique tab ---------------- */
-const GROUPS = [['layout', 'レイアウト'], ['enter', '登場'], ['hold', '保持'], ['exit', '退場'], ['decor', '装飾'], ['treat', '文字の加工'], ['bg', '背景'], ['cam', 'カメラ'], ['fx', '画面効果']];
+const GROUPS = [['layout', 'レイアウト'], ['enter', '登場'], ['hold', '保持'], ['exit', '退場'], ['decor', '装飾'], ['treat', '文字の加工'], ['bg', '背景'], ['cam', 'カメラ'], ['fx', '画面効果'], ['trans', 'カット間のつなぎ']];
 const openGroups = new Set();
 function techItems(g) { return J.order(g).filter(k => J.registry(g)[k] && !J.registry(g)[k].special); }
 function renderTech() {
@@ -528,7 +545,8 @@ function renderTech() {
     shown.forEach(k => {
       const l = document.createElement('label');
       l.title = k + (tbl[k].tags && tbl[k].tags.length ? '（' + tbl[k].tags.map(t => (J.MOODS[t] ? J.MOODS[t].name : t)).join('・') + '）' : '');
-      l.innerHTML = `<input type="checkbox" ${en[k] !== false ? 'checked' : ''}> ${escapeHtml(tbl[k].name)}`;
+      if (!J.randomOk(S.project, g, k)) { l.classList.add('set-off'); l.title += tbl[k].extra && S.project.extra !== true ? '（追加分がオフのため、自動では選ばれません）' : '（和風の演出がオフのため、自動では選ばれません）'; }
+      l.innerHTML = `<input type="checkbox" ${en[k] !== false ? 'checked' : ''}> ${escapeHtml(tbl[k].name)}${setBadges(tbl[k])}`;
       l.querySelector('input').addEventListener('change', e => { en[k] = e.target.checked; S.project.mood = null; d.querySelector('.tg-cnt').textContent = `${items.filter(x => en[x] !== false).length}/${items.length}`; replanSoon(60); });
       list.appendChild(l);
     });
@@ -575,7 +593,7 @@ async function runExport(kind) {
   const onProgress = (p, m) => { boxes.forEach(b => { b.querySelector('.exp-bar').style.width = (p * 100).toFixed(1) + '%'; }); setText(m); };
   const t0 = performance.now();
   try {
-    await J.ensureFonts(S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS, null);
+    await J.ensureFonts(S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS, J.fontsOfPlan(S.plan));
     if (kind === 'mp4') {
       const r = await J.exportMP4({ plan: S.plan, project: S.project, audio: S.project.includeAudio !== false ? S.audio : null, quality: S.project.quality || 'high', onProgress, signal: ac.signal });
       txt.textContent = `完成 ${(r.blob.size / 1048576).toFixed(1)}MB・${r.codec}${r.audio ? ' + ' + r.audio.toUpperCase() : ''}・${((performance.now() - t0) / 1000).toFixed(0)}秒`;
@@ -625,6 +643,8 @@ function syncUI() {
   $('offset').value = S.project.timing.offset ?? 0.4;
   $('lineScale').value = S.project.timing.lineScale ?? 1;
   $('snap').checked = !!S.project.timing.snap;
+  document.querySelectorAll('.wa-toggle').forEach(el => { el.checked = S.project.wa !== false; });
+  document.querySelectorAll('.extra-toggle').forEach(el => { el.checked = S.project.extra === true; });
   renderFontRoles(); renderColors(); renderFx(); renderTech(); syncOut(); drawStyleGrid();
 }
 
@@ -669,9 +689,19 @@ function bind() {
     document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
     document.querySelectorAll('.tabpane').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; });
     if (b.dataset.tab === 'out') codecNote();
+    loadThumbFonts();
   }));
   $('fxFlash').addEventListener('change', e => { S.project.fx.flash = e.target.checked; replan(); });
   $('techFilter').addEventListener('input', () => renderTech());
+  const setSwitch = (cls, key, on, msgOn, msgOff) => document.querySelectorAll('.' + cls).forEach(el => el.addEventListener('change', e => {
+    remember();
+    S.project[key] = e.target.checked;
+    document.querySelectorAll('.' + cls).forEach(x => { x.checked = e.target.checked; });
+    renderTech(); drawStyleGrid(); replan(); commit(); flushSave();
+    toast(e.target.checked ? msgOn : msgOff);
+  }));
+  setSwitch('extra-toggle', 'extra', true, '追加分の演出：使う', '追加分の演出：使わない（最初の公開版の演出だけ）');
+  setSwitch('wa-toggle', 'wa', true, '和風の演出：使う', '和風の演出：使わない（おまかせ・シャッフルで選ばれません）');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
   $('seed').addEventListener('change', e => { S.project.seed = parseInt(e.target.value, 10) || 0; replan(); });
@@ -722,6 +752,11 @@ function bind() {
   $('eMood').addEventListener('click', () => rerollPart('mood'));
   $('eCut').addEventListener('click', () => rerollPart('cut'));
   $('ePalette').addEventListener('click', () => { randomPalette(); restartPreview(); });
+  // 利用について（出力物の権利・ライセンス）
+  const dlg = $('termsDlg');
+  const openTerms = () => { if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', ''); };
+  document.querySelectorAll('.terms-open').forEach(b => b.addEventListener('click', openTerms));
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });   // click on the backdrop
   $('btnSave').addEventListener('click', () => J.saveFile(baseName() + '.jizura.json', JSON.stringify(S.project, null, 1)));
   $('btnAE').addEventListener('click', () => J.saveFile(baseName() + '_ae.json', JSON.stringify(J.planForAE(S.plan, S.project), null, 1)));
   $('fileProject').addEventListener('change', async e => {
@@ -735,7 +770,7 @@ function bind() {
     const typing = /INPUT|TEXTAREA|SELECT/.test(tag) && e.target.type !== 'range' && e.target.type !== 'checkbox';
     if (S.tap && (e.code === 'Space' || e.code === 'Enter') && !typing) { e.preventDefault(); tapNow(); return; }
     if (S.tap && e.code === 'Escape') { pause(); stopTap(); return; }
-    if (typing) return;
+    if (typing || $('termsDlg').open) return;
     if (e.code === 'Space') { e.preventDefault(); S.playing ? pause() : play(); }
     else if (e.code === 'ArrowRight') seek(S.t + (e.shiftKey ? 1 : 1 / S.plan.fps));
     else if (e.code === 'ArrowLeft') seek(S.t - (e.shiftKey ? 1 : 1 / S.plan.fps));

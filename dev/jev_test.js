@@ -9,8 +9,9 @@ for (const g of names) for (const key of ({
 })[g]) registries[g][key] = { name: key };
 const J = {
   MOODS: { calm: { name: 'Calm' }, pop: { name: 'Pop' }, chaos: { name: 'Chaos' } },
-  STYLE_ORDER: ['noir', 'paper'],
-  STYLES: { noir: { name: 'Noir', desc: 'dark' }, paper: { name: 'Paper', desc: 'soft' } },
+  STYLE_ORDER: ['noir', 'paper', 'sakura'],
+  STYLES: { noir: { name: 'Noir', desc: 'dark' }, paper: { name: 'Paper', desc: 'soft' }, sakura: { name: 'Sakura', desc: 'extra' } },
+  randomOk: (project, group, key) => !(group === 'style' && key === 'sakura' && project.extra !== true),
   registry: g => registries[g],
   parseLyrics: lyrics => ({ lines: lyrics.split('\n').map(text => ({ text })) }),
   omakase: (project, rnd, choices) => ({ mood: choices.mood, style: choices.style, overrides: { 1: { lock: true, layout: 'huge' } } }),
@@ -36,6 +37,7 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
   assert.equal(requests[0].url, 'http://127.0.0.1:8765/api/jev');
   assert.equal(Object.keys(requests[0].payload.questions).length, 38);
   assert.equal(Object.keys(requests[1].payload.questions).length, 3);
+  assert.equal(Object.hasOwn(requests[0].payload.questions.style.criteria, 'sakura'), false);
   assert.equal(requests[0].payload.state.userDirection, 'サビは大胆に');
   assert.equal(requests[1].payload.state.userDirection, 'サビは大胆に');
   assert.match(requests[0].payload.questions.mood.instructions, /追加指示/);
@@ -50,5 +52,7 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
   await J.jevSuggest({ lyrics: 'one line' });
   assert.equal(requests.at(-1).url, '/api/jev');
   assert.equal(Object.hasOwn(requests.at(-1).payload.state, 'userDirection'), false);
+  await J.jevSuggest({ lyrics: 'one line', extra: true });
+  assert.equal(Object.hasOwn(requests.at(-1).payload.questions.style.criteria, 'sakura'), true);
   console.log('Jev selection and locked-line tests passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });
