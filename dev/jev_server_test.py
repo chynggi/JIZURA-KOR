@@ -47,6 +47,22 @@ class ProxyTest(unittest.TestCase):
             urllib.request.urlopen(self.url + '/jev_server.py')
         self.assertEqual(result.exception.code, 404)
 
+    def test_pages_preflight_and_origin_limit(self):
+        request = urllib.request.Request(self.url + '/api/jev', method='OPTIONS', headers={
+            'Origin': jev_server.PAGES_ORIGIN,
+            'Access-Control-Request-Method': 'POST',
+            'Access-Control-Request-Headers': 'content-type',
+            'Access-Control-Request-Private-Network': 'true',
+        })
+        with urllib.request.urlopen(request) as response:
+            self.assertEqual(response.status, 204)
+            self.assertEqual(response.headers['Access-Control-Allow-Origin'], jev_server.PAGES_ORIGIN)
+            self.assertEqual(response.headers['Access-Control-Allow-Private-Network'], 'true')
+        request.headers['Origin'] = 'https://untrusted.example'
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            urllib.request.urlopen(request)
+        self.assertEqual(error.exception.code, 403)
+
     def test_proxy_uses_server_key(self):
         payload = {'state': {'lyrics': '夜明け'}, 'questions': {'mood': {'type': 'choice', 'criteria': {'calm': '静か'}}}}
         captured = []

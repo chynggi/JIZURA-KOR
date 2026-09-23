@@ -11,6 +11,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parent
 API_URL = 'https://api.typesafe.ai/v1/systemone'
+PAGES_ORIGIN = 'https://hirazisora.github.io'
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -23,9 +24,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
+    def allowed_origin(self):
+        origin = self.headers.get('Origin')
+        local = {f'http://127.0.0.1:{self.server.server_port}', f'http://localhost:{self.server.server_port}'}
+        return origin if origin in local or origin == PAGES_ORIGIN else None
+
+    def do_OPTIONS(self):
+        if self.path != '/api/jev' or not self.allowed_origin():
+            self.send_error(403)
+            return
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin', self.allowed_origin())
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Private-Network', 'true')
+        self.send_header('Vary', 'Origin')
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
     def do_POST(self):
         if self.path != '/api/jev':
             self.send_error(404)
+            return
+        if self.headers.get('Origin') and not self.allowed_origin():
+            self.send_error(403)
             return
         key = os.environ.get('TYPESAFE_API_KEY', '')
         if not key:
@@ -61,6 +83,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         body = json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
+        if self.allowed_origin():
+            self.send_header('Access-Control-Allow-Origin', self.allowed_origin())
+            self.send_header('Vary', 'Origin')
         self.send_header('Cache-Control', 'no-store')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()

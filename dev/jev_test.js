@@ -16,7 +16,7 @@ const J = {
   omakase: (project, rnd, choices) => ({ mood: choices.mood, style: choices.style, overrides: { 1: { lock: true, layout: 'huge' } } }),
 };
 const requests = [];
-const context = { J, fetch: async (url, options) => {
+const context = { J, location: { origin: 'https://hirazisora.github.io' }, fetch: async (url, options) => {
   const payload = JSON.parse(options.body);
   requests.push({ url, payload });
   const answers = {};
@@ -33,7 +33,7 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
   const project = { lyrics: Array.from({ length: 13 }, (_, i) => `line ${i}`).join('\n') };
   const selected = await J.jevSuggest(project);
   assert.equal(requests.length, 2);
-  assert.equal(requests[0].url, '/api/jev');
+  assert.equal(requests[0].url, 'http://127.0.0.1:8765/api/jev');
   assert.equal(Object.keys(requests[0].payload.questions).length, 38);
   assert.equal(Object.keys(requests[1].payload.questions).length, 3);
   assert.equal(selected.mood, 'calm');
@@ -43,5 +43,8 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
   assert.equal(look.overrides[0].layout, 'center');
   assert.equal(look.overrides[1].layout, 'huge');
   assert.equal(look.overrides[1].lock, true);
+  context.location.origin = 'http://127.0.0.1:8765';
+  await J.jevSuggest({ lyrics: 'one line' });
+  assert.equal(requests.at(-1).url, '/api/jev');
   console.log('Jev selection and locked-line tests passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });
