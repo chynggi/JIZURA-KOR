@@ -17,6 +17,7 @@
 | `src/` `app/` | 브라우저 버전 소스(엔진·표현 팩·UI) |
 | `ae/` | AE 패널 소스 |
 | `docs/EXPRESSION_PACKS.md` | 표현 부품(팩)을 추가하려는 사람을 위한 가이드 |
+| `docs/LOCAL_SETUP.md` | 로컬 설치·실행·빌드·테스트 가이드 |
 
 ### 동작 환경
 
@@ -208,7 +209,7 @@ python3 build.py              # src/ app/ vendor/ → index.html
 node tools/export_ae_data.js  # 스타일 등을 바꿀 때: ae/data.json 갱신
 python3 build_ae.py           # ae/ → JIZURA_AE.jsx
 ```
-빌드에 필요한 것은 Python 3와 Node.js뿐입니다(npm 패키지는 불필요). 표현 부품을 추가할 때는 `docs/EXPRESSION_PACKS.md`를 참조하세요(테스트용 도구는 `dev/`).
+빌드에 필요한 것은 Python 3와 Node.js뿐입니다(npm 패키지는 불필요). 표현 부품을 추가할 때는 `docs/EXPRESSION_PACKS.md`를 참조하세요(테스트용 도구는 `dev/`). 로컬에서 실행·테스트하는 자세한 절차는 [`docs/LOCAL_SETUP.md`](docs/LOCAL_SETUP.md)를 참조하세요.
 
 ### 자신의 저장소로 공개하기(포크한 경우 등)
 
