@@ -25,17 +25,22 @@ J.normalizeMedia = m => {
   o.opacity = J.clamp(+o.opacity || 0, 0, 100);
   return o;
 };
-J.planMedia = (project, lyricPlan, audioDuration) => {
-  const m = J.normalizeMedia(project.media), items = m.items.slice();
-  const count = items.length ? (m.loop ? Math.max(items.length, m.cutCount || items.length * 2) : items.length) : 0;
-  const order = items.map((_, i) => i);
+J.mediaOrder = project => {
+  const m = J.normalizeMedia(project.media), order = m.items.slice();
   if (m.randomOrder && order.length > 1) {
     const rng = J.rng(J.h(project.seed, m.seed));
     for (let i = order.length - 1; i > 0; i--) { const j = rng.int(0, i); [order[i], order[j]] = [order[j], order[i]]; }
   }
-  const itemAt = i => items[order[i % items.length]];
+  return order;
+};
+J.planMedia = (project, lyricPlan, audioDuration) => {
+  const m = J.normalizeMedia(project.media), items = m.items.slice();
+  const count = items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
+  const order = J.mediaOrder(project);
+  const itemAt = i => order[i % order.length];
+  const manualEnd = Math.max(0, ...Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t)).map(([, t]) => +t + 4));
   const duration = Math.max(lyricPlan.duration, audioDuration || 0,
-    lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
+    manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
   const lyricCount = Math.min(count, lyricPlan.lines.length);
   const starts = Array.from({ length: count }, (_, i) => {
     const v = m.timing.lineTimes[i];

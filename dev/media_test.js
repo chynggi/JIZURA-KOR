@@ -30,6 +30,11 @@ const noLoop = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), loop: f
 assert.equal(noLoop.cuts.length, 2);
 const shuffled = J.planMedia({ seed: 42, media: { items, loop: true, cutCount: 8, randomOrder: true } }, { duration: 10, lines: [] });
 assert.deepEqual(Array.from(shuffled.cuts.slice(0, 3).map(c => c.itemId)), Array.from(shuffled.cuts.slice(3, 6).map(c => c.itemId)));
+assert.deepEqual(Array.from(J.mediaOrder({ seed: 42, media: { items, randomOrder: true } }).map(x => x.id)), Array.from(shuffled.cuts.slice(0, 3).map(c => c.itemId)));
+const tapped = J.planMedia({ seed: 1, media: { items, loop: true, cutCount: 1, timing: { lineTimes: { 0: 12 } } } }, { duration: 3, lines: [] });
+assert.equal(tapped.cuts.length, 1, 'tap sync may build fewer cuts than uploaded assets');
+assert.equal(tapped.cuts[0].start, 12);
+assert.equal(tapped.duration, 16, 'late taps extend the timeline');
 const zoomed = J.planMedia({ seed: 1, media: { items: items.slice(0, 1), loop: true, cutCount: 2, cutOverrides: { 0: { zoom: 225, focus: 'tr' }, 1: { zoom: 100, focus: 'bl' } } } }, { duration: 8, lines: [] });
 assert.equal(zoomed.cuts[0].zoom, 225);
 assert.equal(zoomed.cuts[0].focus, 'tr');

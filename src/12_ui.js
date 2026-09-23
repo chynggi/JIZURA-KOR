@@ -70,6 +70,7 @@ function replan() {
   S.plan = J.plan(S.project, audioLike());
   S.plan.media = J.planMedia(S.project, S.plan, S.audio && S.audio.duration);
   S.plan.duration = S.plan.media.duration;
+  if (S.tap && S.tap.append && !S.audio) extendTapPreview(S.t);
   if (S.t > S.plan.duration) S.t = 0;
   renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); updateTimeUI();
   S.need = true; autosave(); ensureFonts(); drawSwatch(); showNow();
@@ -147,9 +148,11 @@ function tick(now) {
   if (S.playing) {
     // rAF timestamps can precede the moment play()/seek() stamped t0 → clamp so t never goes negative
     let t = Math.max(0, S.audio ? AP.time() : (now - S.t0) / 1000);
-    if (t >= S.plan.duration - 1e-3) {
+    if (S.tap && S.tap.append && !S.audio && t >= S.plan.duration - 2) extendTapPreview(t);
+    const stopAt = S.tap && S.tap.append && S.audio ? Math.min(S.plan.duration, S.audio.duration) : S.plan.duration;
+    if (t >= stopAt - 1e-3) {
       if (S.loop && !S.tap) { seek(0); t = 0; }
-      else { pause(); t = S.plan.duration - 1e-3; if (S.tap) stopTap(); }
+      else { pause(); t = stopAt - 1e-3; if (S.tap) stopTap(); }
     }
     S.t = t; S.need = true;
   }
@@ -215,6 +218,11 @@ function drawTimeline() {
   const px = X(S.t);
   x.fillStyle = '#f5a50c'; x.fillRect(Math.round(px) - dpr, 0, 2 * dpr, h);
   drawMediaTimeline();
+}
+function extendTapPreview(t) {
+  const end = Math.max(S.plan.duration, t + 10);
+  S.plan.duration = end; S.plan.media.duration = end;
+  const last = S.plan.media.cuts.at(-1); if (last) last.end = end;
 }
 function drawMediaTimeline() {
   const c = $('mediaTimeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -350,7 +358,7 @@ function renderMediaList() {
   });
   $('mediaRandom').checked = !!S.project.media.randomOrder;
   $('mediaLoop').checked = !!S.project.media.loop;
-  $('mediaCutCount').min = String(Math.max(1, S.project.media.items.length));
+  $('mediaCutCount').min = '1';
   $('mediaCutCount').value = String(S.project.media.cutCount || S.project.media.items.length * 2 || 1);
   $('mediaBlend').value = S.project.media.blend;
   $('mediaOpacity').value = S.project.media.opacity;
@@ -721,14 +729,27 @@ async function runExport(kind) {
 function startTap() {
   const media = S.sourceTab === 'media';
   if (!(media ? S.plan.media.cuts.length : S.plan.lines.length)) return;
-  S.tap = { i: 0, media };
+  S.tap = { i: 0, media, append: media && S.project.media.loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
+  $('tapHint').textContent = S.tap.append ? 'タップするたびに画像・動画のカットを追加します。終了するまで続けられます。' : '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。';
   $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
+  if (S.tap.append && !S.audio) extendTapPreview(0);
   seek(0); play(); updateTap();
   $('tapBtn').focus();
 }
 function tapNow() {
   if (!S.tap) return;
+  if (S.tap.append) {
+    const i = S.tap.i;
+    if (i === 0) S.project.media.timing.lineTimes = {};
+    S.project.media.cutCount = i + 1;
+    S.project.media.timing.lineTimes[i] = +S.t.toFixed(3);
+    S.tap.i++;
+    replan();
+    if (S.tap.i >= 1000) { pause(); stopTap(); toast('カット数の上限に達しました'); }
+    else updateTap();
+    return;
+  }
   const media = S.tap.media;
   (media ? S.project.media.timing : S.project.timing).lineTimes[S.tap.i] = +S.t.toFixed(3);
   S.tap.i++;
@@ -736,7 +757,14 @@ function tapNow() {
   if (S.tap.i >= (media ? S.plan.media.cuts.length : S.plan.lines.length)) stopTap(); else updateTap();
 }
 function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); }
-function updateTap() { const ln = S.tap.media ? S.plan.media.cuts[S.tap.i] : S.plan.lines[S.tap.i]; $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.media ? ln.name : ln.text}` : '—'; }
+function updateTap() {
+  if (S.tap.append) {
+    const order = J.mediaOrder(S.project), item = order[S.tap.i % order.length];
+    $('tapLine').textContent = item ? `${S.tap.i + 1}. ${item.name}` : '—'; return;
+  }
+  const ln = S.tap.media ? S.plan.media.cuts[S.tap.i] : S.plan.lines[S.tap.i];
+  $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.media ? ln.name : ln.text}` : '—';
+}
 
 /* ---------------- sync all inputs from project ---------------- */
 function syncUI() {
@@ -780,7 +808,7 @@ function bind() {
     replan();
   });
   $('mediaCutCount').addEventListener('change', e => {
-    S.project.media.cutCount = J.clamp(Math.floor(+e.target.value || 0), Math.max(1, S.project.media.items.length), 1000);
+    S.project.media.cutCount = J.clamp(Math.floor(+e.target.value || 0), 1, 1000);
     replan();
   });
   $('mediaBlend').addEventListener('change', e => { S.project.media.blend = e.target.value; replan(); });
