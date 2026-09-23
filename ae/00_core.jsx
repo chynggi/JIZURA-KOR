@@ -72,7 +72,7 @@ JzRng.prototype.wpick = function (list) { // [[value, weight], ...]
 
 // ---------------------------------------------------------------- lyric parsing
 function jzParseLyrics(raw) {
-    var lines = [], meta = {}, gap = false;
+    var lines = [], meta = {}, gap = false, brk = null;
     var rows = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
     for (var r = 0; r < rows.length; r++) {
         var s0 = jzTrim(rows[r]);
@@ -80,6 +80,9 @@ function jzParseLyrics(raw) {
         if (s0.charAt(0) === '#') continue;
         var mm = s0.match(/^\[(ti|ar|al|by|offset):(.*)\]$/i);
         if (mm) { meta[mm[1].toLowerCase()] = jzTrim(mm[2]); continue; }
+        // [간주] / [간주 8] / [간주 8초] : interlude before the next line (N = extra seconds for auto timing)
+        var bm = s0.match(/^\[(?:간주|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
+        if (bm) { brk = { sec: bm[1] ? parseFloat(bm[1]) : null }; continue; }
         var s = s0, times = [], m;
         while ((m = s.match(/^\[(\d+):(\d+(?:[.:]\d+)?)\]/))) { times.push(parseInt(m[1], 10) * 60 + parseFloat(m[2].replace(':', '.'))); s = s.substr(m[0].length); }
         s = jzTrim(s);
@@ -96,8 +99,8 @@ function jzParseLyrics(raw) {
             manual = mp; s = mp.join(/[A-Za-z]/.test(s) ? ' ' : '');
         }
         if (!s) continue;
-        var base = { text: s, note: note, impact: impact, emph: emph, manual: manual, gapBefore: gap, lrc: null };
-        gap = false;
+        var base = { text: s, note: note, impact: impact, emph: emph, manual: manual, gapBefore: gap, breakBefore: brk, lrc: null };
+        gap = false; brk = null;
         if (times.length) { for (var t = 0; t < times.length; t++) { var c = jzCopy(base); c.lrc = times[t]; lines.push(c); } }
         else lines.push(base);
     }

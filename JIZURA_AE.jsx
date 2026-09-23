@@ -81,7 +81,7 @@ JzRng.prototype.wpick = function (list) { // [[value, weight], ...]
 
 // ---------------------------------------------------------------- lyric parsing
 function jzParseLyrics(raw) {
-    var lines = [], meta = {}, gap = false;
+    var lines = [], meta = {}, gap = false, brk = null;
     var rows = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
     for (var r = 0; r < rows.length; r++) {
         var s0 = jzTrim(rows[r]);
@@ -89,6 +89,9 @@ function jzParseLyrics(raw) {
         if (s0.charAt(0) === '#') continue;
         var mm = s0.match(/^\[(ti|ar|al|by|offset):(.*)\]$/i);
         if (mm) { meta[mm[1].toLowerCase()] = jzTrim(mm[2]); continue; }
+        // [\uAC04\uC8FC] / [\uAC04\uC8FC 8] / [\uAC04\uC8FC 8\uCD08] : interlude before the next line (N = extra seconds for auto timing)
+        var bm = s0.match(/^\[(?:\uAC04\uC8FC|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:\uCD08|s)?)?\]$/i);
+        if (bm) { brk = { sec: bm[1] ? parseFloat(bm[1]) : null }; continue; }
         var s = s0, times = [], m;
         while ((m = s.match(/^\[(\d+):(\d+(?:[.:]\d+)?)\]/))) { times.push(parseInt(m[1], 10) * 60 + parseFloat(m[2].replace(':', '.'))); s = s.substr(m[0].length); }
         s = jzTrim(s);
@@ -105,8 +108,8 @@ function jzParseLyrics(raw) {
             manual = mp; s = mp.join(/[A-Za-z]/.test(s) ? ' ' : '');
         }
         if (!s) continue;
-        var base = { text: s, note: note, impact: impact, emph: emph, manual: manual, gapBefore: gap, lrc: null };
-        gap = false;
+        var base = { text: s, note: note, impact: impact, emph: emph, manual: manual, gapBefore: gap, breakBefore: brk, lrc: null };
+        gap = false; brk = null;
         if (times.length) { for (var t = 0; t < times.length; t++) { var c = jzCopy(base); c.lrc = times[t]; lines.push(c); } }
         else lines.push(base);
     }
@@ -465,11 +468,12 @@ function jzMakePlan(o) {
         var s;
         if (o.starts && o.starts[i] != null) s = o.starts[i];
         else if (allLrc) s = lines[i].lrc;
-        else if (i === 0) s = o.offset || 0.4;
+        else if (i === 0) s = (o.offset || 0.4) + (lines[0].breakBefore && lines[0].breakBefore.sec != null ? lines[0].breakBefore.sec : 0);
         else {
             var n0 = jzChars(lines[i - 1].text).length, d0 = jzClamp(0.8 + n0 * 0.17, 1.3, 5.2) * (o.lineScale || 1);
             if (beat) d0 = Math.max(2, Math.round(d0 / beat)) * beat;
-            s = starts[i - 1] + d0 + (lines[i].gapBefore ? (beat ? beat * 2 : 0.8) : 0);
+            var bk = lines[i].breakBefore;
+            s = starts[i - 1] + d0 + (bk && bk.sec != null ? bk.sec : lines[i].gapBefore || bk ? (beat ? beat * 2 : 0.8) : 0);
         }
         starts.push(s);
     }
@@ -487,7 +491,14 @@ function jzMakePlan(o) {
     }
     for (var li = 0; li < lines.length; li++) {
         var ln = lines[li], s0 = starts[li], e0 = ends[li], rng = new JzRng(jzHash(o.seed, li + 1));
-        var nch = jzCount(ln.text), visEnd = Math.min(e0, s0 + Math.max(3.6, nch * 0.5 + 1.2)), D = visEnd - s0;
+        var nch = jzCount(ln.text), visEnd = Math.min(e0, s0 + Math.max(3.6, nch * 0.5 + 1.2));
+        // before a marked [\uAC04\uC8FC] the line only keeps its natural length, the rest of the gap becomes the interlude
+        if (li < lines.length - 1 && lines[li + 1].breakBefore) {
+            var dn = jzClamp(0.8 + jzChars(ln.text).length * 0.17, 1.3, 5.2) * (o.lineScale || 1);
+            if (beat) dn = Math.max(2, Math.round(dn / beat)) * beat;
+            visEnd = Math.min(visEnd, s0 + dn);
+        }
+        var D = visEnd - s0;
         plan.lines.push({ index: li, text: ln.text, start: s0, end: e0, visEnd: visEnd, note: ln.note, impact: ln.impact });
         var chunks = ln.manual || jzChunk(ln.text), L = jzLerp(1.3, 0.5, fx.density), nC = Math.round(D / L);
         var maxC = chunks.length + (chunks.length >= 2 && D > 2 ? 1 : 0); nC = jzClamp(nC, 1, Math.max(1, maxC));
@@ -529,8 +540,11 @@ function jzMakePlan(o) {
             if ((emph && rng.chance(0.6)) || rng.chance(0.06 * fx.motion)) ev(cs, 'zoom', 0.7 + 0.5 * fx.motion, 0.22);
             if (dur > 0.8 && rng.chance(g * 0.4)) ev(cs + rng.range(0.35, 0.8) * dur, 'slice', 0.4 + g * 0.4, 2 / o.fps);
         }
-        if (li < lines.length - 1 && starts[li + 1] - visEnd > 1.3) {
+        // interlude in long gaps, or wherever the lyrics mark one with [\uAC04\uC8FC]
+        var marked = li < lines.length - 1 && !!lines[li + 1].breakBefore;
+        if (li < lines.length - 1 && starts[li + 1] - visEnd > (marked ? 0.3 : 1.3)) {
             var r2 = new JzRng(jzHash(o.seed, li, 404));
+            if (marked) ev(visEnd, r2.pick(['chroma', 'shake', 'zoom']), 1, 0.25); // one random screen effect, no lyric text
             plan.cuts.push({ index: plan.cuts.length, text: title || '', lineText: '', line: li, start: visEnd, end: starts[li + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: { variant: r2.pick(['counter', 'rings']) }, decor: jzPickDecor(r2, st, en.decor, { decor: 1 }), scheme: schemeIdx, seed: jzHash(o.seed, li, 405) % 1000000 });
         }
     }
