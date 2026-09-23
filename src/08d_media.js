@@ -1,12 +1,17 @@
 /* Uploaded-image/video planning and browser-local asset storage. */
 (() => {
 'use strict';
-J.MEDIA_LAYOUT = { cover: '全画面', contain: '全体を表示', stretch: '引き伸ばす' };
+J.MEDIA_LAYOUT = { cover: '全画面', contain: '全体を表示' };
 J.MEDIA_ENTER = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム', cut: '即時' };
 J.MEDIA_HOLD = { still: '静止', push: 'ゆっくり拡大', pan: '横移動' };
 J.MEDIA_EXIT = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム', cut: '即時' };
 J.MEDIA_TREAT = { none: 'なし', mono: 'モノクロ', sepia: 'セピア', contrast: '高コントラスト', blur: 'ぼかし' };
 J.MEDIA_FOCUS = { tl: '左上', tc: '上', tr: '右上', ml: '左', mc: '中央', mr: '右', bl: '左下', bc: '下', br: '右下' };
+J.MEDIA_TRANS_KEYS = ['wipe', 'diagonalWipe', 'clockWipe', 'irisOpen', 'pushSlide', 'cover', 'uncover', 'zoomThrough', 'checker', 'blockDissolve', 'flashCross'];
+J.mediaTransOptions = () => {
+  const trans = J.TRANS || {};
+  return Object.assign({ none: 'なし', crossfade: 'クロスフェード' }, Object.fromEntries(J.MEDIA_TRANS_KEYS.filter(k => trans[k]).map(k => [k, trans[k].name])));
+};
 J.mediaFocusPoint = (focus, w, h) => {
   const index = Object.keys(J.MEDIA_FOCUS).indexOf(focus);
   return { x: ((index < 0 ? 4 : index) % 3 - 1) * w / 3, y: (Math.floor((index < 0 ? 4 : index) / 3) - 1) * h / 3 };
@@ -55,12 +60,23 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
     const seed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, m.seed, i, ov.seed | 0);
     const rng = J.rng(seed);
     return { index: i, itemId: item.id, name: item.name, type: item.type, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
-      layout: ov.layout || rng.pick(Object.keys(J.MEDIA_LAYOUT)), enter: ov.enter || rng.pick(Object.keys(J.MEDIA_ENTER)),
+      layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : rng.pick(Object.keys(J.MEDIA_LAYOUT)), enter: ov.enter || rng.pick(Object.keys(J.MEDIA_ENTER)),
       hold: ov.hold || rng.pick(Object.keys(J.MEDIA_HOLD)), exit: ov.exit || rng.pick(Object.keys(J.MEDIA_EXIT)),
       treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)),
       zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : rng.pick([100, 110, 125, 140, 160]),
       focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)), seed };
   });
+  for (let i = 1; i < cuts.length; i++) {
+    const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
+    const rng = J.rng(J.h(cut.seed, 89));
+    const registry = J.TRANS || {}, options = ['crossfade', ...J.MEDIA_TRANS_KEYS.filter(k => registry[k])];
+    const trans = ov.trans === 'none' ? null : options.includes(ov.trans) ? ov.trans : rng.chance(0.65) ? rng.pick(options) : null;
+    if (trans && cut.end - cut.start > 0.2 && Math.abs(prev.end - cut.start) < 0.06) {
+      cut.trans = trans;
+      cut.transDur = Math.min(registry[trans] ? registry[trans].dur || 0.35 : 0.35, 0.6, (cut.end - cut.start) * 0.45);
+      cut.transP = registry[trans] && registry[trans].plan ? registry[trans].plan(rng, lyricPlan.style) : {};
+    }
+  }
   return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder, loop: m.loop };
 };
 J.mediaAt = (plan, t) => plan.media && plan.media.cuts.find(c => t >= c.start && t < c.end) || null;
@@ -91,17 +107,16 @@ J.attachMedia = (item, file) => new Promise((resolve, reject) => {
     if (item.type === 'video') {
       try { const c = document.createElement('canvas'); c.width = 96; c.height = 54; c.getContext('2d').drawImage(el, 0, 0, 96, 54); poster = c.toDataURL('image/png'); } catch (e) {}
     }
-    J.mediaAssets.set(item.id, { url, element: el, type: item.type, poster }); resolve(el);
+    const posterElement = item.type === 'video' ? new Image() : null;
+    if (posterElement) posterElement.src = poster;
+    J.mediaAssets.set(item.id, { url, element: el, type: item.type, poster, posterElement }); resolve(el);
   };
   el.onerror = () => { URL.revokeObjectURL(url); reject(new Error('画像・動画を読み込めませんでした')); };
   if (item.type === 'video') el.onloadeddata = ready; else el.onload = ready;
   el.src = url;
 });
-J.prepareMediaFrame = async (plan, t, signal) => {
-  const cut = J.mediaAt(plan, t); if (!cut || cut.type !== 'video') return;
-  const asset = J.mediaAssets.get(cut.itemId); if (!asset) return;
-  const v = asset.element; v.pause();
-  const target = Math.max(0, Math.min(t - cut.start, (v.duration || 1) - 0.001));
+const seekMediaVideo = async (v, target, signal) => {
+  v.pause(); target = Math.max(0, Math.min(target, (v.duration || 1) - 0.001));
   if (Math.abs(v.currentTime - target) < 0.002 && v.readyState >= 2) return;
   await new Promise((resolve, reject) => {
     const finish = () => { v.removeEventListener('seeked', ok); v.removeEventListener('error', fail); if (signal) signal.removeEventListener('abort', abort); };
@@ -111,8 +126,30 @@ J.prepareMediaFrame = async (plan, t, signal) => {
     v.currentTime = target;
   });
 };
+const captureMediaVideo = (plan, cut) => {
+  const asset = J.mediaAssets.get(cut.itemId), v = asset && asset.element;
+  if (!v || !v.videoWidth || !v.videoHeight || v.readyState < 2) return;
+  const c = J.mediaTransitionFrame && J.mediaTransitionFrame.canvas || document.createElement('canvas');
+  if (c.width !== v.videoWidth || c.height !== v.videoHeight) { c.width = v.videoWidth; c.height = v.videoHeight; }
+  c.getContext('2d').drawImage(v, 0, 0);
+  J.mediaTransitionFrame = { plan, index: cut.index, canvas: c };
+};
+J.prepareMediaFrame = async (plan, t, signal) => {
+  const cut = J.mediaAt(plan, t); if (!cut) return;
+  const prev = cut.index > 0 && plan.media.cuts[cut.index - 1];
+  if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && (!J.mediaTransitionFrame || J.mediaTransitionFrame.plan !== plan || J.mediaTransitionFrame.index !== prev.index)) {
+    const prior = J.mediaAssets.get(prev.itemId);
+    if (prior) { await seekMediaVideo(prior.element, prev.end - prev.start - 0.001, signal); captureMediaVideo(plan, prev); }
+  }
+  if (cut.type !== 'video') return;
+  const asset = J.mediaAssets.get(cut.itemId); if (!asset) return;
+  await seekMediaVideo(asset.element, t - cut.start, signal);
+};
 J.syncMediaPreview = (plan, t, playing) => {
   const cut = J.mediaAt(plan, t);
+  const prev = cut && cut.index > 0 && plan.media.cuts[cut.index - 1];
+  if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && J._previewMediaCut && J._previewMediaCut.plan === plan && J._previewMediaCut.index === prev.index) captureMediaVideo(plan, prev);
+  J._previewMediaCut = cut ? { plan, index: cut.index } : null;
   for (const [id, asset] of J.mediaAssets) {
     if (asset.type !== 'video') continue;
     const v = asset.element;
@@ -123,29 +160,59 @@ J.syncMediaPreview = (plan, t, playing) => {
     if (!playing) v.pause();
   }
 };
-J.drawMedia = (ctx, plan, t) => {
-  const cut = J.mediaAt(plan, t); if (!cut) return false;
+J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const asset = J.mediaAssets.get(cut.itemId); if (!asset) return false;
-  const src = asset.element, sw = src.videoWidth || src.naturalWidth, sh = src.videoHeight || src.naturalHeight;
+  const src = options.source || asset.element, sw = src.videoWidth || src.naturalWidth || src.width, sh = src.videoHeight || src.naturalHeight || src.height;
   if (!sw || !sh) return false;
   const w = ctx.canvas.width, h = ctx.canvas.height, d = Math.max(0.04, cut.end - cut.start), p = J.clamp((t - cut.start) / d, 0, 1);
-  const fade = Math.min(1, (t - cut.start) / Math.min(0.45, d * 0.3));
-  const out = Math.min(1, (cut.end - t) / Math.min(0.45, d * 0.3));
+  const fade = options.noEnter ? 1 : Math.min(1, (t - cut.start) / Math.min(0.45, d * 0.3));
+  const out = options.noExit ? 1 : Math.min(1, (cut.end - t) / Math.min(0.45, d * 0.3));
   let alpha = (cut.enter === 'fade' ? fade : 1) * (cut.exit === 'fade' ? out : 1);
   let z = (cut.zoom || 100) / 100 * (cut.hold === 'push' ? 1 + p * 0.12 : 1);
-  if (cut.enter === 'zoom') z *= 1 + (1 - fade) * 0.16;
-  if (cut.exit === 'zoom') z *= 1 + (1 - out) * 0.16;
+  if (cut.enter === 'zoom' && !options.noEnter) z *= 1 + (1 - fade) * 0.16;
+  if (cut.exit === 'zoom' && !options.noExit) z *= 1 + (1 - out) * 0.16;
   let dx = cut.hold === 'pan' ? (0.5 - p) * w * 0.12 : 0;
-  if (cut.enter === 'slide') dx += (1 - fade) * w;
-  if (cut.exit === 'slide') dx -= (1 - out) * w;
-  const fit = cut.layout === 'stretch' ? [w, h] : (() => {
-    const s = cut.layout === 'contain' ? Math.min(w / sw, h / sh) : Math.max(w / sw, h / sh);
-    return [sw * s, sh * s];
-  })();
+  if (cut.enter === 'slide' && !options.noEnter) dx += (1 - fade) * w;
+  if (cut.exit === 'slide' && !options.noExit) dx -= (1 - out) * w;
+  const s = cut.layout === 'contain' ? Math.min(w / sw, h / sh) : Math.max(w / sw, h / sh);
+  const fit = [sw * s, sh * s];
   const focus = J.mediaFocusPoint(cut.focus, w, h);
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(w / 2 + dx, h / 2); ctx.translate(focus.x, focus.y); ctx.scale(z, z); ctx.translate(-focus.x, -focus.y);
   ctx.filter = ({ mono: 'grayscale(1)', sepia: 'sepia(1)', contrast: 'contrast(1.6)', blur: 'blur(8px)' })[cut.treat] || 'none';
   ctx.drawImage(src, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();
+  return true;
+};
+J.drawMedia = (ctx, plan, t, owner) => {
+  const cut = J.mediaAt(plan, t); if (!cut || !J.mediaAssets.has(cut.itemId)) return false;
+  const prev = cut.index > 0 ? plan.media.cuts[cut.index - 1] : null;
+  const next = plan.media.cuts[cut.index + 1];
+  const active = prev && cut.trans && t - cut.start < cut.transDur && Math.abs(prev.end - cut.start) < 0.06 && J.mediaAssets.has(prev.itemId);
+  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !!cut.trans, noExit: !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06) });
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  const canvas = key => {
+    const c = owner ? (owner[key] || (owner[key] = document.createElement('canvas'))) : document.createElement('canvas');
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    return c;
+  };
+  const A = canvas('mediaPrevLayer'), B = canvas('mediaNextLayer');
+  const bg = plan.style && plan.style.schemes ? plan.style.schemes[0].bg : '#000';
+  const clear = c => { const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.fillStyle = bg; x.fillRect(0, 0, w, h); return x; };
+  const snapshot = J.mediaTransitionFrame;
+  const priorAsset = J.mediaAssets.get(prev.itemId);
+  const prevSource = prev.type === 'video' ? (snapshot && snapshot.plan === plan && snapshot.index === prev.index ? snapshot.canvas : prev.itemId === cut.itemId && priorAsset.posterElement && priorAsset.posterElement.complete ? priorAsset.posterElement : null) : null;
+  J.drawMediaCut(clear(A), prev, Math.max(prev.start, prev.end - 0.001), { noExit: true, source: prevSource });
+  J.drawMediaCut(clear(B), cut, t, { noEnter: true });
+  const p = J.clamp((t - cut.start) / cut.transDur);
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+  if (cut.trans === 'crossfade' || !J.TRANS || !J.TRANS[cut.trans]) {
+    ctx.drawImage(A, 0, 0); ctx.globalAlpha = J.smooth(0, 1, p); ctx.drawImage(B, 0, 0);
+  } else {
+    const st = plan.style, sc = st.schemes[0];
+    try { J.TRANS[cut.trans].draw(ctx, A, B, p, { cw: w, ch: h, sc, scPrev: sc, st, P: cut.transP || {}, step: Math.floor(t * (plan.fps || 24)), t, scale: w / plan.W, allowFilter: true, seed: cut.seed | 0,
+      tmp: (tw, th) => { const c = owner ? (owner.mediaTransTmp || (owner.mediaTransTmp = document.createElement('canvas'))) : document.createElement('canvas'); if (c.width !== tw || c.height !== th) { c.width = tw; c.height = th; } return c; } }); }
+    catch (e) { console.warn('media trans', cut.trans, e); ctx.drawImage(B, 0, 0); }
+  }
+  ctx.restore();
   return true;
 };
 })();

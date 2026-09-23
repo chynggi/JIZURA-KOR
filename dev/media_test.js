@@ -44,4 +44,12 @@ assert.deepEqual(JSON.parse(JSON.stringify(J.mediaFocusPoint('tr', 900, 900))), 
 assert.deepEqual(JSON.parse(JSON.stringify(J.mediaFocusPoint('mc', 900, 900))), { x: 0, y: 0 });
 assert.equal(a.cuts[0].zoom, b.cuts[0].zoom, 'automatic zoom is deterministic');
 assert.equal(a.cuts[0].focus, b.cuts[0].focus, 'automatic focus is deterministic');
+assert.equal(Object.hasOwn(J.MEDIA_LAYOUT, 'stretch'), false);
+J.TRANS = { wipe: { name: 'エッジワイプ', dur: 0.35, plan: () => ({ dir: 'L' }) } };
+const transition = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), cutOverrides: { 0: { layout: 'stretch' }, 1: { trans: 'wipe' } } } }, { duration: 8, lines: [], style: {} });
+assert.equal(transition.cuts[0].layout, 'cover', 'legacy stretch projects keep aspect ratio');
+assert.equal(transition.cuts[1].trans, 'wipe');
+assert.equal(transition.cuts[1].transP.dir, 'L');
+const disabledTransition = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), cutOverrides: { 1: { trans: 'none' } } } }, { duration: 8, lines: [], style: {} });
+assert.equal(disabledTransition.cuts[1].trans, undefined);
 console.log('Media planning tests passed');

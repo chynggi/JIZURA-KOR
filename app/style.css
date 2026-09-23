@@ -102,8 +102,10 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 /* line list */
 #lineList, #mediaLineList { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .media-ln-thumb { grid-column: 3; grid-row: 1; width: 34px; height: 26px; justify-self: end; }
-.media-ln .txt { padding-right: 38px; }
-.media-ln .meta { flex-wrap: wrap; }
+.media-ln .no { grid-column: 1; grid-row: 1; }
+.media-ln .time { grid-column: 2; grid-row: 1; }
+.media-ln .txt { grid-column: 3; grid-row: 1; padding-right: 38px; min-width: 0; }
+.media-ln .meta { grid-column: 2 / 4; grid-row: 2; flex-wrap: wrap; }
 .media-ln .tools { flex-wrap: wrap; flex: 1; }
 .ln { display: grid; grid-template-columns: 22px 66px minmax(0, 1fr); gap: 4px 6px; align-items: center; padding: 6px; border: 1px solid transparent; border-radius: var(--r); }
 .ln:hover { background: var(--raised); }

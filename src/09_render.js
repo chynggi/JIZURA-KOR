@@ -64,7 +64,7 @@ class Renderer {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
       ctx.clearRect(0, 0, cw, ch);
       ctx.fillStyle = plan.style.schemes[0].bg; ctx.fillRect(0, 0, cw, ch);
-      J.drawMedia(ctx, plan, t);
+      J.drawMedia(ctx, plan, t, this);
       ctx.globalAlpha = plan.media.opacity / 100;
       ctx.globalCompositeOperation = { normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.media.blend] || 'source-over';
       ctx.drawImage(layer, 0, 0); ctx.restore();
