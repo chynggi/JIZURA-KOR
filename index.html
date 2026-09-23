@@ -334,6 +334,7 @@ button.omakase:disabled { box-shadow: none; }
         </span>
         <button id="btnShuffle" class="accent" title="設定はそのままで構成だけ再抽選（ロックした行は維持）">シャッフル</button>
         <button id="btnOmakase" class="primary" title="スタイル・雰囲気・演出・配色をまるごとランダムに（キー R）">おまかせ</button>
+        <button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る</button>
       </div>
       <canvas id="timeline" aria-label="タイムライン（クリックで移動）"></canvas>
       <div class="cutinfo" id="cutInfo"></div>
@@ -344,6 +345,8 @@ button.omakase:disabled { box-shadow: none; }
       <div id="easyPanel" class="easy" hidden>
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">おまかせで作る</button>
+          <button id="btnJevBig" class="primary">歌詞からJevで作る</button>
+          <p class="hint">Jevを使うと、歌詞を外部APIへ送ってスタイル・雰囲気・行ごとのレイアウトと動きを選びます。ローカルサーバーとAPIキーが必要です。</p>
           <p class="hint">押すたびに、スタイル・雰囲気・動き・配色・構成がまるごと変わります。キーボードの <span class="kbd">R</span> でも実行できます。</p>
           <div class="hist-row">
             <button id="btnPrev2" class="ghost">◀ 前の案</button>
@@ -3205,15 +3208,15 @@ J.MOODS = {
   for (const [g, map] of Object.entries(extra)) for (const [k, ms] of Object.entries(map)) ms.forEach(m => add(g, k, m));
 })();
 
-J.omakase = (project, rnd = Math.random) => {
+J.omakase = (project, rnd = Math.random, choices = {}) => {
   const pick = a => a[Math.floor(rnd() * a.length) % a.length];
   const range = r => +(r[0] + (r[1] - r[0]) * rnd()).toFixed(2);
   const moods = Object.keys(J.MOODS).filter(k => k !== project.mood);
-  const mood = pick(moods), M = J.MOODS[mood];
+  const mood = J.MOODS[choices.mood] ? choices.mood : pick(moods), M = J.MOODS[mood];
   // style: mostly one that suits the mood, sometimes anything; never the same twice in a row
   let pool = (M.styles && rnd() < 0.72 ? M.styles : J.STYLE_ORDER).filter(k => k !== project.style);
   if (!pool.length) pool = J.STYLE_ORDER.filter(k => k !== project.style);
-  const style = pick(pool);
+  const style = J.STYLES[choices.style] ? choices.style : pick(pool);
   const fx = Object.assign({}, project.fx);
   for (const k of Object.keys(M.fx)) fx[k] = range(M.fx[k]);
   fx.koma = pick({ glitch: [12, 12, 8], pop: [12, 12, 8, 0], calm: [0, 0, 12], editorial: [0, 12], emotional: [12, 0], graphic: [12, 12, 0] }[mood] || [12, 8, 0]);
@@ -3256,6 +3259,78 @@ J.omakase = (project, rnd = Math.random) => {
   const overrides = {};
   for (const [i, o] of Object.entries(project.overrides || {})) if (o.lock) overrides[i] = o;
   return { mood, style, fx, enabled, fonts, colors, overrides, seed: Math.floor(rnd() * 1e9) };
+};
+})();
+
+/* Jev chooses from JIZURA's existing expression vocabulary. The API key stays on the local server. */
+(() => {
+'use strict';
+
+const CORE = {
+  layout: ['center', 'condensed', 'huge', 'tile', 'marquee', 'vcols', 'scatter', 'stack', 'gloss', 'circle', 'type', 'mixed', 'wave', 'labels', 'pill', 'ring', 'diag'],
+  enter: ['slice', 'scramble', 'assemble', 'flicker', 'zoom', 'stretch', 'blur', 'type', 'wipe', 'pop', 'drop', 'spin'],
+  exit: ['glitch', 'slice', 'explode', 'fall', 'blur', 'drift', 'wipe', 'shrink', 'scatter', 'stretch'],
+};
+const criteria = (keys, table) => Object.fromEntries(keys.filter(k => table[k]).map(k => [k, `${table[k].name}${table[k].tags ? ' / ' + table[k].tags.join(', ') : ''}`]));
+const choice = (instructions, options) => ({ type: 'choice', instructions, criteria: options });
+const valid = (answer, options) => answer && answer.type === 'choice' && Object.hasOwn(options, answer.choice) ? answer.choice : null;
+
+J.jevSuggest = async (project, signal) => {
+  const lines = J.parseLyrics(project.lyrics).lines;
+  if (!lines.length) throw new Error('歌詞を入力してください');
+  const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
+  const styleOptions = Object.fromEntries(J.STYLE_ORDER.map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
+  const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(keys, J.registry(g))]));
+  const selections = { lines: {} };
+  // Keep each request bounded; later batches use the globally chosen look as context.
+  for (let start = 0; start < lines.length; start += 12) {
+    const batch = lines.slice(start, start + 12);
+    const questions = {};
+    if (start === 0) {
+      questions.mood = choice('歌詞全体の意味と感情に最も合う映像の雰囲気を選ぶ。', moodOptions);
+      questions.style = choice('歌詞全体の情景に最も合う文字PVの配色と書体のスタイルを選ぶ。', styleOptions);
+    }
+    batch.forEach((line, i) => {
+      const n = start + i;
+      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`行 ${n + 1} の歌詞に合う${{ layout: '文字レイアウト', enter: '登場の動き', exit: '退場の動き' }[g]}を選ぶ。`, options[g]);
+    });
+    const state = {
+      title: (project.title || '').slice(0, 120),
+      artist: (project.artist || '').slice(0, 120),
+      lyrics: lines.map(l => l.text).join('\n').slice(0, 6000),
+      selectedMood: selections.mood || null,
+      selectedStyle: selections.style || null,
+      targetLines: batch.map((line, i) => ({ index: start + i + 1, text: line.text, impact: !!line.impact })),
+    };
+    const response = await fetch('/api/jev', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state, questions }), signal });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Jev API: HTTP ${response.status}`);
+    const answers = data.answers || {};
+    if (start === 0) {
+      selections.mood = valid(answers.mood, moodOptions);
+      selections.style = valid(answers.style, styleOptions);
+      if (!selections.mood || !selections.style) throw new Error('Jev のスタイル選定結果を確認できませんでした');
+    }
+    batch.forEach((line, i) => {
+      const n = start + i, picked = {};
+      for (const g of Object.keys(CORE)) {
+        const key = valid(answers[`${g}_${n}`], options[g]);
+        if (key) picked[g] = key;
+      }
+      if (Object.keys(picked).length) selections.lines[n] = picked;
+    });
+  }
+  return selections;
+};
+
+J.applyJev = (project, selections, rnd = Math.random) => {
+  const look = J.omakase(project, rnd, selections);
+  const overrides = look.overrides;
+  for (const [index, picks] of Object.entries(selections.lines || {})) {
+    if (overrides[index] && overrides[index].lock) continue;
+    overrides[index] = Object.fromEntries(Object.entries(picks).filter(([g, key]) => CORE[g] && CORE[g].includes(key) && J.registry(g)[key]));
+  }
+  return look;
 };
 })();
 
@@ -13048,6 +13123,31 @@ function omakase() {
   toast(`おまかせ：${J.STYLES[r.style].name} × ${J.MOODS[r.mood].name}`, r.colors.accentOn ? [r.colors.accent, r.colors.ghostA, r.colors.ghostB] : null);
   restartPreview();
 }
+let jevBusy = false;
+async function jevOmakase() {
+  if (jevBusy || S.exporting || S.tap) return;
+  jevBusy = true;
+  ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = true; });
+  showMsg('Jev が歌詞と演出を選定中…');
+  try {
+    const lyrics = S.project.lyrics;
+    const selected = await J.jevSuggest(S.project);
+    if (S.project.lyrics !== lyrics) throw new Error('選定中に歌詞が変わりました。もう一度実行してください');
+    remember();
+    const look = J.applyJev(S.project, selected);
+    Object.assign(S.project, look);
+    fontKey = ''; syncUI(); replan(); commit();
+    toast(`Jev：${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
+    restartPreview();
+  } catch (e) {
+    toast(`Jev：${e.message || e}`);
+    console.error(e);
+  } finally {
+    showMsg(null);
+    jevBusy = false;
+    ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = false; });
+  }
+}
 // change just one aspect of the current look
 function rerollPart(part) {
   if (S.exporting || S.tap) return;
@@ -13333,6 +13433,8 @@ function bind() {
   $('modePro').addEventListener('click', () => setMode('pro'));
   $('btnOmakase').addEventListener('click', omakase);
   $('btnOmakaseBig').addEventListener('click', omakase);
+  $('btnJev').addEventListener('click', jevOmakase);
+  $('btnJevBig').addEventListener('click', jevOmakase);
   ['btnPrev', 'btnPrev2'].forEach(id => $(id).addEventListener('click', () => histGo(-1)));
   ['btnNext', 'btnNext2'].forEach(id => $(id).addEventListener('click', () => histGo(1)));
   $('eStyle').addEventListener('click', () => rerollPart('style'));

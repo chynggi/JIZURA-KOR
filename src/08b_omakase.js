@@ -37,15 +37,15 @@ J.MOODS = {
   for (const [g, map] of Object.entries(extra)) for (const [k, ms] of Object.entries(map)) ms.forEach(m => add(g, k, m));
 })();
 
-J.omakase = (project, rnd = Math.random) => {
+J.omakase = (project, rnd = Math.random, choices = {}) => {
   const pick = a => a[Math.floor(rnd() * a.length) % a.length];
   const range = r => +(r[0] + (r[1] - r[0]) * rnd()).toFixed(2);
   const moods = Object.keys(J.MOODS).filter(k => k !== project.mood);
-  const mood = pick(moods), M = J.MOODS[mood];
+  const mood = J.MOODS[choices.mood] ? choices.mood : pick(moods), M = J.MOODS[mood];
   // style: mostly one that suits the mood, sometimes anything; never the same twice in a row
   let pool = (M.styles && rnd() < 0.72 ? M.styles : J.STYLE_ORDER).filter(k => k !== project.style);
   if (!pool.length) pool = J.STYLE_ORDER.filter(k => k !== project.style);
-  const style = pick(pool);
+  const style = J.STYLES[choices.style] ? choices.style : pick(pool);
   const fx = Object.assign({}, project.fx);
   for (const k of Object.keys(M.fx)) fx[k] = range(M.fx[k]);
   fx.koma = pick({ glitch: [12, 12, 8], pop: [12, 12, 8, 0], calm: [0, 0, 12], editorial: [0, 12], emotional: [12, 0], graphic: [12, 12, 0] }[mood] || [12, 8, 0]);

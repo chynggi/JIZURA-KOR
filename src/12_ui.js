@@ -402,6 +402,31 @@ function omakase() {
   toast(`おまかせ：${J.STYLES[r.style].name} × ${J.MOODS[r.mood].name}`, r.colors.accentOn ? [r.colors.accent, r.colors.ghostA, r.colors.ghostB] : null);
   restartPreview();
 }
+let jevBusy = false;
+async function jevOmakase() {
+  if (jevBusy || S.exporting || S.tap) return;
+  jevBusy = true;
+  ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = true; });
+  showMsg('Jev が歌詞と演出を選定中…');
+  try {
+    const lyrics = S.project.lyrics;
+    const selected = await J.jevSuggest(S.project);
+    if (S.project.lyrics !== lyrics) throw new Error('選定中に歌詞が変わりました。もう一度実行してください');
+    remember();
+    const look = J.applyJev(S.project, selected);
+    Object.assign(S.project, look);
+    fontKey = ''; syncUI(); replan(); commit();
+    toast(`Jev：${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
+    restartPreview();
+  } catch (e) {
+    toast(`Jev：${e.message || e}`);
+    console.error(e);
+  } finally {
+    showMsg(null);
+    jevBusy = false;
+    ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = false; });
+  }
+}
 // change just one aspect of the current look
 function rerollPart(part) {
   if (S.exporting || S.tap) return;
@@ -687,6 +712,8 @@ function bind() {
   $('modePro').addEventListener('click', () => setMode('pro'));
   $('btnOmakase').addEventListener('click', omakase);
   $('btnOmakaseBig').addEventListener('click', omakase);
+  $('btnJev').addEventListener('click', jevOmakase);
+  $('btnJevBig').addEventListener('click', jevOmakase);
   ['btnPrev', 'btnPrev2'].forEach(id => $(id).addEventListener('click', () => histGo(-1)));
   ['btnNext', 'btnNext2'].forEach(id => $(id).addEventListener('click', () => histGo(1)));
   $('eStyle').addEventListener('click', () => rerollPart('style'));

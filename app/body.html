@@ -79,6 +79,7 @@
         </span>
         <button id="btnShuffle" class="accent" title="設定はそのままで構成だけ再抽選（ロックした行は維持）">シャッフル</button>
         <button id="btnOmakase" class="primary" title="スタイル・雰囲気・演出・配色をまるごとランダムに（キー R）">おまかせ</button>
+        <button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る</button>
       </div>
       <canvas id="timeline" aria-label="タイムライン（クリックで移動）"></canvas>
       <div class="cutinfo" id="cutInfo"></div>
@@ -89,6 +90,8 @@
       <div id="easyPanel" class="easy" hidden>
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">おまかせで作る</button>
+          <button id="btnJevBig" class="primary">歌詞からJevで作る</button>
+          <p class="hint">Jevを使うと、歌詞を外部APIへ送ってスタイル・雰囲気・行ごとのレイアウトと動きを選びます。ローカルサーバーとAPIキーが必要です。</p>
           <p class="hint">押すたびに、スタイル・雰囲気・動き・配色・構成がまるごと変わります。キーボードの <span class="kbd">R</span> でも実行できます。</p>
           <div class="hist-row">
             <button id="btnPrev2" class="ghost">◀ 前の案</button>
