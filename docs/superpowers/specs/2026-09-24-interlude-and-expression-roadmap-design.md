@@ -44,10 +44,10 @@
 | `progress` | 곡 전체 진행 바 + `현재 / 전체` 타임코드 |
 | `wave` | 에너지 막대(스펙트럼 느낌). 곡 에너지가 없으면 시드 기반 가짜 파형 |
 
-- **변형 선택**: `interCount`가 `auto`면 전체 6종(`counter rings countdown preview progress wave`)에서, `on`이면 `counter`, `off`면 `counter`를 뺀 나머지에서 무작위. 크레딧(A)이 우선.
+- **변형 선택**(구현): 새 4종은 「추가 연출」이 켜졌을 때만 후보(기존 결과 보존 원칙). `auto`면 67% 확률로 새 4종 중 하나, 나머지는 기존 `counter`/`rings`. `on`이면 항상 `counter`, `off`면 `rings`+새 4종. `countdown`은 분할된 간주의 마지막 부분에만. 크레딧(A)이 우선.
 - **박 펄스**: 모든 간주 변형에서 원·막대가 `env.beat`에 맞춰 튄다(박 정보 없으면 `bpm`, 그것도 없으면 펄스 없음). 크기는 `fx.motion` 비례.
 - **긴 간주 분할**: 간주가 6초를 넘으면 `ceil(len/4)`개(최대 3개) 컷으로 나누고, 컷마다 다른 변형·색 스킴·장식을 고른다. 분할 경계는 박이 있으면 가장 가까운 박으로 스냅. AE 계획도 같은 규칙으로 분할(변형은 counter/rings).
-- 계획 데이터: 간주 컷 `params`에 `next`(다음 행 텍스트), `total`(영상 길이) 추가.
+- 계획 데이터(구현): `preview`는 `params.next`(다음 행), `countdown`은 `params.beat`(BPM 박 길이), 분할된 간주는 `params.end`(다음 가사 시작 — 남은 초 기준). 진행 바의 전체 길이는 `env.plan.duration`에서 읽음.
 
 ## C. 음악 반응
 
@@ -61,7 +61,7 @@
 
 - 표기: 확장 LRC 단어 시각 `[00:12.00]<00:12.00>나는 <00:12.48>너를 <00:13.10>사랑해` (A2 형식). 행 안 `<mm:ss.xx>` 태그를 지우고 `ln.marks = [{t, ci}]`(ci = 태그 직후 글자 위치)로 저장.
 - 컷 분할: marks가 있는 행은 컷 경계를 비율 대신 marks 시각에 맞춘다(각 컷의 시작 = 그 컷 첫 글자 직전 mark).
-- 카라오케: 컷 `params.charT`(컷 글자별 시작 시각, 컷 기준 상대초)를 계획에 넣고, 글자 가공 `karaoke`가 `charT`가 있으면 컷 길이 대신 실제 시각으로 채운다. marks가 있는 행에서는 `karaoke` 가공이 선택될 가중치를 올린다(×3).
+- 카라오케(구현): 컷에 `cut.sync = [[컷 기준 초, 불린 비율], …]`을 넣고, 글자 가공 `karaoke`가 `sync`가 있으면 컷 길이 대신 이 곡선으로 채운다. marks가 있는 행에서는 `karaoke` 선택 가중치 ×3. 마지막 행은 마지막 단어 시각 + 0.4초까지 유지, 단어 시각이 있는 행은 요약(recap) 컷을 만들지 않는다.
 - AE: 태그 제거와 컷 경계 정렬만 적용(채움 연출은 브라우저 전용).
 
 ## E. 공간·카메라 / 손글씨·획
@@ -94,3 +94,7 @@
 2. `node dev/ae_test.js` → `expr errors 0`, `alerts 0`.
 3. `python3 build.py --dev && python3 dev/build_test.py all --all-packs` 후 `dev/.venv/bin/python dev/smoke_all.py` → `problems 0`, `page errors []`.
 4. 새 렌더(B, E, F)는 `pack_sheet.py`/`overview.py` 이미지 확인.
+
+## 진행 결과
+
+A `dc9cd24` · B `1cfe174` · C `47d9ed3` · D `1f0388e` · E `9e25cca` · F `75ef1f2` — 단계마다 웹·AE 계획 비교, `dev/ae_test.js`(expr errors 0 / alerts 0), `smoke_all.py`(problems 0 / page errors 없음), 렌더 이미지 확인을 거쳤다.
