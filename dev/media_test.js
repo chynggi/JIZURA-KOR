@@ -65,4 +65,16 @@ assert.equal(transition.cuts[1].trans, 'wipe');
 assert.equal(transition.cuts[1].transP.dir, 'L');
 const disabledTransition = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), cutOverrides: { 1: { trans: 'none' } } } }, { duration: 8, lines: [], style: {} });
 assert.equal(disabledTransition.cuts[1].trans, undefined);
+context.document = { createElement: () => {
+  const canvas = { width: 0, height: 0, data: null };
+  canvas.getContext = () => ({
+    drawImage: src => { canvas.data = new Uint8ClampedArray(src.pixels); },
+    getImageData: () => ({ data: canvas.data.slice() }),
+    putImageData: image => { canvas.data = image.data; },
+  });
+  return canvas;
+} };
+const chromaPixels = [100, 211, 63, 255, 0, 255, 0, 255, 180, 170, 170, 255, 0, 0, 0, 255];
+const keyed = J.chromaSource({ pixels: chromaPixels }, { chromaColor: '#00ff00' }, 4, 1);
+assert.deepEqual(Array.from(keyed.data.filter((_, i) => i % 4 === 3)), [0, 0, 255, 255], 'real green-screen shades must be transparent while the subject and black stay opaque');
 console.log('Media planning tests passed');
