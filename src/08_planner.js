@@ -334,11 +334,28 @@ J.plan = (project, audio) => {
       const r2 = J.rng(J.h(lineSeed, 404));
       // marked interlude: one random screen effect from the library, no lyric text
       if (marked) { const pick = pickFx(r2, st, en, fx, true, fxHistory, 'force'); if (pick) { const D2 = J.FXE[pick]; addEvent(iStart - (D2.pre ? D2.pre / 24 : 0), pick, D2.amp || 1, (D2.dur || 4) / 24); fxHistory.push(pick); } }
-      const params = Object.assign(J.LAYOUTS.interlude.plan(r2), fx.interCount === 'on' ? { variant: 'counter' } : fx.interCount === 'off' ? { variant: 'rings' } : {});
-      // 첫 간주에 크레딧: the first interlude long enough shows the song title and artist
-      const credit = fx.interCredit && title && !creditDone && nextStart - iStart >= 2;
-      if (credit) { params.variant = 'credit'; creditDone = true; }
-      plan.cuts.push(makeCut({ text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, start: iStart, end: nextStart, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(r2, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: schemeIdx, seed: J.h(lineSeed, 405) }));
+      // long interludes (> 6 s) become 2–3 cuts, each boundary snapped to the nearest beat
+      const L = nextStart - iStart, nSeg = L > 6 ? Math.min(3, Math.ceil(L / 4)) : 1, bounds = [iStart];
+      for (let k = 1; k < nSeg; k++) bounds.push(snap(iStart + L * k / nSeg));
+      bounds.push(nextStart);
+      const next = parsed.lines[li + 1].text;
+      for (let k = 0; k < nSeg; k++) {
+        const rk = k ? J.rng(J.h(lineSeed, 404, k)) : r2;
+        const params = Object.assign(J.LAYOUTS.interlude.plan(rk), fx.interCount === 'on' ? { variant: 'counter' } : fx.interCount === 'off' ? { variant: 'rings' } : {});
+        // 추가 연출: countdown / next-line preview / progress bar / energy bars (countdown only on the last part)
+        if (project.extra === true && fx.interCount !== 'on' && (fx.interCount === 'off' || rk.chance(0.67))) {
+          const pool = k === nSeg - 1 ? INTER_EXTRA : INTER_EXTRA.filter(v => v !== 'countdown');
+          params.variant = fx.interCount === 'off' ? rk.pick(pool.concat('rings')) : rk.pick(pool);
+        }
+        if (nSeg > 1) params.end = nextStart;
+        if (params.variant === 'preview') params.next = next;
+        if (params.variant === 'countdown') params.beat = project.timing && project.timing.bpm > 0 ? 60 / project.timing.bpm : 0;
+        // 첫 간주에 크레딧: the first interlude long enough shows the song title and artist
+        const credit = k === 0 && fx.interCredit && title && !creditDone && bounds[1] - bounds[0] >= 2;
+        if (credit) { params.variant = 'credit'; creditDone = true; }
+        const sch = k && nSchemes > 1 ? (schemeIdx + k) % nSchemes : schemeIdx;
+        plan.cuts.push(makeCut({ text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, start: bounds[k], end: bounds[k + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(rk, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: sch, seed: k ? J.h(lineSeed, 405, k) : J.h(lineSeed, 405) }));
+      }
     }
   });
   // end card for [마무리]: title (or END) + artist from the last line's end to the end of the video
@@ -448,6 +465,7 @@ function pickHold(rng, en, fx, history) {
 function decorParams(rng, k) {
   return { id: k, seed: rng.int(1, 1e9), n: rng.int(1, 3) + (k === 'shapes' ? 3 : 0) + (k === 'sparks' ? 4 : 0), right: rng.chance(0.5), low: rng.chance(0.5), accent: rng.chance(0.4), corner: rng.chance(0.5), big: rng.chance(0.4), mode: rng.pick(['count', 'index']), from: rng.int(0, 20), to: rng.int(30, 999), v: rng.int(0, 5), r: rng() };
 }
+const INTER_EXTRA = ['countdown', 'preview', 'progress', 'wave'];
 function pickDecor(rng, st, en, fx, layout, history = []) {
   const count = Math.round(fx.decor * 2.8 * rng.range(0.45, 1.15));
   const recent = new Set(history.slice(-2).flatMap(h => h.decor || []));

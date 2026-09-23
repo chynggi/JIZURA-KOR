@@ -443,7 +443,7 @@ JZ_LAYOUTS.interlude = function (ctx) {
     jzSetExpr(jzXf(S, 'ADBE Scale'), 'var s=100*(1+0.04*Math.sin(time*2));[s,s]');
     if (jzP(ctx, 'variant', 'counter') === 'counter') {
         var n = jzText(ctx, '0.0', { font: jzFontOf(ctx, '_', 'display'), size: H * 0.36, color: sc.fg, x: W / 2, y: H / 2, opacity: 0.9 });
-        try { n.property('ADBE Text Properties').property('ADBE Text Document').expression = 'Math.max(0,' + jzN(c.dur) + '-time).toFixed(1)'; } catch (e) {}
+        try { n.property('ADBE Text Properties').property('ADBE Text Document').expression = 'Math.max(0,' + jzN(jzP(ctx, 'end', null) != null ? jzP(ctx, 'end', 0) - c.start : c.dur) + '-time).toFixed(1)'; } catch (e) {}
     }
     jzSmall(ctx, c.text || '— interlude —', { size: Math.max(12, H * 0.022), color: sc.sub, x: W / 2, y: H * 0.82, track: 0.4 });
     return { x0: W * 0.35, x1: W * 0.65, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2 };

@@ -556,11 +556,17 @@ function jzMakePlan(o) {
         if (li < lines.length - 1 && starts[li + 1] - iStart > (marked ? 0.3 : 1.3)) {
             var r2 = new JzRng(jzHash(o.seed, li, 404));
             if (marked) ev(iStart, r2.pick(['chroma', 'shake', 'zoom']), 1, 0.25); // one random screen effect, no lyric text
-            var variant = fx.interCount === 'on' ? 'counter' : fx.interCount === 'off' ? 'rings' : r2.pick(['counter', 'rings']);
-            // \uCCAB \uAC04\uC8FC\uC5D0 \uD06C\uB808\uB527: the first interlude long enough shows the song title and artist
-            var credit = fx.interCredit && title && !creditDone && starts[li + 1] - iStart >= 2;
-            if (credit) { variant = 'credit'; creditDone = true; }
-            plan.cuts.push({ index: plan.cuts.length, text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, start: iStart, end: starts[li + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: { variant: variant }, decor: jzPickDecor(r2, st, en.decor, { decor: 1 }), scheme: schemeIdx, seed: jzHash(o.seed, li, 405) % 1000000 });
+            // long interludes (> 6 s) become 2\u20133 cuts (same rule as the browser, without beat snapping)
+            var iLen = starts[li + 1] - iStart, nSeg = iLen > 6 ? Math.min(3, Math.ceil(iLen / 4)) : 1;
+            for (var sk = 0; sk < nSeg; sk++) {
+                var rk = sk ? new JzRng(jzHash(o.seed, li, 404, sk)) : r2, b0 = iStart + iLen * sk / nSeg, b1 = sk === nSeg - 1 ? starts[li + 1] : iStart + iLen * (sk + 1) / nSeg;
+                var variant = fx.interCount === 'on' ? 'counter' : fx.interCount === 'off' ? 'rings' : rk.pick(['counter', 'rings']);
+                // \uCCAB \uAC04\uC8FC\uC5D0 \uD06C\uB808\uB527: the first interlude long enough shows the song title and artist
+                var credit = sk === 0 && fx.interCredit && title && !creditDone && b1 - b0 >= 2;
+                if (credit) { variant = 'credit'; creditDone = true; }
+                var ip = { variant: variant }; if (nSeg > 1) ip.end = starts[li + 1];
+                plan.cuts.push({ index: plan.cuts.length, text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, start: b0, end: b1, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: ip, decor: jzPickDecor(rk, st, en.decor, { decor: 1 }), scheme: sk && nS > 1 ? (schemeIdx + sk) % nS : schemeIdx, seed: (sk ? jzHash(o.seed, li, 405, sk) : jzHash(o.seed, li, 405)) % 1000000 });
+            }
         }
     }
     // end card for [\uB9C8\uBB34\uB9AC]: title (or END) + artist from the last line's end to the end of the comp
@@ -1293,7 +1299,7 @@ JZ_LAYOUTS.interlude = function (ctx) {
     jzSetExpr(jzXf(S, 'ADBE Scale'), 'var s=100*(1+0.04*Math.sin(time*2));[s,s]');
     if (jzP(ctx, 'variant', 'counter') === 'counter') {
         var n = jzText(ctx, '0.0', { font: jzFontOf(ctx, '_', 'display'), size: H * 0.36, color: sc.fg, x: W / 2, y: H / 2, opacity: 0.9 });
-        try { n.property('ADBE Text Properties').property('ADBE Text Document').expression = 'Math.max(0,' + jzN(c.dur) + '-time).toFixed(1)'; } catch (e) {}
+        try { n.property('ADBE Text Properties').property('ADBE Text Document').expression = 'Math.max(0,' + jzN(jzP(ctx, 'end', null) != null ? jzP(ctx, 'end', 0) - c.start : c.dur) + '-time).toFixed(1)'; } catch (e) {}
     }
     jzSmall(ctx, c.text || '\u2014 interlude \u2014', { size: Math.max(12, H * 0.022), color: sc.sub, x: W / 2, y: H * 0.82, track: 0.4 });
     return { x0: W * 0.35, x1: W * 0.65, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2 };

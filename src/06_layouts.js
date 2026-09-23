@@ -643,11 +643,41 @@ J.LAYOUTS = {
         // keep decor clear of the artist line too
         return bb ? Object.assign({}, bb, { y1: Math.max(bb.y1, env.cut.note ? H / 2 + size * 0.95 + ns * 0.7 : bb.y1) }) : null;
       }
+      // time left until the next lyric (a long interlude is split into parts that share P.end)
+      const remain = Math.max(0, (P.end != null ? P.end - env.t : env.cut.dur - env.lt));
+      // beat pulse: the rings (and bars) kick on every beat when the song's beats are known
+      const pb = env.beat ? Math.exp(-env.beat.since * 7) * (env.fx.motion ?? 0.7) : 0;
+      const aIn = E.outCubic(J.clamp(env.lt / 0.35)) * (1 - E.inCubic(env.pOut));
       if (P.variant === 'counter') {
-        const remain = Math.max(0, env.cut.dur - env.lt);
         env.draw({ text: remain.toFixed(1), font: env.st.fonts.display[0], size: H * 0.36, x: W / 2, y: H / 2, color: sc.fg, alpha: 0.9 });
+      } else if (P.variant === 'countdown') {
+        // 3·2·1 on the last three beats (or seconds) before the next lyric
+        const bl = env.beat ? env.beat.len : P.beat > 0 ? P.beat : 1, k = Math.ceil(remain / bl - 1e-6);
+        if (k >= 1 && k <= 3) {
+          const f = J.clamp((remain - (k - 1) * bl) / bl);   // 1 → 0 across this number
+          env.draw({ text: String(k), font: env.st.fonts.display[0], size: H * 0.34 * (1 + 0.3 * E.inCubic(J.clamp((f - 0.75) / 0.25))), x: W / 2, y: H / 2, color: k === 1 ? sc.accent : sc.fg, alpha: 0.9 * J.clamp(f * 4) * aIn });
+        }
+      } else if (P.variant === 'preview') {
+        // the next lyric waits, faint and small, and sharpens as the interlude ends
+        const q = J.smooth(0, 1, env.lt / Math.max(0.5, env.cut.dur)), font = env.st.fonts.display[0], txt = P.next || '';
+        if (txt) env.draw({ text: txt, font, size: Math.min(J.fitSize(txt, font, W * 0.7, H * 0.1), H * 0.08), x: W / 2, y: H / 2, color: J.mix(sc.dim, sc.sub, q), alpha: (0.35 + 0.6 * q) * aIn, blur: env.allowFilter ? (1 - q) * 3 : 0, ghost: false });
+      } else if (P.variant === 'progress') {
+        // song progress bar + timecode
+        const tot = Math.max(1, env.plan.duration), q = J.clamp(env.t / tot), bw = Math.min(W, H) * 0.7, x0 = W / 2 - bw / 2, y = H * 0.56;
+        env.rect(x0, y, bw, Math.max(2, H * 0.004), sc.dim, aIn, false);
+        env.rect(x0, y, bw * q, Math.max(2, H * 0.004), sc.accent, aIn, false);
+        env.circle(x0 + bw * q, y + H * 0.002, H * (0.009 + 0.004 * pb), sc.accent, null, 1, aIn, false);
+        env.draw({ text: J.fmtTime(env.t) + '  /  ' + J.fmtTime(tot), font: env.st.fonts.mono ? env.st.fonts.mono[0] : 'mono', size: J.clamp(H * 0.03, 14, 34), x: W / 2, y: H * 0.48, track: 0.1, color: sc.fg, alpha: 0.85 * aIn, ghost: false });
+      } else if (P.variant === 'wave') {
+        // energy bars (a seeded fake wave when there is no song)
+        const N = 32, bw = Math.min(W, H) * 0.9, gap = bw / N, x0 = W / 2 - bw / 2, seed = env.cut.seed % 997;
+        for (let i = 0; i < N; i++) {
+          const lv = env.energy != null ? env.energy : 0.45 + 0.35 * J.noise1(env.ltb * 1.3, seed);
+          const h = H * 0.2 * (0.08 + 0.92 * lv * (0.35 + 0.65 * (0.5 + 0.5 * J.noise1(i * 0.55 + env.ltb * 3, seed + i))) * (1 + 0.5 * pb));
+          env.rect(x0 + i * gap + gap * 0.18, H / 2 - h / 2, gap * 0.64, h, i % 8 === 3 ? sc.accent : sc.fg, 0.85 * aIn, true);
+        }
       }
-      for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.2 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k)), null, sc.sub, 1.2, 0.5, false);
+      for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.2 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k) + 0.06 * pb * (3 - k) / 3), null, sc.sub, 1.2, 0.5, false);
       env.draw({ text: env.cut.text || '— interlude —', font: env.st.fonts.body[0], size: fs, x: W / 2, y: H * 0.82, track: 0.4, color: sc.sub, ghost: false });
       return { x0: W * 0.35, x1: W * 0.65, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2, boxes: [] };
     },
