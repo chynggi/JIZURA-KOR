@@ -13,6 +13,7 @@ J.defaultProject = () => ({
   version: 1,
   title: '', artist: '',
   lyrics: J.SAMPLE_LYRICS,
+  jevPrompt: '',
   style: 'noir', mood: null,
   seed: 20260922,
   aspect: '16:9', res: 1080, fps: 24,

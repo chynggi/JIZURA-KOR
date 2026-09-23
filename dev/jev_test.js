@@ -30,12 +30,15 @@ vm.createContext(context);
 vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
 
 (async () => {
-  const project = { lyrics: Array.from({ length: 13 }, (_, i) => `line ${i}`).join('\n') };
+  const project = { lyrics: Array.from({ length: 13 }, (_, i) => `line ${i}`).join('\n'), jevPrompt: 'サビは大胆に' };
   const selected = await J.jevSuggest(project);
   assert.equal(requests.length, 2);
   assert.equal(requests[0].url, 'http://127.0.0.1:8765/api/jev');
   assert.equal(Object.keys(requests[0].payload.questions).length, 38);
   assert.equal(Object.keys(requests[1].payload.questions).length, 3);
+  assert.equal(requests[0].payload.state.userDirection, 'サビは大胆に');
+  assert.equal(requests[1].payload.state.userDirection, 'サビは大胆に');
+  assert.match(requests[0].payload.questions.mood.instructions, /追加指示/);
   assert.equal(selected.mood, 'calm');
   assert.equal(selected.style, 'paper');
   assert.equal(Object.keys(selected.lines).length, 13);
@@ -46,5 +49,6 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
   context.location.origin = 'http://127.0.0.1:8765';
   await J.jevSuggest({ lyrics: 'one line' });
   assert.equal(requests.at(-1).url, '/api/jev');
+  assert.equal(Object.hasOwn(requests.at(-1).payload.state, 'userDirection'), false);
   console.log('Jev selection and locked-line tests passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

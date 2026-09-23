@@ -409,9 +409,9 @@ async function jevOmakase() {
   ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = true; });
   showMsg('Jev が歌詞と演出を選定中…');
   try {
-    const lyrics = S.project.lyrics;
+    const lyrics = S.project.lyrics, jevPrompt = S.project.jevPrompt;
     const selected = await J.jevSuggest(S.project);
-    if (S.project.lyrics !== lyrics) throw new Error('選定中に歌詞が変わりました。もう一度実行してください');
+    if (S.project.lyrics !== lyrics || S.project.jevPrompt !== jevPrompt) throw new Error('選定中に歌詞か追加指示が変わりました。もう一度実行してください');
     remember();
     const look = J.applyJev(S.project, selected);
     Object.assign(S.project, look);
@@ -619,6 +619,7 @@ function updateTap() { const ln = S.plan.lines[S.tap.i]; $('tapLine').textConten
 function syncUI() {
   $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
   $('lyrics').value = S.project.lyrics;
+  $('jevPrompt').value = S.project.jevPrompt || '';
   $('bpm').value = S.project.timing.bpm > 0 ? S.project.timing.bpm : '';
   $('bpm').placeholder = S.audio ? `自動 ${S.audio.bpm}` : 'なし';
   $('offset').value = S.project.timing.offset ?? 0.4;
@@ -630,6 +631,7 @@ function syncUI() {
 /* ---------------- wiring ---------------- */
 function bind() {
   $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; replanSoon(260); });
+  $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; autosave(); });
   $('songTitle').addEventListener('input', e => { S.project.title = e.target.value; replanSoon(300); });
   $('songArtist').addEventListener('input', e => { S.project.artist = e.target.value; replanSoon(300); });
   $('btnSyntax').addEventListener('click', e => { const s = $('syntax'); s.hidden = !s.hidden; e.target.setAttribute('aria-expanded', String(!s.hidden)); });

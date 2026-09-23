@@ -22,6 +22,9 @@
       <div class="sec">
         <div class="sec-h"><h2>歌詞</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">記法</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="歌詞（1行 = 1フレーズ）"></textarea>
+        <label class="jev-prompt-label" for="jevPrompt">Jevへの追加指示（任意）</label>
+        <textarea id="jevPrompt" rows="2" maxlength="1000" placeholder="例：夜の街のような静かな雰囲気。サビは大胆に。" aria-label="Jevへの追加指示"></textarea>
+        <div class="hint">「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。</div>
         <div id="syntax" class="syntax" hidden>
           <ul>
             <li>1行が1フレーズ。空行は少し間を空けます</li>

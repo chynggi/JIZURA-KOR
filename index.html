@@ -92,6 +92,8 @@ h3 { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-top: 1
 .sec { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
 .sec-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #lyrics { min-height: 150px; font-size: 14px; }
+.jev-prompt-label { font-size: 12px; font-weight: 700; }
+#jevPrompt { min-height: 60px; font-size: 13px; }
 .syntax { font-size: 12px; color: var(--muted); background: var(--raised); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
 .syntax code { font-family: var(--mono); color: var(--amber); }
 .syntax ul { margin: 0; padding-left: 16px; display: grid; gap: 3px; }
@@ -277,6 +279,9 @@ button.omakase:disabled { box-shadow: none; }
       <div class="sec">
         <div class="sec-h"><h2>歌詞</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">記法</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="歌詞（1行 = 1フレーズ）"></textarea>
+        <label class="jev-prompt-label" for="jevPrompt">Jevへの追加指示（任意）</label>
+        <textarea id="jevPrompt" rows="2" maxlength="1000" placeholder="例：夜の街のような静かな雰囲気。サビは大胆に。" aria-label="Jevへの追加指示"></textarea>
+        <div class="hint">「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。</div>
         <div id="syntax" class="syntax" hidden>
           <ul>
             <li>1行が1フレーズ。空行は少し間を空けます</li>
@@ -2722,6 +2727,7 @@ J.defaultProject = () => ({
   version: 1,
   title: '', artist: '',
   lyrics: J.SAMPLE_LYRICS,
+  jevPrompt: '',
   style: 'noir', mood: null,
   seed: 20260922,
   aspect: '16:9', res: 1080, fps: 24,
@@ -3280,6 +3286,8 @@ const endpoint = () => location.origin === 'https://hirazisora.github.io'
 J.jevSuggest = async (project, signal) => {
   const lines = J.parseLyrics(project.lyrics).lines;
   if (!lines.length) throw new Error('歌詞を入力してください');
+  const userDirection = String(project.jevPrompt || '').trim().slice(0, 1000);
+  const directionRule = userDirection ? '歌詞とユーザーの追加指示の両方を考慮する。' : '歌詞を考慮する。';
   const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
   const styleOptions = Object.fromEntries(J.STYLE_ORDER.map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
   const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(keys, J.registry(g))]));
@@ -3289,17 +3297,18 @@ J.jevSuggest = async (project, signal) => {
     const batch = lines.slice(start, start + 12);
     const questions = {};
     if (start === 0) {
-      questions.mood = choice('歌詞全体の意味と感情に最も合う映像の雰囲気を選ぶ。', moodOptions);
-      questions.style = choice('歌詞全体の情景に最も合う文字PVの配色と書体のスタイルを選ぶ。', styleOptions);
+      questions.mood = choice(`${directionRule} 歌詞全体に最も合う映像の雰囲気を選ぶ。`, moodOptions);
+      questions.style = choice(`${directionRule} 歌詞全体に最も合う文字PVの配色と書体のスタイルを選ぶ。`, styleOptions);
     }
     batch.forEach((line, i) => {
       const n = start + i;
-      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`行 ${n + 1} の歌詞に合う${{ layout: '文字レイアウト', enter: '登場の動き', exit: '退場の動き' }[g]}を選ぶ。`, options[g]);
+      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`${directionRule} 行 ${n + 1} に合う${{ layout: '文字レイアウト', enter: '登場の動き', exit: '退場の動き' }[g]}を選ぶ。`, options[g]);
     });
     const state = {
       title: (project.title || '').slice(0, 120),
       artist: (project.artist || '').slice(0, 120),
       lyrics: lines.map(l => l.text).join('\n').slice(0, 6000),
+      ...(userDirection ? { userDirection } : {}),
       selectedMood: selections.mood || null,
       selectedStyle: selections.style || null,
       targetLines: batch.map((line, i) => ({ index: start + i + 1, text: line.text, impact: !!line.impact })),
@@ -13137,9 +13146,9 @@ async function jevOmakase() {
   ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = true; });
   showMsg('Jev が歌詞と演出を選定中…');
   try {
-    const lyrics = S.project.lyrics;
+    const lyrics = S.project.lyrics, jevPrompt = S.project.jevPrompt;
     const selected = await J.jevSuggest(S.project);
-    if (S.project.lyrics !== lyrics) throw new Error('選定中に歌詞が変わりました。もう一度実行してください');
+    if (S.project.lyrics !== lyrics || S.project.jevPrompt !== jevPrompt) throw new Error('選定中に歌詞か追加指示が変わりました。もう一度実行してください');
     remember();
     const look = J.applyJev(S.project, selected);
     Object.assign(S.project, look);
@@ -13347,6 +13356,7 @@ function updateTap() { const ln = S.plan.lines[S.tap.i]; $('tapLine').textConten
 function syncUI() {
   $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
   $('lyrics').value = S.project.lyrics;
+  $('jevPrompt').value = S.project.jevPrompt || '';
   $('bpm').value = S.project.timing.bpm > 0 ? S.project.timing.bpm : '';
   $('bpm').placeholder = S.audio ? `自動 ${S.audio.bpm}` : 'なし';
   $('offset').value = S.project.timing.offset ?? 0.4;
@@ -13358,6 +13368,7 @@ function syncUI() {
 /* ---------------- wiring ---------------- */
 function bind() {
   $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; replanSoon(260); });
+  $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; autosave(); });
   $('songTitle').addEventListener('input', e => { S.project.title = e.target.value; replanSoon(300); });
   $('songArtist').addEventListener('input', e => { S.project.artist = e.target.value; replanSoon(300); });
   $('btnSyntax').addEventListener('click', e => { const s = $('syntax'); s.hidden = !s.hidden; e.target.setAttribute('aria-expanded', String(!s.hidden)); });

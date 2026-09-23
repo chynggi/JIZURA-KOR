@@ -16,6 +16,8 @@ const endpoint = () => location.origin === 'https://hirazisora.github.io'
 J.jevSuggest = async (project, signal) => {
   const lines = J.parseLyrics(project.lyrics).lines;
   if (!lines.length) throw new Error('歌詞を入力してください');
+  const userDirection = String(project.jevPrompt || '').trim().slice(0, 1000);
+  const directionRule = userDirection ? '歌詞とユーザーの追加指示の両方を考慮する。' : '歌詞を考慮する。';
   const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
   const styleOptions = Object.fromEntries(J.STYLE_ORDER.map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
   const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(keys, J.registry(g))]));
@@ -25,17 +27,18 @@ J.jevSuggest = async (project, signal) => {
     const batch = lines.slice(start, start + 12);
     const questions = {};
     if (start === 0) {
-      questions.mood = choice('歌詞全体の意味と感情に最も合う映像の雰囲気を選ぶ。', moodOptions);
-      questions.style = choice('歌詞全体の情景に最も合う文字PVの配色と書体のスタイルを選ぶ。', styleOptions);
+      questions.mood = choice(`${directionRule} 歌詞全体に最も合う映像の雰囲気を選ぶ。`, moodOptions);
+      questions.style = choice(`${directionRule} 歌詞全体に最も合う文字PVの配色と書体のスタイルを選ぶ。`, styleOptions);
     }
     batch.forEach((line, i) => {
       const n = start + i;
-      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`行 ${n + 1} の歌詞に合う${{ layout: '文字レイアウト', enter: '登場の動き', exit: '退場の動き' }[g]}を選ぶ。`, options[g]);
+      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`${directionRule} 行 ${n + 1} に合う${{ layout: '文字レイアウト', enter: '登場の動き', exit: '退場の動き' }[g]}を選ぶ。`, options[g]);
     });
     const state = {
       title: (project.title || '').slice(0, 120),
       artist: (project.artist || '').slice(0, 120),
       lyrics: lines.map(l => l.text).join('\n').slice(0, 6000),
+      ...(userDirection ? { userDirection } : {}),
       selectedMood: selections.mood || null,
       selectedStyle: selections.style || null,
       targetLines: batch.map((line, i) => ({ index: start + i + 1, text: line.text, impact: !!line.impact })),
