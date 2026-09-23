@@ -88,9 +88,12 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
     Object.assign(colors, J.randomPalette(bg, rnd), { accentOn: true });
     delete colors.mode;
   }
-  // keep locked lines, drop other per-line picks
+  // Keep the user-drawn lyric area even when the line's look is re-rolled.
   const overrides = {};
-  for (const [i, o] of Object.entries(project.overrides || {})) if (o.lock) overrides[i] = o;
+  for (const [i, o] of Object.entries(project.overrides || {})) {
+    if (o.lock) overrides[i] = Object.assign({}, o);
+    else if (o.area) overrides[i] = { area: o.area };
+  }
   return { mood, style, fx, enabled, fonts, colors, overrides, seed: Math.floor(rnd() * 1e9) };
 };
 })();

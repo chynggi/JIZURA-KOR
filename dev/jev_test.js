@@ -14,7 +14,7 @@ const J = {
   randomOk: (project, group, key) => !(group === 'style' && key === 'sakura' && project.extra !== true),
   registry: g => registries[g],
   parseLyrics: lyrics => ({ lines: lyrics.split('\n').map(text => ({ text })) }),
-  omakase: (project, rnd, choices) => ({ mood: choices.mood, style: choices.style, overrides: { 1: { lock: true, layout: 'huge' } } }),
+  omakase: (project, rnd, choices) => ({ mood: choices.mood, style: choices.style, overrides: { 0: { area: project.overrides[0].area }, 1: { lock: true, layout: 'huge' } } }),
 };
 const requests = [];
 const context = { J, location: { origin: 'https://hirazisora.github.io' }, fetch: async (url, options) => {
@@ -31,7 +31,7 @@ vm.createContext(context);
 vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
 
 (async () => {
-  const project = { lyrics: Array.from({ length: 13 }, (_, i) => `line ${i}`).join('\n'), jevPrompt: 'サビは大胆に' };
+  const project = { lyrics: Array.from({ length: 13 }, (_, i) => `line ${i}`).join('\n'), jevPrompt: 'サビは大胆に', overrides: { 0: { area: { x: 0.2, y: 0.1, w: 0.5, h: 0.6 } } } };
   const selected = await J.jevSuggest(project);
   assert.equal(requests.length, 2);
   assert.equal(requests[0].url, 'http://127.0.0.1:8765/api/jev');
@@ -46,6 +46,7 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
   assert.equal(Object.keys(selected.lines).length, 13);
   const look = J.applyJev(project, selected);
   assert.equal(look.overrides[0].layout, 'center');
+  assert.equal(look.overrides[0].area.x, 0.2);
   assert.equal(look.overrides[1].layout, 'huge');
   assert.equal(look.overrides[1].lock, true);
   context.location.origin = 'http://127.0.0.1:8765';

@@ -75,7 +75,8 @@ J.applyJev = (project, selections, rnd = Math.random) => {
   const overrides = look.overrides;
   for (const [index, picks] of Object.entries(selections.lines || {})) {
     if (overrides[index] && overrides[index].lock) continue;
-    overrides[index] = Object.fromEntries(Object.entries(picks).filter(([g, key]) => CORE[g] && CORE[g].includes(key) && J.registry(g)[key] && (!J.randomOk || J.randomOk(project, g, key))));
+    overrides[index] = Object.assign({}, overrides[index] && overrides[index].area ? { area: overrides[index].area } : {},
+      Object.fromEntries(Object.entries(picks).filter(([g, key]) => CORE[g] && CORE[g].includes(key) && J.registry(g)[key] && (!J.randomOk || J.randomOk(project, g, key)))));
   }
   return look;
 };
