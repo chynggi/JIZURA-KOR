@@ -233,15 +233,21 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
 .terms-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
 
 /* ---------- responsive ---------- */
+/* wide screens: the app fills the window and each side column scrolls on its own */
+@media (min-width: 1181px) {
+  #app { height: 100vh; height: 100dvh; min-height: 0; }
+  .col-stage { overflow: auto; }
+}
 @media (max-width: 1180px) {
   .work { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .col-stage { grid-column: 1 / -1; order: -1; }
   .col-left { border-right: 1px solid var(--line); }
   .col-right { border-left: 0; }
+  .col-left, .col-right { max-height: 78vh; }
 }
 @media (max-width: 760px) {
   .work { grid-template-columns: minmax(0, 1fr); }
-  .col-left, .col-right { border: 0; border-top: 1px solid var(--line); }
+  .col-left, .col-right { border: 0; border-top: 1px solid var(--line); max-height: none; }
   .bar { gap: 10px; }
   .brand .tag { display: none; }
   .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
