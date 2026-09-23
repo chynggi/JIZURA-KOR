@@ -121,6 +121,8 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .media-zoom-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
 .media-zoom-controls label { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: var(--muted); min-width: 0; }
 .media-zoom-controls input, .media-zoom-controls select { width: 100%; padding: 3px 5px; font-size: 11px; }
+.media-video-loop { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 11px; color: var(--muted); cursor: pointer; }
+.media-video-loop input { margin: 0; accent-color: var(--amber); }
 .ln .cuts { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; }
 .ln .cuts span { font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--line2); color: var(--muted); cursor: pointer; }
 .ln .cuts span:hover { color: var(--text); border-color: var(--amber); }

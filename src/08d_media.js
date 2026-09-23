@@ -64,7 +64,8 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
       hold: ov.hold || rng.pick(Object.keys(J.MEDIA_HOLD)), exit: ov.exit || rng.pick(Object.keys(J.MEDIA_EXIT)),
       treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)),
       zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : rng.pick([100, 110, 125, 140, 160]),
-      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)), seed };
+      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)),
+      videoLoop: item.type === 'video' && ov.videoLoop === true, seed };
   });
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
@@ -80,6 +81,11 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
   return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder, loop: m.loop };
 };
 J.mediaAt = (plan, t) => plan.media && plan.media.cuts.find(c => t >= c.start && t < c.end) || null;
+J.mediaVideoTime = (cut, t, duration) => {
+  if (!Number.isFinite(duration) || duration <= 0) return 0;
+  const elapsed = Math.max(0, t - cut.start);
+  return Math.min(cut.videoLoop ? elapsed % duration : elapsed, Math.max(0, duration - 0.001));
+};
 
 const DB = 'jizura-media-v1';
 const dbOpen = () => new Promise((resolve, reject) => {
@@ -139,11 +145,11 @@ J.prepareMediaFrame = async (plan, t, signal) => {
   const prev = cut.index > 0 && plan.media.cuts[cut.index - 1];
   if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && (!J.mediaTransitionFrame || J.mediaTransitionFrame.plan !== plan || J.mediaTransitionFrame.index !== prev.index)) {
     const prior = J.mediaAssets.get(prev.itemId);
-    if (prior) { await seekMediaVideo(prior.element, prev.end - prev.start - 0.001, signal); captureMediaVideo(plan, prev); }
+    if (prior) { await seekMediaVideo(prior.element, J.mediaVideoTime(prev, prev.end - 0.001, prior.element.duration), signal); captureMediaVideo(plan, prev); }
   }
   if (cut.type !== 'video') return;
   const asset = J.mediaAssets.get(cut.itemId); if (!asset) return;
-  await seekMediaVideo(asset.element, t - cut.start, signal);
+  await seekMediaVideo(asset.element, J.mediaVideoTime(cut, t, asset.element.duration), signal);
 };
 J.syncMediaPreview = (plan, t, playing) => {
   const cut = J.mediaAt(plan, t);
@@ -153,8 +159,9 @@ J.syncMediaPreview = (plan, t, playing) => {
   for (const [id, asset] of J.mediaAssets) {
     if (asset.type !== 'video') continue;
     const v = asset.element;
-    if (!cut || id !== cut.itemId) { v.pause(); continue; }
-    const target = Math.max(0, Math.min(t - cut.start, (v.duration || 1) - 0.001));
+    if (!cut || id !== cut.itemId) { v.pause(); v.loop = false; continue; }
+    v.loop = !!cut.videoLoop;
+    const target = J.mediaVideoTime(cut, t, v.duration);
     if (Math.abs(v.currentTime - target) > (playing ? 0.18 : 0.02)) v.currentTime = target;
     if (playing && v.paused) v.play().catch(() => {});
     if (!playing) v.pause();

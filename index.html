@@ -137,6 +137,8 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .media-zoom-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
 .media-zoom-controls label { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: var(--muted); min-width: 0; }
 .media-zoom-controls input, .media-zoom-controls select { width: 100%; padding: 3px 5px; font-size: 11px; }
+.media-video-loop { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 11px; color: var(--muted); cursor: pointer; }
+.media-video-loop input { margin: 0; accent-color: var(--amber); }
 .ln .cuts { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; }
 .ln .cuts span { font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--line2); color: var(--muted); cursor: pointer; }
 .ln .cuts span:hover { color: var(--text); border-color: var(--amber); }
@@ -3632,7 +3634,8 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
       hold: ov.hold || rng.pick(Object.keys(J.MEDIA_HOLD)), exit: ov.exit || rng.pick(Object.keys(J.MEDIA_EXIT)),
       treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)),
       zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : rng.pick([100, 110, 125, 140, 160]),
-      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)), seed };
+      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)),
+      videoLoop: item.type === 'video' && ov.videoLoop === true, seed };
   });
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
@@ -3648,6 +3651,11 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
   return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder, loop: m.loop };
 };
 J.mediaAt = (plan, t) => plan.media && plan.media.cuts.find(c => t >= c.start && t < c.end) || null;
+J.mediaVideoTime = (cut, t, duration) => {
+  if (!Number.isFinite(duration) || duration <= 0) return 0;
+  const elapsed = Math.max(0, t - cut.start);
+  return Math.min(cut.videoLoop ? elapsed % duration : elapsed, Math.max(0, duration - 0.001));
+};
 
 const DB = 'jizura-media-v1';
 const dbOpen = () => new Promise((resolve, reject) => {
@@ -3707,11 +3715,11 @@ J.prepareMediaFrame = async (plan, t, signal) => {
   const prev = cut.index > 0 && plan.media.cuts[cut.index - 1];
   if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && (!J.mediaTransitionFrame || J.mediaTransitionFrame.plan !== plan || J.mediaTransitionFrame.index !== prev.index)) {
     const prior = J.mediaAssets.get(prev.itemId);
-    if (prior) { await seekMediaVideo(prior.element, prev.end - prev.start - 0.001, signal); captureMediaVideo(plan, prev); }
+    if (prior) { await seekMediaVideo(prior.element, J.mediaVideoTime(prev, prev.end - 0.001, prior.element.duration), signal); captureMediaVideo(plan, prev); }
   }
   if (cut.type !== 'video') return;
   const asset = J.mediaAssets.get(cut.itemId); if (!asset) return;
-  await seekMediaVideo(asset.element, t - cut.start, signal);
+  await seekMediaVideo(asset.element, J.mediaVideoTime(cut, t, asset.element.duration), signal);
 };
 J.syncMediaPreview = (plan, t, playing) => {
   const cut = J.mediaAt(plan, t);
@@ -3721,8 +3729,9 @@ J.syncMediaPreview = (plan, t, playing) => {
   for (const [id, asset] of J.mediaAssets) {
     if (asset.type !== 'video') continue;
     const v = asset.element;
-    if (!cut || id !== cut.itemId) { v.pause(); continue; }
-    const target = Math.max(0, Math.min(t - cut.start, (v.duration || 1) - 0.001));
+    if (!cut || id !== cut.itemId) { v.pause(); v.loop = false; continue; }
+    v.loop = !!cut.videoLoop;
+    const target = J.mediaVideoTime(cut, t, v.duration);
     if (Math.abs(v.currentTime - target) > (playing ? 0.18 : 0.02)) v.currentTime = target;
     if (playing && v.paused) v.play().catch(() => {});
     if (!playing) v.pause();
@@ -29389,13 +29398,15 @@ function renderMediaLines() {
     if (ov.layout === 'stretch') ov.layout = 'cover';
     const zoomValue = ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : '';
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span><span class="media-zoom-controls"><label>ズーム率（％）<input class="media-zoom" type="number" min="100" max="300" step="1" placeholder="おまかせ" value="${zoomValue}" aria-label="${i + 1}カット目のズーム率"></label><label>ズーム対象${select('ズーム対象', J.MEDIA_FOCUS, ov.focus)}</label></span></div>`;
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span><span class="media-zoom-controls"><label>ズーム率（％）<input class="media-zoom" type="number" min="100" max="300" step="1" placeholder="おまかせ" value="${zoomValue}" aria-label="${i + 1}カット目のズーム率"></label><label>ズーム対象${select('ズーム対象', J.MEDIA_FOCUS, ov.focus)}</label></span>${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label>` : ''}</div>`;
     li.querySelector('.time').addEventListener('change', e => { S.project.media.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.txt').addEventListener('click', () => seek(cut.start + 0.001));
     ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].forEach((key, n) => li.querySelectorAll('select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || undefined }); replan(); }));
     if (i === 0) li.querySelector('select[aria-label="つなぎ"]').disabled = true;
     li.querySelector('.media-zoom').addEventListener('change', e => { mediaOv(i, { zoom: e.target.value === '' ? undefined : J.clamp(+e.target.value || 100, 100, 300) }); replan(); });
     li.querySelector('select[aria-label="ズーム対象"]').addEventListener('change', e => { mediaOv(i, { focus: e.target.value || undefined }); replan(); });
+    const videoLoop = li.querySelector('.media-video-loop input');
+    if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
     li.querySelector('.dice').addEventListener('click', () => { mediaOv(i, { seed: (ov.seed | 0) + 1, lock: false }); replan(); seek(cut.start + 0.001); });
     li.querySelector('.lock').addEventListener('click', () => { mediaOv(i, ov.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }); replan(); });
     ol.appendChild(li); S.mediaLineEls.push(li);
