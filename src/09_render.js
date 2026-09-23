@@ -58,11 +58,19 @@ class Renderer {
   frame(ctx, plan, t, opt = {}) {
     const W = plan.W, H = plan.H, scale = opt.scale || 1;
     const cw = ctx.canvas.width, ch = ctx.canvas.height;
-    if (!opt.noForeground && plan.foreground && J.mediaAt(plan, t, 'foreground') && J.mediaAssets.has(J.mediaAt(plan, t, 'foreground').itemId)) {
+    const foregroundCut = plan.foreground && J.mediaAt(plan, t, 'foreground');
+    if (!opt.noForeground && foregroundCut && J.mediaAssets.has(foregroundCut.itemId)) {
       this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true }));
       const layer = this.ensure(this.foregroundLayer || (this.foregroundLayer = document.createElement('canvas')), cw, ch);
       const lx = layer.getContext('2d'); lx.setTransform(1, 0, 0, 1, 0, 0); lx.globalAlpha = 1; lx.globalCompositeOperation = 'source-over'; lx.filter = 'none'; lx.clearRect(0, 0, cw, ch);
       J.drawMedia(lx, plan, t, this, 'foreground');
+      const previousForeground = foregroundCut.index > 0 && plan.foreground.cuts[foregroundCut.index - 1];
+      if (foregroundCut.chromaKey && foregroundCut.trans && previousForeground && J.mediaAssets.has(previousForeground.itemId) && Math.abs(previousForeground.end - foregroundCut.start) < 0.06 && t - foregroundCut.start < foregroundCut.transDur) {
+        const mask = this.ensure(this.foregroundKeyMask || (this.foregroundKeyMask = document.createElement('canvas')), cw, ch);
+        const mx = mask.getContext('2d'); mx.setTransform(1, 0, 0, 1, 0, 0); mx.globalAlpha = 1; mx.globalCompositeOperation = 'source-over'; mx.filter = 'none'; mx.clearRect(0, 0, cw, ch);
+        J.drawMediaCut(mx, foregroundCut, t, { noEnter: true, noExit: true });
+        lx.globalCompositeOperation = 'destination-in'; lx.drawImage(mask, 0, 0); lx.globalCompositeOperation = 'source-over';
+      }
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = plan.foreground.opacity / 100;
       ctx.globalCompositeOperation = { normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.foreground.blend] || 'source-over';
       ctx.drawImage(layer, 0, 0); ctx.restore();

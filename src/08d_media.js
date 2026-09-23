@@ -183,7 +183,8 @@ J.chromaSource = (src, cut, w, h) => {
   let c = chromaCanvases.get(src);
   if (!c) { c = document.createElement('canvas'); chromaCanvases.set(src, c); }
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
-  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(src, 0, 0, w, h);
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.globalCompositeOperation = 'copy'; x.drawImage(src, 0, 0, w, h); x.globalCompositeOperation = 'source-over';
   const pixels = x.getImageData(0, 0, w, h), d = pixels.data;
   const key = cut.chromaColor || '#00ff00', kr = parseInt(key.slice(1, 3), 16), kg = parseInt(key.slice(3, 5), 16), kb = parseInt(key.slice(5, 7), 16);
   for (let i = 0; i < d.length; i += 4) {
