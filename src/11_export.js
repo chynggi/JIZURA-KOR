@@ -60,6 +60,7 @@ async function resample(buffer, sr, duration) {
 /* ---------- MP4 ---------- */
 J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signal }) => {
   J.mediaTransitionFrame = null;
+  J.foregroundTransitionFrame = null;
   const [w, h] = J.outputSize(project);
   const fps = plan.fps;
   const px = w * h * fps;
@@ -147,6 +148,7 @@ class ZipWriter {
 }
 J.exportPNGZip = async ({ plan, project, transparent, onProgress, signal, every = 1 }) => {
   J.mediaTransitionFrame = null;
+  J.foregroundTransitionFrame = null;
   const [w, h] = J.outputSize(project);
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');

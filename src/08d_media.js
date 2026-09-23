@@ -30,18 +30,18 @@ J.normalizeMedia = m => {
   o.opacity = J.clamp(+o.opacity || 0, 0, 100);
   return o;
 };
-J.mediaOrder = project => {
-  const m = J.normalizeMedia(project.media), order = m.items.slice();
+J.mediaOrder = (project, layer = 'media') => {
+  const m = J.normalizeMedia(project[layer]), order = m.items.slice();
   if (m.randomOrder && order.length > 1) {
     const rng = J.rng(J.h(project.seed, m.seed));
     for (let i = order.length - 1; i > 0; i--) { const j = rng.int(0, i); [order[i], order[j]] = [order[j], order[i]]; }
   }
   return order;
 };
-J.planMedia = (project, lyricPlan, audioDuration) => {
-  const m = J.normalizeMedia(project.media), items = m.items.slice();
+J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
+  const m = J.normalizeMedia(project[layer]), items = m.items.slice();
   const count = items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
-  const order = J.mediaOrder(project);
+  const order = J.mediaOrder(project, layer);
   const itemAt = i => order[i % order.length];
   const manualEnd = Math.max(0, ...Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t)).map(([, t]) => +t + 4));
   const duration = Math.max(lyricPlan.duration, audioDuration || 0,
@@ -65,7 +65,9 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
       treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)),
       zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : rng.pick([100, 110, 125, 140, 160]),
       focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)),
-      videoLoop: item.type === 'video' && ov.videoLoop === true, seed };
+      videoLoop: item.type === 'video' && ov.videoLoop === true,
+      chromaKey: item.type === 'video' && ov.chromaKey === true,
+      chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00', seed };
   });
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
@@ -80,7 +82,7 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
   }
   return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder, loop: m.loop };
 };
-J.mediaAt = (plan, t) => plan.media && plan.media.cuts.find(c => t >= c.start && t < c.end) || null;
+J.mediaAt = (plan, t, layer = 'media') => plan[layer] && plan[layer].cuts.find(c => t >= c.start && t < c.end) || null;
 J.mediaVideoTime = (cut, t, duration) => {
   if (!Number.isFinite(duration) || duration <= 0) return 0;
   const elapsed = Math.max(0, t - cut.start);
@@ -132,40 +134,63 @@ const seekMediaVideo = async (v, target, signal) => {
     v.currentTime = target;
   });
 };
-const captureMediaVideo = (plan, cut) => {
+const transitionFrame = layer => layer === 'media' ? J.mediaTransitionFrame : J.foregroundTransitionFrame;
+const captureMediaVideo = (plan, cut, layer) => {
   const asset = J.mediaAssets.get(cut.itemId), v = asset && asset.element;
   if (!v || !v.videoWidth || !v.videoHeight || v.readyState < 2) return;
-  const c = J.mediaTransitionFrame && J.mediaTransitionFrame.canvas || document.createElement('canvas');
+  const old = transitionFrame(layer);
+  const c = old && old.canvas || document.createElement('canvas');
   if (c.width !== v.videoWidth || c.height !== v.videoHeight) { c.width = v.videoWidth; c.height = v.videoHeight; }
   c.getContext('2d').drawImage(v, 0, 0);
-  J.mediaTransitionFrame = { plan, index: cut.index, canvas: c };
+  if (layer === 'media') J.mediaTransitionFrame = { plan, index: cut.index, canvas: c };
+  else J.foregroundTransitionFrame = { plan, index: cut.index, canvas: c };
 };
 J.prepareMediaFrame = async (plan, t, signal) => {
-  const cut = J.mediaAt(plan, t); if (!cut) return;
-  const prev = cut.index > 0 && plan.media.cuts[cut.index - 1];
-  if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && (!J.mediaTransitionFrame || J.mediaTransitionFrame.plan !== plan || J.mediaTransitionFrame.index !== prev.index)) {
-    const prior = J.mediaAssets.get(prev.itemId);
-    if (prior) { await seekMediaVideo(prior.element, J.mediaVideoTime(prev, prev.end - 0.001, prior.element.duration), signal); captureMediaVideo(plan, prev); }
+  for (const layer of ['media', 'foreground']) {
+    const cut = J.mediaAt(plan, t, layer); if (!cut) continue;
+    const prev = cut.index > 0 && plan[layer].cuts[cut.index - 1], snapshot = transitionFrame(layer);
+    if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && (!snapshot || snapshot.plan !== plan || snapshot.index !== prev.index)) {
+      const prior = J.mediaAssets.get(prev.itemId);
+      if (prior) { await seekMediaVideo(prior.element, J.mediaVideoTime(prev, prev.end - 0.001, prior.element.duration), signal); captureMediaVideo(plan, prev, layer); }
+    }
+    if (cut.type !== 'video') continue;
+    const asset = J.mediaAssets.get(cut.itemId); if (asset) await seekMediaVideo(asset.element, J.mediaVideoTime(cut, t, asset.element.duration), signal);
   }
-  if (cut.type !== 'video') return;
-  const asset = J.mediaAssets.get(cut.itemId); if (!asset) return;
-  await seekMediaVideo(asset.element, J.mediaVideoTime(cut, t, asset.element.duration), signal);
 };
 J.syncMediaPreview = (plan, t, playing) => {
-  const cut = J.mediaAt(plan, t);
-  const prev = cut && cut.index > 0 && plan.media.cuts[cut.index - 1];
-  if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && J._previewMediaCut && J._previewMediaCut.plan === plan && J._previewMediaCut.index === prev.index) captureMediaVideo(plan, prev);
-  J._previewMediaCut = cut ? { plan, index: cut.index } : null;
+  const active = new Map();
+  for (const layer of ['media', 'foreground']) {
+    const cut = J.mediaAt(plan, t, layer), last = layer === 'media' ? J._previewMediaCut : J._previewForegroundCut;
+    const prev = cut && cut.index > 0 && plan[layer].cuts[cut.index - 1];
+    if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && last && last.plan === plan && last.index === prev.index) captureMediaVideo(plan, prev, layer);
+    if (layer === 'media') J._previewMediaCut = cut ? { plan, index: cut.index } : null;
+    else J._previewForegroundCut = cut ? { plan, index: cut.index } : null;
+    if (cut && cut.type === 'video') active.set(cut.itemId, cut);
+  }
   for (const [id, asset] of J.mediaAssets) {
     if (asset.type !== 'video') continue;
-    const v = asset.element;
-    if (!cut || id !== cut.itemId) { v.pause(); v.loop = false; continue; }
+    const v = asset.element, cut = active.get(id);
+    if (!cut) { v.pause(); v.loop = false; continue; }
     v.loop = !!cut.videoLoop;
     const target = J.mediaVideoTime(cut, t, v.duration);
     if (Math.abs(v.currentTime - target) > (playing ? 0.18 : 0.02)) v.currentTime = target;
     if (playing && v.paused) v.play().catch(() => {});
     if (!playing) v.pause();
   }
+};
+const chromaCanvases = new WeakMap();
+J.chromaSource = (src, cut, w, h) => {
+  let c = chromaCanvases.get(src);
+  if (!c) { c = document.createElement('canvas'); chromaCanvases.set(src, c); }
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(src, 0, 0, w, h);
+  const pixels = x.getImageData(0, 0, w, h), d = pixels.data;
+  const key = cut.chromaColor || '#00ff00', kr = parseInt(key.slice(1, 3), 16), kg = parseInt(key.slice(3, 5), 16), kb = parseInt(key.slice(5, 7), 16);
+  for (let i = 0; i < d.length; i += 4) {
+    const distance = Math.hypot(d[i] - kr, d[i + 1] - kg, d[i + 2] - kb);
+    d[i + 3] = Math.round(d[i + 3] * J.clamp((distance - 65) / 55, 0, 1));
+  }
+  x.putImageData(pixels, 0, 0); return c;
 };
 J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const asset = J.mediaAssets.get(cut.itemId); if (!asset) return false;
@@ -186,13 +211,14 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const focus = J.mediaFocusPoint(cut.focus, w, h);
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(w / 2 + dx, h / 2); ctx.translate(focus.x, focus.y); ctx.scale(z, z); ctx.translate(-focus.x, -focus.y);
   ctx.filter = ({ mono: 'grayscale(1)', sepia: 'sepia(1)', contrast: 'contrast(1.6)', blur: 'blur(8px)' })[cut.treat] || 'none';
-  ctx.drawImage(src, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();
+  const source = cut.type === 'video' && cut.chromaKey ? J.chromaSource(src, cut, sw, sh) : src;
+  ctx.drawImage(source, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();
   return true;
 };
-J.drawMedia = (ctx, plan, t, owner) => {
-  const cut = J.mediaAt(plan, t); if (!cut || !J.mediaAssets.has(cut.itemId)) return false;
-  const prev = cut.index > 0 ? plan.media.cuts[cut.index - 1] : null;
-  const next = plan.media.cuts[cut.index + 1];
+J.drawMedia = (ctx, plan, t, owner, layer = 'media') => {
+  const cut = J.mediaAt(plan, t, layer); if (!cut || !J.mediaAssets.has(cut.itemId)) return false;
+  const prev = cut.index > 0 ? plan[layer].cuts[cut.index - 1] : null;
+  const next = plan[layer].cuts[cut.index + 1];
   const active = prev && cut.trans && t - cut.start < cut.transDur && Math.abs(prev.end - cut.start) < 0.06 && J.mediaAssets.has(prev.itemId);
   if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !!cut.trans, noExit: !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06) });
   const w = ctx.canvas.width, h = ctx.canvas.height;
@@ -201,10 +227,10 @@ J.drawMedia = (ctx, plan, t, owner) => {
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
     return c;
   };
-  const A = canvas('mediaPrevLayer'), B = canvas('mediaNextLayer');
+  const A = canvas(layer + 'PrevLayer'), B = canvas(layer + 'NextLayer');
   const bg = plan.style && plan.style.schemes ? plan.style.schemes[0].bg : '#000';
-  const clear = c => { const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.fillStyle = bg; x.fillRect(0, 0, w, h); return x; };
-  const snapshot = J.mediaTransitionFrame;
+  const clear = c => { const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.clearRect(0, 0, w, h); if (layer === 'media') { x.fillStyle = bg; x.fillRect(0, 0, w, h); } return x; };
+  const snapshot = transitionFrame(layer);
   const priorAsset = J.mediaAssets.get(prev.itemId);
   const prevSource = prev.type === 'video' ? (snapshot && snapshot.plan === plan && snapshot.index === prev.index ? snapshot.canvas : prev.itemId === cut.itemId && priorAsset.posterElement && priorAsset.posterElement.complete ? priorAsset.posterElement : null) : null;
   J.drawMediaCut(clear(A), prev, Math.max(prev.start, prev.end - 0.001), { noExit: true, source: prevSource });

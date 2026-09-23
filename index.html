@@ -90,7 +90,7 @@ h3 { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-top: 1
 .col-right { border-left: 1px solid var(--line); }
 .sec { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
 .sec-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.source-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
+.source-tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
 .source-tabs button { border: 0; border-radius: 0; background: transparent; color: var(--muted); padding: 11px; border-bottom: 2px solid transparent; }
 .source-tabs button[aria-selected=true] { color: var(--text); border-bottom-color: var(--amber); }
 .media-list { display: grid; gap: 7px; }
@@ -139,6 +139,9 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .media-zoom-controls input, .media-zoom-controls select { width: 100%; padding: 3px 5px; font-size: 11px; }
 .media-video-loop { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 11px; color: var(--muted); cursor: pointer; }
 .media-video-loop input { margin: 0; accent-color: var(--amber); }
+.media-chroma { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 11px; color: var(--muted); }
+.media-chroma label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.media-chroma input[type=color] { width: 38px; height: 27px; padding: 1px; background: transparent; border: 1px solid var(--line2); cursor: pointer; }
 .ln .cuts { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; }
 .ln .cuts span { font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--line2); color: var(--muted); cursor: pointer; }
 .ln .cuts span:hover { color: var(--text); border-color: var(--amber); }
@@ -154,6 +157,7 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 #timeline { width: 100%; height: 76px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 #mediaTimeline { width: 100%; height: 52px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
+#foregroundTimeline { width: 100%; height: 52px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 .cutinfo { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; }
 .chip { font-size: 11px; padding: 2px 8px; border-radius: 2px; border: 1px solid var(--line2); color: var(--text); background: var(--raised); }
 .chip b { font-weight: 500; color: var(--muted); margin-right: 5px; }
@@ -331,7 +335,7 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
   <main class="work">
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="歌詞とタイミング">
-      <nav class="source-tabs" role="tablist" aria-label="素材"><button id="sourceLyrics" role="tab" aria-selected="true">歌詞</button><button id="sourceMedia" role="tab" aria-selected="false">画像・動画</button></nav>
+      <nav class="source-tabs" role="tablist" aria-label="素材"><button id="sourceLyrics" role="tab" aria-selected="true">歌詞</button><button id="sourceMedia" role="tab" aria-selected="false">背景</button><button id="sourceForeground" role="tab" aria-selected="false">前景</button></nav>
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>歌詞</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">記法</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="歌詞（1行 = 1フレーズ）"></textarea>
@@ -352,15 +356,15 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
       </div>
 
       <div class="sec" id="mediaPane" hidden>
-        <div class="sec-h"><h2>画像・動画</h2><label class="file">追加<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
+        <div class="sec-h"><h2 id="mediaPaneTitle">背景</h2><label class="file">追加<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
         <p class="hint">アップロード順にカットを作ります。サムネイルをドラッグして並べ替えできます。素材はこのブラウザに保存されます。</p>
         <div id="mediaList" class="media-list"></div>
         <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で表示</span></label>
         <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ表示<small>素材を順に繰り返し、素材数より多いカットを作成できます</small></span></label>
         <label class="field" id="mediaCutCountField" hidden>カット数<input id="mediaCutCount" type="number" min="1" max="1000" step="1" inputmode="numeric"></label>
         <div class="fields media-blend-fields">
-          <label class="field">歌詞の合成方法<select id="mediaBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
-          <label class="field">歌詞不透明度（％）<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
+          <label class="field"><span id="mediaBlendLabel">歌詞の合成方法</span><select id="mediaBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
+          <label class="field"><span id="mediaOpacityLabel">歌詞不透明度（％）</span><input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
         </div>
       </div>
 
@@ -411,8 +415,9 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
         <button id="btnOmakase" class="primary" title="スタイル・雰囲気・演出・配色をまるごとランダムに（キー R）">おまかせ</button>
         <button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る</button>
       </div>
+      <canvas id="foregroundTimeline" aria-label="前景タイムライン（クリックで移動）"></canvas>
       <canvas id="timeline" aria-label="タイムライン（クリックで移動）"></canvas>
-      <canvas id="mediaTimeline" aria-label="画像・動画タイムライン（クリックで移動）"></canvas>
+      <canvas id="mediaTimeline" aria-label="背景タイムライン（クリックで移動）"></canvas>
       <div class="cutinfo" id="cutInfo"></div>
     </section>
 
@@ -2926,6 +2931,7 @@ J.defaultProject = () => ({
   timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, lineScale: 1 },
   overrides: {},
   media: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
+  foreground: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
   colors: { enabled: false },
   fonts: {},
 });
@@ -3600,18 +3606,18 @@ J.normalizeMedia = m => {
   o.opacity = J.clamp(+o.opacity || 0, 0, 100);
   return o;
 };
-J.mediaOrder = project => {
-  const m = J.normalizeMedia(project.media), order = m.items.slice();
+J.mediaOrder = (project, layer = 'media') => {
+  const m = J.normalizeMedia(project[layer]), order = m.items.slice();
   if (m.randomOrder && order.length > 1) {
     const rng = J.rng(J.h(project.seed, m.seed));
     for (let i = order.length - 1; i > 0; i--) { const j = rng.int(0, i); [order[i], order[j]] = [order[j], order[i]]; }
   }
   return order;
 };
-J.planMedia = (project, lyricPlan, audioDuration) => {
-  const m = J.normalizeMedia(project.media), items = m.items.slice();
+J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
+  const m = J.normalizeMedia(project[layer]), items = m.items.slice();
   const count = items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
-  const order = J.mediaOrder(project);
+  const order = J.mediaOrder(project, layer);
   const itemAt = i => order[i % order.length];
   const manualEnd = Math.max(0, ...Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t)).map(([, t]) => +t + 4));
   const duration = Math.max(lyricPlan.duration, audioDuration || 0,
@@ -3635,7 +3641,9 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
       treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)),
       zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : rng.pick([100, 110, 125, 140, 160]),
       focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)),
-      videoLoop: item.type === 'video' && ov.videoLoop === true, seed };
+      videoLoop: item.type === 'video' && ov.videoLoop === true,
+      chromaKey: item.type === 'video' && ov.chromaKey === true,
+      chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00', seed };
   });
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
@@ -3650,7 +3658,7 @@ J.planMedia = (project, lyricPlan, audioDuration) => {
   }
   return { cuts, duration, blend: m.blend, opacity: m.opacity, randomOrder: m.randomOrder, loop: m.loop };
 };
-J.mediaAt = (plan, t) => plan.media && plan.media.cuts.find(c => t >= c.start && t < c.end) || null;
+J.mediaAt = (plan, t, layer = 'media') => plan[layer] && plan[layer].cuts.find(c => t >= c.start && t < c.end) || null;
 J.mediaVideoTime = (cut, t, duration) => {
   if (!Number.isFinite(duration) || duration <= 0) return 0;
   const elapsed = Math.max(0, t - cut.start);
@@ -3702,40 +3710,63 @@ const seekMediaVideo = async (v, target, signal) => {
     v.currentTime = target;
   });
 };
-const captureMediaVideo = (plan, cut) => {
+const transitionFrame = layer => layer === 'media' ? J.mediaTransitionFrame : J.foregroundTransitionFrame;
+const captureMediaVideo = (plan, cut, layer) => {
   const asset = J.mediaAssets.get(cut.itemId), v = asset && asset.element;
   if (!v || !v.videoWidth || !v.videoHeight || v.readyState < 2) return;
-  const c = J.mediaTransitionFrame && J.mediaTransitionFrame.canvas || document.createElement('canvas');
+  const old = transitionFrame(layer);
+  const c = old && old.canvas || document.createElement('canvas');
   if (c.width !== v.videoWidth || c.height !== v.videoHeight) { c.width = v.videoWidth; c.height = v.videoHeight; }
   c.getContext('2d').drawImage(v, 0, 0);
-  J.mediaTransitionFrame = { plan, index: cut.index, canvas: c };
+  if (layer === 'media') J.mediaTransitionFrame = { plan, index: cut.index, canvas: c };
+  else J.foregroundTransitionFrame = { plan, index: cut.index, canvas: c };
 };
 J.prepareMediaFrame = async (plan, t, signal) => {
-  const cut = J.mediaAt(plan, t); if (!cut) return;
-  const prev = cut.index > 0 && plan.media.cuts[cut.index - 1];
-  if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && (!J.mediaTransitionFrame || J.mediaTransitionFrame.plan !== plan || J.mediaTransitionFrame.index !== prev.index)) {
-    const prior = J.mediaAssets.get(prev.itemId);
-    if (prior) { await seekMediaVideo(prior.element, J.mediaVideoTime(prev, prev.end - 0.001, prior.element.duration), signal); captureMediaVideo(plan, prev); }
+  for (const layer of ['media', 'foreground']) {
+    const cut = J.mediaAt(plan, t, layer); if (!cut) continue;
+    const prev = cut.index > 0 && plan[layer].cuts[cut.index - 1], snapshot = transitionFrame(layer);
+    if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && (!snapshot || snapshot.plan !== plan || snapshot.index !== prev.index)) {
+      const prior = J.mediaAssets.get(prev.itemId);
+      if (prior) { await seekMediaVideo(prior.element, J.mediaVideoTime(prev, prev.end - 0.001, prior.element.duration), signal); captureMediaVideo(plan, prev, layer); }
+    }
+    if (cut.type !== 'video') continue;
+    const asset = J.mediaAssets.get(cut.itemId); if (asset) await seekMediaVideo(asset.element, J.mediaVideoTime(cut, t, asset.element.duration), signal);
   }
-  if (cut.type !== 'video') return;
-  const asset = J.mediaAssets.get(cut.itemId); if (!asset) return;
-  await seekMediaVideo(asset.element, J.mediaVideoTime(cut, t, asset.element.duration), signal);
 };
 J.syncMediaPreview = (plan, t, playing) => {
-  const cut = J.mediaAt(plan, t);
-  const prev = cut && cut.index > 0 && plan.media.cuts[cut.index - 1];
-  if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && J._previewMediaCut && J._previewMediaCut.plan === plan && J._previewMediaCut.index === prev.index) captureMediaVideo(plan, prev);
-  J._previewMediaCut = cut ? { plan, index: cut.index } : null;
+  const active = new Map();
+  for (const layer of ['media', 'foreground']) {
+    const cut = J.mediaAt(plan, t, layer), last = layer === 'media' ? J._previewMediaCut : J._previewForegroundCut;
+    const prev = cut && cut.index > 0 && plan[layer].cuts[cut.index - 1];
+    if (prev && prev.type === 'video' && cut.trans && t - cut.start < cut.transDur && last && last.plan === plan && last.index === prev.index) captureMediaVideo(plan, prev, layer);
+    if (layer === 'media') J._previewMediaCut = cut ? { plan, index: cut.index } : null;
+    else J._previewForegroundCut = cut ? { plan, index: cut.index } : null;
+    if (cut && cut.type === 'video') active.set(cut.itemId, cut);
+  }
   for (const [id, asset] of J.mediaAssets) {
     if (asset.type !== 'video') continue;
-    const v = asset.element;
-    if (!cut || id !== cut.itemId) { v.pause(); v.loop = false; continue; }
+    const v = asset.element, cut = active.get(id);
+    if (!cut) { v.pause(); v.loop = false; continue; }
     v.loop = !!cut.videoLoop;
     const target = J.mediaVideoTime(cut, t, v.duration);
     if (Math.abs(v.currentTime - target) > (playing ? 0.18 : 0.02)) v.currentTime = target;
     if (playing && v.paused) v.play().catch(() => {});
     if (!playing) v.pause();
   }
+};
+const chromaCanvases = new WeakMap();
+J.chromaSource = (src, cut, w, h) => {
+  let c = chromaCanvases.get(src);
+  if (!c) { c = document.createElement('canvas'); chromaCanvases.set(src, c); }
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(src, 0, 0, w, h);
+  const pixels = x.getImageData(0, 0, w, h), d = pixels.data;
+  const key = cut.chromaColor || '#00ff00', kr = parseInt(key.slice(1, 3), 16), kg = parseInt(key.slice(3, 5), 16), kb = parseInt(key.slice(5, 7), 16);
+  for (let i = 0; i < d.length; i += 4) {
+    const distance = Math.hypot(d[i] - kr, d[i + 1] - kg, d[i + 2] - kb);
+    d[i + 3] = Math.round(d[i + 3] * J.clamp((distance - 65) / 55, 0, 1));
+  }
+  x.putImageData(pixels, 0, 0); return c;
 };
 J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const asset = J.mediaAssets.get(cut.itemId); if (!asset) return false;
@@ -3756,13 +3787,14 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const focus = J.mediaFocusPoint(cut.focus, w, h);
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(w / 2 + dx, h / 2); ctx.translate(focus.x, focus.y); ctx.scale(z, z); ctx.translate(-focus.x, -focus.y);
   ctx.filter = ({ mono: 'grayscale(1)', sepia: 'sepia(1)', contrast: 'contrast(1.6)', blur: 'blur(8px)' })[cut.treat] || 'none';
-  ctx.drawImage(src, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();
+  const source = cut.type === 'video' && cut.chromaKey ? J.chromaSource(src, cut, sw, sh) : src;
+  ctx.drawImage(source, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();
   return true;
 };
-J.drawMedia = (ctx, plan, t, owner) => {
-  const cut = J.mediaAt(plan, t); if (!cut || !J.mediaAssets.has(cut.itemId)) return false;
-  const prev = cut.index > 0 ? plan.media.cuts[cut.index - 1] : null;
-  const next = plan.media.cuts[cut.index + 1];
+J.drawMedia = (ctx, plan, t, owner, layer = 'media') => {
+  const cut = J.mediaAt(plan, t, layer); if (!cut || !J.mediaAssets.has(cut.itemId)) return false;
+  const prev = cut.index > 0 ? plan[layer].cuts[cut.index - 1] : null;
+  const next = plan[layer].cuts[cut.index + 1];
   const active = prev && cut.trans && t - cut.start < cut.transDur && Math.abs(prev.end - cut.start) < 0.06 && J.mediaAssets.has(prev.itemId);
   if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !!cut.trans, noExit: !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06) });
   const w = ctx.canvas.width, h = ctx.canvas.height;
@@ -3771,10 +3803,10 @@ J.drawMedia = (ctx, plan, t, owner) => {
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
     return c;
   };
-  const A = canvas('mediaPrevLayer'), B = canvas('mediaNextLayer');
+  const A = canvas(layer + 'PrevLayer'), B = canvas(layer + 'NextLayer');
   const bg = plan.style && plan.style.schemes ? plan.style.schemes[0].bg : '#000';
-  const clear = c => { const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.fillStyle = bg; x.fillRect(0, 0, w, h); return x; };
-  const snapshot = J.mediaTransitionFrame;
+  const clear = c => { const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.clearRect(0, 0, w, h); if (layer === 'media') { x.fillStyle = bg; x.fillRect(0, 0, w, h); } return x; };
+  const snapshot = transitionFrame(layer);
   const priorAsset = J.mediaAssets.get(prev.itemId);
   const prevSource = prev.type === 'video' ? (snapshot && snapshot.plan === plan && snapshot.index === prev.index ? snapshot.canvas : prev.itemId === cut.itemId && priorAsset.posterElement && priorAsset.posterElement.complete ? priorAsset.posterElement : null) : null;
   J.drawMediaCut(clear(A), prev, Math.max(prev.start, prev.end - 0.001), { noExit: true, source: prevSource });
@@ -3854,6 +3886,16 @@ class Renderer {
   frame(ctx, plan, t, opt = {}) {
     const W = plan.W, H = plan.H, scale = opt.scale || 1;
     const cw = ctx.canvas.width, ch = ctx.canvas.height;
+    if (!opt.noForeground && plan.foreground && J.mediaAt(plan, t, 'foreground') && J.mediaAssets.has(J.mediaAt(plan, t, 'foreground').itemId)) {
+      this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true }));
+      const layer = this.ensure(this.foregroundLayer || (this.foregroundLayer = document.createElement('canvas')), cw, ch);
+      const lx = layer.getContext('2d'); lx.setTransform(1, 0, 0, 1, 0, 0); lx.globalAlpha = 1; lx.globalCompositeOperation = 'source-over'; lx.filter = 'none'; lx.clearRect(0, 0, cw, ch);
+      J.drawMedia(lx, plan, t, this, 'foreground');
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = plan.foreground.opacity / 100;
+      ctx.globalCompositeOperation = { normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.foreground.blend] || 'source-over';
+      ctx.drawImage(layer, 0, 0); ctx.restore();
+      return;
+    }
     if (!opt.noMedia && !opt.transparent && plan.media && J.mediaAt(plan, t) && J.mediaAssets.has(J.mediaAt(plan, t).itemId)) {
       const layer = this.ensure(this.mediaLayer || (this.mediaLayer = document.createElement('canvas')), cw, ch);
       this.frame(layer.getContext('2d'), plan, t, Object.assign({}, opt, { transparent: true, noMedia: true }));
@@ -4335,6 +4377,7 @@ async function resample(buffer, sr, duration) {
 /* ---------- MP4 ---------- */
 J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signal }) => {
   J.mediaTransitionFrame = null;
+  J.foregroundTransitionFrame = null;
   const [w, h] = J.outputSize(project);
   const fps = plan.fps;
   const px = w * h * fps;
@@ -4422,6 +4465,7 @@ class ZipWriter {
 }
 J.exportPNGZip = async ({ plan, project, transparent, onProgress, signal, every = 1 }) => {
   J.mediaTransitionFrame = null;
+  J.foregroundTransitionFrame = null;
   const [w, h] = J.outputSize(project);
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
@@ -29062,6 +29106,7 @@ function mergeProject(p) {
   o.enabled = en;
   o.overrides = (p && p.overrides) || {};
   o.media = J.normalizeMedia(p && p.media);
+  o.foreground = J.normalizeMedia(p && p.foreground);
   o.colors = Object.assign({ enabled: false }, (p && p.colors) || {});
   o.fonts = (p && p.fonts) || {};
   o.userFonts = (p && p.userFonts) || [];
@@ -29091,7 +29136,12 @@ function audioLike() {
 function replan() {
   S.plan = J.plan(S.project, audioLike());
   S.plan.media = J.planMedia(S.project, S.plan, S.audio && S.audio.duration);
-  S.plan.duration = S.plan.media.duration;
+  S.plan.foreground = J.planMedia(S.project, S.plan, S.audio && S.audio.duration, 'foreground');
+  S.plan.duration = Math.max(S.plan.media.duration, S.plan.foreground.duration);
+  for (const layer of ['media', 'foreground']) {
+    S.plan[layer].duration = S.plan.duration;
+    const last = S.plan[layer].cuts.at(-1); if (last) last.end = S.plan.duration;
+  }
   if (S.tap && S.tap.append && !S.audio) extendTapPreview(S.t);
   if (S.t > S.plan.duration) S.t = 0;
   renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); updateTimeUI();
@@ -29240,20 +29290,24 @@ function drawTimeline() {
   const px = X(S.t);
   x.fillStyle = '#f5a50c'; x.fillRect(Math.round(px) - dpr, 0, 2 * dpr, h);
   drawMediaTimeline();
+  drawMediaTimeline('foreground');
 }
 function extendTapPreview(t) {
   const end = Math.max(S.plan.duration, t + 10);
-  S.plan.duration = end; S.plan.media.duration = end;
-  const last = S.plan.media.cuts.at(-1); if (last) last.end = end;
+  S.plan.duration = end;
+  for (const layer of ['media', 'foreground']) {
+    S.plan[layer].duration = end;
+    const last = S.plan[layer].cuts.at(-1); if (last) last.end = end;
+  }
 }
-function drawMediaTimeline() {
-  const c = $('mediaTimeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
+function drawMediaTimeline(layer = 'media') {
+  const c = $(layer === 'media' ? 'mediaTimeline' : 'foregroundTimeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = Math.max(10, Math.round(c.clientWidth * dpr)), h = Math.max(10, Math.round(c.clientHeight * dpr));
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
   const x = c.getContext('2d'), D = Math.max(0.001, S.plan.duration), X = t => t / D * w;
   x.fillStyle = '#131316'; x.fillRect(0, 0, w, h);
-  x.fillStyle = '#8e8a94'; x.font = `${10 * dpr}px monospace`; x.fillText('画像・動画', 6 * dpr, 12 * dpr);
-  for (const cut of S.plan.media.cuts) {
+  x.fillStyle = '#8e8a94'; x.font = `${10 * dpr}px monospace`; x.fillText(layer === 'media' ? '背景' : '前景', 6 * dpr, 12 * dpr);
+  for (const cut of S.plan[layer].cuts) {
     const a = X(cut.start), b = X(cut.end);
     x.fillStyle = cut.type === 'video' ? 'rgba(22,244,212,0.28)' : 'rgba(245,165,12,0.28)'; x.fillRect(a, 17 * dpr, Math.max(1, b - a - 1), h - 20 * dpr);
     x.fillStyle = cut.type === 'video' ? '#16f4d4' : '#f5a50c'; x.fillRect(a, 17 * dpr, 2 * dpr, h - 20 * dpr);
@@ -29271,14 +29325,16 @@ let lastCutIdx = -2;
 function updateCutInfo() {
   const cut = J.cutAt(S.plan, S.t);
   const mc = J.mediaAt(S.plan, S.t);
-  const idx = `${cut ? cut.index : -1}/${mc ? mc.index : -1}`;
+  const fc = J.mediaAt(S.plan, S.t, 'foreground');
+  const idx = `${cut ? cut.index : -1}/${mc ? mc.index : -1}/${fc ? fc.index : -1}`;
   const li = cut ? cut.line : -1;
   if (li !== S.curLine) { S.lineEls.forEach((el, i) => el.classList.toggle('cur', i === li)); S.curLine = li; }
-  S.mediaLineEls.forEach((el, i) => el.classList.toggle('cur', !!mc && i === mc.index));
+  const active = S.sourceTab === 'foreground' ? fc : mc;
+  S.mediaLineEls.forEach((el, i) => el.classList.toggle('cur', !!active && i === active.index));
   if (idx === lastCutIdx) return;
   lastCutIdx = idx;
   const el = $('cutInfo');
-  if (!cut && !mc) { el.innerHTML = '<span class="hint">この位置にカットはありません</span>'; return; }
+  if (!cut && !mc && !fc) { el.innerHTML = '<span class="hint">この位置にカットはありません</span>'; return; }
   const chip = (cls, k, v) => `<span class="chip ${cls}"><b>${k}</b>${v}</span>`;
   const n = (tbl, k) => (tbl[k] ? tbl[k].name : k);
   el.innerHTML = (cut ? [
@@ -29289,7 +29345,7 @@ function updateCutInfo() {
     cut.bg && cut.bg !== 'none' ? chip('b', '背景', n(J.BG, cut.bg)) : '',
     cut.cam && cut.cam !== 'push' ? chip('c', 'カメラ', n(J.CAMERA, cut.cam)) : '',
     cut.trans ? chip('c', 'つなぎ', n(J.TRANS, cut.trans)) : '',
-  ] : []).concat(mc ? [chip('b', '画像・動画', escapeHtml(mc.name)), chip('l', '表示', J.MEDIA_LAYOUT[mc.layout]), chip('e', '登場', J.MEDIA_ENTER[mc.enter]), chip('h', '保持', J.MEDIA_HOLD[mc.hold]), chip('x', '退場', J.MEDIA_EXIT[mc.exit]), chip('t', '加工', J.MEDIA_TREAT[mc.treat]), mc.trans ? chip('c', 'つなぎ', J.mediaTransOptions()[mc.trans]) : '', chip('c', 'ズーム', `${mc.zoom}%・${J.MEDIA_FOCUS[mc.focus]}`)] : []).join('');
+  ] : []).concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '前景' : '背景', escapeHtml(mediaCut.name)), chip('l', '表示', J.MEDIA_LAYOUT[mediaCut.layout]), chip('e', '登場', J.MEDIA_ENTER[mediaCut.enter]), chip('h', '保持', J.MEDIA_HOLD[mediaCut.hold]), chip('x', '退場', J.MEDIA_EXIT[mediaCut.exit]), chip('t', '加工', J.MEDIA_TREAT[mediaCut.treat]), mediaCut.trans ? chip('c', 'つなぎ', J.mediaTransOptions()[mediaCut.trans]) : '', chip('c', 'ズーム', `${mediaCut.zoom}%・${J.MEDIA_FOCUS[mediaCut.focus]}`), mediaCut.chromaKey ? chip('c', 'クロマキー', mediaCut.chromaColor) : ''] : [])).join('');
 }
 
 /* ---------------- line list ---------------- */
@@ -29339,30 +29395,36 @@ function renderLines() {
   syncSourceTab();
 }
 function syncSourceTab() {
-  const media = S.sourceTab === 'media';
-  $('sourceLyrics').setAttribute('aria-selected', String(!media)); $('sourceMedia').setAttribute('aria-selected', String(media));
+  const layer = activeMediaLayer(), media = !!layer, m = media && S.project[layer];
+  $('sourceLyrics').setAttribute('aria-selected', String(!media)); $('sourceMedia').setAttribute('aria-selected', String(layer === 'media'));
+  $('sourceForeground').setAttribute('aria-selected', String(layer === 'foreground'));
   $('lyricsPane').hidden = media; $('mediaPane').hidden = !media;
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
-  $('linesInfo').textContent = media ? `${S.project.media.items.length}素材 / ${S.plan.media.cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
-  $('mediaRandom').disabled = S.project.media.items.length < 2;
-  $('mediaLoop').disabled = S.project.media.items.length === 0;
-  $('mediaCutCountField').hidden = !S.project.media.loop || S.project.media.items.length === 0;
+  $('mediaPaneTitle').textContent = layer === 'foreground' ? '前景' : '背景';
+  $('mediaBlendLabel').textContent = layer === 'foreground' ? '前景の合成方法' : '歌詞の合成方法';
+  $('mediaOpacityLabel').textContent = layer === 'foreground' ? '前景不透明度（％）' : '歌詞不透明度（％）';
+  $('linesInfo').textContent = media ? `${m.items.length}素材 / ${S.plan[layer].cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
+  $('mediaRandom').disabled = !media || m.items.length < 2;
+  $('mediaLoop').disabled = !media || m.items.length === 0;
+  $('mediaCutCountField').hidden = !media || !m.loop || m.items.length === 0;
 }
+function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
 function mediaThumb(item, cls = '') {
   const asset = J.mediaAssets.get(item.id);
   if (!asset) return `<span class="missing">素材なし</span>`;
   return `<img class="${cls}" src="${asset.poster || asset.url}" alt="">`;
 }
 function renderMediaList() {
+  const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const box = $('mediaList'); box.innerHTML = '';
-  S.project.media.items.forEach((item, i) => {
+  m.items.forEach((item, i) => {
     const row = document.createElement('div'); row.className = 'media-item'; row.draggable = true; row.dataset.id = item.id;
     row.innerHTML = `${mediaThumb(item)}<span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><button class="ghost small" aria-label="${escapeHtml(item.name)}を削除">×</button>`;
     row.querySelector('button').addEventListener('click', () => {
-      S.project.media.items.splice(i, 1);
-      S.project.media.timing.lineTimes = {};
-      S.project.media.cutOverrides = {};
-      delete S.project.media.overrides[item.id];
+      m.items.splice(i, 1);
+      m.timing.lineTimes = {};
+      m.cutOverrides = {};
+      delete m.overrides[item.id];
       const asset = J.mediaAssets.get(item.id); if (asset) { URL.revokeObjectURL(asset.url); J.mediaAssets.delete(item.id); }
       J.removeMedia(item.id).catch(() => {}); replan();
     });
@@ -29371,35 +29433,38 @@ function renderMediaList() {
     row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
     row.addEventListener('drop', e => {
       e.preventDefault(); row.classList.remove('drag-over');
-      const from = S.project.media.items.findIndex(x => x.id === e.dataTransfer.getData('text/plain'));
+      const from = m.items.findIndex(x => x.id === e.dataTransfer.getData('text/plain'));
       if (from < 0 || from === i) return;
-      const [moved] = S.project.media.items.splice(from, 1); S.project.media.items.splice(i, 0, moved);
-      S.project.media.timing.lineTimes = {}; S.project.media.cutOverrides = {}; replan();
+      const [moved] = m.items.splice(from, 1); m.items.splice(i, 0, moved);
+      m.timing.lineTimes = {}; m.cutOverrides = {}; replan();
     });
     box.appendChild(row);
   });
-  $('mediaRandom').checked = !!S.project.media.randomOrder;
-  $('mediaLoop').checked = !!S.project.media.loop;
+  $('mediaRandom').checked = !!m.randomOrder;
+  $('mediaLoop').checked = !!m.loop;
   $('mediaCutCount').min = '1';
-  $('mediaCutCount').value = String(S.project.media.cutCount || S.project.media.items.length * 2 || 1);
-  $('mediaBlend').value = S.project.media.blend;
-  $('mediaOpacity').value = S.project.media.opacity;
+  $('mediaCutCount').value = String(m.cutCount || m.items.length * 2 || 1);
+  $('mediaBlend').value = m.blend;
+  $('mediaOpacity').value = m.opacity;
 }
 function mediaOv(index, patch) {
-  const o = Object.assign({}, S.project.media.cutOverrides[index] || {}, patch);
+  const m = S.project[activeMediaLayer() || 'media'];
+  const o = Object.assign({}, m.cutOverrides[index] || {}, patch);
   for (const k of Object.keys(o)) if (o[k] === undefined || o[k] === '') delete o[k];
-  if (Object.keys(o).length) S.project.media.cutOverrides[index] = o; else delete S.project.media.cutOverrides[index];
+  if (Object.keys(o).length) m.cutOverrides[index] = o; else delete m.cutOverrides[index];
 }
 function renderMediaLines() {
+  const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
   const select = (key, obj, val) => `<select aria-label="${key}"><option value="">おまかせ</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
-  S.plan.media.cuts.forEach((cut, i) => {
-    const item = S.project.media.items.find(x => x.id === cut.itemId), ov = Object.assign({}, S.project.media.overrides[cut.itemId] || {}, S.project.media.cutOverrides[i] || {});
+  S.plan[layer].cuts.forEach((cut, i) => {
+    const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
     if (ov.layout === 'stretch') ov.layout = 'cover';
     const zoomValue = ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : '';
     const li = document.createElement('li'); li.className = 'ln media-ln';
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span><span class="media-zoom-controls"><label>ズーム率（％）<input class="media-zoom" type="number" min="100" max="300" step="1" placeholder="おまかせ" value="${zoomValue}" aria-label="${i + 1}カット目のズーム率"></label><label>ズーム対象${select('ズーム対象', J.MEDIA_FOCUS, ov.focus)}</label></span>${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label>` : ''}</div>`;
-    li.querySelector('.time').addEventListener('change', e => { S.project.media.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
+    if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>クロマキー合成</label><label>色<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}カット目のクロマキー色" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
+    li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.txt').addEventListener('click', () => seek(cut.start + 0.001));
     ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].forEach((key, n) => li.querySelectorAll('select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || undefined }); replan(); }));
     if (i === 0) li.querySelector('select[aria-label="つなぎ"]').disabled = true;
@@ -29407,6 +29472,11 @@ function renderMediaLines() {
     li.querySelector('select[aria-label="ズーム対象"]').addEventListener('change', e => { mediaOv(i, { focus: e.target.value || undefined }); replan(); });
     const videoLoop = li.querySelector('.media-video-loop input');
     if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
+    const chroma = li.querySelector('.media-chroma-toggle');
+    if (chroma) {
+      chroma.addEventListener('change', e => { mediaOv(i, { chromaKey: e.target.checked }); replan(); });
+      li.querySelector('.media-chroma-color').addEventListener('change', e => { mediaOv(i, { chromaColor: e.target.value }); replan(); });
+    }
     li.querySelector('.dice').addEventListener('click', () => { mediaOv(i, { seed: (ov.seed | 0) + 1, lock: false }); replan(); seek(cut.start + 0.001); });
     li.querySelector('.lock').addEventListener('click', () => { mediaOv(i, ov.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }); replan(); });
     ol.appendChild(li); S.mediaLineEls.push(li);
@@ -29414,7 +29484,7 @@ function renderMediaLines() {
   syncSourceTab();
 }
 async function restoreMediaAssets() {
-  for (const item of S.project.media.items) {
+  for (const item of [...S.project.media.items, ...S.project.foreground.items]) {
     if (J.mediaAssets.has(item.id)) continue;
     try { const blob = await J.loadMedia(item.id); if (blob) { const el = await J.attachMedia(item, blob); el.addEventListener('seeked', () => { S.need = true; }); } } catch (e) {}
   }
@@ -29753,9 +29823,9 @@ async function runExport(kind) {
 
 /* ---------------- tap sync ---------------- */
 function startTap() {
-  const media = S.sourceTab === 'media';
-  if (!(media ? S.plan.media.cuts.length : S.plan.lines.length)) return;
-  S.tap = { i: 0, media, append: media && S.project.media.loop };
+  const layer = activeMediaLayer();
+  if (!(layer ? S.plan[layer].cuts.length : S.plan.lines.length)) return;
+  S.tap = { i: 0, layer, append: !!layer && S.project[layer].loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
   $('tapHint').textContent = S.tap.append ? 'タップするたびに画像・動画のカットを追加します。終了するまで続けられます。' : '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。';
   $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
@@ -29767,29 +29837,29 @@ function tapNow() {
   if (!S.tap) return;
   if (S.tap.append) {
     const i = S.tap.i;
-    if (i === 0) S.project.media.timing.lineTimes = {};
-    S.project.media.cutCount = i + 1;
-    S.project.media.timing.lineTimes[i] = +S.t.toFixed(3);
+    if (i === 0) S.project[S.tap.layer].timing.lineTimes = {};
+    S.project[S.tap.layer].cutCount = i + 1;
+    S.project[S.tap.layer].timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();
     if (S.tap.i >= 1000) { pause(); stopTap(); toast('カット数の上限に達しました'); }
     else updateTap();
     return;
   }
-  const media = S.tap.media;
-  (media ? S.project.media.timing : S.project.timing).lineTimes[S.tap.i] = +S.t.toFixed(3);
+  const layer = S.tap.layer;
+  (layer ? S.project[layer].timing : S.project.timing).lineTimes[S.tap.i] = +S.t.toFixed(3);
   S.tap.i++;
   replan();
-  if (S.tap.i >= (media ? S.plan.media.cuts.length : S.plan.lines.length)) stopTap(); else updateTap();
+  if (S.tap.i >= (layer ? S.plan[layer].cuts.length : S.plan.lines.length)) stopTap(); else updateTap();
 }
 function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); }
 function updateTap() {
   if (S.tap.append) {
-    const order = J.mediaOrder(S.project), item = order[S.tap.i % order.length];
+    const order = J.mediaOrder(S.project, S.tap.layer), item = order[S.tap.i % order.length];
     $('tapLine').textContent = item ? `${S.tap.i + 1}. ${item.name}` : '—'; return;
   }
-  const ln = S.tap.media ? S.plan.media.cuts[S.tap.i] : S.plan.lines[S.tap.i];
-  $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.media ? ln.name : ln.text}` : '—';
+  const ln = S.tap.layer ? S.plan[S.tap.layer].cuts[S.tap.i] : S.plan.lines[S.tap.i];
+  $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.layer ? ln.name : ln.text}` : '—';
 }
 
 /* ---------------- sync all inputs from project ---------------- */
@@ -29810,35 +29880,37 @@ function syncUI() {
 /* ---------------- wiring ---------------- */
 function bind() {
   $('sourceLyrics').addEventListener('click', () => { S.sourceTab = 'lyrics'; syncSourceTab(); });
-  $('sourceMedia').addEventListener('click', () => { S.sourceTab = 'media'; syncSourceTab(); });
+  $('sourceMedia').addEventListener('click', () => { S.sourceTab = 'media'; renderMediaList(); renderMediaLines(); });
+  $('sourceForeground').addEventListener('click', () => { S.sourceTab = 'foreground'; renderMediaList(); renderMediaLines(); });
   $('mediaFiles').addEventListener('change', async e => {
+    const layer = activeMediaLayer() || 'media', m = S.project[layer];
     for (const file of e.target.files || []) {
       const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
       if (!type) continue;
-      const existing = S.project.media.items.find(x => x.name === file.name && x.size === file.size && !J.mediaAssets.has(x.id));
+      const existing = m.items.find(x => x.name === file.name && x.size === file.size && !J.mediaAssets.has(x.id));
       const item = existing || { id: crypto.randomUUID(), name: file.name, size: file.size, type };
       try {
         const el = await J.attachMedia(item, file);
         el.addEventListener('seeked', () => { S.need = true; });
         if (type === 'video') item.duration = el.duration || 0;
-        if (!existing) S.project.media.items.push(item);
+        if (!existing) m.items.push(item);
         await J.storeMedia(item.id, file);
       } catch (err) { toast(`${file.name}: 読み込めませんでした`); }
     }
     e.target.value = ''; replan();
   });
-  $('mediaRandom').addEventListener('change', e => { S.project.media.randomOrder = e.target.checked; replan(); });
+  $('mediaRandom').addEventListener('change', e => { S.project[activeMediaLayer()].randomOrder = e.target.checked; replan(); });
   $('mediaLoop').addEventListener('change', e => {
-    S.project.media.loop = e.target.checked;
-    if (e.target.checked && !S.project.media.cutCount) S.project.media.cutCount = Math.min(1000, S.project.media.items.length * 2);
+    const m = S.project[activeMediaLayer()]; m.loop = e.target.checked;
+    if (e.target.checked && !m.cutCount) m.cutCount = Math.min(1000, m.items.length * 2);
     replan();
   });
   $('mediaCutCount').addEventListener('change', e => {
-    S.project.media.cutCount = J.clamp(Math.floor(+e.target.value || 0), 1, 1000);
+    S.project[activeMediaLayer()].cutCount = J.clamp(Math.floor(+e.target.value || 0), 1, 1000);
     replan();
   });
-  $('mediaBlend').addEventListener('change', e => { S.project.media.blend = e.target.value; replan(); });
-  $('mediaOpacity').addEventListener('change', e => { S.project.media.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
+  $('mediaBlend').addEventListener('change', e => { S.project[activeMediaLayer()].blend = e.target.value; replan(); });
+  $('mediaOpacity').addEventListener('change', e => { S.project[activeMediaLayer()].opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; replanSoon(260); });
   $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; autosave(); });
   $('songTitle').addEventListener('input', e => { S.project.title = e.target.value; replanSoon(300); });
@@ -29848,7 +29920,7 @@ function bind() {
   $('offset').addEventListener('change', e => { S.project.timing.offset = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
   $('lineScale').addEventListener('change', e => { S.project.timing.lineScale = J.clamp(parseFloat(e.target.value) || 1, 0.3, 4); replan(); });
   $('snap').addEventListener('change', e => { S.project.timing.snap = e.target.checked; replan(); });
-  $('btnResetTimes').addEventListener('click', () => { (S.sourceTab === 'media' ? S.project.media.timing : S.project.timing).lineTimes = {}; replan(); });
+  $('btnResetTimes').addEventListener('click', () => { const layer = activeMediaLayer(); (layer ? S.project[layer].timing : S.project.timing).lineTimes = {}; replan(); });
   $('audioFile').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     $('audioName').textContent = '解析中…';
@@ -29869,7 +29941,7 @@ function bind() {
   const sc = $('scrub');
   sc.addEventListener('input', () => { S.scrubbing = true; seek(sc.value / 10000 * S.plan.duration); });
   sc.addEventListener('change', () => { S.scrubbing = false; });
-  for (const tl of [$('timeline'), $('mediaTimeline')]) {
+  for (const tl of [$('timeline'), $('mediaTimeline'), $('foregroundTimeline')]) {
     let drag = false;
     tl.addEventListener('pointerdown', e => { drag = true; tl.setPointerCapture(e.pointerId); timelineSeek(e); });
     tl.addEventListener('pointermove', e => { if (drag) timelineSeek(e); });

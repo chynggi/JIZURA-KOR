@@ -20,7 +20,7 @@
   <main class="work">
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="歌詞とタイミング">
-      <nav class="source-tabs" role="tablist" aria-label="素材"><button id="sourceLyrics" role="tab" aria-selected="true">歌詞</button><button id="sourceMedia" role="tab" aria-selected="false">画像・動画</button></nav>
+      <nav class="source-tabs" role="tablist" aria-label="素材"><button id="sourceLyrics" role="tab" aria-selected="true">歌詞</button><button id="sourceMedia" role="tab" aria-selected="false">背景</button><button id="sourceForeground" role="tab" aria-selected="false">前景</button></nav>
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>歌詞</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">記法</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="歌詞（1行 = 1フレーズ）"></textarea>
@@ -41,15 +41,15 @@
       </div>
 
       <div class="sec" id="mediaPane" hidden>
-        <div class="sec-h"><h2>画像・動画</h2><label class="file">追加<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
+        <div class="sec-h"><h2 id="mediaPaneTitle">背景</h2><label class="file">追加<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
         <p class="hint">アップロード順にカットを作ります。サムネイルをドラッグして並べ替えできます。素材はこのブラウザに保存されます。</p>
         <div id="mediaList" class="media-list"></div>
         <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で表示</span></label>
         <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ表示<small>素材を順に繰り返し、素材数より多いカットを作成できます</small></span></label>
         <label class="field" id="mediaCutCountField" hidden>カット数<input id="mediaCutCount" type="number" min="1" max="1000" step="1" inputmode="numeric"></label>
         <div class="fields media-blend-fields">
-          <label class="field">歌詞の合成方法<select id="mediaBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
-          <label class="field">歌詞不透明度（％）<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
+          <label class="field"><span id="mediaBlendLabel">歌詞の合成方法</span><select id="mediaBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
+          <label class="field"><span id="mediaOpacityLabel">歌詞不透明度（％）</span><input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
         </div>
       </div>
 
@@ -100,8 +100,9 @@
         <button id="btnOmakase" class="primary" title="スタイル・雰囲気・演出・配色をまるごとランダムに（キー R）">おまかせ</button>
         <button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る</button>
       </div>
+      <canvas id="foregroundTimeline" aria-label="前景タイムライン（クリックで移動）"></canvas>
       <canvas id="timeline" aria-label="タイムライン（クリックで移動）"></canvas>
-      <canvas id="mediaTimeline" aria-label="画像・動画タイムライン（クリックで移動）"></canvas>
+      <canvas id="mediaTimeline" aria-label="背景タイムライン（クリックで移動）"></canvas>
       <div class="cutinfo" id="cutInfo"></div>
     </section>
 

@@ -21,10 +21,18 @@ const solo = J.planMedia({ seed: 1, media: { items: [{ id: 'v', name: 'v.webm', 
 assert.equal(solo.duration, 7);
 assert.equal(solo.cuts.length, 1);
 assert.equal(solo.cuts[0].videoLoop, false);
+assert.equal(solo.cuts[0].chromaKey, false);
 const loopingVideo = J.planMedia({ seed: 1, media: { items: [{ id: 'v', name: 'v.webm', type: 'video', duration: 1 }], cutOverrides: { 0: { videoLoop: true } } } }, { duration: 4, lines: [] });
 assert.equal(loopingVideo.cuts[0].videoLoop, true);
 assert.ok(Math.abs(J.mediaVideoTime(loopingVideo.cuts[0], loopingVideo.cuts[0].start + 2.25, 1) - 0.25) < 1e-9);
 assert.equal(J.mediaVideoTime(solo.cuts[0], solo.cuts[0].start + 8, 1), 0.999);
+const layered = { seed: 1, media: { items: [{ id: 'bg', name: 'bg.png', type: 'image' }] }, foreground: { items: [{ id: 'fg', name: 'fg.webm', type: 'video', duration: 1 }], cutOverrides: { 0: { chromaKey: true, chromaColor: '#112233' } } } };
+const bgPlan = J.planMedia(layered, { duration: 4, lines: [] });
+const fgPlan = J.planMedia(layered, { duration: 4, lines: [] }, undefined, 'foreground');
+assert.equal(bgPlan.cuts[0].itemId, 'bg');
+assert.equal(fgPlan.cuts[0].itemId, 'fg');
+assert.equal(fgPlan.cuts[0].chromaKey, true);
+assert.equal(fgPlan.cuts[0].chromaColor, '#112233');
 const loop = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), loop: true, cutCount: 5, cutOverrides: { 0: { layout: 'cover' }, 2: { layout: 'contain' } } } }, { duration: 8, lines: [] });
 assert.deepEqual(Array.from(loop.cuts.map(c => c.itemId)), ['a', 'b', 'a', 'b', 'a']);
 assert.equal(loop.cuts[2].layout, 'contain');
