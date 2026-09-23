@@ -116,11 +116,13 @@ function jzMakePlan(o) {
         }
         starts.push(s);
     }
+    var outro = parsed.outro && lines.length ? parsed.outro : null;
     for (i = 0; i < lines.length; i++) {
         if (i < lines.length - 1) ends.push(Math.max(starts[i] + 0.35, starts[i + 1]));
+        else if (outro && outro.at != null) ends.push(Math.max(starts[i] + 0.35, outro.at));
         else { var nl = jzChars(lines[i].text).length, dl = jzClamp(0.8 + nl * 0.17, 1.5, 5.2) * (o.lineScale || 1); if (beat) dl = Math.max(2, Math.round(dl / beat)) * beat; ends.push(starts[i] + dl); }
     }
-    var duration = o.duration || ((ends.length ? ends[ends.length - 1] : 3) + 0.9);
+    var duration = o.duration || ((ends.length ? ends[ends.length - 1] : 3) + (outro ? (outro.sec != null ? outro.sec : 4) : 0.9));
     var plan = { version: 1, generator: 'JIZURA-AE', title: title, artist: artist, W: o.width, H: o.height, width: o.width, height: o.height, fps: o.fps, duration: duration, style: st, styleKey: o.style, fx: fx, lines: [], cuts: [], events: [], hud: fx.hud };
     var hist = [], schemeIdx = 0, nS = st.schemes.length;
     function ev(t, type, amp, dur) { plan.events.push({ t: t, type: type, amp: amp, dur: dur }); }
@@ -184,8 +186,13 @@ function jzMakePlan(o) {
         if (li < lines.length - 1 && starts[li + 1] - visEnd > (marked ? 0.3 : 1.3)) {
             var r2 = new JzRng(jzHash(o.seed, li, 404));
             if (marked) ev(visEnd, r2.pick(['chroma', 'shake', 'zoom']), 1, 0.25); // one random screen effect, no lyric text
-            plan.cuts.push({ index: plan.cuts.length, text: title || '', lineText: '', line: li, start: visEnd, end: starts[li + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: { variant: r2.pick(['counter', 'rings']) }, decor: jzPickDecor(r2, st, en.decor, { decor: 1 }), scheme: schemeIdx, seed: jzHash(o.seed, li, 405) % 1000000 });
+            plan.cuts.push({ index: plan.cuts.length, text: title || '', lineText: '', line: li, start: visEnd, end: starts[li + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: { variant: fx.interCount === 'on' ? 'counter' : fx.interCount === 'off' ? 'rings' : r2.pick(['counter', 'rings']) }, decor: jzPickDecor(r2, st, en.decor, { decor: 1 }), scheme: schemeIdx, seed: jzHash(o.seed, li, 405) % 1000000 });
         }
+    }
+    // end card for [마무리]: title (or END) + artist from the last line's end to the end of the comp
+    if (outro && duration - 0.05 - ends[lines.length - 1] > 0.5) {
+        var orr = new JzRng(jzHash(o.seed, 998)), os = ends[lines.length - 1], oe = duration - 0.05;
+        plan.cuts.push({ index: plan.cuts.length, text: title || 'END', note: artist, lineText: title || 'END', line: -1, start: os, end: oe, layout: 'title', enter: orr.pick(['blur', 'type', 'wipe', 'assemble']), exit: 'blur', hold: 'still', inDur: 0.3, outDur: jzClamp((oe - os) * 0.3, 0.3, 1.2), params: { font: orr.pick(st.fonts.display) }, decor: [], scheme: schemeIdx, seed: jzHash(o.seed, 998, 1) % 1000000 });
     }
     plan.cuts.sort(function (a, b) { return a.start - b.start; });
     for (i = 0; i < plan.cuts.length; i++) plan.cuts[i].index = i;

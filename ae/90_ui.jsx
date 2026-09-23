@@ -59,6 +59,7 @@ function jzUI(thisObj) {
     var cTwos = gO.add('checkbox', undefined, '2커마(12fps)'); cTwos.value = jzGet('twos', '1') === '1';
     var cFlash = gO.add('checkbox', undefined, '플래시'); cFlash.value = jzGet('flash', '1') === '1';
     gO.add('statictext', undefined, 'HUD'); var ddHud = gO.add('dropdownlist', undefined, ['스타일에 따름', '표시', '숨기기']); ddHud.selection = parseInt(jzGet('hud', '0'), 10) || 0;
+    var gO2 = pF.add('group'); gO2.add('statictext', undefined, '간주 남은 초'); var ddInter = gO2.add('dropdownlist', undefined, ['무작위', '항상 표시', '숨김']); ddInter.selection = parseInt(jzGet('interCount', '0'), 10) || 0;
     var gSeed = t1.add('group'); gSeed.add('statictext', undefined, '시드');
     var eSeed = gSeed.add('edittext', undefined, jzGet('seed', '20260922')); eSeed.preferredSize.width = 110;
     var bShuffle = gSeed.add('button', undefined, '셔플');
@@ -145,7 +146,7 @@ function jzUI(thisObj) {
         jzPut('lyrics', lyr.text); jzPut('title', eTitle.text); jzPut('artist', eArtist.text); jzPut('style', ddStyle.selection.index);
         jzPut('size', ddSize.selection.index); jzPut('fps', ddFps.selection.index); jzPut('timing', rLayer.value ? 'layer' : rComp.value ? 'comp' : 'auto');
         jzPut('bpm', eBpm.text); jzPut('lineScale', eScale.text); jzPut('audio', cAudio.value ? '1' : '0'); jzPut('seed', eSeed.text);
-        jzPut('twos', cTwos.value ? '1' : '0'); jzPut('flash', cFlash.value ? '1' : '0'); jzPut('hud', ddHud.selection.index);
+        jzPut('twos', cTwos.value ? '1' : '0'); jzPut('flash', cFlash.value ? '1' : '0'); jzPut('hud', ddHud.selection.index); jzPut('interCount', ddInter.selection.index);
         var sl = [sMotion, sGlitch, sChroma, sDecor, sDensity, sTexture, sBg]; for (var k = 0; k < sl.length; k++) jzPut(sl[k].key, sl[k].value);
         var active = app.project.activeItem, W = 1920, H = 1080, fps = [24, 30, 60][ddFps.selection.index], dur = null;
         var sz = ddSize.selection.index;
@@ -166,7 +167,7 @@ function jzUI(thisObj) {
         var en = jzMoodEnabled(moodKey(), parseInt(eSeed.text, 10) || 1);
         var o = {
             lyrics: lyr.text, title: eTitle.text, artist: eArtist.text, style: JZ_DATA.styleOrder[ddStyle.selection.index], seed: parseInt(eSeed.text, 10) || 1,
-            fx: { motion: sMotion.value / 100, glitch: sGlitch.value / 100, chroma: sChroma.value / 100, decor: sDecor.value / 100, density: sDensity.value / 100, texture: sTexture.value / 100, bgSwitch: sBg.value / 100, onTwos: cTwos.value, flash: cFlash.value, hud: false },
+            fx: { motion: sMotion.value / 100, glitch: sGlitch.value / 100, chroma: sChroma.value / 100, decor: sDecor.value / 100, density: sDensity.value / 100, texture: sTexture.value / 100, bgSwitch: sBg.value / 100, onTwos: cTwos.value, flash: cFlash.value, hud: false, interCount: ['auto', 'on', 'off'][ddInter.selection.index] },
             width: W, height: H, fps: fps, bpm: parseFloat(eBpm.text) || 0, starts: starts, enabled: en, offset: 0.4, lineScale: parseFloat(eScale.text) || 1, duration: dur
         };
         var st = JZ_DATA.styles[o.style];

@@ -81,7 +81,7 @@ JzRng.prototype.wpick = function (list) { // [[value, weight], ...]
 
 // ---------------------------------------------------------------- lyric parsing
 function jzParseLyrics(raw) {
-    var lines = [], meta = {}, gap = false, brk = null;
+    var lines = [], meta = {}, gap = false, brk = null, outro = null;
     var rows = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
     for (var r = 0; r < rows.length; r++) {
         var s0 = jzTrim(rows[r]);
@@ -92,6 +92,9 @@ function jzParseLyrics(raw) {
         // [\uAC04\uC8FC] / [\uAC04\uC8FC 8] / [\uAC04\uC8FC 8\uCD08] : interlude before the next line (N = extra seconds for auto timing)
         var bm = s0.match(/^\[(?:\uAC04\uC8FC|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:\uCD08|s)?)?\]$/i);
         if (bm) { brk = { sec: bm[1] ? parseFloat(bm[1]) : null }; continue; }
+        // [\uB9C8\uBB34\uB9AC] / [End 8] / [03:45.00][\uB9C8\uBB34\uB9AC] : end card after the last line (at = start time, N = length when there is no song)
+        var om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:\uB9C8\uBB34\uB9AC|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:\uCD08|s)?)?\]$/i);
+        if (om) { outro = { at: om[1] ? parseInt(om[1], 10) * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] ? parseFloat(om[3]) : null }; continue; }
         var s = s0, times = [], m;
         while ((m = s.match(/^\[(\d+):(\d+(?:[.:]\d+)?)\]/))) { times.push(parseInt(m[1], 10) * 60 + parseFloat(m[2].replace(':', '.'))); s = s.substr(m[0].length); }
         s = jzTrim(s);
@@ -108,12 +111,13 @@ function jzParseLyrics(raw) {
             manual = mp; s = mp.join(/[A-Za-z]/.test(s) ? ' ' : '');
         }
         if (!s) continue;
+        outro = null; // [\uB9C8\uBB34\uB9AC] only counts after the last line
         var base = { text: s, note: note, impact: impact, emph: emph, manual: manual, gapBefore: gap, breakBefore: brk, lrc: null };
         gap = false; brk = null;
         if (times.length) { for (var t = 0; t < times.length; t++) { var c = jzCopy(base); c.lrc = times[t]; lines.push(c); } }
         else lines.push(base);
     }
-    return { lines: lines, meta: meta };
+    return { lines: lines, meta: meta, outro: outro };
 }
 function jzCopy(o) { var r = {}; for (var k in o) if (o.hasOwnProperty(k)) r[k] = o[k]; return r; }
 
@@ -477,11 +481,13 @@ function jzMakePlan(o) {
         }
         starts.push(s);
     }
+    var outro = parsed.outro && lines.length ? parsed.outro : null;
     for (i = 0; i < lines.length; i++) {
         if (i < lines.length - 1) ends.push(Math.max(starts[i] + 0.35, starts[i + 1]));
+        else if (outro && outro.at != null) ends.push(Math.max(starts[i] + 0.35, outro.at));
         else { var nl = jzChars(lines[i].text).length, dl = jzClamp(0.8 + nl * 0.17, 1.5, 5.2) * (o.lineScale || 1); if (beat) dl = Math.max(2, Math.round(dl / beat)) * beat; ends.push(starts[i] + dl); }
     }
-    var duration = o.duration || ((ends.length ? ends[ends.length - 1] : 3) + 0.9);
+    var duration = o.duration || ((ends.length ? ends[ends.length - 1] : 3) + (outro ? (outro.sec != null ? outro.sec : 4) : 0.9));
     var plan = { version: 1, generator: 'JIZURA-AE', title: title, artist: artist, W: o.width, H: o.height, width: o.width, height: o.height, fps: o.fps, duration: duration, style: st, styleKey: o.style, fx: fx, lines: [], cuts: [], events: [], hud: fx.hud };
     var hist = [], schemeIdx = 0, nS = st.schemes.length;
     function ev(t, type, amp, dur) { plan.events.push({ t: t, type: type, amp: amp, dur: dur }); }
@@ -545,8 +551,13 @@ function jzMakePlan(o) {
         if (li < lines.length - 1 && starts[li + 1] - visEnd > (marked ? 0.3 : 1.3)) {
             var r2 = new JzRng(jzHash(o.seed, li, 404));
             if (marked) ev(visEnd, r2.pick(['chroma', 'shake', 'zoom']), 1, 0.25); // one random screen effect, no lyric text
-            plan.cuts.push({ index: plan.cuts.length, text: title || '', lineText: '', line: li, start: visEnd, end: starts[li + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: { variant: r2.pick(['counter', 'rings']) }, decor: jzPickDecor(r2, st, en.decor, { decor: 1 }), scheme: schemeIdx, seed: jzHash(o.seed, li, 405) % 1000000 });
+            plan.cuts.push({ index: plan.cuts.length, text: title || '', lineText: '', line: li, start: visEnd, end: starts[li + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: { variant: fx.interCount === 'on' ? 'counter' : fx.interCount === 'off' ? 'rings' : r2.pick(['counter', 'rings']) }, decor: jzPickDecor(r2, st, en.decor, { decor: 1 }), scheme: schemeIdx, seed: jzHash(o.seed, li, 405) % 1000000 });
         }
+    }
+    // end card for [\uB9C8\uBB34\uB9AC]: title (or END) + artist from the last line's end to the end of the comp
+    if (outro && duration - 0.05 - ends[lines.length - 1] > 0.5) {
+        var orr = new JzRng(jzHash(o.seed, 998)), os = ends[lines.length - 1], oe = duration - 0.05;
+        plan.cuts.push({ index: plan.cuts.length, text: title || 'END', note: artist, lineText: title || 'END', line: -1, start: os, end: oe, layout: 'title', enter: orr.pick(['blur', 'type', 'wipe', 'assemble']), exit: 'blur', hold: 'still', inDur: 0.3, outDur: jzClamp((oe - os) * 0.3, 0.3, 1.2), params: { font: orr.pick(st.fonts.display) }, decor: [], scheme: schemeIdx, seed: jzHash(o.seed, 998, 1) % 1000000 });
     }
     plan.cuts.sort(function (a, b) { return a.start - b.start; });
     for (i = 0; i < plan.cuts.length; i++) plan.cuts[i].index = i;
@@ -1672,6 +1683,7 @@ function jzUI(thisObj) {
     var cTwos = gO.add('checkbox', undefined, '2\uCEE4\uB9C8(12fps)'); cTwos.value = jzGet('twos', '1') === '1';
     var cFlash = gO.add('checkbox', undefined, '\uD50C\uB798\uC2DC'); cFlash.value = jzGet('flash', '1') === '1';
     gO.add('statictext', undefined, 'HUD'); var ddHud = gO.add('dropdownlist', undefined, ['\uC2A4\uD0C0\uC77C\uC5D0 \uB530\uB984', '\uD45C\uC2DC', '\uC228\uAE30\uAE30']); ddHud.selection = parseInt(jzGet('hud', '0'), 10) || 0;
+    var gO2 = pF.add('group'); gO2.add('statictext', undefined, '\uAC04\uC8FC \uB0A8\uC740 \uCD08'); var ddInter = gO2.add('dropdownlist', undefined, ['\uBB34\uC791\uC704', '\uD56D\uC0C1 \uD45C\uC2DC', '\uC228\uAE40']); ddInter.selection = parseInt(jzGet('interCount', '0'), 10) || 0;
     var gSeed = t1.add('group'); gSeed.add('statictext', undefined, '\uC2DC\uB4DC');
     var eSeed = gSeed.add('edittext', undefined, jzGet('seed', '20260922')); eSeed.preferredSize.width = 110;
     var bShuffle = gSeed.add('button', undefined, '\uC154\uD50C');
@@ -1758,7 +1770,7 @@ function jzUI(thisObj) {
         jzPut('lyrics', lyr.text); jzPut('title', eTitle.text); jzPut('artist', eArtist.text); jzPut('style', ddStyle.selection.index);
         jzPut('size', ddSize.selection.index); jzPut('fps', ddFps.selection.index); jzPut('timing', rLayer.value ? 'layer' : rComp.value ? 'comp' : 'auto');
         jzPut('bpm', eBpm.text); jzPut('lineScale', eScale.text); jzPut('audio', cAudio.value ? '1' : '0'); jzPut('seed', eSeed.text);
-        jzPut('twos', cTwos.value ? '1' : '0'); jzPut('flash', cFlash.value ? '1' : '0'); jzPut('hud', ddHud.selection.index);
+        jzPut('twos', cTwos.value ? '1' : '0'); jzPut('flash', cFlash.value ? '1' : '0'); jzPut('hud', ddHud.selection.index); jzPut('interCount', ddInter.selection.index);
         var sl = [sMotion, sGlitch, sChroma, sDecor, sDensity, sTexture, sBg]; for (var k = 0; k < sl.length; k++) jzPut(sl[k].key, sl[k].value);
         var active = app.project.activeItem, W = 1920, H = 1080, fps = [24, 30, 60][ddFps.selection.index], dur = null;
         var sz = ddSize.selection.index;
@@ -1779,7 +1791,7 @@ function jzUI(thisObj) {
         var en = jzMoodEnabled(moodKey(), parseInt(eSeed.text, 10) || 1);
         var o = {
             lyrics: lyr.text, title: eTitle.text, artist: eArtist.text, style: JZ_DATA.styleOrder[ddStyle.selection.index], seed: parseInt(eSeed.text, 10) || 1,
-            fx: { motion: sMotion.value / 100, glitch: sGlitch.value / 100, chroma: sChroma.value / 100, decor: sDecor.value / 100, density: sDensity.value / 100, texture: sTexture.value / 100, bgSwitch: sBg.value / 100, onTwos: cTwos.value, flash: cFlash.value, hud: false },
+            fx: { motion: sMotion.value / 100, glitch: sGlitch.value / 100, chroma: sChroma.value / 100, decor: sDecor.value / 100, density: sDensity.value / 100, texture: sTexture.value / 100, bgSwitch: sBg.value / 100, onTwos: cTwos.value, flash: cFlash.value, hud: false, interCount: ['auto', 'on', 'off'][ddInter.selection.index] },
             width: W, height: H, fps: fps, bpm: parseFloat(eBpm.text) || 0, starts: starts, enabled: en, offset: 0.4, lineScale: parseFloat(eScale.text) || 1, duration: dur
         };
         var st = JZ_DATA.styles[o.style];

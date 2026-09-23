@@ -495,6 +495,7 @@ function renderFx() {
   $('fxFlash').checked = !!S.project.fx.flash;
   $('fxKoma').value = String(J.komaOf(S.project.fx));
   $('fxHud').value = S.project.fx.hud || 'auto';
+  $('fxInterCount').value = S.project.fx.interCount || 'auto';
   $('seed').value = S.project.seed;
 }
 
@@ -677,6 +678,7 @@ function bind() {
   setSwitch('wa-toggle', 'wa', true, '일본풍 연출: 사용', '일본풍 연출: 사용 안 함(자동·셔플에서 선택되지 않음)');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
+  $('fxInterCount').addEventListener('change', e => { S.project.fx.interCount = e.target.value; replan(); });
   $('seed').addEventListener('change', e => { S.project.seed = parseInt(e.target.value, 10) || 0; replan(); });
   $('btnSeed').addEventListener('click', () => { S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); });
   const colorToggle = (flag, keys) => e => {

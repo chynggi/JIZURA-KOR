@@ -451,6 +451,7 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
         </div>
         <div class="fields" style="margin-top:12px">
           <label class="field">HUD<select id="fxHud"><option value="auto">스타일에 따름</option><option value="on">항상 표시</option><option value="off">표시 안 함</option></select></label>
+          <label class="field">간주 남은 초<select id="fxInterCount" title="간주 화면에 다음 가사까지 남은 초를 크게 표시할지"><option value="auto">무작위</option><option value="on">항상 표시</option><option value="off">숨김</option></select></label>
           <label class="field">시드<input id="seed" type="number" step="1"></label>
           <label class="field">&nbsp;<button id="btnSeed" class="ghost">새 시드</button></label>
         </div>
@@ -2897,7 +2898,7 @@ J.defaultProject = () => ({
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
   seed: 20260922,
   aspect: '16:9', res: 1080, fps: 24,
-  fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', bgSwitch: 0.35 },
+  fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', interCount: 'auto', bgSwitch: 0.35 },
   enabled: Object.fromEntries(J.GROUP_KEYS.map(g => [g, Object.fromEntries(J.order(g).map(k => [k, true]))])),
   timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, lineScale: 1 },
   overrides: {},
@@ -2915,7 +2916,7 @@ J.stepDur = (fx, fps) => { const k = J.komaOf(fx); return k > 0 ? 1 / k : 1 / (f
 /* ---------------- lyric parsing ---------------- */
 J.parseLyrics = (raw) => {
   const lines = []; const meta = {};
-  let pendingGap = false, pendingBreak = null;
+  let pendingGap = false, pendingBreak = null, outro = null;
   for (let src of String(raw || '').replace(/\r/g, '').split('\n')) {
     const s0 = src.trim();
     if (!s0) { if (lines.length) pendingGap = true; continue; }
@@ -2925,6 +2926,9 @@ J.parseLyrics = (raw) => {
     // [간주] / [간주 8] / [간주 8초] : interlude before the next line (N = extra seconds for auto timing)
     const bm = s0.match(/^\[(?:간주|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
     if (bm) { pendingBreak = { sec: bm[1] != null ? +bm[1] : null }; continue; }
+    // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
+    const om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
+    if (om) { outro = { at: om[1] != null ? +om[1] * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] != null ? +om[3] : null }; continue; }
     let s = s0; const times = [];
     let m;
     while ((m = s.match(/^\[(\d+):(\d+(?:[.:]\d+)?)\]/))) { times.push(+m[1] * 60 + parseFloat(m[2].replace(':', '.'))); s = s.slice(m[0].length); }
@@ -2943,13 +2947,14 @@ J.parseLyrics = (raw) => {
       s = manual.join(latin ? ' ' : '');
     }
     if (!s) continue;
+    outro = null; // [마무리] only counts after the last line
     const base = { text: s, note, impact, emph, manual, gapBefore: pendingGap, breakBefore: pendingBreak };
     pendingGap = false; pendingBreak = null;
     if (times.length) times.forEach(t => lines.push(Object.assign({}, base, { lrc: t })));
     else lines.push(Object.assign({}, base, { lrc: null }));
   }
   if (lines.some(l => l.lrc != null)) lines.sort((a, b) => (a.lrc ?? 1e9) - (b.lrc ?? 1e9));
-  return { lines, meta };
+  return { lines, meta, outro };
 };
 
 /* ---------------- chunking (bunsetsu-ish) ---------------- */
@@ -3030,14 +3035,16 @@ J.computeTiming = (project, parsed, audio) => {
     }
     starts.push(s);
   });
+  const outro = parsed.outro && lines.length ? parsed.outro : null;
   const ends = starts.map((s, i) => {
     if (i < starts.length - 1) return Math.max(s + 0.35, starts[i + 1]);
+    if (outro && outro.at != null) return Math.max(s + 0.35, outro.at);
     const n = [...lines[i].text].length;
     let d = J.clamp(0.8 + n * 0.17, 1.5, 5.2) * (T.lineScale || 1);
     if (beat) d = Math.max(2, Math.round(d / beat)) * beat;
     return s + d;
   });
-  let duration = (ends.length ? ends[ends.length - 1] : 3) + (T.tail ?? 0.9);
+  let duration = (ends.length ? ends[ends.length - 1] : 3) + (outro ? outro.sec ?? 4 : T.tail ?? 0.9);
   if (audio && audio.duration && T.useAudioLength !== false) duration = Math.max(audio.duration, ends.length ? ends[ends.length - 1] + 0.2 : 1);
   return { starts, ends, duration };
 };
@@ -3201,9 +3208,17 @@ J.plan = (project, audio) => {
       const r2 = J.rng(J.h(lineSeed, 404));
       // marked interlude: one random screen effect from the library, no lyric text
       if (marked) { const pick = pickFx(r2, st, en, fx, true, fxHistory, 'force'); if (pick) { const D2 = J.FXE[pick]; addEvent(visEnd - (D2.pre ? D2.pre / 24 : 0), pick, D2.amp || 1, (D2.dur || 4) / 24); fxHistory.push(pick); } }
-      plan.cuts.push(makeCut({ text: title || '', lineText: '', line: li, start: visEnd, end: nextStart, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: J.LAYOUTS.interlude.plan(r2), decor: pickDecor(r2, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: schemeIdx, seed: J.h(lineSeed, 405) }));
+      plan.cuts.push(makeCut({ text: title || '', lineText: '', line: li, start: visEnd, end: nextStart, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: Object.assign(J.LAYOUTS.interlude.plan(r2), fx.interCount === 'on' ? { variant: 'counter' } : fx.interCount === 'off' ? { variant: 'rings' } : {}), decor: pickDecor(r2, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: schemeIdx, seed: J.h(lineSeed, 405) }));
     }
   });
+  // end card for [마무리]: title (or END) + artist from the last line's end to the end of the video
+  if (parsed.outro && parsed.lines.length) {
+    const os = tm.ends[parsed.lines.length - 1], oe = tm.duration - 0.05;
+    if (oe - os > 0.5) {
+      const rng = J.rng(J.h(project.seed, 998));
+      plan.cuts.push(makeCut({ text: title || 'END', note: artist, lineText: title || 'END', line: -1, start: os, end: oe, layout: 'title', enter: rng.pick(['blur', 'type', 'wipe', 'assemble']), exit: 'blur', hold: 'still', outDur: J.clamp((oe - os) * 0.3, 0.3, 1.2), params: J.LAYOUTS.title.plan(rng, {}, st), decor: [], scheme: schemeIdx, seed: J.h(project.seed, 998, 1) }));
+    }
+  }
   plan.cuts.sort((a, b) => a.start - b.start);
   plan.cuts.forEach((c, i) => { c.index = i; });
   plan.events.sort((a, b) => a.t - b.t);
@@ -29180,6 +29195,7 @@ function renderFx() {
   $('fxFlash').checked = !!S.project.fx.flash;
   $('fxKoma').value = String(J.komaOf(S.project.fx));
   $('fxHud').value = S.project.fx.hud || 'auto';
+  $('fxInterCount').value = S.project.fx.interCount || 'auto';
   $('seed').value = S.project.seed;
 }
 
@@ -29362,6 +29378,7 @@ function bind() {
   setSwitch('wa-toggle', 'wa', true, '일본풍 연출: 사용', '일본풍 연출: 사용 안 함(자동·셔플에서 선택되지 않음)');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
+  $('fxInterCount').addEventListener('change', e => { S.project.fx.interCount = e.target.value; replan(); });
   $('seed').addEventListener('change', e => { S.project.seed = parseInt(e.target.value, 10) || 0; replan(); });
   $('btnSeed').addEventListener('click', () => { S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); });
   const colorToggle = (flag, keys) => e => {
