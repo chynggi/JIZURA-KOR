@@ -14,7 +14,7 @@ const ICON = {
   frontmost: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="5" width="10" height="8" rx="1"/><path d="M5 2h9v8M8 4l2 2 2-2"/></svg>',
 };
 
-const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], blankEls: new Map(), mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
+const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], blankEls: new Map(), mediaLineEls: [], sourceTab: 'lyrics', curLine: -2, timelineZoom: 1 };
 
 /* WebAudio player (works inside sandboxed pages where blob media may be blocked) */
 const AP = {
@@ -44,6 +44,7 @@ function removeAudio() {
 function mergeProject(p) {
   const d = J.defaultProject();
   const o = Object.assign(d, p || {});
+  if (o.videoSize) { const [w, h] = J.outputSize(o); o.videoSize = { w, h }; }
   o.fx = Object.assign(J.defaultProject().fx, (p && p.fx) || {});
   o.timing = Object.assign(J.defaultProject().timing, (p && p.timing) || {});
   o.timing.cutTimes = o.timing.cutTimes || {};
@@ -60,6 +61,8 @@ function mergeProject(p) {
   o.fonts = (p && p.fonts) || {};
   o.userFonts = (p && p.userFonts) || [];
   for (const uf of o.userFonts) if (!J.FONTS[uf.key]) J.addUserFont(uf.key, uf.label, uf.family, uf.weight || 400);
+  o.compositeFonts = Array.isArray(p && p.compositeFonts) ? p.compositeFonts : [];
+  J.setCompositeFonts(o.compositeFonts);
   return o;
 }
 function setBadges(d) {
@@ -306,7 +309,25 @@ function seek(t) {
 
 /* ---------------- timeline ---------------- */
 const layoutHue = k => (J.LAYOUT_ORDER.indexOf(k) * 37 + 30) % 360;
+function sizeTimelineStack() {
+  const scroll = $('timelineScroll'), stack = $('timelineStack');
+  const width = Math.max(10, Math.round(scroll.clientWidth * S.timelineZoom));
+  if (stack.style.width !== `${width}px`) stack.style.width = `${width}px`;
+}
+function setTimelineZoom(zoom) {
+  const scroll = $('timelineScroll'), stack = $('timelineStack');
+  const center = scroll.scrollLeft + scroll.clientWidth / 2;
+  const fraction = center / Math.max(1, stack.clientWidth);
+  S.timelineZoom = J.clamp(zoom, 1, 8);
+  sizeTimelineStack();
+  scroll.scrollLeft = Math.max(0, fraction * stack.clientWidth - scroll.clientWidth / 2);
+  $('timelineZoomValue').textContent = `${Math.round(S.timelineZoom * 100)}%`;
+  $('timelineZoomOut').disabled = S.timelineZoom <= 1;
+  $('timelineZoomIn').disabled = S.timelineZoom >= 8;
+  drawTimeline(); drawTimelineLinks();
+}
 function drawTimeline() {
+  sizeTimelineStack();
   const c = $('timeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = Math.max(10, Math.round(c.clientWidth * dpr)), h = Math.max(10, Math.round(c.clientHeight * dpr));
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
@@ -1178,7 +1199,7 @@ function drawStyleGrid() {
 function fontSelectOptions(sel) {
   return '<option value="">スタイルの既定</option>' + Object.entries(J.FONTS).map(([k, f]) => {
     const g = J.faceOf ? J.faceOf(k) : f, alt = g.label && g.label !== f.label ? ' → ' + g.label : '';   // the face actually used for the lyric language
-    return `<option value="${k}" ${sel === k ? 'selected' : ''}>${escapeHtml(f.label + alt)}</option>`;
+    return `<option value="${escapeHtml(k)}" style="font-family:${escapeHtml(g.family)},sans-serif;font-weight:${g.weight}" ${sel === k ? 'selected' : ''}>${escapeHtml(f.label + alt)}</option>`;
   }).join('');
 }
 function renderFontRoles() {
@@ -1189,6 +1210,18 @@ function renderFontRoles() {
     row.querySelector('select').addEventListener('change', e => { if (e.target.value) S.project.fonts[role] = e.target.value; else delete S.project.fonts[role]; fontKey = ''; replan(); });
     box.appendChild(row);
   });
+  renderCompositeFonts();
+}
+function renderCompositeFonts() {
+  const choices = Object.entries(J.FONTS).filter(([, f]) => !f.composite).map(([key, f]) => `<option value="${escapeHtml(key)}" style="font-family:${escapeHtml((J.faceOf ? J.faceOf(key) : f).family)},sans-serif">${escapeHtml(f.label)}</option>`).join('');
+  const base = $('compositeBase');
+  if (!base) return;
+  const selected = base.value; base.innerHTML = choices;
+  if (selected && J.FONTS[selected]) base.value = selected;
+  const parts = $('compositeParts'), existing = Object.fromEntries([...parts.querySelectorAll('select')].map(el => [el.dataset.part, el.value]));
+  parts.innerHTML = Object.entries(J.COMPOSITE_PARTS).map(([key, label]) => `<label>${label}<select data-part="${key}"><option value="">ベースを使用</option>${choices}</select></label>`).join('');
+  for (const select of parts.querySelectorAll('select')) if (existing[select.dataset.part]) select.value = existing[select.dataset.part];
+  $('compositeList').innerHTML = (S.project.compositeFonts || []).map(def => `<div class="composite-saved"><span>${escapeHtml(def.name)}</span><button type="button" data-key="${escapeHtml(def.key)}" aria-label="${escapeHtml(def.name)}を削除">×</button></div>`).join('');
 }
 const BASE_KEYS = [['bg', '背景'], ['fg', '文字'], ['sub', '補助']];
 const ACCENT_KEYS = [['accent', 'アクセント'], ['ghostA', 'ズレ色A'], ['ghostB', 'ズレ色B']];
@@ -1428,6 +1461,18 @@ function renderTech() {
 function syncOut() {
   $('outAspect').value = S.project.aspect; $('outRes').value = String(S.project.res); $('outFps').value = String(S.project.fps);
   $('eAspect').value = S.project.aspect; $('eRes').value = String(S.project.res); $('eFps').value = String(S.project.fps);
+  const size = S.project.videoSize;
+  const preset = size ? `${size.w}x${size.h}` : 'legacy';
+  for (const id of ['out', 'e']) {
+    const selector = $(`${id}VideoSize`);
+    selector.value = S.project.videoSizeMode === 'custom' ? 'custom' : [...selector.options].some(option => option.value === preset) ? preset : 'custom';
+    if (!size) selector.value = 'legacy';
+    $(`${id}VideoWidth`).value = size ? size.w : J.outputSize(S.project)[0];
+    $(`${id}VideoHeight`).value = size ? size.h : J.outputSize(S.project)[1];
+    $(`${id}VideoWidth`).closest('label').hidden = selector.value !== 'custom';
+    $(`${id}VideoHeight`).closest('label').hidden = selector.value !== 'custom';
+  }
+  for (const id of ['outAspect', 'outRes', 'eAspect', 'eRes']) $(id).disabled = !!size;
   $('outQuality').value = S.project.quality || 'high'; $('outAudio').checked = S.project.includeAudio !== false;
   const k = J.keyMode(S.project) || 'off';
   $('outKey').value = k; $('eKey').value = k;
@@ -1487,7 +1532,7 @@ function startTap() {
   if (!(layer ? S.plan[layer].cuts.length || S.project[layer].loop : S.plan.lines.length)) return;
   S.tap = { i: 0, layer, append: !!layer && S.project[layer].loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
-  $('tapHint').textContent = S.tap.append ? 'タップするたびに画像無しのカットを追加します。終了するまで続けられます。' : '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。';
+  $('tapHint').textContent = S.tap.append ? 'タップするたびに素材をループしてカットを追加します。終了するまで続けられます。' : '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。';
   $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
   if (S.tap.append && !S.audio) extendTapPreview(0);
   seek(0); play(); updateTap();
@@ -1500,7 +1545,8 @@ function tapNow() {
     const m = S.project[S.tap.layer];
     if (i === 0) { m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true; }
     m.cutCount = i + 1;
-    m.cutOverrides[i] = { itemId: null };
+    const order = J.mediaOrder(S.project, S.tap.layer);
+    m.cutOverrides[i] = { itemId: order.length ? order[i % order.length].id : null };
     m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();
@@ -1517,7 +1563,8 @@ function tapNow() {
 function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); }
 function updateTap() {
   if (S.tap.append) {
-    $('tapLine').textContent = `${S.tap.i + 1}. 画像無し`; return;
+    const order = J.mediaOrder(S.project, S.tap.layer);
+    $('tapLine').textContent = `${S.tap.i + 1}. ${order.length ? order[S.tap.i % order.length].name : '画像無し'}`; return;
   }
   const ln = S.tap.layer ? S.plan[S.tap.layer].cuts[S.tap.i] : S.plan.lines[S.tap.i];
   $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.layer ? ln.name : ln.text}` : '—';
@@ -1541,6 +1588,9 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  $('timelineZoomOut').addEventListener('click', () => setTimelineZoom(S.timelineZoom / 1.5));
+  $('timelineZoomIn').addEventListener('click', () => setTimelineZoom(S.timelineZoom * 1.5));
+  $('timelineZoomOut').disabled = true;
   $('sourceLyrics').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'lyrics'; syncSourceTab(); });
   $('sourceMedia').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'media'; renderMediaList(); renderMediaLines(); });
   $('sourceForeground').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'foreground'; renderMediaList(); renderMediaLines(); });
@@ -1551,14 +1601,14 @@ function bind() {
     if (!mode) return;
     e.preventDefault(); areaOverlay.setPointerCapture(e.pointerId);
     S.areaEdit.drag = { start: mediaPointer(e), previous: { ...S.areaEdit.draft }, previousAngle: S.areaEdit.angle, pointerAngle: mediaPointerAngle(e, S.areaEdit.draft), handle: mode };
-    areaOverlay.style.cursor = mode === 'rotate' ? 'grabbing' : '';
-    $('areaEditRect').style.cursor = mode === 'rotate' ? 'grabbing' : '';
+    areaOverlay.style.cursor = mode === 'rotate' ? 'var(--rotate-cursor)' : '';
+    $('areaEditRect').style.cursor = mode === 'rotate' ? 'var(--rotate-cursor)' : '';
   });
   areaOverlay.addEventListener('pointermove', e => {
     if (!S.areaEdit) return;
     if (S.areaEdit.drag) moveMediaDraft(e);
     else {
-      const mode = mediaHit(e), cursor = mode === 'rotate' ? 'grab' : mode === 'move' ? 'move' : 'default';
+      const mode = mediaHit(e), cursor = mode === 'rotate' ? 'var(--rotate-cursor)' : mode === 'move' ? 'move' : 'default';
       areaOverlay.style.cursor = cursor; $('areaEditRect').style.cursor = cursor;
     }
   });
@@ -1810,13 +1860,74 @@ function bind() {
     S.project.fonts.display = key; $('localFont').value = '';
     fontKey = ''; renderFontRoles(); replan();
   });
+  $('btnListFonts').addEventListener('click', async () => {
+    if (typeof window.queryLocalFonts !== 'function') { toast('このブラウザではPCフォント一覧を取得できません'); return; }
+    try {
+      const fonts = await window.queryLocalFonts();
+      const unique = new Map();
+      for (const font of fonts) if (font.family) unique.set(`${font.family}\u0000${font.style}`, font);
+      const selector = $('installedFonts'); selector.innerHTML = '';
+      for (const font of [...unique.values()].sort((a, b) => (a.family + a.style).localeCompare(b.family + b.style))) {
+        const option = document.createElement('option'); option.value = font.postscriptName || font.fullName; option.textContent = font.fullName || `${font.family} ${font.style}`;
+        option.style.fontFamily = `"${font.family.replace(/"/g, '')}"`; option._font = font; selector.appendChild(option);
+      }
+      selector.hidden = !$('installedFonts').options.length; $('btnImportFont').hidden = selector.hidden;
+      if (selector.hidden) toast('フォントが見つかりませんでした');
+    } catch (error) { toast('PCフォント一覧の取得が許可されませんでした'); }
+  });
+  $('btnImportFont').addEventListener('click', () => {
+    const selector = $('installedFonts'), font = selector.selectedOptions[0]?._font;
+    if (!font) return;
+    const family = font.family, weight = /bold|black|heavy|太|[6-9]00/i.test(font.style || '') ? 700 : 400;
+    const key = 'local_' + Array.from(family + '_' + (font.style || '')).map(ch => ch.codePointAt(0).toString(16)).join('_');
+    const label = font.fullName || `${family} ${font.style || ''}`;
+    J.addUserFont(key, label, family, weight);
+    S.project.userFonts = (S.project.userFonts || []).filter(item => item.key !== key).concat([{ key, label, family, weight }]);
+    S.project.fonts.display = key; fontKey = ''; renderFontRoles(); replan();
+  });
+  $('btnSaveComposite').addEventListener('click', () => {
+    const name = $('compositeName').value.trim(), base = $('compositeBase').value;
+    if (!name || !J.FONTS[base] || J.FONTS[base].composite) { toast('設定名とベースフォントを指定してください'); return; }
+    const parts = Object.fromEntries([...$('compositeParts').querySelectorAll('select')].filter(el => el.value && J.FONTS[el.value] && !J.FONTS[el.value].composite).map(el => [el.dataset.part, el.value]));
+    const key = 'composite_' + Math.random().toString(36).slice(2, 11);
+    S.project.compositeFonts.push({ key, name, base, parts }); J.setCompositeFonts(S.project.compositeFonts);
+    S.project.fonts.display = key; $('compositeName').value = ''; fontKey = ''; renderFontRoles(); replan();
+  });
+  $('compositeList').addEventListener('click', e => {
+    const button = e.target.closest('[data-key]'); if (!button) return;
+    S.project.compositeFonts = S.project.compositeFonts.filter(def => def.key !== button.dataset.key);
+    for (const role of Object.keys(S.project.fonts)) if (S.project.fonts[role] === button.dataset.key) delete S.project.fonts[role];
+    J.setCompositeFonts(S.project.compositeFonts); fontKey = ''; renderFontRoles(); replan();
+  });
   $('fontFile').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    try { const key = await J.loadFontFile(f); S.project.fonts.display = key; fontKey = ''; renderFontRoles(); replan(); }
+    try {
+      const key = await J.loadFontFile(f), face = J.FONTS[key];
+      S.project.userFonts = (S.project.userFonts || []).filter(item => item.key !== key).concat([{ key, label: face.label, family: face.family.replace(/"/g, ''), weight: face.weight, file: true }]);
+      S.project.fonts.display = key; fontKey = ''; renderFontRoles(); replan();
+    }
     catch (err) { showMsg('フォントを読み込めませんでした'); setTimeout(() => showMsg(null), 2500); }
   });
   ['outAspect', 'eAspect'].forEach(id => $(id).addEventListener('change', e => { S.project.aspect = e.target.value; syncOut(); replan(); codecNote(); }));
   ['outRes', 'eRes'].forEach(id => $(id).addEventListener('change', e => { S.project.res = +e.target.value; syncOut(); autosave(); codecNote(); }));
+  for (const id of ['out', 'e']) {
+    $(`${id}VideoSize`).addEventListener('change', e => {
+      const choice = e.target.value;
+      S.project.videoSizeMode = choice === 'custom' ? 'custom' : 'preset';
+      if (choice === 'legacy') S.project.videoSize = null;
+      else if (choice === 'custom') {
+        const [w, h] = J.outputSize(S.project); S.project.videoSize = { w, h };
+      } else { const [w, h] = choice.split('x').map(Number); S.project.videoSize = { w, h }; }
+      syncOut(); replan(); codecNote();
+    });
+    for (const dimension of ['Width', 'Height']) $(`${id}Video${dimension}`).addEventListener('change', e => {
+      const n = Math.round(+e.target.value / 2) * 2;
+      if (!Number.isFinite(n) || n < 16 || n > 8192) { syncOut(); return; }
+      const [w, h] = J.outputSize(S.project);
+      S.project.videoSize = { w: dimension === 'Width' ? n : w, h: dimension === 'Height' ? n : h };
+      syncOut(); replan(); codecNote();
+    });
+  }
   ['outFps', 'eFps'].forEach(id => $(id).addEventListener('change', e => { S.project.fps = +e.target.value; syncOut(); replan(); codecNote(); }));
   $('outQuality').addEventListener('change', e => { S.project.quality = e.target.value; autosave(); });
   ['outKey', 'eKey'].forEach(id => $(id).addEventListener('change', e => {
@@ -1852,7 +1963,7 @@ function bind() {
   $('btnAE').addEventListener('click', () => J.saveFile(baseName() + '_ae.json', JSON.stringify(J.planForAE(S.plan, S.project), null, 1)));
   $('fileProject').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    try { S.project = mergeProject(JSON.parse(await f.text())); syncUI(); replan(); await restoreMediaAssets(); }
+    try { S.project = mergeProject(JSON.parse(await f.text())); syncUI(); replan(); await Promise.all([restoreMediaAssets(), J.restoreFontFiles(S.project.userFonts)]); fontKey = ''; ensureFonts(); }
     catch (err) { showMsg('プロジェクトを読み込めませんでした'); setTimeout(() => showMsg(null), 2500); }
     e.target.value = '';
   });
@@ -1895,6 +2006,7 @@ function boot() {
   initUndo();
   bind(); syncUI(); replan();
   restoreMediaAssets();
+  J.restoreFontFiles(S.project.userFonts).then(() => { fontKey = ''; ensureFonts(); S.need = true; }).catch(() => {});
   let mode = 'easy'; try { mode = localStorage.getItem('jizura.mode') || 'easy'; } catch (e) {}
   setMode(mode); commit();
   // open on a representative frame (end of the first cut's entrance)
