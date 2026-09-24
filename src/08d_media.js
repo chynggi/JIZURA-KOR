@@ -16,6 +16,16 @@ J.mediaFocusPoint = (focus, w, h) => {
   const index = Object.keys(J.MEDIA_FOCUS).indexOf(focus);
   return { x: ((index < 0 ? 4 : index) % 3 - 1) * w / 3, y: (Math.floor((index < 0 ? 4 : index) / 3) - 1) * h / 3 };
 };
+J.mediaPlacementRect = (placement, sw, sh, w, h) => {
+  if (!sw || !sh || !w || !h) return null;
+  const aspect = sw / sh, stageAspect = w / h;
+  const defaultWidth = Math.min(1, aspect / stageAspect);
+  const width = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.04, 1) : defaultWidth;
+  const pw = Math.min(width, aspect / stageAspect), ph = pw * stageAspect / aspect;
+  const cx = placement && Number.isFinite(+placement.cx) ? J.clamp(+placement.cx, pw / 2, 1 - pw / 2) : 0.5;
+  const cy = placement && Number.isFinite(+placement.cy) ? J.clamp(+placement.cy, ph / 2, 1 - ph / 2) : 0.5;
+  return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
+};
 J.mediaAssets = new Map();
 const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
@@ -67,7 +77,8 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
       focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)),
       videoLoop: item.type === 'video' && ov.videoLoop === true,
       chromaKey: item.type === 'video' && ov.chromaKey === true,
-      chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00', seed };
+      chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00',
+      placement: layer === 'foreground' && ov.placement && ['cx', 'cy', 'w'].every(k => Number.isFinite(+ov.placement[k])) ? { cx: +ov.placement.cx, cy: +ov.placement.cy, w: +ov.placement.w } : null, seed };
   });
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
@@ -242,9 +253,14 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   if (cut.enter === 'slide' && !options.noEnter) dx += (1 - fade) * w;
   if (cut.exit === 'slide' && !options.noExit) dx -= (1 - out) * w;
   const s = cut.layout === 'contain' ? Math.min(w / sw, h / sh) : Math.max(w / sw, h / sh);
-  const fit = [sw * s, sh * s];
+  const placement = cut.placement && J.mediaPlacementRect(cut.placement, sw, sh, w, h);
+  const fit = placement ? [placement.w * w, placement.h * h] : [sw * s, sh * s];
   const focus = J.mediaFocusPoint(cut.focus, w, h);
-  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(w / 2 + dx, h / 2); ctx.translate(focus.x, focus.y); ctx.scale(z, z); ctx.translate(-focus.x, -focus.y);
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.translate(placement ? (placement.x + placement.w / 2) * w + dx : w / 2 + dx, placement ? (placement.y + placement.h / 2) * h : h / 2);
+  if (!placement) ctx.translate(focus.x, focus.y);
+  ctx.scale(z, z);
+  if (!placement) ctx.translate(-focus.x, -focus.y);
   ctx.filter = ({ mono: 'grayscale(1)', sepia: 'sepia(1)', contrast: 'contrast(1.6)', blur: 'blur(8px)' })[cut.treat] || 'none';
   const source = cut.type === 'video' && cut.chromaKey ? J.chromaSource(src, cut, sw, sh) : src;
   ctx.drawImage(source, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();

@@ -144,11 +144,14 @@ function draw() {
   const c = $('view'), ctx = c.getContext('2d');
   J.syncMediaPreview(S.plan, S.t, S.playing);
   const t0 = performance.now();
-  const previewCuts = S.areaEdit && S.areaEdit.draft ? S.plan.cuts.filter(cut => cut.line === S.areaEdit.index) : [];
+  const previewCuts = S.areaEdit && S.areaEdit.kind !== 'foreground' && S.areaEdit.draft ? S.plan.cuts.filter(cut => cut.line === S.areaEdit.index) : [];
   const previousAreas = previewCuts.map(cut => cut.area);
   previewCuts.forEach(cut => { cut.area = S.areaEdit.draft; });
+  const foregroundCut = S.areaEdit && S.areaEdit.kind === 'foreground' && S.plan.foreground.cuts[S.areaEdit.index];
+  const previousForeground = foregroundCut && { placement: foregroundCut.placement, zoom: foregroundCut.zoom, hold: foregroundCut.hold, enter: foregroundCut.enter, exit: foregroundCut.exit, trans: foregroundCut.trans };
+  if (foregroundCut) Object.assign(foregroundCut, { placement: { cx: S.areaEdit.draft.x + S.areaEdit.draft.w / 2, cy: S.areaEdit.draft.y + S.areaEdit.draft.h / 2, w: S.areaEdit.draft.w }, zoom: 100, hold: 'still', enter: 'cut', exit: 'cut', trans: undefined });
   try { S.renderer.frame(ctx, S.plan, S.t, { scale: c.width / S.plan.W, fast: S.playing && S.slow }); }
-  finally { previewCuts.forEach((cut, i) => { cut.area = previousAreas[i]; }); }
+  finally { previewCuts.forEach((cut, i) => { cut.area = previousAreas[i]; }); if (foregroundCut) Object.assign(foregroundCut, previousForeground); }
   const dt = performance.now() - t0;
   S.slow = S.playing ? (dt > 30 ? true : dt < 14 ? false : S.slow) : false;
   updateTimeUI(); drawTimeline(); updateCutInfo();
@@ -345,6 +348,9 @@ function showAreaDraft() {
   const area = S.areaEdit && S.areaEdit.draft, rect = $('areaEditRect');
   rect.hidden = !area;
   if (area) Object.assign(rect.style, { left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%` });
+  $('areaEditOverlay').classList.toggle('foreground-edit', !!S.areaEdit && S.areaEdit.kind === 'foreground');
+  $('areaEditOverlay').querySelector('.area-edit-hint').textContent = S.areaEdit && S.areaEdit.kind === 'foreground' ? '素材をドラッグして移動・四隅をドラッグしてサイズ変更' : 'ドラッグして歌詞の表示範囲を指定';
+  $('areaApplyOne').textContent = S.areaEdit && S.areaEdit.kind === 'foreground' ? 'このカットだけに適用' : 'この行だけに適用';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
   S.need = true;
@@ -354,10 +360,25 @@ function openAreaEditor(index) {
   if (S.areaEdit) cancelAreaEditor();
   const line = S.plan.lines[index]; if (!line) return;
   pause();
-  S.areaEdit = { index, oldTime: S.t, draft: J.lyricArea((S.project.overrides[index] || {}).area), start: null };
+  S.areaEdit = { kind: 'lyric', index, oldTime: S.t, draft: J.lyricArea((S.project.overrides[index] || {}).area), start: null };
   const cut = S.plan.cuts.find(c => c.line === index);
   seek(cut ? cut.start + Math.min(cut.dur * 0.6, cut.inDur + 0.25) : line.start);
   $('areaEditTitle').textContent = `${index + 1}行目「${line.text}」の表示エリア`;
+  $('areaEditOverlay').hidden = false; $('areaEditControls').hidden = false;
+  positionAreaEditor(); showAreaDraft();
+}
+function openForegroundEditor(index) {
+  if (S.exporting || S.tap) return;
+  if (S.areaEdit) cancelAreaEditor();
+  const cut = S.plan.foreground.cuts[index], asset = cut && J.mediaAssets.get(cut.itemId);
+  if (!asset) return;
+  const source = asset.element, sw = source.videoWidth || source.naturalWidth, sh = source.videoHeight || source.naturalHeight;
+  const draft = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
+  if (!draft) return;
+  pause();
+  S.areaEdit = { kind: 'foreground', index, oldTime: S.t, draft, ratio: S.plan.W / S.plan.H * sh / sw, drag: null };
+  seek(cut.start + Math.min(0.5, Math.max(0.001, (cut.end - cut.start) / 2)));
+  $('areaEditTitle').textContent = `${index + 1}カット目「${cut.name}」の配置・サイズ`;
   $('areaEditOverlay').hidden = false; $('areaEditControls').hidden = false;
   positionAreaEditor(); showAreaDraft();
 }
@@ -369,15 +390,32 @@ function cancelAreaEditor() {
 }
 function applyAreaEditor(following) {
   if (!S.areaEdit || !S.areaEdit.draft) return;
-  const { index, draft } = S.areaEdit;
+  const { kind, index, draft } = S.areaEdit;
   remember();
-  for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: draft });
+  if (kind === 'foreground') {
+    for (let i = index; i < (following ? S.plan.foreground.cuts.length : index + 1); i++) mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w }, zoom: 100 });
+  } else {
+    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: draft });
+  }
   S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
   replan(); commit();
 }
 function areaPointer(ev) {
   const box = $('areaEditOverlay').getBoundingClientRect();
   return { x: J.clamp((ev.clientX - box.left) / box.width), y: J.clamp((ev.clientY - box.top) / box.height) };
+}
+function moveForegroundDraft(ev) {
+  const edit = S.areaEdit, drag = edit.drag, point = areaPointer(ev), dx = point.x - drag.start.x, dy = point.y - drag.start.y, a = drag.previous;
+  if (drag.handle === 'move') {
+    edit.draft = { x: J.clamp(a.x + dx, 0, 1 - a.w), y: J.clamp(a.y + dy, 0, 1 - a.h), w: a.w, h: a.h };
+  } else {
+    const east = drag.handle.includes('e'), south = drag.handle.includes('s');
+    const deltaX = dx * (east ? 1 : -1), deltaY = dy * (south ? 1 : -1) / edit.ratio;
+    const maxW = Math.min(east ? 1 - a.x : a.x + a.w, (south ? 1 - a.y : a.y + a.h) / edit.ratio, 1);
+    const w = J.clamp(a.w + (Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY), Math.min(0.04, maxW), maxW), h = w * edit.ratio;
+    edit.draft = { x: east ? a.x : a.x + a.w - w, y: south ? a.y : a.y + a.h - h, w, h };
+  }
+  showAreaDraft();
 }
 function syncSourceTab() {
   const layer = activeMediaLayer(), media = !!layer, m = media && S.project[layer];
@@ -446,8 +484,12 @@ function renderMediaLines() {
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
     if (ov.layout === 'stretch') ov.layout = 'cover';
     const zoomValue = ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : '';
+    const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
+    const sw = source && (source.videoWidth || source.naturalWidth), sh = source && (source.videoHeight || source.naturalHeight);
+    const placement = layer === 'foreground' && J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
+    const placementControl = layer === 'foreground' ? `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}カット目の配置とサイズを編集"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%"></i></span>配置・サイズを編集</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">自動配置に戻す</button>' : ''}</span>` : '';
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span><span class="media-zoom-controls"><label>ズーム率（％）<input class="media-zoom" type="number" min="100" max="300" step="1" placeholder="おまかせ" value="${zoomValue}" aria-label="${i + 1}カット目のズーム率"></label><label>ズーム対象${select('ズーム対象', J.MEDIA_FOCUS, ov.focus)}</label></span>${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label>` : ''}</div>`;
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span><span class="media-zoom-controls"><label>ズーム率（％）<input class="media-zoom" type="number" min="100" max="300" step="1" placeholder="おまかせ" value="${zoomValue}" aria-label="${i + 1}カット目のズーム率"></label><label>ズーム対象${select('ズーム対象', J.MEDIA_FOCUS, ov.focus)}</label></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>クロマキー合成</label><label>色<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}カット目のクロマキー色" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.txt').addEventListener('click', () => seek(cut.start + 0.001));
@@ -457,6 +499,10 @@ function renderMediaLines() {
     li.querySelector('select[aria-label="ズーム対象"]').addEventListener('change', e => { mediaOv(i, { focus: e.target.value || undefined }); replan(); });
     const videoLoop = li.querySelector('.media-video-loop input');
     if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
+    const placementOpen = li.querySelector('.foreground-placement-open');
+    if (placementOpen) placementOpen.addEventListener('click', () => openForegroundEditor(i));
+    const placementReset = li.querySelector('.foreground-placement-reset');
+    if (placementReset) placementReset.addEventListener('click', () => { mediaOv(i, { placement: undefined }); replan(); });
     const chroma = li.querySelector('.media-chroma-toggle');
     if (chroma) {
       chroma.addEventListener('change', e => { mediaOv(i, { chromaKey: e.target.checked }); replan(); });
@@ -870,23 +916,32 @@ function bind() {
   const areaOverlay = $('areaEditOverlay');
   areaOverlay.addEventListener('pointerdown', e => {
     if (!S.areaEdit) return;
+    if (S.areaEdit.kind === 'foreground') {
+      const handle = e.target.closest('[data-handle]'), inside = e.target.closest('#areaEditRect');
+      if (!inside) return;
+      e.preventDefault(); areaOverlay.setPointerCapture(e.pointerId);
+      S.areaEdit.drag = { start: areaPointer(e), previous: { ...S.areaEdit.draft }, handle: handle ? handle.dataset.handle : 'move' };
+      return;
+    }
     e.preventDefault(); areaOverlay.setPointerCapture(e.pointerId);
     S.areaEdit.start = areaPointer(e); S.areaEdit.previous = S.areaEdit.draft;
     S.areaEdit.draft = null; showAreaDraft();
   });
   areaOverlay.addEventListener('pointermove', e => {
+    if (S.areaEdit && S.areaEdit.kind === 'foreground') { if (S.areaEdit.drag) moveForegroundDraft(e); return; }
     if (!S.areaEdit || !S.areaEdit.start) return;
     const a = S.areaEdit.start, b = areaPointer(e);
     S.areaEdit.draft = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
     showAreaDraft();
   });
   areaOverlay.addEventListener('pointerup', e => {
+    if (S.areaEdit && S.areaEdit.kind === 'foreground') { S.areaEdit.drag = null; return; }
     if (!S.areaEdit || !S.areaEdit.start) return;
     const a = S.areaEdit.start, b = areaPointer(e), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
     S.areaEdit.draft = w >= 0.04 && h >= 0.04 ? J.lyricArea({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w, h }) : S.areaEdit.previous;
     S.areaEdit.start = null; showAreaDraft();
   });
-  areaOverlay.addEventListener('pointercancel', () => { if (S.areaEdit) { S.areaEdit.draft = S.areaEdit.previous; S.areaEdit.start = null; showAreaDraft(); } });
+  areaOverlay.addEventListener('pointercancel', () => { if (S.areaEdit) { if (S.areaEdit.kind === 'foreground') { if (S.areaEdit.drag) S.areaEdit.draft = S.areaEdit.drag.previous; S.areaEdit.drag = null; } else { S.areaEdit.draft = S.areaEdit.previous; S.areaEdit.start = null; } showAreaDraft(); } });
   $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);

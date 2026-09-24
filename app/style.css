@@ -130,6 +130,11 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .media-chroma { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 11px; color: var(--muted); }
 .media-chroma label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .media-chroma input[type=color] { width: 38px; height: 27px; padding: 1px; background: transparent; border: 1px solid var(--line2); cursor: pointer; }
+.foreground-placement-controls { display: flex; align-items: center; gap: 6px; width: 100%; flex-wrap: wrap; }
+.foreground-placement-open { display: inline-flex; align-items: center; gap: 7px; padding: 3px 7px; font-size: 11px; }
+.foreground-placement-reset { font-size: 11px; }
+.foreground-placement-thumb { display: block; position: relative; width: 43px; height: 26px; background: #0e1015; border: 1px solid var(--line2); }
+.foreground-placement-thumb i { display: block; position: absolute; box-sizing: border-box; background: rgba(245,165,12,0.32); border: 1px solid var(--amber); }
 .ln .cuts { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; }
 .ln .cuts span { font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--line2); color: var(--muted); cursor: pointer; }
 .ln .cuts span:hover { color: var(--text); border-color: var(--amber); }
@@ -140,6 +145,14 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .viewport canvas { display: block; width: 100%; height: auto; max-height: 68vh; object-fit: contain; }
 .area-edit-overlay { position: absolute; z-index: 4; cursor: crosshair; touch-action: none; background: rgba(0,0,0,0.32); }
 .area-edit-rect { position: absolute; box-sizing: border-box; border: 2px solid var(--amber); background: rgba(245,165,12,0.12); box-shadow: 0 0 0 1px #000; pointer-events: none; }
+.area-edit-overlay.foreground-edit { background: rgba(0,0,0,0.14); cursor: default; }
+.area-edit-overlay.foreground-edit .area-edit-rect { background: rgba(245,165,12,0.04); pointer-events: auto; cursor: move; }
+.area-edit-handle { display: none; position: absolute; width: 15px; height: 15px; border: 2px solid #111; background: var(--amber); border-radius: 2px; transform: translate(-50%,-50%); touch-action: none; }
+.foreground-edit .area-edit-handle { display: block; }
+.area-edit-handle.nw { left: 0; top: 0; cursor: nwse-resize; }
+.area-edit-handle.ne { left: 100%; top: 0; cursor: nesw-resize; }
+.area-edit-handle.sw { left: 0; top: 100%; cursor: nesw-resize; }
+.area-edit-handle.se { left: 100%; top: 100%; cursor: nwse-resize; }
 .area-edit-hint { position: absolute; top: 8px; left: 8px; color: #fff; font-size: 12px; background: rgba(0,0,0,0.8); padding: 4px 7px; pointer-events: none; }
 .area-edit-controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 8px; border: 1px solid var(--amber); border-radius: var(--r); background: var(--panel); font-size: 12px; }
 .area-edit-controls span { flex: 1 1 100%; color: var(--muted); }
