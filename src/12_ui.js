@@ -424,8 +424,9 @@ function syncSourceTab() {
   $('lyricsPane').hidden = media; $('mediaPane').hidden = !media;
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
   $('mediaPaneTitle').textContent = layer === 'foreground' ? '前景' : '背景';
-  $('mediaBlendLabel').textContent = layer === 'foreground' ? '前景の合成方法' : '歌詞の合成方法';
-  $('mediaOpacityLabel').textContent = layer === 'foreground' ? '前景不透明度（％）' : '歌詞不透明度（％）';
+  $('foregroundBlendFields').hidden = layer !== 'foreground';
+  $('lyricBlend').value = S.project.media.blend;
+  $('lyricOpacity').value = S.project.media.opacity;
   $('linesInfo').textContent = media ? `${m.items.length}素材 / ${S.plan[layer].cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
   $('mediaRandom').disabled = !media || m.items.length < 2;
   $('mediaLoop').disabled = !media || m.items.length === 0;
@@ -973,8 +974,10 @@ function bind() {
     S.project[activeMediaLayer()].cutCount = J.clamp(Math.floor(+e.target.value || 0), 1, 1000);
     replan();
   });
-  $('mediaBlend').addEventListener('change', e => { S.project[activeMediaLayer()].blend = e.target.value; replan(); });
-  $('mediaOpacity').addEventListener('change', e => { S.project[activeMediaLayer()].opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
+  $('lyricBlend').addEventListener('change', e => { S.project.media.blend = e.target.value; replan(); });
+  $('lyricOpacity').addEventListener('change', e => { S.project.media.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
+  $('mediaBlend').addEventListener('change', e => { S.project.foreground.blend = e.target.value; replan(); });
+  $('mediaOpacity').addEventListener('change', e => { S.project.foreground.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; replanSoon(260); });
   $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; autosave(); });
   $('songTitle').addEventListener('input', e => { S.project.title = e.target.value; replanSoon(300); });
