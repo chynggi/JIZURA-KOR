@@ -350,6 +350,14 @@ FORK_BODY = {
 }
 
 FORK_UI = {
+    '無表示カットの開始秒': 'Blank cut start time (s)',
+    '無表示カットを削除': 'Remove blank cut',
+    '番目に無表示カットを追加': ' position: add blank cut',
+    '＋ 無表示カットを追加': '+ Add blank cut',
+    "chip('l', '歌詞', '無表示')": "chip('l', 'Lyrics', 'Blank')",
+    "cut.blank ? '無表示'": "cut.blank ? 'Blank'",
+    '>無表示</span>': '>Blank</span>',
+    '>削除</button>': '>Remove</button>',
     '画像無し': 'No image',
     '手動で追加したカットでは素材を個別に指定します': 'Choose a file for each manually added cut',
     '${index + 1}番目にカットを追加': 'Insert cut at position ${index + 1}',

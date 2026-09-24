@@ -12,7 +12,7 @@ const ICON = {
   lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>',
 };
 
-const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, areaEdit: null, timelineDrag: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
+const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, areaEdit: null, timelineDrag: null, slow: false, lineEls: [], blankEls: new Map(), mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
 
 /* WebAudio player (works inside sandboxed pages where blob media may be blocked) */
 const AP = {
@@ -40,6 +40,7 @@ function mergeProject(p) {
   for (const g of Object.keys(en)) en[g] = Object.assign(en[g], ((p && p.enabled) || {})[g] || {});
   o.enabled = en;
   o.overrides = (p && p.overrides) || {};
+  o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
   o.media = J.normalizeMedia(p && p.media);
   o.foreground = J.normalizeMedia(p && p.foreground);
   o.colors = Object.assign({ enabled: false }, (p && p.colors) || {});
@@ -223,14 +224,14 @@ function drawTimeline() {
   const top = h * 0.3, bot = h - 8 * dpr;
   for (const cut of S.plan.cuts) {
     const x0 = X(cut.start), x1 = X(cut.end);
-    const hue = layoutHue(cut.layout);
+    const hue = cut.blank ? 190 : layoutHue(cut.layout);
     x.fillStyle = `hsla(${hue},70%,58%,0.28)`; x.fillRect(x0, top, Math.max(1, x1 - x0 - 1), bot - top);
     x.fillStyle = `hsla(${hue},80%,62%,0.95)`; x.fillRect(x0, top, Math.max(1, 2 * dpr), bot - top);
     if (cut.line >= 0) x.fillRect(x0 - 2 * dpr, top - 3 * dpr, 6 * dpr, 6 * dpr);
     if (x1 - x0 > 34 * dpr) {
       x.fillStyle = 'rgba(236,231,225,0.85)'; x.font = `${10 * dpr}px ${getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace'}`;
       x.save(); x.beginPath(); x.rect(x0, top, x1 - x0 - 3, bot - top); x.clip();
-      x.fillText((J.LAYOUTS[cut.layout] || {}).name || cut.layout, x0 + 5 * dpr, top + 13 * dpr); x.restore();
+      x.fillText(cut.blank ? '無表示' : (cut.text || cut.lineText || ''), x0 + 5 * dpr, top + 13 * dpr); x.restore();
     }
   }
   x.font = `${10 * dpr}px monospace`;
@@ -285,7 +286,7 @@ function timelineSeek(ev) {
 }
 function timelineBoundaryAt(ev, layer) {
   const rect = ev.currentTarget.getBoundingClientRect(), duration = S.plan.duration;
-  const cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0) : S.plan[layer].cuts;
+  const cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0 || c.blank) : S.plan[layer].cuts;
   let chosen = null, distance = 9;
   for (const cut of cuts) {
     const px = rect.left + cut.start / duration * rect.width, delta = Math.abs(ev.clientX - px);
@@ -298,6 +299,12 @@ function timelineBoundaryAt(ev, layer) {
     min = index ? cutsForLayer[index - 1].start + 0.04 : 0;
     max = index + 1 < cutsForLayer.length ? cutsForLayer[index + 1].start - 0.04 : duration - 0.04;
     target = { index };
+  } else if (chosen.blank) {
+    const rows = [...S.plan.lines.map(line => ({ start: line.start })), ...S.plan.cuts.filter(c => c.blank).map(c => ({ start: c.start, id: c.blankId }))].sort((a, b) => a.start - b.start);
+    const i = rows.findIndex(row => row.id === chosen.blankId);
+    min = i > 0 ? rows[i - 1].start + 0.04 : 0;
+    max = i + 1 < rows.length ? rows[i + 1].start - 0.04 : duration - 0.04;
+    target = { blankId: chosen.blankId };
   } else if (chosen.part === 'interlude') {
     const previous = S.plan.cuts.find(c => c.line === chosen.line && typeof c.part === 'number' && c.end === chosen.start);
     min = previous ? previous.start + 0.22 : S.plan.lines[chosen.line].start + 0.5;
@@ -322,7 +329,10 @@ function commitTimelineBoundary(drag) {
   const t = +drag.preview.toFixed(3);
   if (drag.layer === 'lyrics') {
     const timing = S.project.timing;
-    if (drag.part === 0) {
+    if (drag.blankId) {
+      const blank = S.project.lyricBlankCuts.find(b => b.id === drag.blankId);
+      if (blank) blank.start = t;
+    } else if (drag.part === 0) {
       timing.lineTimes[drag.line] = t;
       if (drag.nextLineStart != null && timing.lineTimes[drag.line + 1] == null) timing.lineTimes[drag.line + 1] = +drag.nextLineStart.toFixed(3);
     } else {
@@ -342,6 +352,7 @@ function updateCutInfo() {
   const idx = `${cut ? cut.index : -1}/${mc ? mc.index : -1}/${fc ? fc.index : -1}`;
   const li = cut ? cut.line : -1;
   if (li !== S.curLine) { S.lineEls.forEach((el, i) => el.classList.toggle('cur', i === li)); S.curLine = li; }
+  S.blankEls.forEach((el, id) => el.classList.toggle('cur', !!cut && cut.blankId === id));
   const active = S.sourceTab === 'foreground' ? fc : mc;
   S.mediaLineEls.forEach((el, i) => el.classList.toggle('cur', !!active && i === active.index));
   if (idx === lastCutIdx) return;
@@ -350,7 +361,7 @@ function updateCutInfo() {
   if (!cut && !mc && !fc) { el.innerHTML = '<span class="hint">この位置にカットはありません</span>'; return; }
   const chip = (cls, k, v) => `<span class="chip ${cls}"><b>${k}</b>${v}</span>`;
   const n = (tbl, k) => (tbl[k] ? tbl[k].name : k);
-  el.innerHTML = (cut ? [
+  el.innerHTML = (cut && cut.blank ? [chip('l', '歌詞', '無表示')] : cut ? [
     `<span class="chip mono">#${String(cut.index + 1).padStart(2, '0')}</span>`,
     chip('l', 'レイアウト', n(J.LAYOUTS, cut.layout)), chip('e', '登場', n(J.ENTER, cut.enter)), chip('h', '保持', n(J.HOLD, cut.hold)), chip('x', '退場', n(J.EXIT, cut.exit)),
     cut.decor && cut.decor.length ? chip('', '装飾', cut.decor.map(d => n(J.DECOR, d.id)).join('・')) : '',
@@ -362,11 +373,43 @@ function updateCutInfo() {
 }
 
 /* ---------------- line list ---------------- */
+function insertLyricBlankCut(rows, position) {
+  if (S.project.lyricBlankCuts.length >= 1000) { toast('カット数の上限に達しました'); return; }
+  const previous = rows[position - 1], next = rows[position];
+  let start = previous ? (next ? (previous.start + next.start) / 2 : (previous.start + S.plan.duration) / 2) : 0;
+  if (next && next.start - start < 0.04) {
+    if (next.blankId) {
+      const blank = S.project.lyricBlankCuts.find(b => b.id === next.blankId);
+      if (blank) blank.start = +Math.max(0.4, next.start + 0.4).toFixed(3);
+    } else S.project.timing.lineTimes[next.line] = +Math.max(0.4, next.start + 0.4).toFixed(3);
+  }
+  if (!next && S.plan.duration - start < 0.04) start = Math.max(0, S.plan.duration - 0.4);
+  S.project.lyricBlankCuts.push({ id: crypto.randomUUID(), beforeLine: next ? next.line ?? next.beforeLine : S.plan.lines.length, start: +start.toFixed(3) });
+  replan(); seek(start + 0.001);
+}
 function renderLines() {
-  const ol = $('lineList'); ol.innerHTML = ''; S.lineEls = []; S.curLine = -2;
+  const ol = $('lineList'); ol.innerHTML = ''; S.lineEls = []; S.blankEls = new Map(); S.curLine = -2;
   const ov = S.project.overrides;
   const layoutOpts = '<option value="">自動</option>' + J.LAYOUT_ORDER.map(k => `<option value="${k}">${J.LAYOUTS[k].name}</option>`).join('');
-  S.plan.lines.forEach((ln, i) => {
+  const rows = [...S.plan.lines.map(ln => ({ line: ln.index, start: ln.start })), ...S.plan.cuts.filter(c => c.blank).map(c => ({ blankId: c.blankId, beforeLine: c.beforeLine, start: c.start }))].sort((a, b) => a.start - b.start);
+  const addButton = position => {
+    const row = document.createElement('li'); row.className = 'media-cut-insert';
+    row.innerHTML = `<button class="ghost small" type="button" aria-label="${position + 1}番目に無表示カットを追加">＋ 無表示カットを追加</button>`;
+    row.querySelector('button').addEventListener('click', () => insertLyricBlankCut(rows, position));
+    ol.appendChild(row);
+  };
+  rows.forEach((row, position) => {
+    addButton(position);
+    if (row.blankId) {
+      const li = document.createElement('li'); li.className = 'ln lyric-ln lyric-blank-ln';
+      li.innerHTML = `<span class="no">—</span><input class="time mono" type="number" step="0.01" min="0" value="${row.start.toFixed(2)}" aria-label="無表示カットの開始秒"><span class="txt">無表示</span><div class="meta"><span class="cuts"></span><span class="tools"><button class="ghost small remove-blank" type="button" aria-label="無表示カットを削除">削除</button></span></div>`;
+      li.querySelector('.time').addEventListener('change', e => { const blank = S.project.lyricBlankCuts.find(b => b.id === row.blankId); if (blank) blank.start = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
+      li.querySelector('.txt').addEventListener('click', () => seek(row.start + 0.001));
+      li.querySelector('.remove-blank').addEventListener('click', () => { S.project.lyricBlankCuts = S.project.lyricBlankCuts.filter(b => b.id !== row.blankId); replan(); });
+      ol.appendChild(li); S.blankEls.set(row.blankId, li);
+      return;
+    }
+    const i = row.line, ln = S.plan.lines[i];
     const o = ov[i] || {};
     const li = document.createElement('li'); li.className = 'ln lyric-ln';
     const manual = S.project.timing.lineTimes && S.project.timing.lineTimes[i] != null;
@@ -407,6 +450,7 @@ function renderLines() {
     });
     ol.appendChild(li); S.lineEls.push(li);
   });
+  addButton(rows.length);
   $('linesInfo').textContent = `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
   syncSourceTab();
 }

@@ -120,6 +120,11 @@ class Renderer {
         ctx.filter = 'none'; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
     }
+    if (mainCut && mainCut.blank) {
+      ctx.restore();
+      if (key && !opt.noPost) this.keyFinish(ctx, key, opt);
+      return;
+    }
     // ---------- camera & chroma amounts ----------
     const u = H / 1080;
     const events = plan.events;

@@ -25,6 +25,7 @@ J.defaultProject = () => ({
   enabled: Object.fromEntries(J.GROUP_KEYS.map(g => [g, Object.fromEntries(J.order(g).map(k => [k, true]))])),
   timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, cutTimes: {}, lineScale: 1 },
   overrides: {},
+  lyricBlankCuts: [],
   media: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
   foreground: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
   colors: { enabled: false },
@@ -340,6 +341,24 @@ J.plan = (project, audio) => {
       plan.cuts.push(makeCut({ text: title || '', lineText: '', line: li, part: 'interlude', start: visEnd, end: nextStart, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: J.LAYOUTS.interlude.plan(r2), decor: pickDecor(r2, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: schemeIdx, seed: J.h(lineSeed, 405) }));
     }
   });
+  const blanks = (Array.isArray(project.lyricBlankCuts) ? project.lyricBlankCuts : [])
+    .filter(b => b && Number.isFinite(+b.start) && Number.isInteger(+b.beforeLine))
+    .map(b => ({ id: b.id, beforeLine: J.clamp(+b.beforeLine, 0, parsed.lines.length), start: Math.max(0, +b.start) }))
+    .sort((a, b) => a.start - b.start);
+  for (let i = 0; i < blanks.length; i++) {
+    const blank = blanks[i];
+    const nextLine = tm.starts[blank.beforeLine] ?? Infinity;
+    const nextBlank = blanks[i + 1] ? blanks[i + 1].start : Infinity;
+    const end = Math.min(nextLine, nextBlank, plan.duration);
+    if (end - blank.start < 0.04) continue;
+    for (const cut of plan.cuts) {
+      if (cut.start < blank.start && cut.end > blank.start && cut.line < blank.beforeLine) {
+        cut.end = blank.start; cut.dur = cut.end - cut.start;
+      }
+    }
+    plan.cuts = plan.cuts.filter(c => !(c.line < blank.beforeLine && c.start >= blank.start && c.start < end));
+    plan.cuts.push(makeCut({ blank: true, blankId: blank.id, beforeLine: blank.beforeLine, text: '', lineText: '', line: -2, part: 'blank', start: blank.start, end, layout: 'blank', enter: 'cut', exit: 'cut', cam: 'none' }));
+  }
   plan.cuts.sort((a, b) => a.start - b.start);
   plan.cuts.forEach((c, i) => { c.index = i; });
   plan.events.sort((a, b) => a.t - b.t);
