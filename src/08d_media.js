@@ -20,10 +20,12 @@ J.mediaPlacementRect = (placement, sw, sh, w, h) => {
   if (!sw || !sh || !w || !h) return null;
   const aspect = sw / sh, stageAspect = w / h;
   const defaultWidth = Math.min(1, aspect / stageAspect);
-  const width = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.04, 1) : defaultWidth;
-  const pw = Math.min(width, aspect / stageAspect), ph = pw * stageAspect / aspect;
-  const cx = placement && Number.isFinite(+placement.cx) ? J.clamp(+placement.cx, pw / 2, 1 - pw / 2) : 0.5;
-  const cy = placement && Number.isFinite(+placement.cy) ? J.clamp(+placement.cy, ph / 2, 1 - ph / 2) : 0.5;
+  const locked = !placement || placement.lockAspect !== false;
+  let pw = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.005, 4) : defaultWidth;
+  let ph = locked ? pw * stageAspect / aspect : placement && Number.isFinite(+placement.h) ? J.clamp(+placement.h, 0.005, 4) : pw * stageAspect / aspect;
+  if (locked && ph > 4) { ph = 4; pw = ph * aspect / stageAspect; }
+  const cx = placement && Number.isFinite(+placement.cx) ? J.clamp(+placement.cx, 0, 1) : 0.5;
+  const cy = placement && Number.isFinite(+placement.cy) ? J.clamp(+placement.cy, 0, 1) : 0.5;
   return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
 };
 J.mediaAssets = new Map();
@@ -68,17 +70,21 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   const cuts = Array.from({ length: count }, (_, i) => {
     const item = itemAt(i), ov = Object.assign({}, m.overrides[item.id] || {}, m.cutOverrides[i] || {});
     const seed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, m.seed, i, ov.seed | 0);
-    const rng = J.rng(seed);
+    const rng = J.rng(seed), reroll = ov.seed != null;
     return { index: i, itemId: item.id, name: item.name, type: item.type, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
-      layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : rng.pick(Object.keys(J.MEDIA_LAYOUT)), enter: ov.enter || rng.pick(Object.keys(J.MEDIA_ENTER)),
-      hold: ov.hold || rng.pick(Object.keys(J.MEDIA_HOLD)), exit: ov.exit || rng.pick(Object.keys(J.MEDIA_EXIT)),
-      treat: ov.treat || rng.pick(Object.keys(J.MEDIA_TREAT)),
-      zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : rng.pick([100, 110, 125, 140, 160]),
-      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : rng.pick(Object.keys(J.MEDIA_FOCUS)),
+      layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
+      hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
+      treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
+      zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : reroll ? rng.pick([100, 110, 125, 140, 160]) : 100,
+      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : reroll ? rng.pick(Object.keys(J.MEDIA_FOCUS)) : 'mc',
       videoLoop: item.type === 'video' && ov.videoLoop === true,
       chromaKey: item.type === 'video' && ov.chromaKey === true,
       chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00',
-      placement: layer === 'foreground' && ov.placement && ['cx', 'cy', 'w'].every(k => Number.isFinite(+ov.placement[k])) ? { cx: +ov.placement.cx, cy: +ov.placement.cy, w: +ov.placement.w } : null, seed };
+      placement: ov.placement && ['cx', 'cy', 'w'].every(k => Number.isFinite(+ov.placement[k])) ? {
+        cx: +ov.placement.cx, cy: +ov.placement.cy, w: +ov.placement.w,
+        h: Number.isFinite(+ov.placement.h) && ov.placement.h != null ? +ov.placement.h : undefined,
+        lockAspect: ov.placement.lockAspect !== false,
+      } : null, seed };
   });
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});

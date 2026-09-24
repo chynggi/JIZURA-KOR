@@ -33,12 +33,24 @@ assert.equal(bgPlan.cuts[0].itemId, 'bg');
 assert.equal(fgPlan.cuts[0].itemId, 'fg');
 assert.equal(fgPlan.cuts[0].chromaKey, true);
 assert.equal(fgPlan.cuts[0].chromaColor, '#112233');
+for (const layer of ['media', 'foreground']) {
+  const fresh = J.planMedia({ seed: 1, [layer]: { items: [{ id: 'new', name: 'new.png', type: 'image' }] } }, { duration: 4, lines: [] }, undefined, layer);
+  assert.deepEqual(Array.from(['layout', 'enter', 'hold', 'exit', 'treat', 'zoom', 'focus'].map(k => fresh.cuts[0][k])), ['contain', 'cut', 'still', 'cut', 'none', 100, 'mc']);
+}
 const positioned = J.planMedia({ seed: 1, foreground: { items: [{ id: 'fg', name: 'fg.webm', type: 'video', duration: 1 }], cutOverrides: { 0: { placement: { cx: 0.35, cy: 0.6, w: 0.4 } } } } }, { duration: 4, lines: [] }, undefined, 'foreground');
 assert.equal(positioned.cuts[0].placement.cx, 0.35);
 const widePlacement = J.mediaPlacementRect(positioned.cuts[0].placement, 160, 90, 1280, 720);
 assert.ok(Math.abs(widePlacement.x - 0.15) < 1e-9 && Math.abs(widePlacement.y - 0.4) < 1e-9 && Math.abs(widePlacement.w - 0.4) < 1e-9 && Math.abs(widePlacement.h - 0.4) < 1e-9);
 const tallPlacement = J.mediaPlacementRect(positioned.cuts[0].placement, 90, 160, 1280, 720);
 assert.ok(Math.abs(tallPlacement.w / tallPlacement.h * 1280 / 720 - 90 / 160) < 1e-9, 'placement must preserve each asset aspect ratio');
+const largePlacement = J.mediaPlacementRect({ cx: 0.5, cy: 0.5, w: 2.5, h: 0.2, lockAspect: false }, 160, 90, 1280, 720);
+assert.equal(largePlacement.w, 2.5, 'placement may exceed the canvas width');
+assert.equal(largePlacement.h, 0.2, 'unlocked placement uses independent height');
+const tinyPlacement = J.mediaPlacementRect({ cx: 0.5, cy: 0.5, w: 0.005, lockAspect: true }, 160, 90, 1280, 720);
+assert.equal(tinyPlacement.w, 0.005, 'placement may be smaller than the previous minimum');
+const backgroundPlacement = J.planMedia({ seed: 1, media: { items: [{ id: 'bg', name: 'bg.png', type: 'image' }], cutOverrides: { 0: { placement: { cx: 0.4, cy: 0.6, w: 1.5, h: 0.3, lockAspect: false } } } } }, { duration: 4, lines: [] });
+assert.equal(backgroundPlacement.cuts[0].placement.lockAspect, false);
+assert.equal(backgroundPlacement.cuts[0].placement.w, 1.5);
 const loop = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), loop: true, cutCount: 5, cutOverrides: { 0: { layout: 'cover' }, 2: { layout: 'contain' } } } }, { duration: 8, lines: [] });
 assert.deepEqual(Array.from(loop.cuts.map(c => c.itemId)), ['a', 'b', 'a', 'b', 'a']);
 assert.equal(loop.cuts[2].layout, 'contain');
