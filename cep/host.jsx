@@ -36,7 +36,7 @@ var JZCEP = (function () {
         }
         return $.global.JZ_CORE;
     }
-    // fonts: the same settings as the ScriptUI panel (JIZURA_AE.jsx → フォント tab), defaults otherwise
+    // fonts: the same settings as the ScriptUI panel (JIZURA_AE.jsx → 폰트 tab), defaults otherwise
     function setting(k, d) { try { if (app.settings.haveSetting('JIZURA', k)) return decodeURIComponent(app.settings.getSetting('JIZURA', k)); } catch (e) {} return d; }
     function roles(C) {
         var d = C.roleDefault;
@@ -58,7 +58,7 @@ var JZCEP = (function () {
         var C, plan, t0 = new Date().getTime();
         try { C = core(); } catch (e0) { return fail('engine: ' + e0.toString()); }
         try { plan = C.parse(s); } catch (e1) { return fail('JSON: ' + e1.toString()); }
-        if (!plan || !plan.cuts || !plan.style) return fail('JIZURA の構成データではありません');
+        if (!plan || !plan.cuts || !plan.style) return fail('JIZURA 구성 데이터가 아닙니다');
         var au = audioId ? findItem(audioId) : null, comp = null, err = null;
         app.beginUndoGroup('JIZURA');
         try { comp = C.build(plan, { roles: roles(C), audioItem: au, audioStart: 0 }); }
@@ -91,26 +91,26 @@ var JZCEP = (function () {
         // the audio file behind the selected layer of the active comp (the panel analyses it for beats)
         selectedAudio: function () {
             var c = activeComp();
-            if (!c) return fail('コンポを開いて、曲のレイヤーを選択してください');
+            if (!c) return fail('컴포를 열고 곡 레이어를 선택해 주세요');
             var L = audioLayerOf(c);
-            if (!L) return fail('曲（音声ファイル）のレイヤーを選択してください');
+            if (!L) return fail('곡(오디오 파일) 레이어를 선택해 주세요');
             return str({ ok: true, id: L.source.id, name: L.source.name, path: L.source.file.fsName, start: L.startTime, comp: c.name });
         },
         // marker times → line start times (seconds from the start of the song)
         markers: function () {
             var c = activeComp();
-            if (!c) return fail('コンポを開いてください');
+            if (!c) return fail('컴포를 열어 주세요');
             var L = c.selectedLayers.length ? c.selectedLayers[0] : null, mk = null, src = 'comp', i;
             try { if (L && L.property('ADBE Marker').numKeys > 0) { mk = L.property('ADBE Marker'); src = 'layer'; } } catch (e) {}
             if (!mk) mk = c.markerProperty;
-            if (!mk || mk.numKeys < 1) return fail('マーカーが見つかりません（曲のレイヤーかコンポにマーカーを打ってください）');
+            if (!mk || mk.numKeys < 1) return fail('마커를 찾을 수 없습니다(곡 레이어나 컴포에 마커를 찍어 주세요)');
             var A = audioLayerOf(c), off = A ? A.startTime : 0, t = [];
             for (i = 1; i <= mk.numKeys; i++) t.push(Math.max(0, mk.keyTime(i) - off));
             return str({ ok: true, source: src, times: t, offset: off });
         },
         buildFromFile: function (path, audioId) {
             var f = File(path);
-            if (!f.exists) return fail('構成データの一時ファイルが見つかりません');
+            if (!f.exists) return fail('구성 데이터 임시 파일을 찾을 수 없습니다');
             f.encoding = 'UTF-8'; f.open('r'); var s = f.read(); f.close();
             try { f.remove(); } catch (e) {}
             return build(s, audioId);
@@ -120,7 +120,7 @@ var JZCEP = (function () {
         diagnose: function () {
             var C; try { C = core(); } catch (e0) { return fail(e0.toString()); }
             var ok = false; try { ok = !!(lastComp && lastComp.name); } catch (e) { ok = false; }
-            if (!ok) return fail('先にこのパネルでコンポを作ってください');
+            if (!ok) return fail('먼저 이 패널에서 컴포를 만들어 주세요');
             var r = C.diagnose(lastComp, lastPlan, 120), path = C.saveReport(r.text);
             return str({ ok: true, errors: r.errors, expressions: r.expressions, partial: r.partial, path: path });
         }
