@@ -307,7 +307,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .terms-oss { font-size: 12px; color: var(--muted); margin: 4px 0 14px; }
 .terms-oss summary { cursor: pointer; }
 .terms-oss p { font-size: 12px !important; margin-top: 6px; }
-.terms-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.terms-foot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1180px) {
@@ -592,6 +592,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
     <details class="terms-oss"><summary>使用しているオープンソース</summary>
       <p>MP4 書き出し：mp4-muxer（MIT License）<br>フォント：Google Fonts 配布の各書体（SIL Open Font License 1.1）</p>
     </details>
+    <p class="muted mono">© 2026 hakoniwa · MIT</p>
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
       <h3 id="termsForkTitle">字面 JIZURA（hirazi fork)</h3>
@@ -600,7 +601,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       <p>fork版のソースコード：<a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>
-    <div class="terms-foot"><span class="muted mono">© 2026 hakoniwa · MIT</span><button value="close" class="primary" autofocus>閉じる</button></div>
+    <div class="terms-foot"><button value="close" class="primary" autofocus>閉じる</button></div>
   </form>
 </dialog>
 

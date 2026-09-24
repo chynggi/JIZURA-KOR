@@ -291,7 +291,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .terms-oss { font-size: 12px; color: var(--muted); margin: 4px 0 14px; }
 .terms-oss summary { cursor: pointer; }
 .terms-oss p { font-size: 12px !important; margin-top: 6px; }
-.terms-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.terms-foot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1180px) {
