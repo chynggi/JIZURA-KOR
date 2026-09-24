@@ -644,6 +644,90 @@ function insertLyricBlankCut(rows, position) {
   S.project.lyricBlankCuts.push({ id: crypto.randomUUID(), beforeLine: next ? next.line ?? next.beforeLine : S.plan.lines.length, start: +start.toFixed(3) });
   replan(); seek(start + 0.001);
 }
+function reconcileLyricLines(previous, next) {
+  const oldLines = J.parseLyrics(previous).lines, newLines = J.parseLyrics(next).lines;
+  if (oldLines.length === newLines.length) return false;
+  const same = (a, b) => a.text === b.text && a.lrc === b.lrc;
+  let prefix = 0, suffix = 0;
+  while (prefix < Math.min(oldLines.length, newLines.length) && same(oldLines[prefix], newLines[prefix])) prefix++;
+  while (suffix < Math.min(oldLines.length, newLines.length) - prefix && same(oldLines[oldLines.length - 1 - suffix], newLines[newLines.length - 1 - suffix])) suffix++;
+  const oldMiddle = oldLines.length - prefix - suffix, newMiddle = newLines.length - prefix - suffix;
+  const oldToNew = new Map();
+  for (let i = 0; i < prefix; i++) oldToNew.set(i, i);
+  for (let i = 0; i < suffix; i++) oldToNew.set(oldLines.length - suffix + i, newLines.length - suffix + i);
+  if (oldMiddle * newMiddle <= 250000) {
+    const dp = Array.from({ length: oldMiddle + 1 }, () => new Uint16Array(newMiddle + 1));
+    for (let i = oldMiddle - 1; i >= 0; i--) for (let j = newMiddle - 1; j >= 0; j--) {
+      dp[i][j] = same(oldLines[prefix + i], newLines[prefix + j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+    for (let i = 0, j = 0; i < oldMiddle && j < newMiddle;) {
+      if (same(oldLines[prefix + i], newLines[prefix + j])) { oldToNew.set(prefix + i, prefix + j); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+      else j++;
+    }
+  }
+  const anchors = [[-1, -1], ...[...oldToNew].sort((a, b) => a[0] - b[0]), [oldLines.length, newLines.length]];
+  for (let a = 1; a < anchors.length; a++) {
+    const [oldBefore, newBefore] = anchors[a - 1], [oldAfter, newAfter] = anchors[a];
+    for (let k = 1; k <= Math.min(oldAfter - oldBefore - 1, newAfter - newBefore - 1); k++) oldToNew.set(oldBefore + k, newBefore + k);
+  }
+  const oldStarts = J.computeTiming(S.project, { lines: oldLines }, audioLike()).starts;
+  const oldTimes = S.project.timing.lineTimes || {};
+  const newTimes = {};
+  for (const [key, value] of Object.entries(oldTimes)) {
+    const mapped = oldToNew.get(+key);
+    if (mapped != null) newTimes[mapped] = value;
+  }
+  // Preserve following lines, and preserve every LRC time if a new plain line disables all-LRC timing.
+  const preserveAll = oldLines.length > 0 && oldLines.every(line => line.lrc != null) && newLines.some(line => line.lrc == null);
+  for (let i = preserveAll ? 0 : oldLines.length - suffix; i < oldLines.length; i++) {
+    const mapped = oldToNew.get(i);
+    if (mapped != null && newTimes[mapped] == null) newTimes[mapped] = +oldStarts[i].toFixed(3);
+  }
+  const newToOld = new Map([...oldToNew].map(([oldIndex, newIndex]) => [newIndex, oldIndex]));
+  for (let i = 0; i < newLines.length;) {
+    if (newToOld.has(i)) { i++; continue; }
+    let end = i; while (end < newLines.length && !newToOld.has(end)) end++;
+    if (end < newLines.length) {
+      const before = newToOld.get(i - 1), after = newToOld.get(end);
+      const left = before == null ? 0 : oldStarts[before], right = oldStarts[after];
+      for (let j = i; j < end; j++) newTimes[j] = +(left + (right - left) * (j - i + 1) / (end - i + 1)).toFixed(3);
+    }
+    i = end;
+  }
+  S.project.timing.lineTimes = newTimes;
+  const remap = source => {
+    const result = {};
+    for (const [key, value] of Object.entries(source || {})) {
+      const mapped = oldToNew.get(+key);
+      if (mapped != null) result[mapped] = value;
+    }
+    return result;
+  };
+  S.project.overrides = remap(S.project.overrides);
+  const newCutTimes = {};
+  for (const [key, value] of Object.entries(S.project.timing.cutTimes || {})) {
+    const match = key.match(/^(\d+):(.*)$/), mapped = match && oldToNew.get(+match[1]);
+    if (mapped != null) newCutTimes[`${mapped}:${match[2]}`] = value;
+  }
+  S.project.timing.cutTimes = newCutTimes;
+  const newStarts = J.computeTiming(S.project, { lines: newLines }, audioLike()).starts;
+  for (const blank of S.project.lyricBlankCuts) {
+    const following = newStarts.findIndex(start => start > +blank.start + 1e-6);
+    blank.beforeLine = following < 0 ? newLines.length : following;
+  }
+  const mapRef = ref => {
+    const match = /^l:(\d+):(.*)$/.exec(ref);
+    if (!match) return ref;
+    const mapped = oldToNew.get(+match[1]);
+    return mapped == null ? null : `l:${mapped}:${match[2]}`;
+  };
+  S.project.timelineLinks = S.project.timelineLinks.flatMap(link => {
+    const a = mapRef(link.a), b = mapRef(link.b);
+    return a && b ? [{ a, b }] : [];
+  });
+  return true;
+}
 function renderLines() {
   const ol = $('lineList'); ol.innerHTML = ''; S.lineEls = []; S.blankEls = new Map(); S.curLine = -2;
   const ov = S.project.overrides;
@@ -1460,7 +1544,13 @@ function bind() {
   $('lyricOpacity').addEventListener('change', e => { S.project.media.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('mediaBlend').addEventListener('change', e => { S.project.foreground.blend = e.target.value; replan(); });
   $('mediaOpacity').addEventListener('change', e => { S.project.foreground.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
-  $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; markUndoGroup('lyrics'); replanSoon(260); });
+  $('lyrics').addEventListener('input', e => {
+    const changedCount = reconcileLyricLines(S.project.lyrics, e.target.value);
+    S.project.lyrics = e.target.value;
+    markUndoGroup('lyrics');
+    if (changedCount) { clearTimeout(replanTimer); replan(); }
+    else replanSoon(260);
+  });
   $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; markUndoGroup('jevPrompt'); autosave(); });
   $('lyricLang').addEventListener('change', e => {
     remember();
