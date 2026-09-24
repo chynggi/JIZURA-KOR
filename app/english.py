@@ -364,6 +364,9 @@ FORK_BODY = {
 }
 
 FORK_UI = {
+    '${cut.line + 1}行目${cut.part + 1}カット目を最前に表示': 'Show line ${cut.line + 1}, cut ${cut.part + 1} above foreground',
+    '${i + 1}行目${c.part + 1}カット目を最前に表示': 'Show line ${i + 1}, cut ${c.part + 1} above foreground',
+    '最前に表示': 'Show above foreground',
     '動画全体の長さは ${J.fmtTime(minimum)} ～ 06:00:00 の範囲で入力してください': 'Enter a total video duration from ${J.fmtTime(minimum)} to 06:00:00',
     '境界をリンク': 'Link boundary',
     'リンクを解除': 'Remove link',
