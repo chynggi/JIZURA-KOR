@@ -6,6 +6,7 @@
 if (!document.getElementById('app')) return;          // engine-only pages (tests)
 const $ = id => document.getElementById(id);
 const LS_KEY = 'jizura.project.v1';
+const MEDIA_DELETE_KEY = 'jizura.media.pendingDelete.v1';
 const HUD_CHARS = '0123456789:./-_()【】・No.LYRICRECUNTITLEDXYlinebpminterlude—─／ ';
 const ICON = {
   dice: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor"/><circle cx="10.5" cy="10.5" r="1" fill="currentColor"/><circle cx="10.5" cy="5.5" r="1" fill="currentColor"/><circle cx="5.5" cy="10.5" r="1" fill="currentColor"/></svg>',
@@ -54,10 +55,60 @@ function setBadges(d) {
   return (d && d.extra ? '<span class="set-badge ex" title="最初の公開版のあとに追加">追加</span>' : '') + (d && d.wa ? '<span class="set-badge" title="和風の演出">和</span>' : '');
 }
 function loadLocal() { try { const s = localStorage.getItem(LS_KEY); if (s) return mergeProject(JSON.parse(s)); } catch (e) {} return mergeProject(null); }
+function pendingMediaDeletes() { try { const ids = JSON.parse(localStorage.getItem(MEDIA_DELETE_KEY) || '[]'); return Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : []; } catch (e) { return []; } }
+function queueMediaDeletion(id) { try { localStorage.setItem(MEDIA_DELETE_KEY, JSON.stringify([...new Set([...pendingMediaDeletes(), id])])); } catch (e) {} }
+async function cleanupDeletedMedia() {
+  const active = new Set([...S.project.media.items, ...S.project.foreground.items].map(item => item.id));
+  const pending = pendingMediaDeletes(), failed = [];
+  for (const id of pending) {
+    if (active.has(id)) continue;
+    try {
+      await J.removeMedia(id);
+      const asset = J.mediaAssets.get(id);
+      if (asset) { URL.revokeObjectURL(asset.url); J.mediaAssets.delete(id); }
+    } catch (e) { failed.push(id); }
+  }
+  try { localStorage.setItem(MEDIA_DELETE_KEY, JSON.stringify(pendingMediaDeletes().filter(id => !pending.includes(id) || failed.includes(id)))); } catch (e) {}
+}
+const U = { list: [], i: -1, restoring: false, pendingGroup: null, lastGroup: null, lastAt: 0 };
+function initUndo() { U.list = [JSON.stringify(S.project)]; U.i = 0; updateUndoButtons(); }
+function markUndoGroup(group) { U.pendingGroup = group; }
+function updateUndoButtons() {
+  if ($('btnUndo')) $('btnUndo').disabled = U.i <= 0;
+  if ($('btnRedo')) $('btnRedo').disabled = U.i >= U.list.length - 1;
+}
+function recordUndoState() {
+  if (U.restoring || !S.project) return;
+  const snap = JSON.stringify(S.project), group = U.pendingGroup, now = Date.now();
+  U.pendingGroup = null;
+  if (U.i < 0) { U.list = [snap]; U.i = 0; updateUndoButtons(); return; }
+  if (snap === U.list[U.i]) return;
+  const atTip = U.i === U.list.length - 1;
+  U.list = U.list.slice(0, U.i + 1);
+  if (group && atTip && group === U.lastGroup && now - U.lastAt < 1200 && U.i > 0) U.list[U.i] = snap;
+  else { U.list.push(snap); U.i++; }
+  if (U.list.length > 100) { U.list.shift(); U.i--; }
+  U.lastGroup = group; U.lastAt = now;
+  updateUndoButtons();
+}
+function undoMove(direction) {
+  if (S.exporting) return;
+  recordUndoState();
+  const next = U.i + direction;
+  if (next < 0 || next >= U.list.length) return;
+  pause(); clearTimeout(replanTimer);
+  if (S.areaEdit) cancelAreaEditor();
+  S.tap = null; S.timelineDrag = null; S.linkDrag = null;
+  $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false');
+  U.restoring = true; U.i = next; U.pendingGroup = null; U.lastGroup = null;
+  S.project = mergeProject(JSON.parse(U.list[next]));
+  fontKey = ''; syncUI(); replan(); flushSave();
+  U.restoring = false; updateUndoButtons();
+}
 let saveTimer = 0;
-function autosave() { clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 700); }
-function flushSave() { clearTimeout(saveTimer); try { localStorage.setItem(LS_KEY, JSON.stringify(S.project)); } catch (e) {} }
-window.addEventListener('pagehide', () => { if (S.project) flushSave(); });
+function autosave() { recordUndoState(); clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 700); }
+function flushSave() { recordUndoState(); clearTimeout(saveTimer); try { localStorage.setItem(LS_KEY, JSON.stringify(S.project)); } catch (e) {} }
+window.addEventListener('pagehide', () => { if (S.project) { flushSave(); cleanupDeletedMedia(); } });
 
 /* ---------------- planning ---------------- */
 function audioLike() {
@@ -708,8 +759,9 @@ function renderMediaList() {
       m.items.splice(i, 1);
       for (const cut of S.plan[layer].cuts) if (cut.itemId === item.id) mediaOv(cut.index, { itemId: null }, layer);
       delete m.overrides[item.id];
-      const asset = J.mediaAssets.get(item.id); if (asset) { URL.revokeObjectURL(asset.url); J.mediaAssets.delete(item.id); }
-      J.removeMedia(item.id).catch(() => {}); replan();
+      // Keep the file until this session's undo history is no longer available.
+      queueMediaDeletion(item.id);
+      replan();
     });
     box.appendChild(row);
   });
@@ -898,7 +950,7 @@ function renderColors() {
       l.querySelector('input').addEventListener('input', e => {
         c[k] = e.target.value.toUpperCase();
         if (!c[flag]) { c[flag] = true; $(flag === 'enabled' ? 'colorOn' : 'accentOn').checked = true; }
-        replanSoon(60); drawSwatch();
+        markUndoGroup(`color:${k}`); replanSoon(60); drawSwatch();
       });
       row.appendChild(l);
     });
@@ -1065,7 +1117,7 @@ function renderFx() {
     const v = S.project.fx[k] ?? 0.5;
     row.innerHTML = `<label for="fx_${k}">${label}</label><input id="fx_${k}" type="range" min="0" max="1" step="0.01" value="${v}"><output>${Math.round(v * 100)}</output>`;
     const inp = row.querySelector('input'), out = row.querySelector('output');
-    inp.addEventListener('input', () => { S.project.fx[k] = +inp.value; S.project.mood = null; out.textContent = Math.round(inp.value * 100); replanSoon(120); });
+    inp.addEventListener('input', () => { S.project.fx[k] = +inp.value; S.project.mood = null; out.textContent = Math.round(inp.value * 100); markUndoGroup(`fx:${k}`); replanSoon(120); });
     box.appendChild(row);
   });
   $('fxFlash').checked = !!S.project.fx.flash;
@@ -1314,16 +1366,16 @@ function bind() {
   $('lyricOpacity').addEventListener('change', e => { S.project.media.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('mediaBlend').addEventListener('change', e => { S.project.foreground.blend = e.target.value; replan(); });
   $('mediaOpacity').addEventListener('change', e => { S.project.foreground.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
-  $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; replanSoon(260); });
-  $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; autosave(); });
+  $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; markUndoGroup('lyrics'); replanSoon(260); });
+  $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; markUndoGroup('jevPrompt'); autosave(); });
   $('lyricLang').addEventListener('change', e => {
     remember();
     S.project.lang = e.target.value; replan(); renderFontRoles(); commit(); flushSave();
     const l = J.resolveLang(S.project);
     toast((S.project.lang === 'auto' ? '歌詞の言語：自動判定 → ' : '歌詞の言語：') + J.LANG_LABEL[l]);
   });
-  $('songTitle').addEventListener('input', e => { S.project.title = e.target.value; replanSoon(300); });
-  $('songArtist').addEventListener('input', e => { S.project.artist = e.target.value; replanSoon(300); });
+  $('songTitle').addEventListener('input', e => { S.project.title = e.target.value; markUndoGroup('title'); replanSoon(300); });
+  $('songArtist').addEventListener('input', e => { S.project.artist = e.target.value; markUndoGroup('artist'); replanSoon(300); });
   $('btnSyntax').addEventListener('click', e => { const s = $('syntax'); s.hidden = !s.hidden; e.target.setAttribute('aria-expanded', String(!s.hidden)); });
   $('bpm').addEventListener('change', e => { S.project.timing.bpm = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
   $('offset').addEventListener('change', e => { S.project.timing.offset = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
@@ -1345,6 +1397,8 @@ function bind() {
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
   $('btnPlay').addEventListener('click', () => (S.playing ? pause() : play()));
+  $('btnUndo').addEventListener('click', () => undoMove(-1));
+  $('btnRedo').addEventListener('click', () => undoMove(1));
   $('btnLoop').addEventListener('click', e => { S.loop = !S.loop; e.target.setAttribute('aria-pressed', String(S.loop)); });
   $('btnShuffle').addEventListener('click', () => { remember(); S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); commit(); });
   const sc = $('scrub');
@@ -1503,7 +1557,9 @@ function bind() {
   });
   document.addEventListener('keydown', e => {
     const tag = (e.target && e.target.tagName) || '';
-    const typing = /INPUT|TEXTAREA|SELECT/.test(tag) && e.target.type !== 'range' && e.target.type !== 'checkbox';
+    const typing = (e.target && e.target.isContentEditable) || /INPUT|TEXTAREA|SELECT/.test(tag) && e.target.type !== 'range' && e.target.type !== 'checkbox';
+    if (!typing && !e.altKey && (e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); undoMove(e.shiftKey ? 1 : -1); return; }
+    if (!typing && !e.altKey && e.ctrlKey && e.code === 'KeyY') { e.preventDefault(); undoMove(1); return; }
     if (S.tap && (e.code === 'Space' || e.code === 'Enter') && !typing) { e.preventDefault(); tapNow(); return; }
     if (S.tap && e.code === 'Escape') { pause(); stopTap(); return; }
     if (typing || $('termsDlg').open) return;
@@ -1533,6 +1589,8 @@ async function loadAudioFile(f) {
 /* ---------------- boot ---------------- */
 function boot() {
   S.project = loadLocal();
+  cleanupDeletedMedia();
+  initUndo();
   bind(); syncUI(); replan();
   restoreMediaAssets();
   let mode = 'easy'; try { mode = localStorage.getItem('jizura.mode') || 'easy'; } catch (e) {}

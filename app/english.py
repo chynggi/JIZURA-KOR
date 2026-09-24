@@ -310,6 +310,10 @@ def replace_copy(source, glossary):
 # Fork UI text is translated before the original glossary so short common
 # words such as 歌詞 and 追加 cannot split a longer fork label in half.
 FORK_BODY = {
+    '元に戻す（Ctrl+Z）': 'Undo (Ctrl+Z)',
+    'やり直す（Ctrl+Shift+Z）': 'Redo (Ctrl+Shift+Z)',
+    '↶ 元に戻す': '↶ Undo',
+    '↷ やり直す': '↷ Redo',
     '鎖マークを別のタイムラインの鎖へドラッグしてリンク。×で解除。': 'Drag a chain icon to one on another timeline to link boundaries. Use × to unlink.',
     'タイムラインの境界リンク': 'Timeline boundary links',
     '素材': 'Source', '前景': 'Foreground',
