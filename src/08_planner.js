@@ -12,6 +12,7 @@ J.SAMPLE_LYRICS = `夜明けの色を/覚えてる
 J.defaultProject = () => ({
   version: 1,
   title: '', artist: '',
+  durationOverride: null,         // null = automatic; otherwise total video length in seconds
   lyrics: J.SAMPLE_LYRICS,
   jevPrompt: '',
   style: 'noir', mood: null,
@@ -195,6 +196,13 @@ J.plan = (project, audio) => {
   const title = project.title || parsed.meta.ti || '';
   const artist = project.artist || parsed.meta.ar || '';
   const tm = J.computeTiming(project, parsed, audio);
+  const fixedDuration = Number.isFinite(+project.durationOverride) && +project.durationOverride > 0 ? +project.durationOverride : null;
+  if (fixedDuration != null) {
+    const latestLine = tm.starts.length ? Math.max(...tm.starts) : 0;
+    const latestBlank = Math.max(0, ...(project.lyricBlankCuts || []).map(b => Number.isFinite(+b.start) ? +b.start : 0));
+    tm.duration = Math.max(0.1, fixedDuration, latestLine + 0.04, latestBlank + 0.04);
+    tm.ends = tm.ends.map((end, i) => Math.max(tm.starts[i] + 0.04, Math.min(end, tm.duration)));
+  }
   const [W, H] = J.designSize(project.aspect);
   // enabled map: anything not explicitly switched off is on (new pack entries appear enabled in old projects);
   // then the 追加分 / 和風 switches decide what random picks may use (a per-line override still works)
@@ -367,6 +375,16 @@ J.plan = (project, audio) => {
     plan.cuts.push(makeCut({ blank: true, blankId: blank.id, beforeLine: blank.beforeLine, text: '', lineText: '', line: -2, part: 'blank', start: blank.start, end, layout: 'blank', enter: 'cut', exit: 'cut', cam: 'none' }));
   }
   plan.cuts.sort((a, b) => a.start - b.start);
+  if (fixedDuration != null) {
+    plan.cuts = plan.cuts.filter(c => c.start < plan.duration - 1e-3);
+    for (const cut of plan.cuts) {
+      cut.end = Math.min(cut.end, plan.duration);
+      cut.dur = cut.end - cut.start;
+      cut.inDur = Math.min(cut.inDur, cut.dur * 0.45);
+      cut.outDur = Math.min(cut.outDur, cut.dur * 0.45);
+    }
+    plan.events = plan.events.filter(event => event.t < plan.duration);
+  }
   plan.cuts.forEach((c, i) => { c.index = i; });
   plan.events.sort((a, b) => a.t - b.t);
   plan.energy = audio && audio.energy ? audio.energy : null;

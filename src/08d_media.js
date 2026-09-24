@@ -53,6 +53,7 @@ J.mediaOrder = (project, layer = 'media') => {
 };
 J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   const m = J.normalizeMedia(project[layer]), items = m.items.slice();
+  const fixedDuration = Number.isFinite(+project.durationOverride) && +project.durationOverride > 0 ? +project.durationOverride : null;
   const count = m.manualCuts ? m.cutCount : items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
   const order = J.mediaOrder(project, layer);
   const itemAt = i => {
@@ -65,9 +66,13 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
     const setting = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {}).videoDuration;
     return item && item.type === 'video' && setting != null && Number.isFinite(+setting) && +setting > 0 ? J.clamp(+setting, 0.04, 3600) : null;
   };
-  const manualEnd = Math.max(0, ...Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t)).map(([, t]) => +t + 4));
-  let duration = Math.max(lyricPlan.duration, audioDuration || 0,
-    manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x && x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
+  const manualEntries = Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t));
+  const manualEnd = Math.max(0, ...manualEntries.map(([, t]) => +t + 4));
+  const fixedMinimum = Math.max(count * 0.04, ...manualEntries.map(([i, t]) => +t + (count - +i) * 0.04));
+  let duration = fixedDuration != null
+    ? Math.max(fixedDuration, lyricPlan.duration, fixedMinimum)
+    : Math.max(lyricPlan.duration, audioDuration || 0,
+      manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x && x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
   const lyricCount = Math.min(count, lyricPlan.lines.length);
   const starts = Array.from({ length: count }, (_, i) => {
     const v = m.timing.lineTimes[i];
@@ -80,8 +85,9 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   for (let i = 1; i < starts.length; i++) {
     const minimum = starts[i - 1] + (m.timing.lineTimes[i] == null ? videoDurationAt(i - 1) || 0.04 : 0.04);
     starts[i] = Math.max(starts[i], minimum);
+    if (fixedDuration != null && m.timing.lineTimes[i] == null) starts[i] = Math.max(starts[i - 1] + 0.04, Math.min(starts[i], duration - (count - i) * 0.04));
   }
-  if (count) duration = Math.max(duration, starts[count - 1] + (videoDurationAt(count - 1) ?? lastTail));
+  if (count) duration = Math.max(duration, starts[count - 1] + (fixedDuration == null ? videoDurationAt(count - 1) ?? lastTail : 0.04));
   const cuts = Array.from({ length: count }, (_, i) => {
     const item = itemAt(i), ov = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {});
     const seed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, m.seed, i, ov.seed | 0);

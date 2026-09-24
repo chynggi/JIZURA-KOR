@@ -310,6 +310,12 @@ def replace_copy(source, glossary):
 # Fork UI text is translated before the original glossary so short common
 # words such as 歌詞 and 追加 cannot split a longer fork label in half.
 FORK_BODY = {
+    '末尾の◀▶をドラッグして全体の長さを変更。再生時間の分母をクリックして直接入力。鎖マークを別のタイムラインの鎖へドラッグしてリンク。×で解除。': 'Drag ◀▶ at the end to change the total duration, or click the duration beside playback time to enter it. Drag a chain icon to one on another timeline to link boundaries; use × to unlink.',
+    '動画全体の長さ（秒または分:秒、空欄で自動）': 'Total video duration (seconds or mm:ss; blank for auto)',
+    '動画全体の長さを入力（空欄で自動）': 'Enter total video duration (blank for auto)',
+    '動画全体の長さをドラッグして変更': 'Drag to change total video duration',
+    'ドラッグして動画全体の長さを変更': 'Drag to change total video duration',
+    '動画全体の長さを入力': 'Enter total video duration',
     '>曲を削除</button>': '>Remove audio</button>',
     '<code>\\</code> を制御文字の前に置くと、その文字を歌詞として表示（例：<code>\\*</code>・<code>\\/</code>・<code>\\|</code>・<code>\\!</code>・<code>\\#</code>・<code>\\[</code>・<code>\\\\</code>）': 'Place <code>\\</code> before a control character to display it literally (for example: <code>\\*</code>, <code>\\/</code>, <code>\\|</code>, <code>\\!</code>, <code>\\#</code>, <code>\\[</code>, <code>\\\\</code>)',
     '元に戻す（Ctrl+Z）': 'Undo (Ctrl+Z)',
@@ -358,6 +364,7 @@ FORK_BODY = {
 }
 
 FORK_UI = {
+    '動画全体の長さは ${J.fmtTime(minimum)} ～ 06:00:00 の範囲で入力してください': 'Enter a total video duration from ${J.fmtTime(minimum)} to 06:00:00',
     '境界をリンク': 'Link boundary',
     'リンクを解除': 'Remove link',
     '同じレイヤーの境界は同時にリンクできません': 'Boundaries on the same layer cannot be linked together',

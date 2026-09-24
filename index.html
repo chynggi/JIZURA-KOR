@@ -208,6 +208,11 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .easy-hero .jev-action { display: flex; }
 .easy-hero .jev-action button { flex: 1; }
 .transport .tc { font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }
+.duration-value { border: 0; background: transparent; padding: 2px 3px; color: var(--muted); cursor: text; white-space: nowrap; }
+.duration-value:hover, .duration-value:focus-visible { color: var(--amber); text-decoration: underline; }
+.duration-value.manual { color: var(--amber); }
+.duration-input { width: 88px; min-width: 88px; padding: 2px 4px; }
+.duration-input[hidden], .duration-value[hidden] { display: none; }
 .undo-btns { display: inline-flex; gap: 4px; }
 .transport input[type=range] { flex: 1 1 160px; accent-color: var(--amber); }
 button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
@@ -215,6 +220,9 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 #mediaTimeline { width: 100%; height: 52px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 #foregroundTimeline { width: 100%; height: 52px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 .timeline-stack { position: relative; display: grid; gap: 6px; min-width: 0; }
+.timeline-duration-handle { position: absolute; z-index: 3; top: 0; right: -7px; bottom: 0; width: 15px; padding: 0; border: 0; border-left: 2px solid var(--amber); border-radius: 0; background: rgba(245,165,12,.08); color: var(--amber); cursor: ew-resize; touch-action: none; }
+.timeline-duration-handle:hover, .timeline-duration-handle:focus-visible, .timeline-duration-handle.dragging { background: rgba(245,165,12,.22); }
+.timeline-duration-handle span { position: absolute; top: 50%; left: -13px; transform: translateY(-50%); font: 10px var(--mono); background: var(--panel); pointer-events: none; }
 .timeline-links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .timeline-links .link-wire { stroke: var(--cyan); stroke-width: 1.5; opacity: .8; }
 .timeline-links .link-preview { stroke: var(--amber); stroke-width: 2; stroke-dasharray: 5 3; }
@@ -493,7 +501,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>アスペクト比を固定</label><label>幅（画面比％）<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>高さ（画面比％）<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">角度（°）<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">全域へリセット</button><button id="areaApplyOne" class="primary" disabled>この行だけに適用</button><button id="areaApplyFollowing" disabled>これ以降全てに適用</button><button id="areaCancel" class="ghost">キャンセル</button></div>
       <div class="transport">
         <button id="btnPlay" class="play" aria-label="再生">▶</button>
-        <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><span id="timeDur" class="tc muted">00:00.00</span>
+        <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><button id="timeDur" class="tc muted duration-value" type="button" title="動画全体の長さを入力（空欄で自動）" aria-label="動画全体の長さを入力">00:00.00</button><input id="timeDurInput" class="tc duration-input" type="text" inputmode="decimal" aria-label="動画全体の長さ（秒または分:秒、空欄で自動）" hidden>
         <input id="scrub" type="range" min="0" max="10000" value="0" aria-label="再生位置">
         <button id="btnLoop" class="ghost small" aria-pressed="true">ループ</button>
         <span class="undo-btns"><button id="btnUndo" class="ghost small" type="button" title="元に戻す（Ctrl+Z）" disabled>↶ 元に戻す</button><button id="btnRedo" class="ghost small" type="button" title="やり直す（Ctrl+Shift+Z）" disabled>↷ やり直す</button></span>
@@ -510,8 +518,9 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         <canvas id="timeline" aria-label="歌詞タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
         <canvas id="mediaTimeline" aria-label="背景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
         <svg id="timelineLinks" class="timeline-links" aria-label="タイムラインの境界リンク"></svg>
+        <button id="timelineDurationHandle" class="timeline-duration-handle" type="button" title="ドラッグして動画全体の長さを変更" aria-label="動画全体の長さをドラッグして変更"><span aria-hidden="true">◀▶</span></button>
       </div>
-      <p class="hint timeline-link-hint">鎖マークを別のタイムラインの鎖へドラッグしてリンク。×で解除。</p>
+      <p class="hint timeline-link-hint">末尾の◀▶をドラッグして全体の長さを変更。再生時間の分母をクリックして直接入力。鎖マークを別のタイムラインの鎖へドラッグしてリンク。×で解除。</p>
       <div class="cutinfo" id="cutInfo"></div>
     </section>
 
@@ -3178,6 +3187,7 @@ J.SAMPLE_LYRICS = `夜明けの色を/覚えてる
 J.defaultProject = () => ({
   version: 1,
   title: '', artist: '',
+  durationOverride: null,         // null = automatic; otherwise total video length in seconds
   lyrics: J.SAMPLE_LYRICS,
   jevPrompt: '',
   style: 'noir', mood: null,
@@ -3361,6 +3371,13 @@ J.plan = (project, audio) => {
   const title = project.title || parsed.meta.ti || '';
   const artist = project.artist || parsed.meta.ar || '';
   const tm = J.computeTiming(project, parsed, audio);
+  const fixedDuration = Number.isFinite(+project.durationOverride) && +project.durationOverride > 0 ? +project.durationOverride : null;
+  if (fixedDuration != null) {
+    const latestLine = tm.starts.length ? Math.max(...tm.starts) : 0;
+    const latestBlank = Math.max(0, ...(project.lyricBlankCuts || []).map(b => Number.isFinite(+b.start) ? +b.start : 0));
+    tm.duration = Math.max(0.1, fixedDuration, latestLine + 0.04, latestBlank + 0.04);
+    tm.ends = tm.ends.map((end, i) => Math.max(tm.starts[i] + 0.04, Math.min(end, tm.duration)));
+  }
   const [W, H] = J.designSize(project.aspect);
   // enabled map: anything not explicitly switched off is on (new pack entries appear enabled in old projects);
   // then the 追加分 / 和風 switches decide what random picks may use (a per-line override still works)
@@ -3533,6 +3550,16 @@ J.plan = (project, audio) => {
     plan.cuts.push(makeCut({ blank: true, blankId: blank.id, beforeLine: blank.beforeLine, text: '', lineText: '', line: -2, part: 'blank', start: blank.start, end, layout: 'blank', enter: 'cut', exit: 'cut', cam: 'none' }));
   }
   plan.cuts.sort((a, b) => a.start - b.start);
+  if (fixedDuration != null) {
+    plan.cuts = plan.cuts.filter(c => c.start < plan.duration - 1e-3);
+    for (const cut of plan.cuts) {
+      cut.end = Math.min(cut.end, plan.duration);
+      cut.dur = cut.end - cut.start;
+      cut.inDur = Math.min(cut.inDur, cut.dur * 0.45);
+      cut.outDur = Math.min(cut.outDur, cut.dur * 0.45);
+    }
+    plan.events = plan.events.filter(event => event.t < plan.duration);
+  }
   plan.cuts.forEach((c, i) => { c.index = i; });
   plan.events.sort((a, b) => a.t - b.t);
   plan.energy = audio && audio.energy ? audio.energy : null;
@@ -3943,6 +3970,7 @@ J.mediaOrder = (project, layer = 'media') => {
 };
 J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   const m = J.normalizeMedia(project[layer]), items = m.items.slice();
+  const fixedDuration = Number.isFinite(+project.durationOverride) && +project.durationOverride > 0 ? +project.durationOverride : null;
   const count = m.manualCuts ? m.cutCount : items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
   const order = J.mediaOrder(project, layer);
   const itemAt = i => {
@@ -3955,9 +3983,13 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
     const setting = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {}).videoDuration;
     return item && item.type === 'video' && setting != null && Number.isFinite(+setting) && +setting > 0 ? J.clamp(+setting, 0.04, 3600) : null;
   };
-  const manualEnd = Math.max(0, ...Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t)).map(([, t]) => +t + 4));
-  let duration = Math.max(lyricPlan.duration, audioDuration || 0,
-    manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x && x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
+  const manualEntries = Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t));
+  const manualEnd = Math.max(0, ...manualEntries.map(([, t]) => +t + 4));
+  const fixedMinimum = Math.max(count * 0.04, ...manualEntries.map(([i, t]) => +t + (count - +i) * 0.04));
+  let duration = fixedDuration != null
+    ? Math.max(fixedDuration, lyricPlan.duration, fixedMinimum)
+    : Math.max(lyricPlan.duration, audioDuration || 0,
+      manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x && x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
   const lyricCount = Math.min(count, lyricPlan.lines.length);
   const starts = Array.from({ length: count }, (_, i) => {
     const v = m.timing.lineTimes[i];
@@ -3970,8 +4002,9 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   for (let i = 1; i < starts.length; i++) {
     const minimum = starts[i - 1] + (m.timing.lineTimes[i] == null ? videoDurationAt(i - 1) || 0.04 : 0.04);
     starts[i] = Math.max(starts[i], minimum);
+    if (fixedDuration != null && m.timing.lineTimes[i] == null) starts[i] = Math.max(starts[i - 1] + 0.04, Math.min(starts[i], duration - (count - i) * 0.04));
   }
-  if (count) duration = Math.max(duration, starts[count - 1] + (videoDurationAt(count - 1) ?? lastTail));
+  if (count) duration = Math.max(duration, starts[count - 1] + (fixedDuration == null ? videoDurationAt(count - 1) ?? lastTail : 0.04));
   const cuts = Array.from({ length: count }, (_, i) => {
     const item = itemAt(i), ov = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {});
     const seed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, m.seed, i, ov.seed | 0);
@@ -29647,8 +29680,9 @@ function replan() {
   }
   if (S.tap && S.tap.append && !S.audio) extendTapPreview(S.t);
   langNote();
-  if (S.t > S.plan.duration) S.t = 0;
-  S.project.timelineLinks = S.project.timelineLinks.filter(link => link && boundaryCut(link.a) && boundaryCut(link.b) && link.a !== link.b);
+  if (S.t > S.plan.duration) S.t = Math.max(0, S.plan.duration - 1e-3);
+  const temporarilyHidden = ref => S.project.durationOverride != null && /^l:\d+:\d+$/.test(ref) && +ref.split(':')[1] < S.plan.lines.length;
+  S.project.timelineLinks = S.project.timelineLinks.filter(link => link && link.a !== link.b && (boundaryCut(link.a) || temporarilyHidden(link.a)) && (boundaryCut(link.b) || temporarilyHidden(link.b)));
   renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); drawTimelineLinks(); updateTimeUI();
   S.need = true; autosave(); ensureFonts(); drawSwatch(); showNow();
   clearTimeout(warmTimer); warmTimer = setTimeout(warm, 450);
@@ -29745,8 +29779,42 @@ function tick(now) {
 }
 function updateTimeUI() {
   $('timeNow').textContent = J.fmtTime(S.t);
-  $('timeDur').textContent = J.fmtTime(S.plan.duration);
+  $('timeDur').textContent = J.fmtTime(S.durationDrag ? S.durationDrag.preview : S.plan.duration);
+  $('timeDur').classList.toggle('manual', S.project.durationOverride != null || !!S.durationDrag);
   if (!S.scrubbing) $('scrub').value = String(Math.round(S.t / Math.max(0.001, S.plan.duration) * 10000));
+}
+function minimumProjectDuration() {
+  let minimum = 0.1;
+  for (const line of S.plan.lines) minimum = Math.max(minimum, line.start + 0.04);
+  for (const blank of S.project.lyricBlankCuts || []) if (Number.isFinite(+blank.start)) minimum = Math.max(minimum, +blank.start + 0.04);
+  for (const layer of ['media', 'foreground']) {
+    minimum = Math.max(minimum, S.plan[layer].cuts.length * 0.04);
+    for (const [index, time] of Object.entries(S.project[layer].timing.lineTimes)) {
+      if (+index < S.plan[layer].cuts.length && Number.isFinite(+time)) minimum = Math.max(minimum, +time + (S.plan[layer].cuts.length - +index) * 0.04);
+    }
+  }
+  return Math.ceil(minimum * 100) / 100;
+}
+function parseProjectDuration(raw) {
+  const parts = String(raw).trim().split(':');
+  if (parts.length > 3 || !parts.every(p => /^\d+(?:\.\d{1,2})?$/.test(p))) return NaN;
+  if (parts.slice(0, -1).some(p => p.includes('.'))) return NaN;
+  if (parts.length > 1 && +parts.at(-1) >= 60) return NaN;
+  if (parts.length === 3 && +parts[1] >= 60) return NaN;
+  return parts.reduce((seconds, part) => seconds * 60 + +part, 0);
+}
+function setProjectDuration(seconds) {
+  if (S.exporting || S.tap) return false;
+  const minimum = minimumProjectDuration();
+  if (seconds != null && (!Number.isFinite(seconds) || seconds < minimum - 1e-6 || seconds > 21600)) {
+    toast(`動画全体の長さは ${J.fmtTime(minimum)} ～ 06:00:00 の範囲で入力してください`);
+    return false;
+  }
+  if (S.areaEdit) cancelAreaEditor();
+  pause();
+  S.project.durationOverride = seconds == null ? null : Math.round(seconds * 100) / 100;
+  replan();
+  return true;
 }
 function play() {
   if (S.audio) AP.play(S.audio.buffer, S.t);
@@ -30964,6 +31032,52 @@ function bind() {
   const sc = $('scrub');
   sc.addEventListener('input', () => { S.scrubbing = true; seek(sc.value / 10000 * S.plan.duration); });
   sc.addEventListener('change', () => { S.scrubbing = false; });
+  const durationValue = $('timeDur'), durationInput = $('timeDurInput'), durationHandle = $('timelineDurationHandle');
+  const closeDurationInput = save => {
+    if (durationInput.hidden) return;
+    const raw = durationInput.value.trim();
+    durationInput.hidden = true; durationValue.hidden = false;
+    if (save) setProjectDuration(raw ? parseProjectDuration(raw) : null);
+    updateTimeUI();
+  };
+  durationValue.addEventListener('click', () => {
+    if (S.exporting || S.tap) return;
+    pause(); durationValue.hidden = true; durationInput.hidden = false;
+    durationInput.value = J.fmtTime(S.plan.duration); durationInput.focus(); durationInput.select();
+  });
+  durationInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); closeDurationInput(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeDurationInput(false); }
+  });
+  durationInput.addEventListener('blur', () => closeDurationInput(true));
+  durationHandle.addEventListener('pointerdown', e => {
+    if (S.exporting || S.tap) return;
+    e.preventDefault();
+    closeDurationInput(false); pause();
+    S.durationDrag = { pointerId: e.pointerId, originX: e.clientX, originDuration: S.plan.duration, preview: S.plan.duration, moved: false };
+    durationHandle.setPointerCapture(e.pointerId);
+    durationHandle.classList.add('dragging');
+  });
+  durationHandle.addEventListener('pointermove', e => {
+    const drag = S.durationDrag;
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const width = Math.max(1, $('timelineStack').clientWidth);
+    if (Math.abs(e.clientX - drag.originX) >= 2) drag.moved = true;
+    drag.preview = Math.round(J.clamp(drag.originDuration * (1 + (e.clientX - drag.originX) / width), minimumProjectDuration(), 21600) * 100) / 100;
+    durationHandle.style.transform = `translateX(${(drag.preview / drag.originDuration - 1) * width}px)`;
+    updateTimeUI();
+  });
+  durationHandle.addEventListener('pointerup', e => {
+    const drag = S.durationDrag;
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    S.durationDrag = null; durationHandle.classList.remove('dragging'); durationHandle.style.transform = '';
+    if (drag.moved) setProjectDuration(drag.preview);
+    else durationValue.click();
+    updateTimeUI();
+  });
+  durationHandle.addEventListener('pointercancel', () => {
+    S.durationDrag = null; durationHandle.classList.remove('dragging'); durationHandle.style.transform = ''; updateTimeUI();
+  });
   for (const tl of [$('timeline'), $('mediaTimeline'), $('foregroundTimeline')]) {
     const layer = tl.id === 'timeline' ? 'lyrics' : tl.id === 'foregroundTimeline' ? 'foreground' : 'media';
     let drag = null;

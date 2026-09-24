@@ -32,6 +32,12 @@ assert.equal(followingVideo.cuts[1].start, 5, 'an automatic next cut starts afte
 assert.ok(followingVideo.cuts[1].end > 5, 'the shifted final cut retains positive duration');
 const manualVideo = J.planMedia({ seed: 1, media: { items: [{ id: 'v', name: 'v.mp4', type: 'video', duration: 1 }, { id: 'i', name: 'i.png', type: 'image' }], timing: { lineTimes: { 1: 2 } }, cutOverrides: { 0: { videoDuration: 5 } } } }, { duration: 7, lines: [] });
 assert.equal(manualVideo.cuts[0].end, 2, 'a manual next boundary truncates the video cut');
+const fixedVideo = J.planMedia({ seed: 1, durationOverride: 3, media: { items: [{ id: 'v', name: 'v.mp4', type: 'video', duration: 10 }, { id: 'i', name: 'i.png', type: 'image' }], cutOverrides: { 0: { videoDuration: 5 } } } }, { duration: 3, lines: [] }, 20);
+assert.equal(fixedVideo.duration, 3, 'total duration overrides audio and media source lengths');
+assert.ok(Math.abs(fixedVideo.cuts[1].start - 2.96) < 1e-9, 'video duration shifts the next cut without exceeding total duration');
+assert.ok(Math.abs(fixedVideo.cuts[0].end - 2.96) < 1e-9, 'a per-cut duration is truncated by the next cut');
+const spaciousVideo = J.planMedia({ seed: 1, durationOverride: 8, media: { items: [{ id: 'v', name: 'v.mp4', type: 'video', duration: 1 }, { id: 'i', name: 'i.png', type: 'image' }], cutOverrides: { 0: { videoDuration: 5 } } } }, { duration: 8, lines: [] });
+assert.equal(spaciousVideo.cuts[1].start, 5, 'the per-cut duration remains effective within a longer total duration');
 const loopingVideo = J.planMedia({ seed: 1, media: { items: [{ id: 'v', name: 'v.webm', type: 'video', duration: 1 }], cutOverrides: { 0: { videoLoop: true } } } }, { duration: 4, lines: [] });
 assert.equal(loopingVideo.cuts[0].videoLoop, true);
 assert.ok(Math.abs(J.mediaVideoTime(loopingVideo.cuts[0], loopingVideo.cuts[0].start + 2.25, 1) - 0.25) < 1e-9);

@@ -148,8 +148,9 @@ function replan() {
   }
   if (S.tap && S.tap.append && !S.audio) extendTapPreview(S.t);
   langNote();
-  if (S.t > S.plan.duration) S.t = 0;
-  S.project.timelineLinks = S.project.timelineLinks.filter(link => link && boundaryCut(link.a) && boundaryCut(link.b) && link.a !== link.b);
+  if (S.t > S.plan.duration) S.t = Math.max(0, S.plan.duration - 1e-3);
+  const temporarilyHidden = ref => S.project.durationOverride != null && /^l:\d+:\d+$/.test(ref) && +ref.split(':')[1] < S.plan.lines.length;
+  S.project.timelineLinks = S.project.timelineLinks.filter(link => link && link.a !== link.b && (boundaryCut(link.a) || temporarilyHidden(link.a)) && (boundaryCut(link.b) || temporarilyHidden(link.b)));
   renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); drawTimelineLinks(); updateTimeUI();
   S.need = true; autosave(); ensureFonts(); drawSwatch(); showNow();
   clearTimeout(warmTimer); warmTimer = setTimeout(warm, 450);
@@ -246,8 +247,42 @@ function tick(now) {
 }
 function updateTimeUI() {
   $('timeNow').textContent = J.fmtTime(S.t);
-  $('timeDur').textContent = J.fmtTime(S.plan.duration);
+  $('timeDur').textContent = J.fmtTime(S.durationDrag ? S.durationDrag.preview : S.plan.duration);
+  $('timeDur').classList.toggle('manual', S.project.durationOverride != null || !!S.durationDrag);
   if (!S.scrubbing) $('scrub').value = String(Math.round(S.t / Math.max(0.001, S.plan.duration) * 10000));
+}
+function minimumProjectDuration() {
+  let minimum = 0.1;
+  for (const line of S.plan.lines) minimum = Math.max(minimum, line.start + 0.04);
+  for (const blank of S.project.lyricBlankCuts || []) if (Number.isFinite(+blank.start)) minimum = Math.max(minimum, +blank.start + 0.04);
+  for (const layer of ['media', 'foreground']) {
+    minimum = Math.max(minimum, S.plan[layer].cuts.length * 0.04);
+    for (const [index, time] of Object.entries(S.project[layer].timing.lineTimes)) {
+      if (+index < S.plan[layer].cuts.length && Number.isFinite(+time)) minimum = Math.max(minimum, +time + (S.plan[layer].cuts.length - +index) * 0.04);
+    }
+  }
+  return Math.ceil(minimum * 100) / 100;
+}
+function parseProjectDuration(raw) {
+  const parts = String(raw).trim().split(':');
+  if (parts.length > 3 || !parts.every(p => /^\d+(?:\.\d{1,2})?$/.test(p))) return NaN;
+  if (parts.slice(0, -1).some(p => p.includes('.'))) return NaN;
+  if (parts.length > 1 && +parts.at(-1) >= 60) return NaN;
+  if (parts.length === 3 && +parts[1] >= 60) return NaN;
+  return parts.reduce((seconds, part) => seconds * 60 + +part, 0);
+}
+function setProjectDuration(seconds) {
+  if (S.exporting || S.tap) return false;
+  const minimum = minimumProjectDuration();
+  if (seconds != null && (!Number.isFinite(seconds) || seconds < minimum - 1e-6 || seconds > 21600)) {
+    toast(`動画全体の長さは ${J.fmtTime(minimum)} ～ 06:00:00 の範囲で入力してください`);
+    return false;
+  }
+  if (S.areaEdit) cancelAreaEditor();
+  pause();
+  S.project.durationOverride = seconds == null ? null : Math.round(seconds * 100) / 100;
+  replan();
+  return true;
 }
 function play() {
   if (S.audio) AP.play(S.audio.buffer, S.t);
@@ -1465,6 +1500,52 @@ function bind() {
   const sc = $('scrub');
   sc.addEventListener('input', () => { S.scrubbing = true; seek(sc.value / 10000 * S.plan.duration); });
   sc.addEventListener('change', () => { S.scrubbing = false; });
+  const durationValue = $('timeDur'), durationInput = $('timeDurInput'), durationHandle = $('timelineDurationHandle');
+  const closeDurationInput = save => {
+    if (durationInput.hidden) return;
+    const raw = durationInput.value.trim();
+    durationInput.hidden = true; durationValue.hidden = false;
+    if (save) setProjectDuration(raw ? parseProjectDuration(raw) : null);
+    updateTimeUI();
+  };
+  durationValue.addEventListener('click', () => {
+    if (S.exporting || S.tap) return;
+    pause(); durationValue.hidden = true; durationInput.hidden = false;
+    durationInput.value = J.fmtTime(S.plan.duration); durationInput.focus(); durationInput.select();
+  });
+  durationInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); closeDurationInput(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeDurationInput(false); }
+  });
+  durationInput.addEventListener('blur', () => closeDurationInput(true));
+  durationHandle.addEventListener('pointerdown', e => {
+    if (S.exporting || S.tap) return;
+    e.preventDefault();
+    closeDurationInput(false); pause();
+    S.durationDrag = { pointerId: e.pointerId, originX: e.clientX, originDuration: S.plan.duration, preview: S.plan.duration, moved: false };
+    durationHandle.setPointerCapture(e.pointerId);
+    durationHandle.classList.add('dragging');
+  });
+  durationHandle.addEventListener('pointermove', e => {
+    const drag = S.durationDrag;
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const width = Math.max(1, $('timelineStack').clientWidth);
+    if (Math.abs(e.clientX - drag.originX) >= 2) drag.moved = true;
+    drag.preview = Math.round(J.clamp(drag.originDuration * (1 + (e.clientX - drag.originX) / width), minimumProjectDuration(), 21600) * 100) / 100;
+    durationHandle.style.transform = `translateX(${(drag.preview / drag.originDuration - 1) * width}px)`;
+    updateTimeUI();
+  });
+  durationHandle.addEventListener('pointerup', e => {
+    const drag = S.durationDrag;
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    S.durationDrag = null; durationHandle.classList.remove('dragging'); durationHandle.style.transform = '';
+    if (drag.moved) setProjectDuration(drag.preview);
+    else durationValue.click();
+    updateTimeUI();
+  });
+  durationHandle.addEventListener('pointercancel', () => {
+    S.durationDrag = null; durationHandle.classList.remove('dragging'); durationHandle.style.transform = ''; updateTimeUI();
+  });
   for (const tl of [$('timeline'), $('mediaTimeline'), $('foregroundTimeline')]) {
     const layer = tl.id === 'timeline' ? 'lyrics' : tl.id === 'foregroundTimeline' ? 'foreground' : 'media';
     let drag = null;
