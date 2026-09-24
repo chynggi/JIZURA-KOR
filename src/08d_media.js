@@ -29,7 +29,7 @@ J.mediaPlacementRect = (placement, sw, sh, w, h) => {
   return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
 };
 J.mediaAssets = new Map();
-const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
+const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
   const o = Object.assign(defaults(), m || {});
   o.items = Array.isArray(o.items) ? o.items.filter(x => x && x.id && x.name && ['image', 'video'].includes(x.type)) : [];
@@ -37,6 +37,7 @@ J.normalizeMedia = m => {
   o.overrides = o.overrides || {};
   o.cutOverrides = o.cutOverrides || {};
   o.loop = !!o.loop;
+  o.manualCuts = !!o.manualCuts;
   o.cutCount = J.clamp(Math.floor(+o.cutCount || 0), 0, 1000);
   if (!['normal', 'multiply', 'screen'].includes(o.blend)) o.blend = 'normal';
   o.opacity = J.clamp(+o.opacity || 0, 0, 100);
@@ -52,12 +53,16 @@ J.mediaOrder = (project, layer = 'media') => {
 };
 J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   const m = J.normalizeMedia(project[layer]), items = m.items.slice();
-  const count = items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
+  const count = m.manualCuts ? m.cutCount : items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
   const order = J.mediaOrder(project, layer);
-  const itemAt = i => order[i % order.length];
+  const itemAt = i => {
+    const assigned = m.cutOverrides[i];
+    if (assigned && Object.hasOwn(assigned, 'itemId')) return items.find(item => item.id === assigned.itemId) || null;
+    return order.length ? order[i % order.length] : null;
+  };
   const manualEnd = Math.max(0, ...Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t)).map(([, t]) => +t + 4));
   const duration = Math.max(lyricPlan.duration, audioDuration || 0,
-    manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
+    manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x && x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
   const lyricCount = Math.min(count, lyricPlan.lines.length);
   const starts = Array.from({ length: count }, (_, i) => {
     const v = m.timing.lineTimes[i];
@@ -68,16 +73,16 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   });
   for (let i = 1; i < starts.length; i++) starts[i] = Math.max(starts[i], starts[i - 1] + 0.04);
   const cuts = Array.from({ length: count }, (_, i) => {
-    const item = itemAt(i), ov = Object.assign({}, m.overrides[item.id] || {}, m.cutOverrides[i] || {});
+    const item = itemAt(i), ov = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {});
     const seed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, m.seed, i, ov.seed | 0);
     const rng = J.rng(seed), reroll = ov.seed != null;
-    return { index: i, itemId: item.id, name: item.name, type: item.type, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
+    return { index: i, itemId: item ? item.id : null, name: item ? item.name : '画像無し', type: item ? item.type : null, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
       layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
       zoom: 100, focus: 'mc',
-      videoLoop: item.type === 'video' && ov.videoLoop !== false,
-      chromaKey: item.type === 'video' && ov.chromaKey === true,
+      videoLoop: !!item && item.type === 'video' && ov.videoLoop !== false,
+      chromaKey: !!item && item.type === 'video' && ov.chromaKey === true,
       chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00',
       placement: ov.placement && ['cx', 'cy', 'w'].every(k => Number.isFinite(+ov.placement[k])) ? {
         cx: +ov.placement.cx, cy: +ov.placement.cy, w: +ov.placement.w,
@@ -88,6 +93,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   });
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
+    if (!cut.itemId || !prev.itemId) continue;
     const rng = J.rng(J.h(cut.seed, 89));
     const registry = J.TRANS || {}, options = ['crossfade', ...J.MEDIA_TRANS_KEYS.filter(k => registry[k])];
     const trans = ov.trans === 'none' ? null : options.includes(ov.trans) ? ov.trans : rng.chance(0.65) ? rng.pick(options) : null;

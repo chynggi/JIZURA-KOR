@@ -327,6 +327,7 @@ FORK_BODY = {
     '<option value="multiply">乗算</option>': '<option value="multiply">Multiply</option>',
     '<option value="screen">スクリーン</option>': '<option value="screen">Screen</option>',
     'アップロード順にカットを作ります。サムネイルをドラッグして並べ替えできます。素材はこのブラウザに保存されます。': 'Cuts follow upload order. Drag thumbnails to reorder them. Files are stored in this browser.',
+    '画像・動画をここへドラッグ＆ドロップ、または「追加」から選択できます。素材はこのブラウザに保存されます。': 'Drop images or videos here, or use Add to select files. Files are stored in this browser.',
     'ランダム順で表示': 'Shuffle order', 'ループ表示': 'Loop cuts',
     '素材を順に繰り返し、素材数より多いカットを作成できます': 'Repeat the files in order and create more cuts than files.',
     'カット数': 'Number of cuts',
@@ -349,6 +350,12 @@ FORK_BODY = {
 }
 
 FORK_UI = {
+    '画像無し': 'No image',
+    '手動で追加したカットでは素材を個別に指定します': 'Choose a file for each manually added cut',
+    '${index + 1}番目にカットを追加': 'Insert cut at position ${index + 1}',
+    '＋ カットを追加': '+ Add cut',
+    '${i + 1}カット目の素材': 'File for cut ${i + 1}',
+    'タップするたびに画像無しのカットを追加します。終了するまで続けられます。': 'Each tap adds a cut with no image. Continue until you stop.',
     '前景': 'Foreground', '角度': 'Rotation', 'クロマキー': 'Chroma key',
     '表示方法': 'Display mode',
     "chip('l', '表示',": "chip('l', 'Display',",
@@ -399,6 +406,7 @@ FORK_JEV_ERRORS = {
 }
 
 FORK_MEDIA = dict(FORK_UI, **{
+    '画像無し': 'No image',
     '左上': 'Top left', '右上': 'Top right', '左下': 'Bottom left', '右下': 'Bottom right',
     '中央': 'Center', '上': 'Top', '下': 'Bottom', '左': 'Left', '右': 'Right',
 })

@@ -108,8 +108,8 @@ h3 { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-top: 1
 .source-tabs button { border: 0; border-radius: 0; background: transparent; color: var(--muted); padding: 11px; border-bottom: 2px solid transparent; }
 .source-tabs button[aria-selected=true] { color: var(--text); border-bottom-color: var(--amber); }
 .media-list { display: grid; gap: 7px; }
-.media-item { display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 8px; align-items: center; padding: 5px; border: 1px solid var(--line); border-radius: var(--r); cursor: grab; }
-.media-item.drag-over { border-color: var(--amber); }
+.media-item { display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 8px; align-items: center; padding: 5px; border: 1px solid var(--line); border-radius: var(--r); }
+#mediaPane.media-drop-active { outline: 2px dashed var(--amber); outline-offset: -5px; background: rgba(245,165,12,0.06); }
 .media-item img, .media-item video, .media-ln-thumb { width: 52px; height: 38px; object-fit: cover; background: #000; }
 .media-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .media-item .missing { color: var(--amber); }
@@ -132,9 +132,13 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 /* line list */
 #lineList, #mediaLineList { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .media-ln-thumb { grid-column: 3; grid-row: 1; width: 34px; height: 26px; justify-self: end; }
+.media-ln > .missing { grid-column: 3; grid-row: 1; justify-self: end; display: grid; place-items: center; width: 34px; height: 26px; border: 1px solid var(--line2); background: #0e1015; color: var(--muted); font-size: 12px; }
 .media-ln .no { grid-column: 1; grid-row: 1; }
 .media-ln .time { grid-column: 2; grid-row: 1; }
-.media-ln .txt { grid-column: 3; grid-row: 1; padding-right: 38px; min-width: 0; }
+.media-cut-file { grid-column: 3; grid-row: 1; min-width: 0; width: 100%; padding: 3px 40px 3px 5px; font-size: 12px; text-overflow: ellipsis; cursor: pointer; }
+.media-cut-insert { display: flex; justify-content: center; }
+.media-cut-insert button { width: 100%; padding: 2px 8px; border-style: dashed; color: var(--muted); font-size: 11px; }
+.media-cut-insert button:hover { color: var(--amber); border-color: var(--amber); }
 .media-ln .meta { grid-column: 2 / 4; grid-row: 2; flex-wrap: wrap; }
 .media-ln .tools { flex-wrap: wrap; flex: 1; }
 .ln { display: grid; grid-template-columns: 22px 66px minmax(0, 1fr); gap: 4px 6px; align-items: center; padding: 6px; border: 1px solid transparent; border-radius: var(--r); }
@@ -417,7 +421,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 
       <div class="sec" id="mediaPane" hidden>
         <div class="sec-h"><h2 id="mediaPaneTitle">Background</h2><label class="file">New<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
-        <p class="hint">Cuts follow upload order. Drag thumbnails to reorder them. Files are stored in this browser.</p>
+        <p class="hint">Drop images or videos here, or use Add to select files. Files are stored in this browser.</p>
         <div id="mediaList" class="media-list"></div>
         <label class="check"><input id="mediaRandom" type="checkbox"><span>Shuffle order</span></label>
         <label class="check"><input id="mediaLoop" type="checkbox"><span>Loop cuts<small>Repeat the files in order and create more cuts than files.</small></span></label>
@@ -3860,7 +3864,7 @@ J.mediaPlacementRect = (placement, sw, sh, w, h) => {
   return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
 };
 J.mediaAssets = new Map();
-const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
+const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
   const o = Object.assign(defaults(), m || {});
   o.items = Array.isArray(o.items) ? o.items.filter(x => x && x.id && x.name && ['image', 'video'].includes(x.type)) : [];
@@ -3868,6 +3872,7 @@ J.normalizeMedia = m => {
   o.overrides = o.overrides || {};
   o.cutOverrides = o.cutOverrides || {};
   o.loop = !!o.loop;
+  o.manualCuts = !!o.manualCuts;
   o.cutCount = J.clamp(Math.floor(+o.cutCount || 0), 0, 1000);
   if (!['normal', 'multiply', 'screen'].includes(o.blend)) o.blend = 'normal';
   o.opacity = J.clamp(+o.opacity || 0, 0, 100);
@@ -3883,12 +3888,16 @@ J.mediaOrder = (project, layer = 'media') => {
 };
 J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   const m = J.normalizeMedia(project[layer]), items = m.items.slice();
-  const count = items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
+  const count = m.manualCuts ? m.cutCount : items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
   const order = J.mediaOrder(project, layer);
-  const itemAt = i => order[i % order.length];
+  const itemAt = i => {
+    const assigned = m.cutOverrides[i];
+    if (assigned && Object.hasOwn(assigned, 'itemId')) return items.find(item => item.id === assigned.itemId) || null;
+    return order.length ? order[i % order.length] : null;
+  };
   const manualEnd = Math.max(0, ...Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t)).map(([, t]) => +t + 4));
   const duration = Math.max(lyricPlan.duration, audioDuration || 0,
-    manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
+    manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x && x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
   const lyricCount = Math.min(count, lyricPlan.lines.length);
   const starts = Array.from({ length: count }, (_, i) => {
     const v = m.timing.lineTimes[i];
@@ -3899,16 +3908,16 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   });
   for (let i = 1; i < starts.length; i++) starts[i] = Math.max(starts[i], starts[i - 1] + 0.04);
   const cuts = Array.from({ length: count }, (_, i) => {
-    const item = itemAt(i), ov = Object.assign({}, m.overrides[item.id] || {}, m.cutOverrides[i] || {});
+    const item = itemAt(i), ov = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {});
     const seed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, m.seed, i, ov.seed | 0);
     const rng = J.rng(seed), reroll = ov.seed != null;
-    return { index: i, itemId: item.id, name: item.name, type: item.type, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
+    return { index: i, itemId: item ? item.id : null, name: item ? item.name : 'No image', type: item ? item.type : null, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
       layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
       zoom: 100, focus: 'mc',
-      videoLoop: item.type === 'video' && ov.videoLoop !== false,
-      chromaKey: item.type === 'video' && ov.chromaKey === true,
+      videoLoop: !!item && item.type === 'video' && ov.videoLoop !== false,
+      chromaKey: !!item && item.type === 'video' && ov.chromaKey === true,
       chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00',
       placement: ov.placement && ['cx', 'cy', 'w'].every(k => Number.isFinite(+ov.placement[k])) ? {
         cx: +ov.placement.cx, cy: +ov.placement.cy, w: +ov.placement.w,
@@ -3919,6 +3928,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   });
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
+    if (!cut.itemId || !prev.itemId) continue;
     const rng = J.rng(J.h(cut.seed, 89));
     const registry = J.TRANS || {}, options = ['crossfade', ...J.MEDIA_TRANS_KEYS.filter(k => registry[k])];
     const trans = ov.trans === 'none' ? null : options.includes(ov.trans) ? ov.trans : rng.chance(0.65) ? rng.pick(options) : null;
@@ -30186,12 +30196,14 @@ function syncSourceTab() {
   $('lyricBlend').value = S.project.media.blend;
   $('lyricOpacity').value = S.project.media.opacity;
   $('linesInfo').textContent = media ? `${m.items.length}files / ${S.plan[layer].cuts.length}cuts` : `${S.plan.lines.length} lines / ${S.plan.cuts.length} cuts`;
-  $('mediaRandom').disabled = !media || m.items.length < 2;
-  $('mediaLoop').disabled = !media || m.items.length === 0;
-  $('mediaCutCountField').hidden = !media || !m.loop || m.items.length === 0;
+  $('mediaRandom').disabled = !media || m.items.length < 2 || m.manualCuts;
+  $('mediaRandom').title = media && m.manualCuts ? 'Choose a file for each manually added cut' : '';
+  $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
+  $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
 }
 function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
 function mediaThumb(item, cls = '') {
+  if (!item) return `<span class="missing media-ln-thumb" aria-hidden="true">—</span>`;
   const asset = J.mediaAssets.get(item.id);
   if (!asset) return `<span class="missing">File unavailable</span>`;
   return `<img class="${cls}" src="${asset.poster || asset.url}" alt="">`;
@@ -30200,32 +30212,22 @@ function renderMediaList() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const box = $('mediaList'); box.innerHTML = '';
   m.items.forEach((item, i) => {
-    const row = document.createElement('div'); row.className = 'media-item'; row.draggable = true; row.dataset.id = item.id;
+    const row = document.createElement('div'); row.className = 'media-item'; row.dataset.id = item.id;
     row.innerHTML = `${mediaThumb(item)}<span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><button class="ghost small" aria-label="${escapeHtml(item.name)} remove">×</button>`;
     row.querySelector('button').addEventListener('click', () => {
+      freezeMediaCuts(layer);
       m.items.splice(i, 1);
-      m.timing.lineTimes = {};
-      m.cutOverrides = {};
+      for (const cut of S.plan[layer].cuts) if (cut.itemId === item.id) mediaOv(cut.index, { itemId: null }, layer);
       delete m.overrides[item.id];
       const asset = J.mediaAssets.get(item.id); if (asset) { URL.revokeObjectURL(asset.url); J.mediaAssets.delete(item.id); }
       J.removeMedia(item.id).catch(() => {}); replan();
-    });
-    row.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', item.id); e.dataTransfer.effectAllowed = 'move'; });
-    row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drag-over'); });
-    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-    row.addEventListener('drop', e => {
-      e.preventDefault(); row.classList.remove('drag-over');
-      const from = m.items.findIndex(x => x.id === e.dataTransfer.getData('text/plain'));
-      if (from < 0 || from === i) return;
-      const [moved] = m.items.splice(from, 1); m.items.splice(i, 0, moved);
-      m.timing.lineTimes = {}; m.cutOverrides = {}; replan();
     });
     box.appendChild(row);
   });
   $('mediaRandom').checked = !!m.randomOrder;
   $('mediaLoop').checked = !!m.loop;
   $('mediaCutCount').min = '1';
-  $('mediaCutCount').value = String(m.cutCount || m.items.length * 2 || 1);
+  $('mediaCutCount').value = String(m.manualCuts ? m.cutCount : m.cutCount || m.items.length * 2 || 1);
   $('mediaBlend').value = m.blend;
   $('mediaOpacity').value = m.opacity;
 }
@@ -30235,12 +30237,69 @@ function mediaOv(index, patch, layer = activeMediaLayer() || 'media') {
   for (const k of Object.keys(o)) if (o[k] === undefined || o[k] === '') delete o[k];
   if (Object.keys(o).length) m.cutOverrides[index] = o; else delete m.cutOverrides[index];
 }
+function freezeMediaCuts(layer) {
+  const m = S.project[layer], cuts = S.plan[layer].cuts;
+  cuts.forEach((cut, i) => { m.cutOverrides[i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.itemId }); });
+  m.manualCuts = true;
+  m.cutCount = cuts.length;
+}
+function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
+  const m = S.project[layer], cuts = S.plan[layer].cuts;
+  if (cuts.length >= 1000) { toast('Maximum number of cuts reached'); return; }
+  const starts = cuts.map(cut => cut.start);
+  const overrides = {};
+  cuts.forEach((cut, i) => {
+    overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.itemId });
+  });
+  overrides[index] = { itemId: null };
+  let start;
+  if (!cuts.length) start = 0;
+  else if (index === 0) {
+    start = 0;
+    starts[0] = Math.max(starts[0], Math.min(cuts[0].end, starts[0] + Math.max(0.04, (cuts[0].end - starts[0]) / 2)));
+  } else if (index === cuts.length) {
+    start = Math.max(cuts[index - 1].start + 0.04, (cuts[index - 1].start + S.plan.duration) / 2);
+  } else start = (cuts[index - 1].start + cuts[index].start) / 2;
+  const times = {};
+  starts.forEach((time, i) => { times[i >= index ? i + 1 : i] = +time.toFixed(3); });
+  times[index] = +start.toFixed(3);
+  m.manualCuts = true;
+  m.cutCount = cuts.length + 1;
+  m.cutOverrides = overrides;
+  m.timing.lineTimes = times;
+  replan(); seek(start);
+}
+async function addMediaFiles(files, layer) {
+  const m = S.project[layer];
+  for (const file of files) {
+    const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
+    if (!type) continue;
+    const existing = m.items.find(x => x.name === file.name && x.size === file.size && !J.mediaAssets.has(x.id));
+    const item = existing || { id: crypto.randomUUID(), name: file.name, size: file.size, type };
+    try {
+      const el = await J.attachMedia(item, file);
+      el.addEventListener('seeked', () => { S.need = true; });
+      if (type === 'video') item.duration = el.duration || 0;
+      if (!existing) m.items.push(item);
+      await J.storeMedia(item.id, file);
+    } catch (err) { toast(`${file.name}: Could not load`); }
+  }
+  replan();
+}
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
   const select = (key, obj, val) => `<select aria-label="${key}"><option value="">Auto</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
+  const addButton = index => {
+    const row = document.createElement('li'); row.className = 'media-cut-insert';
+    row.innerHTML = `<button class="ghost small" type="button" aria-label="Insert cut at position ${index + 1}">+ Add cut</button>`;
+    row.querySelector('button').addEventListener('click', () => insertMediaCut(index, layer));
+    ol.appendChild(row);
+  };
   S.plan[layer].cuts.forEach((cut, i) => {
+    addButton(i);
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
+    const fileSelect = `<select class="media-cut-file" aria-label="File for cut ${i + 1}"><option value="">No image</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (!ov[key]) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
@@ -30248,11 +30307,11 @@ function renderMediaLines() {
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
     const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1} cut position and size"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>Edit position and size</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">Reset automatic placement</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1} cut start time (s)"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('Display mode', J.MEDIA_LAYOUT, ov.layout)}${select('Entrance', J.MEDIA_ENTER, ov.enter)}${select('Hold', J.MEDIA_HOLD, ov.hold)}${select('Exit', J.MEDIA_EXIT, ov.exit)}${select('Treatment', J.MEDIA_TREAT, ov.treat)}${select('Transition', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="Reroll this cut">${ICON.dice}</button><button class="icon ghost lock" title="Lock this cut" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>Loop video</label>` : ''}</div>`;
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1} cut start time (s)">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('Display mode', J.MEDIA_LAYOUT, ov.layout)}${select('Entrance', J.MEDIA_ENTER, ov.enter)}${select('Hold', J.MEDIA_HOLD, ov.hold)}${select('Exit', J.MEDIA_EXIT, ov.exit)}${select('Treatment', J.MEDIA_TREAT, ov.treat)}${select('Transition', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="Reroll this cut">${ICON.dice}</button><button class="icon ghost lock" title="Lock this cut" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>Loop video</label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>Chroma key</label><label>Color<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1} cut chroma key color" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
-    li.querySelector('.txt').addEventListener('click', () => seek(cut.start + 0.001));
-    ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].forEach((key, n) => li.querySelectorAll('select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || undefined }); replan(); }));
+    li.querySelector('.media-cut-file').addEventListener('change', e => { mediaOv(i, { itemId: e.target.value || null }, layer); replan(); });
+    ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].forEach((key, n) => li.querySelectorAll('.tools select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || undefined }); replan(); }));
     if (i === 0) li.querySelector('select[aria-label="Transition"]').disabled = true;
     const videoLoop = li.querySelector('.media-video-loop input');
     if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
@@ -30269,6 +30328,7 @@ function renderMediaLines() {
     li.querySelector('.lock').addEventListener('click', () => { mediaOv(i, ov.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }); replan(); });
     ol.appendChild(li); S.mediaLineEls.push(li);
   });
+  addButton(S.plan[layer].cuts.length);
   syncSourceTab();
 }
 async function restoreMediaAssets() {
@@ -30626,7 +30686,7 @@ function startTap() {
   if (!(layer ? S.plan[layer].cuts.length : S.plan.lines.length)) return;
   S.tap = { i: 0, layer, append: !!layer && S.project[layer].loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
-  $('tapHint').textContent = S.tap.append ? 'Each tap adds another image or video cut. Continue until you stop.' : 'Press Space or the button when each lyric line or media cut starts.';
+  $('tapHint').textContent = S.tap.append ? 'Each tap adds a cut with no image. Continue until you stop.' : 'Press Space or the button when each lyric line or media cut starts.';
   $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
   if (S.tap.append && !S.audio) extendTapPreview(0);
   seek(0); play(); updateTap();
@@ -30636,9 +30696,11 @@ function tapNow() {
   if (!S.tap) return;
   if (S.tap.append) {
     const i = S.tap.i;
-    if (i === 0) S.project[S.tap.layer].timing.lineTimes = {};
-    S.project[S.tap.layer].cutCount = i + 1;
-    S.project[S.tap.layer].timing.lineTimes[i] = +S.t.toFixed(3);
+    const m = S.project[S.tap.layer];
+    if (i === 0) { m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true; }
+    m.cutCount = i + 1;
+    m.cutOverrides[i] = { itemId: null };
+    m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();
     if (S.tap.i >= 1000) { pause(); stopTap(); toast('Maximum number of cuts reached'); }
@@ -30654,8 +30716,7 @@ function tapNow() {
 function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); }
 function updateTap() {
   if (S.tap.append) {
-    const order = J.mediaOrder(S.project, S.tap.layer), item = order[S.tap.i % order.length];
-    $('tapLine').textContent = item ? `${S.tap.i + 1}. ${item.name}` : '—'; return;
+    $('tapLine').textContent = `${S.tap.i + 1}. No image`; return;
   }
   const ln = S.tap.layer ? S.plan[S.tap.layer].cuts[S.tap.i] : S.plan.lines[S.tap.i];
   $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.layer ? ln.name : ln.text}` : '—';
@@ -30729,22 +30790,15 @@ function bind() {
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.areaEdit) { e.preventDefault(); cancelAreaEditor(); } });
-  $('mediaFiles').addEventListener('change', async e => {
-    const layer = activeMediaLayer() || 'media', m = S.project[layer];
-    for (const file of e.target.files || []) {
-      const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
-      if (!type) continue;
-      const existing = m.items.find(x => x.name === file.name && x.size === file.size && !J.mediaAssets.has(x.id));
-      const item = existing || { id: crypto.randomUUID(), name: file.name, size: file.size, type };
-      try {
-        const el = await J.attachMedia(item, file);
-        el.addEventListener('seeked', () => { S.need = true; });
-        if (type === 'video') item.duration = el.duration || 0;
-        if (!existing) m.items.push(item);
-        await J.storeMedia(item.id, file);
-      } catch (err) { toast(`${file.name}: Could not load`); }
-    }
-    e.target.value = ''; replan();
+  $('mediaFiles').addEventListener('change', async e => { const files = Array.from(e.target.files || []); e.target.value = ''; await addMediaFiles(files, activeMediaLayer() || 'media'); });
+  const mediaPane = $('mediaPane');
+  const hasFiles = e => Array.from(e.dataTransfer && e.dataTransfer.types || []).includes('Files');
+  mediaPane.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; mediaPane.classList.add('media-drop-active'); });
+  mediaPane.addEventListener('dragleave', e => { if (!mediaPane.contains(e.relatedTarget)) mediaPane.classList.remove('media-drop-active'); });
+  mediaPane.addEventListener('drop', async e => {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); mediaPane.classList.remove('media-drop-active');
+    await addMediaFiles(Array.from(e.dataTransfer.files || []), activeMediaLayer() || 'media');
   });
   $('mediaRandom').addEventListener('change', e => { S.project[activeMediaLayer()].randomOrder = e.target.checked; replan(); });
   $('mediaLoop').addEventListener('change', e => {
@@ -30753,7 +30807,14 @@ function bind() {
     replan();
   });
   $('mediaCutCount').addEventListener('change', e => {
-    S.project[activeMediaLayer()].cutCount = J.clamp(Math.floor(+e.target.value || 0), 1, 1000);
+    const layer = activeMediaLayer(), m = S.project[layer], count = J.clamp(Math.floor(+e.target.value || 0), 1, 1000);
+    if (count !== S.plan[layer].cuts.length) {
+      freezeMediaCuts(layer);
+      for (let i = m.cutCount; i < count; i++) m.cutOverrides[i] = { itemId: null };
+      for (const key of Object.keys(m.cutOverrides)) if (+key >= count) delete m.cutOverrides[key];
+      for (const key of Object.keys(m.timing.lineTimes)) if (+key >= count) delete m.timing.lineTimes[key];
+    }
+    m.cutCount = count;
     replan();
   });
   $('lyricBlend').addEventListener('change', e => { S.project.media.blend = e.target.value; replan(); });
