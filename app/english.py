@@ -465,7 +465,7 @@ FORK_MEDIA = dict(FORK_UI, **{
 
 
 def localize_body(source):
-    return replace_copy(replace_copy(source, FORK_BODY), BODY).replace('You own the<strong>', 'You own the <strong>')
+    return replace_copy(replace_copy(source, FORK_BODY), BODY).replace('You own the<strong>', 'You own the <strong>').replace('>画像・動画</button>', '>Media</button>')
 
 
 def localize_js(source, filename):

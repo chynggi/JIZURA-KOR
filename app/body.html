@@ -174,6 +174,7 @@
         <button role="tab" data-tab="style" aria-selected="true">スタイル</button>
         <button role="tab" data-tab="fx" aria-selected="false">演出</button>
         <button role="tab" data-tab="tech" aria-selected="false">手法</button>
+        <button role="tab" data-tab="mediaFx" aria-selected="false">画像・動画</button>
         <button role="tab" data-tab="out" aria-selected="false">書き出し</button>
       </nav>
 
@@ -222,6 +223,8 @@
         <div class="row" style="margin-bottom:10px"><input id="techFilter" type="text" placeholder="手法を名前で絞り込み" style="flex:1" aria-label="手法を名前で絞り込み"><span id="techTotal" class="muted mono"></span></div>
         <div id="techLists"></div>
       </div>
+
+      <div class="tabpane" data-pane="mediaFx" hidden><div id="mediaEffectsPanel"></div></div>
 
       <div class="tabpane" data-pane="out" hidden>
         <div class="fields">

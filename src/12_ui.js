@@ -156,6 +156,7 @@ function replan() {
   if (S.t > S.plan.duration) S.t = Math.max(0, S.plan.duration - 1e-3);
   const temporarilyHidden = ref => S.project.durationOverride != null && /^l:\d+:\d+$/.test(ref) && +ref.split(':')[1] < S.plan.lines.length;
   S.project.timelineLinks = S.project.timelineLinks.filter(link => link && link.a !== link.b && (boundaryCut(link.a) || temporarilyHidden(link.a)) && (boundaryCut(link.b) || temporarilyHidden(link.b)));
+  lastCutIdx = null;
   renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); drawTimelineLinks(); updateTimeUI();
   S.need = true; autosave(); ensureFonts(); drawSwatch(); showNow();
   clearTimeout(warmTimer); warmTimer = setTimeout(warm, 450);
@@ -463,13 +464,13 @@ function mediaCutOptions(layer, index) {
 function rerollMediaCut(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, { seed: (options.seed | 0) + 1, lock: false }, layer);
+  mediaOv(index, { technique: null, seed: (options.seed | 0) + 1, lock: false }, layer);
   replan(); seek(cut.start + 0.001);
 }
 function toggleMediaCutLock(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }, layer);
+  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique }, layer);
   replan();
 }
 function performTimelineAction(control) {
@@ -666,7 +667,7 @@ function updateCutInfo() {
     cut.bg && cut.bg !== 'none' ? chip('b', '背景', n(J.BG, cut.bg)) : '',
     cut.cam && cut.cam !== 'push' ? chip('c', 'カメラ', n(J.CAMERA, cut.cam)) : '',
     cut.trans ? chip('c', 'つなぎ', n(J.TRANS, cut.trans)) : '',
-  ] : []).concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '前景' : '背景', escapeHtml(mediaCut.name)), chip('l', '表示', J.MEDIA_LAYOUT[mediaCut.layout]), chip('e', '登場', J.MEDIA_ENTER[mediaCut.enter]), chip('h', '保持', J.MEDIA_HOLD[mediaCut.hold]), chip('x', '退場', J.MEDIA_EXIT[mediaCut.exit]), chip('t', '加工', J.MEDIA_TREAT[mediaCut.treat]), mediaCut.trans ? chip('c', 'つなぎ', J.mediaTransOptions()[mediaCut.trans]) : '', mediaCut.placement && mediaCut.placement.angle ? chip('c', '角度', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', 'クロマキー', mediaCut.chromaColor) : ''] : [])).join('');
+  ] : []).concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '前景' : '背景', escapeHtml(mediaCut.name)), chip('l', J.mediaLabel('手法', 'Technique'), J.mediaTechniqueName(mediaCut)), mediaCut.placement && mediaCut.placement.angle ? chip('c', '角度', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', 'クロマキー', mediaCut.chromaColor) : ''] : [])).join('');
 }
 
 /* ---------------- line list ---------------- */
@@ -1108,7 +1109,8 @@ async function addMediaFiles(files, layer) {
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const select = (key, obj, val) => `<select aria-label="${key}"><option value="">自動</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
+  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${Object.entries(J.MEDIA_TECH).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</select>`;
+
   const addButton = index => {
     const row = document.createElement('li'); row.className = 'media-cut-insert';
     row.innerHTML = `<button class="ghost small" type="button" aria-label="${index + 1}番目にカットを追加">＋ カットを追加</button>`;
@@ -1126,12 +1128,11 @@ function renderMediaLines() {
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
     const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}カット目の配置とサイズを編集"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>配置・サイズを編集</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">自動配置に戻す</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}カット目を削除">削除</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label><label class="media-video-duration">動画の長さ（秒）<input type="number" min="0.04" max="3600" step="0.01" placeholder="自動" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}カット目の動画の長さ（秒）"></label>` : ''}</div>`;
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.mediaTechniqueName(cut)}</span></span><span class="tools">${selectTechnique(ov, cut)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}カット目を削除">削除</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label><label class="media-video-duration">動画の長さ（秒）<input type="number" min="0.04" max="3600" step="0.01" placeholder="自動" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}カット目の動画の長さ（秒）"></label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>クロマキー合成</label><label>色<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}カット目のクロマキー色" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.media-cut-file').addEventListener('change', e => { mediaOv(i, { itemId: e.target.value || null }, layer); replan(); });
-    ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].forEach((key, n) => li.querySelectorAll('.tools select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || null }, layer); replan(); }));
-    if (i === 0) li.querySelector('select[aria-label="つなぎ"]').disabled = true;
+    li.querySelector('.media-technique').addEventListener('change', e => { if (e.target.value !== 'legacy') { mediaOv(i, { technique: e.target.value || null, lock: false, lockedTechnique: undefined }, layer); replan(); } });
     const videoLoop = li.querySelector('.media-video-loop input');
     if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
     const videoDuration = li.querySelector('.media-video-duration input');
@@ -1352,6 +1353,7 @@ function rerollPart(part) {
     Object.assign(P, { mood: r.mood, fx: r.fx, enabled: r.enabled });
     msg = `雰囲気：${J.MOODS[r.mood].name}`;
   } else if (part === 'cut') {
+    shuffleMediaEffects();
     P.seed = (Math.random() * 1e9) | 0;
     msg = '構成：レイアウトと動きを再抽選';
   }
@@ -1570,6 +1572,34 @@ function updateTap() {
   $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.layer ? ln.name : ln.text}` : '—';
 }
 
+function shuffleMediaEffects() {
+  for (const layer of ['media', 'foreground']) for (const cut of S.plan[layer].cuts) {
+    const ov = mediaCutOptions(layer, cut.index);
+    if (!ov.lock && (ov.technique == null)) mediaOv(cut.index, { technique: null }, layer);
+  }
+}
+function renderMediaEffects() {
+  const box = $('mediaEffectsPanel'); if (!box) return;
+  const settings = J.mediaEffectSettings(S.project), L = J.mediaLabel;
+  box.innerHTML = `<p class="note">${L('前景・背景で共通。チェックした手法を「自動」とシャッフルで使用します。手動指定した手法とロック済みカットは維持されます。', 'Shared by foreground and background. Checked techniques are used by Auto and Shuffle. Explicit selections and locked cuts are preserved.')}</p><div id="mediaEffectSliders"></div><div class="row"><button type="button" id="shuffleMediaEffects">${L('画像・動画をシャッフル', 'Shuffle media')}</button><button type="button" id="enableMediaEffects">${L('全て有効', 'Enable all')}</button><button type="button" id="disableMediaEffects">${L('全て無効', 'Disable all')}</button></div>`;
+  for (const [key, name, max, step] of [['motion', L('動きの強さ', 'Motion intensity'), 2, .05], ['treatment', L('加工の強さ', 'Treatment intensity'), 1, .05], ['duration', L('登場・退場時間', 'Entrance / exit (s)'), 1.5, .05]]) {
+    const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
+    row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project); next[key] = +e.target.value; S.project.mediaEffects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + key); replanSoon(100); }); box.querySelector('#mediaEffectSliders').appendChild(row);
+  }
+  const groups = { transition: L('カット間のつなぎ', 'Cut transitions'), cinema: L('シネマ・カメラ', 'Cinema / camera'), dynamic: L('ダイナミックモーション', 'Dynamic motion'), mask: L('マスク・出現', 'Masks / reveals'), texture: L('色・質感', 'Color / texture'), graphic: L('分割・残像・グリッチ', 'Panels / echoes / glitch') };
+  for (const [group, name] of Object.entries(groups)) {
+    const section = document.createElement('fieldset'); section.className = 'media-tech-group'; section.innerHTML = `<legend>${name}</legend>`;
+    for (const [key, def] of Object.entries(J.MEDIA_TECH).filter(([, d]) => d.group === group)) {
+      const row = document.createElement('label'); row.className = 'check'; row.innerHTML = `<input type="checkbox" data-media-tech="${key}" ${settings.enabled[key] !== false ? 'checked' : ''}><span>${def.name}</span>`;
+      row.querySelector('input').addEventListener('change', e => { const next = J.mediaEffectSettings(S.project); next.enabled = Object.assign({}, next.enabled, { [key]: e.target.checked }); S.project.mediaEffects = next; replan(); }); section.appendChild(row);
+    }
+    box.appendChild(section);
+  }
+  $('shuffleMediaEffects').onclick = () => { shuffleMediaEffects(); for (const layer of ['media', 'foreground']) S.project[layer].seed++; replan(); };
+  const all = value => { const next = J.mediaEffectSettings(S.project); next.enabled = Object.fromEntries(Object.keys(J.MEDIA_TECH).map(key => [key, value])); S.project.mediaEffects = next; renderMediaEffects(); replan(); };
+  $('enableMediaEffects').onclick = () => all(true); $('disableMediaEffects').onclick = () => all(false);
+}
+
 /* ---------------- sync all inputs from project ---------------- */
 function syncUI() {
   $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
@@ -1583,7 +1613,7 @@ function syncUI() {
   document.querySelectorAll('.wa-toggle').forEach(el => { el.checked = S.project.wa !== false; });
   document.querySelectorAll('.extra-toggle').forEach(el => { el.checked = S.project.extra === true; });
   $('lyricLang').value = J.LANG_LABEL[S.project.lang] ? S.project.lang : 'auto'; langNote();
-  renderFontRoles(); renderColors(); renderFx(); renderTech(); syncOut(); drawStyleGrid();
+  renderFontRoles(); renderColors(); renderFx(); renderTech(); renderMediaEffects(); syncOut(); drawStyleGrid();
 }
 
 /* ---------------- wiring ---------------- */
@@ -1699,7 +1729,7 @@ function bind() {
   $('btnUndo').addEventListener('click', () => undoMove(-1));
   $('btnRedo').addEventListener('click', () => undoMove(1));
   $('btnLoop').addEventListener('click', e => { S.loop = !S.loop; e.target.setAttribute('aria-pressed', String(S.loop)); });
-  $('btnShuffle').addEventListener('click', () => { remember(); S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); commit(); });
+  $('btnShuffle').addEventListener('click', () => { remember(); shuffleMediaEffects(); S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); commit(); });
   const sc = $('scrub');
   sc.addEventListener('input', () => { S.scrubbing = true; seek(sc.value / 10000 * S.plan.duration); });
   sc.addEventListener('change', () => { S.scrubbing = false; });

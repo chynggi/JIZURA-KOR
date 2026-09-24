@@ -401,3 +401,8 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .stile .badges { position: absolute; top: 4px; left: 4px; padding: 0; display: flex; gap: 3px; }
 .stile .set-badge { margin: 0; padding: 0 4px; font-size: 10px; line-height: 15px; background: rgba(0,0,0,0.55); }
 .stile.set-off { opacity: 0.55; }
+
+.media-tech-group {border:1px solid var(--line);border-radius:8px;margin:14px 0;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.media-technique {max-width:240px}
+.tabs {grid-template-columns:repeat(5,minmax(0,1fr))}
+#mediaEffectsPanel {max-height:calc(100vh - 150px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}

@@ -109,12 +109,20 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
         angle: ov.placement.angle != null && Number.isFinite(+ov.placement.angle) ? J.clamp(+ov.placement.angle, -180, 180) : 0,
       } : null, seed };
   });
+  if (J.mediaTechnique) for (const cut of cuts) {
+    const ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[cut.index] || {});
+    Object.assign(cut, J.mediaTechnique(project, ov, J.rng(J.h(cut.seed, 173))));
+    cut.effectTransition = cut.trans;
+    delete cut.trans;
+  }
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
     if (!cut.itemId || !prev.itemId) continue;
     const rng = J.rng(J.h(cut.seed, 89));
     const registry = J.TRANS || {}, options = ['crossfade', ...J.MEDIA_TRANS_KEYS.filter(k => registry[k])];
-    const trans = ov.trans === 'none' ? null : options.includes(ov.trans) ? ov.trans : rng.chance(0.65) ? rng.pick(options) : null;
+    const selectedTrans = cut.technique && cut.technique !== 'legacy' ? cut.effectTransition : ov.trans;
+    delete cut.trans;
+    const trans = selectedTrans === 'none' ? null : options.includes(selectedTrans) ? selectedTrans : rng.chance(0.65) ? rng.pick(options) : null;
     if (trans && cut.end - cut.start > 0.2 && Math.abs(prev.end - cut.start) < 0.06) {
       cut.trans = trans;
       cut.transDur = Math.min(registry[trans] ? registry[trans].dur || 0.35 : 0.35, 0.6, (cut.end - cut.start) * 0.45);
@@ -273,8 +281,20 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const src = options.source || asset.element, sw = src.videoWidth || src.naturalWidth || src.width, sh = src.videoHeight || src.naturalHeight || src.height;
   if (!sw || !sh) return false;
   const w = ctx.canvas.width, h = ctx.canvas.height, d = Math.max(0.04, cut.end - cut.start), p = J.clamp((t - cut.start) / d, 0, 1);
-  const fade = options.noEnter ? 1 : Math.min(1, (t - cut.start) / Math.min(0.45, d * 0.3));
-  const out = options.noExit ? 1 : Math.min(1, (cut.end - t) / Math.min(0.45, d * 0.3));
+  const fade = options.noEnter ? 1 : Math.min(1, (t - cut.start) / Math.min(cut.effectSettings?.duration || 0.45, d * 0.3));
+  const out = options.noExit ? 1 : Math.min(1, (cut.end - t) / Math.min(cut.effectSettings?.duration || 0.45, d * 0.3));
+  if (cut.technique && cut.technique !== 'legacy' && J.paintMediaEffect) {
+    const placement = cut.placement && J.mediaPlacementRect(cut.placement, sw, sh, w, h);
+    const scale = cut.layout === 'cover' ? Math.max(w / sw, h / sh) : Math.min(w / sw, h / sh);
+    const fit = placement ? [placement.w * w, placement.h * h] : [sw * scale, sh * scale];
+    const previewScale = options.previewEdit ? Math.min(1, w / sw, h / sh) : 1;
+    const source = cut.type === 'video' && cut.chromaKey ? J.chromaSource(src, cut, Math.max(1, Math.round(sw * previewScale)), Math.max(1, Math.round(sh * previewScale))) : src;
+    ctx.save();
+    ctx.translate(placement ? (placement.x + placement.w / 2) * w : w / 2, placement ? (placement.y + placement.h / 2) * h : h / 2);
+    ctx.rotate((cut.placement?.angle || 0) * Math.PI / 180);
+    J.paintMediaEffect(ctx, source, fit, options.previewEdit ? Object.assign({}, cut, { enter: 'cut', exit: 'cut', hold: 'still', treat: 'none' }) : cut, p, fade, out);
+    ctx.restore(); return true;
+  }
   let alpha = (cut.enter === 'fade' ? fade : 1) * (cut.exit === 'fade' ? out : 1);
   let z = (cut.zoom || 100) / 100 * (cut.hold === 'push' ? 1 + p * 0.12 : 1);
   if (cut.enter === 'zoom' && !options.noEnter) z *= 1 + (1 - fade) * 0.16;
