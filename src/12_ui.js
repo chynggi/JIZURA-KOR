@@ -12,7 +12,7 @@ const ICON = {
   lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>',
 };
 
-const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, areaEdit: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
+const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, areaEdit: null, timelineDrag: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
 
 /* WebAudio player (works inside sandboxed pages where blob media may be blocked) */
 const AP = {
@@ -35,6 +35,7 @@ function mergeProject(p) {
   const o = Object.assign(d, p || {});
   o.fx = Object.assign(J.defaultProject().fx, (p && p.fx) || {});
   o.timing = Object.assign(J.defaultProject().timing, (p && p.timing) || {});
+  o.timing.cutTimes = o.timing.cutTimes || {};
   const en = J.defaultProject().enabled;
   for (const g of Object.keys(en)) en[g] = Object.assign(en[g], ((p && p.enabled) || {})[g] || {});
   o.enabled = en;
@@ -217,6 +218,7 @@ function drawTimeline() {
     const hue = layoutHue(cut.layout);
     x.fillStyle = `hsla(${hue},70%,58%,0.28)`; x.fillRect(x0, top, Math.max(1, x1 - x0 - 1), bot - top);
     x.fillStyle = `hsla(${hue},80%,62%,0.95)`; x.fillRect(x0, top, Math.max(1, 2 * dpr), bot - top);
+    if (cut.line >= 0) x.fillRect(x0 - 2 * dpr, top - 3 * dpr, 6 * dpr, 6 * dpr);
     if (x1 - x0 > 34 * dpr) {
       x.fillStyle = 'rgba(236,231,225,0.85)'; x.font = `${10 * dpr}px ${getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace'}`;
       x.save(); x.beginPath(); x.rect(x0, top, x1 - x0 - 3, bot - top); x.clip();
@@ -231,6 +233,7 @@ function drawTimeline() {
   }
   const px = X(S.t);
   x.fillStyle = '#f5a50c'; x.fillRect(Math.round(px) - dpr, 0, 2 * dpr, h);
+  drawTimelineDragGuide(x, w, h, dpr, 'lyrics');
   drawMediaTimeline();
   drawMediaTimeline('foreground');
 }
@@ -253,13 +256,73 @@ function drawMediaTimeline(layer = 'media') {
     const a = X(cut.start), b = X(cut.end);
     x.fillStyle = cut.type === 'video' ? 'rgba(22,244,212,0.28)' : 'rgba(245,165,12,0.28)'; x.fillRect(a, 17 * dpr, Math.max(1, b - a - 1), h - 20 * dpr);
     x.fillStyle = cut.type === 'video' ? '#16f4d4' : '#f5a50c'; x.fillRect(a, 17 * dpr, 2 * dpr, h - 20 * dpr);
+    x.fillRect(a - 2 * dpr, 14 * dpr, 6 * dpr, 6 * dpr);
     if (b - a > 45 * dpr) { x.save(); x.beginPath(); x.rect(a, 17 * dpr, b - a - 3, h - 20 * dpr); x.clip(); x.fillStyle = '#ece7e1'; x.fillText(cut.name, a + 5 * dpr, 31 * dpr); x.restore(); }
   }
   x.fillStyle = '#f5a50c'; x.fillRect(Math.round(X(S.t)) - dpr, 0, 2 * dpr, h);
+  drawTimelineDragGuide(x, w, h, dpr, layer);
+}
+function drawTimelineDragGuide(ctx, width, height, dpr, layer) {
+  const drag = S.timelineDrag;
+  if (!drag || !drag.moved || drag.layer !== layer) return;
+  const px = drag.preview / Math.max(0.001, S.plan.duration) * width;
+  ctx.fillStyle = '#16f4d4'; ctx.fillRect(Math.round(px) - 2 * dpr, 0, 4 * dpr, height);
+  ctx.fillStyle = '#101318'; ctx.fillRect(J.clamp(px + 5 * dpr, 0, width - 47 * dpr), 1 * dpr, 47 * dpr, 15 * dpr);
+  ctx.fillStyle = '#16f4d4'; ctx.font = `${11 * dpr}px monospace`;
+  ctx.fillText(`${drag.preview.toFixed(2)}s`, J.clamp(px + 8 * dpr, 3 * dpr, width - 44 * dpr), 12 * dpr);
 }
 function timelineSeek(ev) {
   const r = ev.currentTarget.getBoundingClientRect();
   seek((ev.clientX - r.left) / r.width * S.plan.duration);
+}
+function timelineBoundaryAt(ev, layer) {
+  const rect = ev.currentTarget.getBoundingClientRect(), duration = S.plan.duration;
+  const cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0) : S.plan[layer].cuts;
+  let chosen = null, distance = 9;
+  for (const cut of cuts) {
+    const px = rect.left + cut.start / duration * rect.width, delta = Math.abs(ev.clientX - px);
+    if (delta < distance) { chosen = cut; distance = delta; }
+  }
+  if (!chosen) return null;
+  let min, max, target;
+  if (layer !== 'lyrics') {
+    const cutsForLayer = S.plan[layer].cuts, index = chosen.index;
+    min = index ? cutsForLayer[index - 1].start + 0.04 : 0;
+    max = index + 1 < cutsForLayer.length ? cutsForLayer[index + 1].start - 0.04 : duration - 0.04;
+    target = { index };
+  } else if (chosen.part === 'interlude') {
+    const previous = S.plan.cuts.find(c => c.line === chosen.line && typeof c.part === 'number' && c.end === chosen.start);
+    min = previous ? previous.start + 0.22 : S.plan.lines[chosen.line].start + 0.5;
+    max = chosen.end - 1.31;
+    target = { line: chosen.line, part: 'interlude' };
+  } else if (chosen.part === 0) {
+    const line = chosen.line, lines = S.plan.lines;
+    min = line ? lines[line - 1].start + 0.35 : 0;
+    max = line + 1 < lines.length ? lines[line + 1].start - 0.5 : duration - 0.5;
+    const firstInner = S.project.timing.cutTimes && S.project.timing.cutTimes[`${line}:1`];
+    if (firstInner != null && Number.isFinite(+firstInner)) max = Math.min(max, +firstInner - 0.22);
+    target = { line, part: 0, nextLineStart: lines[line + 1] && lines[line + 1].start };
+  } else {
+    const previous = S.plan.cuts.find(c => c.line === chosen.line && c.part === chosen.part - 1);
+    min = previous ? previous.start + 0.22 : S.plan.lines[chosen.line].start + 0.22;
+    max = chosen.end - 0.22;
+    target = { line: chosen.line, part: chosen.part };
+  }
+  return max > min ? { layer, start: chosen.start, min, max, ...target } : null;
+}
+function commitTimelineBoundary(drag) {
+  const t = +drag.preview.toFixed(3);
+  if (drag.layer === 'lyrics') {
+    const timing = S.project.timing;
+    if (drag.part === 0) {
+      timing.lineTimes[drag.line] = t;
+      if (drag.nextLineStart != null && timing.lineTimes[drag.line + 1] == null) timing.lineTimes[drag.line + 1] = +drag.nextLineStart.toFixed(3);
+    } else {
+      if (!timing.cutTimes) timing.cutTimes = {};
+      timing.cutTimes[`${drag.line}:${drag.part}`] = t;
+    }
+  } else S.project[drag.layer].timing.lineTimes[drag.index] = t;
+  replan();
 }
 
 /* ---------------- cut info ---------------- */
@@ -1042,7 +1105,7 @@ function bind() {
   $('offset').addEventListener('change', e => { S.project.timing.offset = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
   $('lineScale').addEventListener('change', e => { S.project.timing.lineScale = J.clamp(parseFloat(e.target.value) || 1, 0.3, 4); replan(); });
   $('snap').addEventListener('change', e => { S.project.timing.snap = e.target.checked; replan(); });
-  $('btnResetTimes').addEventListener('click', () => { const layer = activeMediaLayer(); (layer ? S.project[layer].timing : S.project.timing).lineTimes = {}; replan(); });
+  $('btnResetTimes').addEventListener('click', () => { const layer = activeMediaLayer(), timing = layer ? S.project[layer].timing : S.project.timing; timing.lineTimes = {}; if (!layer) timing.cutTimes = {}; replan(); });
   $('audioFile').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     $('audioName').textContent = '解析中…';
@@ -1064,10 +1127,35 @@ function bind() {
   sc.addEventListener('input', () => { S.scrubbing = true; seek(sc.value / 10000 * S.plan.duration); });
   sc.addEventListener('change', () => { S.scrubbing = false; });
   for (const tl of [$('timeline'), $('mediaTimeline'), $('foregroundTimeline')]) {
-    let drag = false;
-    tl.addEventListener('pointerdown', e => { drag = true; tl.setPointerCapture(e.pointerId); timelineSeek(e); });
-    tl.addEventListener('pointermove', e => { if (drag) timelineSeek(e); });
-    tl.addEventListener('pointerup', () => { drag = false; });
+    const layer = tl.id === 'timeline' ? 'lyrics' : tl.id === 'foregroundTimeline' ? 'foreground' : 'media';
+    let drag = null;
+    tl.addEventListener('pointerdown', e => {
+      const boundary = !S.exporting && !S.tap && timelineBoundaryAt(e, layer);
+      drag = boundary ? { ...boundary, mode: 'boundary', originX: e.clientX, preview: boundary.start, moved: false, duration: S.plan.duration } : { mode: 'seek' };
+      tl.setPointerCapture(e.pointerId);
+      if (boundary) { pause(); S.timelineDrag = drag; }
+      else timelineSeek(e);
+    });
+    tl.addEventListener('pointermove', e => {
+      if (!drag) { tl.style.cursor = !S.exporting && !S.tap && timelineBoundaryAt(e, layer) ? 'ew-resize' : 'pointer'; return; }
+      if (drag.mode === 'seek') { timelineSeek(e); return; }
+      if (Math.abs(e.clientX - drag.originX) >= 3) drag.moved = true;
+      if (!drag.moved) return;
+      const rect = tl.getBoundingClientRect();
+      drag.preview = J.clamp((e.clientX - rect.left) / rect.width * drag.duration, drag.min, drag.max);
+      drawTimeline();
+    });
+    tl.addEventListener('pointerup', () => {
+      if (!drag) return;
+      if (drag.mode === 'boundary') {
+        S.timelineDrag = null;
+        if (drag.moved) commitTimelineBoundary(drag);
+        else seek(drag.start);
+        drawTimeline();
+      }
+      drag = null;
+    });
+    tl.addEventListener('pointercancel', () => { drag = null; S.timelineDrag = null; drawTimeline(); });
   }
   document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));

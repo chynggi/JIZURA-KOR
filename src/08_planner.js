@@ -21,7 +21,7 @@ J.defaultProject = () => ({
   aspect: '16:9', res: 1080, fps: 24,
   fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', bgSwitch: 0.35 },
   enabled: Object.fromEntries(J.GROUP_KEYS.map(g => [g, Object.fromEntries(J.order(g).map(k => [k, true]))])),
-  timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, lineScale: 1 },
+  timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, cutTimes: {}, lineScale: 1 },
   overrides: {},
   media: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
   foreground: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
@@ -139,8 +139,8 @@ J.computeTiming = (project, parsed, audio) => {
   lines.forEach((l, i) => {
     const man = T.lineTimes && T.lineTimes[i] != null ? +T.lineTimes[i] : null;
     let s;
-    if (allLrc) s = l.lrc;
-    else if (man != null && isFinite(man)) s = man;
+    if (man != null && isFinite(man)) s = man;
+    else if (allLrc) s = l.lrc;
     else {
       if (i > 0) {
         const n = [...lines[i - 1].text].length;
@@ -217,7 +217,11 @@ J.plan = (project, audio) => {
     const lineSeed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, li + 1, ov.seed | 0);
     const rng = J.rng(lineSeed);
     const n = [...ln.text.replace(/\s+/g, '')].length;
-    const visEnd = Math.min(e, s + Math.max(3.6, n * 0.5 + 1.2));
+    const cutTimes = (project.timing && project.timing.cutTimes) || {};
+    const interludeTime = cutTimes[`${li}:interlude`];
+    const naturalVisEnd = Math.min(e, s + Math.max(3.6, n * 0.5 + 1.2));
+    const visEnd = interludeTime != null && Number.isFinite(+interludeTime) && e - s > 1.81
+      ? J.clamp(+interludeTime, s + 0.5, e - 1.31) : naturalVisEnd;
     const D = visEnd - s;
     plan.lines.push({ index: li, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed });
     const chunks = ln.manual || J.chunkText(ln.text);
@@ -238,7 +242,10 @@ J.plan = (project, audio) => {
     const tot = units.reduce((a, u) => a + u.w, 0);
     let acc = s; const bounds = [s];
     units.forEach((u, k) => { acc += D * u.w / tot; bounds.push(k === units.length - 1 ? visEnd : acc); });
-    for (let k = 1; k < bounds.length - 1; k++) bounds[k] = J.clamp(snap(bounds[k]), bounds[k - 1] + 0.22, bounds[k + 1] - 0.22);
+    for (let k = 1; k < bounds.length - 1; k++) {
+      const manual = cutTimes[`${li}:${k}`];
+      bounds[k] = J.clamp(manual != null && Number.isFinite(+manual) ? +manual : snap(bounds[k]), bounds[k - 1] + 0.22, bounds[k + 1] - 0.22);
+    }
     // scheme per line
     if (nSchemes > 1 && li > 0 && rng.chance(fx.bgSwitch * (ln.impact ? 1.8 : 1))) schemeIdx = (schemeIdx + 1 + rng.int(0, nSchemes - 2)) % nSchemes;
     const emphLine = ln.impact || ln.emph.length > 0;
@@ -289,7 +296,7 @@ J.plan = (project, audio) => {
           prevCut.exit = 'cut'; prevCut.outDur = 0;
         }
       }
-      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: J.h(lineSeed, k, 17), area, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
+      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, part: k, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: J.h(lineSeed, k, 17), area, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
         treat, treatP, bg, bgP: bg === lineBg ? lineBgP : {}, cam, camP, trans, transP, transDur });
       plan.cuts.push(cut);
       history.push({ layout, enter, exit, hold, treat, cam, trans, decor: decor.map(d => d.id) });
@@ -318,7 +325,7 @@ J.plan = (project, audio) => {
     const nextStart = li < parsed.lines.length - 1 ? tm.starts[li + 1] : null;
     if (nextStart != null && nextStart - visEnd > 1.3) {
       const r2 = J.rng(J.h(lineSeed, 404));
-      plan.cuts.push(makeCut({ text: title || '', lineText: '', line: li, start: visEnd, end: nextStart, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: J.LAYOUTS.interlude.plan(r2), decor: pickDecor(r2, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: schemeIdx, seed: J.h(lineSeed, 405) }));
+      plan.cuts.push(makeCut({ text: title || '', lineText: '', line: li, part: 'interlude', start: visEnd, end: nextStart, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: J.LAYOUTS.interlude.plan(r2), decor: pickDecor(r2, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: schemeIdx, seed: J.h(lineSeed, 405) }));
     }
   });
   plan.cuts.sort((a, b) => a.start - b.start);
