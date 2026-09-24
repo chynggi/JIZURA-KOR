@@ -465,7 +465,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         <div id="mediaList" class="media-list"></div>
         <label class="check"><input id="mediaRandom" type="checkbox"><span>Shuffle order</span></label>
         <label class="check"><input id="mediaLoop" type="checkbox"><span>Loop cuts<small>Repeat the files in order and create more cuts than files.</small></span></label>
-        <label class="field" id="mediaCutCountField" hidden>Number of cuts<input id="mediaCutCount" type="number" min="1" max="1000" step="1" inputmode="numeric"></label>
+        <label class="field" id="mediaCutCountField" hidden>Number of cuts<input id="mediaCutCount" type="number" min="0" max="1000" step="1" inputmode="numeric"></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
           <label class="field">Foreground blend mode<select id="mediaBlend"><option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option></select></label>
           <label class="field">Foreground opacity (%)<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
@@ -30777,7 +30777,7 @@ function renderMediaList() {
   });
   $('mediaRandom').checked = !!m.randomOrder;
   $('mediaLoop').checked = !!m.loop;
-  $('mediaCutCount').min = '1';
+  $('mediaCutCount').min = '0';
   $('mediaCutCount').value = String(m.manualCuts ? m.cutCount : m.cutCount || m.items.length * 2 || 1);
   $('mediaBlend').value = m.blend;
   $('mediaOpacity').value = m.opacity;
@@ -30824,6 +30824,35 @@ function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   }
   replan(); seek(start);
 }
+function removeMediaCut(index, layer = activeMediaLayer() || 'media') {
+  const m = S.project[layer], cuts = S.plan[layer].cuts;
+  if (!Number.isInteger(index) || index < 0 || index >= cuts.length) return;
+  cancelAreaEditor();
+  if (S.tap) stopTap();
+  const overrides = {}, times = {};
+  cuts.forEach((cut, oldIndex) => {
+    if (oldIndex === index) return;
+    const newIndex = oldIndex > index ? oldIndex - 1 : oldIndex;
+    overrides[newIndex] = Object.assign({}, m.cutOverrides[oldIndex] || {}, { itemId: cut.itemId });
+    times[newIndex] = +cut.start.toFixed(3);
+  });
+  m.manualCuts = true;
+  m.cutCount = cuts.length - 1;
+  m.cutOverrides = overrides;
+  m.timing.lineTimes = times;
+  const prefix = layer === 'foreground' ? 'f:' : 'm:';
+  const remapRef = ref => {
+    if (typeof ref !== 'string' || !ref.startsWith(prefix)) return ref;
+    const oldIndex = +ref.slice(prefix.length);
+    if (!Number.isInteger(oldIndex)) return ref;
+    return oldIndex === index ? null : prefix + (oldIndex > index ? oldIndex - 1 : oldIndex);
+  };
+  S.project.timelineLinks = S.project.timelineLinks.flatMap(link => {
+    const a = remapRef(link.a), b = remapRef(link.b);
+    return a && b ? [{ a, b }] : [];
+  });
+  replan();
+}
 async function addMediaFiles(files, layer) {
   const m = S.project[layer];
   for (const file of files) {
@@ -30862,7 +30891,7 @@ function renderMediaLines() {
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
     const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1} cut position and size"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>Edit position and size</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">Reset automatic placement</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1} cut start time (s)">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('Display mode', J.MEDIA_LAYOUT, ov.layout)}${select('Entrance', J.MEDIA_ENTER, ov.enter)}${select('Hold', J.MEDIA_HOLD, ov.hold)}${select('Exit', J.MEDIA_EXIT, ov.exit)}${select('Treatment', J.MEDIA_TREAT, ov.treat)}${select('Transition', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="Reroll this cut">${ICON.dice}</button><button class="icon ghost lock" title="Lock this cut" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>Loop video</label><label class="media-video-duration">Video duration (s)<input type="number" min="0.04" max="3600" step="0.01" placeholder="Auto" value="${ov.videoDuration ?? ''}" aria-label="${i + 1} cut video duration (s)"></label>` : ''}</div>`;
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1} cut start time (s)">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('Display mode', J.MEDIA_LAYOUT, ov.layout)}${select('Entrance', J.MEDIA_ENTER, ov.enter)}${select('Hold', J.MEDIA_HOLD, ov.hold)}${select('Exit', J.MEDIA_EXIT, ov.exit)}${select('Treatment', J.MEDIA_TREAT, ov.treat)}${select('Transition', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="Reroll this cut">${ICON.dice}</button><button class="icon ghost lock" title="Lock this cut" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="Remove cut ${i + 1}">Remove</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>Loop video</label><label class="media-video-duration">Video duration (s)<input type="number" min="0.04" max="3600" step="0.01" placeholder="Auto" value="${ov.videoDuration ?? ''}" aria-label="${i + 1} cut video duration (s)"></label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>Chroma key</label><label>Color<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1} cut chroma key color" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.media-cut-file').addEventListener('change', e => { mediaOv(i, { itemId: e.target.value || null }, layer); replan(); });
@@ -30883,6 +30912,7 @@ function renderMediaLines() {
     }
     li.querySelector('.dice').addEventListener('click', () => rerollMediaCut(layer, i));
     li.querySelector('.lock').addEventListener('click', () => toggleMediaCutLock(layer, i));
+    li.querySelector('.remove-media-cut').addEventListener('click', () => removeMediaCut(i, layer));
     ol.appendChild(li); S.mediaLineEls.push(li);
   });
   addButton(S.plan[layer].cuts.length);
@@ -31240,7 +31270,7 @@ async function runExport(kind) {
 /* ---------------- tap sync ---------------- */
 function startTap() {
   const layer = activeMediaLayer();
-  if (!(layer ? S.plan[layer].cuts.length : S.plan.lines.length)) return;
+  if (!(layer ? S.plan[layer].cuts.length || S.project[layer].loop : S.plan.lines.length)) return;
   S.tap = { i: 0, layer, append: !!layer && S.project[layer].loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
   $('tapHint').textContent = S.tap.append ? 'Each tap adds a cut with no image. Continue until you stop.' : 'Press Space or the button when each lyric line or media cut starts.';
@@ -31349,7 +31379,7 @@ function bind() {
     replan();
   });
   $('mediaCutCount').addEventListener('change', e => {
-    const layer = activeMediaLayer(), m = S.project[layer], count = J.clamp(Math.floor(+e.target.value || 0), 1, 1000);
+    const layer = activeMediaLayer(), m = S.project[layer], count = J.clamp(Math.floor(+e.target.value || 0), 0, 1000);
     if (count !== S.plan[layer].cuts.length) {
       freezeMediaCuts(layer);
       for (let i = m.cutCount; i < count; i++) m.cutOverrides[i] = { itemId: null };

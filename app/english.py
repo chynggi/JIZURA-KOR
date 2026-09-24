@@ -384,6 +384,7 @@ FORK_UI = {
     '手動で追加したカットでは素材を個別に指定します': 'Choose a file for each manually added cut',
     '${index + 1}番目にカットを追加': 'Insert cut at position ${index + 1}',
     '＋ カットを追加': '+ Add cut',
+    '${i + 1}カット目を削除': 'Remove cut ${i + 1}',
     '${i + 1}カット目の素材': 'File for cut ${i + 1}',
     'タップするたびに画像無しのカットを追加します。終了するまで続けられます。': 'Each tap adds a cut with no image. Continue until you stop.',
     '前景': 'Foreground', '角度': 'Rotation', 'クロマキー': 'Chroma key',
