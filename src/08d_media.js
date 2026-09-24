@@ -75,8 +75,8 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
       layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
-      zoom: ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : reroll ? rng.pick([100, 110, 125, 140, 160]) : 100,
-      focus: J.MEDIA_FOCUS[ov.focus] ? ov.focus : reroll ? rng.pick(Object.keys(J.MEDIA_FOCUS)) : 'mc',
+      zoom: item.type === 'image' ? 100 : ov.zoom != null && ov.zoom !== '' && isFinite(+ov.zoom) ? J.clamp(+ov.zoom, 100, 300) : reroll ? rng.pick([100, 110, 125, 140, 160]) : 100,
+      focus: item.type === 'image' ? 'mc' : J.MEDIA_FOCUS[ov.focus] ? ov.focus : reroll ? rng.pick(Object.keys(J.MEDIA_FOCUS)) : 'mc',
       videoLoop: item.type === 'video' && ov.videoLoop === true,
       chromaKey: item.type === 'video' && ov.chromaKey === true,
       chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00',
@@ -84,6 +84,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
         cx: +ov.placement.cx, cy: +ov.placement.cy, w: +ov.placement.w,
         h: Number.isFinite(+ov.placement.h) && ov.placement.h != null ? +ov.placement.h : undefined,
         lockAspect: ov.placement.lockAspect !== false,
+        angle: item.type === 'image' && ov.placement.angle != null && Number.isFinite(+ov.placement.angle) ? J.clamp(+ov.placement.angle, -180, 180) : 0,
       } : null, seed };
   });
   for (let i = 1; i < cuts.length; i++) {
@@ -264,6 +265,7 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const focus = J.mediaFocusPoint(cut.focus, w, h);
   ctx.save(); ctx.globalAlpha = alpha;
   ctx.translate(placement ? (placement.x + placement.w / 2) * w + dx : w / 2 + dx, placement ? (placement.y + placement.h / 2) * h : h / 2);
+  if (placement && cut.type === 'image') ctx.rotate((cut.placement.angle || 0) * Math.PI / 180);
   if (!placement) ctx.translate(focus.x, focus.y);
   ctx.scale(z, z);
   if (!placement) ctx.translate(-focus.x, -focus.y);

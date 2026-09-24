@@ -149,7 +149,7 @@ function draw() {
   previewCuts.forEach(cut => { cut.area = S.areaEdit.draft; });
   const edit = S.areaEdit, mediaCut = edit && edit.kind !== 'lyric' && S.plan[edit.kind].cuts[edit.index];
   const previousMedia = mediaCut && { placement: mediaCut.placement, zoom: mediaCut.zoom, hold: mediaCut.hold, enter: mediaCut.enter, exit: mediaCut.exit, trans: mediaCut.trans };
-  if (mediaCut) Object.assign(mediaCut, { placement: { cx: edit.draft.x + edit.draft.w / 2, cy: edit.draft.y + edit.draft.h / 2, w: edit.draft.w, h: edit.draft.h, lockAspect: edit.lockAspect }, zoom: 100, hold: 'still', enter: 'cut', exit: 'cut', trans: undefined });
+  if (mediaCut) Object.assign(mediaCut, { placement: { cx: edit.draft.x + edit.draft.w / 2, cy: edit.draft.y + edit.draft.h / 2, w: edit.draft.w, h: edit.draft.h, lockAspect: edit.lockAspect, angle: edit.type === 'image' ? edit.angle : 0 }, zoom: 100, hold: 'still', enter: 'cut', exit: 'cut', trans: undefined });
   try { S.renderer.frame(ctx, S.plan, S.t, { scale: c.width / S.plan.W, fast: S.playing && S.slow, noForeground: !!edit && edit.kind === 'media' }); }
   finally { previewCuts.forEach((cut, i) => { cut.area = previousAreas[i]; }); if (mediaCut) Object.assign(mediaCut, previousMedia); }
   const dt = performance.now() - t0;
@@ -287,7 +287,7 @@ function updateCutInfo() {
     cut.bg && cut.bg !== 'none' ? chip('b', '背景', n(J.BG, cut.bg)) : '',
     cut.cam && cut.cam !== 'push' ? chip('c', 'カメラ', n(J.CAMERA, cut.cam)) : '',
     cut.trans ? chip('c', 'つなぎ', n(J.TRANS, cut.trans)) : '',
-  ] : []).concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '前景' : '背景', escapeHtml(mediaCut.name)), chip('l', '表示', J.MEDIA_LAYOUT[mediaCut.layout]), chip('e', '登場', J.MEDIA_ENTER[mediaCut.enter]), chip('h', '保持', J.MEDIA_HOLD[mediaCut.hold]), chip('x', '退場', J.MEDIA_EXIT[mediaCut.exit]), chip('t', '加工', J.MEDIA_TREAT[mediaCut.treat]), mediaCut.trans ? chip('c', 'つなぎ', J.mediaTransOptions()[mediaCut.trans]) : '', chip('c', 'ズーム', `${mediaCut.zoom}%・${J.MEDIA_FOCUS[mediaCut.focus]}`), mediaCut.chromaKey ? chip('c', 'クロマキー', mediaCut.chromaColor) : ''] : [])).join('');
+  ] : []).concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '前景' : '背景', escapeHtml(mediaCut.name)), chip('l', '表示', J.MEDIA_LAYOUT[mediaCut.layout]), chip('e', '登場', J.MEDIA_ENTER[mediaCut.enter]), chip('h', '保持', J.MEDIA_HOLD[mediaCut.hold]), chip('x', '退場', J.MEDIA_EXIT[mediaCut.exit]), chip('t', '加工', J.MEDIA_TREAT[mediaCut.treat]), mediaCut.trans ? chip('c', 'つなぎ', J.mediaTransOptions()[mediaCut.trans]) : '', mediaCut.type === 'video' ? chip('c', 'ズーム', `${mediaCut.zoom}%・${J.MEDIA_FOCUS[mediaCut.focus]}`) : mediaCut.placement && mediaCut.placement.angle ? chip('c', '角度', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', 'クロマキー', mediaCut.chromaColor) : ''] : [])).join('');
 }
 
 /* ---------------- line list ---------------- */
@@ -347,11 +347,13 @@ function positionAreaEditor() {
 function showAreaDraft() {
   const edit = S.areaEdit, area = edit && edit.draft, rect = $('areaEditRect'), media = !!edit && edit.kind !== 'lyric';
   rect.hidden = !area;
-  if (area) Object.assign(rect.style, { left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%` });
+  if (area) Object.assign(rect.style, { left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%`, transform: media && edit.type === 'image' ? `rotate(${edit.angle}deg)` : 'none' });
   $('areaEditOverlay').classList.toggle('media-edit', media);
   $('areaEditOverlay').querySelector('.area-edit-hint').textContent = media ? '素材をドラッグして移動・四隅をドラッグしてサイズ変更' : 'ドラッグして歌詞の表示範囲を指定';
   $('mediaAreaSizeControls').hidden = !media;
   if (media && area) { $('mediaAreaAspectLock').checked = edit.lockAspect; $('mediaAreaWidth').value = String(Math.round(area.w * 1000) / 10); $('mediaAreaHeight').value = String(Math.round(area.h * 1000) / 10); }
+  $('mediaAreaAngleField').hidden = !media || edit.type !== 'image';
+  if (media && edit.type === 'image') $('mediaAreaAngle').value = String(edit.angle);
   $('areaApplyOne').textContent = media ? 'このカットだけに適用' : 'この行だけに適用';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
@@ -378,7 +380,7 @@ function openMediaEditor(index, layer) {
   const draft = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
   if (!draft) return;
   pause();
-  S.areaEdit = { kind: layer, index, oldTime: S.t, draft, ratio: S.plan.W / S.plan.H * sh / sw, lockAspect: !cut.placement || cut.placement.lockAspect !== false, drag: null };
+  S.areaEdit = { kind: layer, index, oldTime: S.t, draft, ratio: S.plan.W / S.plan.H * sh / sw, lockAspect: !cut.placement || cut.placement.lockAspect !== false, type: cut.type, angle: cut.type === 'image' ? cut.placement && cut.placement.angle || 0 : 0, drag: null };
   seek(cut.start + Math.min(0.5, Math.max(0.001, (cut.end - cut.start) / 2)));
   $('areaEditTitle').textContent = `${index + 1}カット目「${cut.name}」の配置・サイズ`;
   $('areaEditOverlay').hidden = false; $('areaEditControls').hidden = false;
@@ -395,7 +397,10 @@ function applyAreaEditor(following) {
   const { kind, index, draft } = S.areaEdit;
   remember();
   if (kind !== 'lyric') {
-    for (let i = index; i < (following ? S.plan[kind].cuts.length : index + 1); i++) mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect }, zoom: 100 }, kind);
+    for (let i = index; i < (following ? S.plan[kind].cuts.length : index + 1); i++) {
+      const target = S.plan[kind].cuts[i];
+      mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect, angle: target.type === 'image' ? S.areaEdit.angle : 0 }, ...(target.type === 'image' ? { zoom: undefined, focus: undefined } : { zoom: 100 }) }, kind);
+    }
   } else {
     for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: draft });
   }
@@ -423,7 +428,10 @@ function moveMediaDraft(ev) {
     edit.draft = { x: J.clamp(a.x + dx, -a.w / 2, 1 - a.w / 2), y: J.clamp(a.y + dy, -a.h / 2, 1 - a.h / 2), w: a.w, h: a.h };
   } else {
     const east = drag.handle.includes('e'), south = drag.handle.includes('s');
-    const deltaX = dx * (east ? 1 : -1), deltaY = dy * (south ? 1 : -1);
+    const radians = edit.angle * Math.PI / 180, box = $('areaEditOverlay').getBoundingClientRect();
+    const localX = (dx * box.width * Math.cos(radians) + dy * box.height * Math.sin(radians)) / box.width;
+    const localY = (-dx * box.width * Math.sin(radians) + dy * box.height * Math.cos(radians)) / box.height;
+    const deltaX = localX * (east ? 1 : -1), deltaY = localY * (south ? 1 : -1);
     const w = edit.lockAspect ? J.clamp(a.w + (Math.abs(deltaX) > Math.abs(deltaY / edit.ratio) ? deltaX : deltaY / edit.ratio), 0.005, Math.min(4, 4 / edit.ratio)) : J.clamp(a.w + deltaX, 0.005, 4);
     const h = edit.lockAspect ? w * edit.ratio : J.clamp(a.h + deltaY, 0.005, 4);
     const x = east ? a.x : a.x + a.w - w, y = south ? a.y : a.y + a.h - h;
@@ -503,16 +511,18 @@ function renderMediaLines() {
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
     const sw = source && (source.videoWidth || source.naturalWidth), sh = source && (source.videoHeight || source.naturalHeight);
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
-    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}カット目の配置とサイズを編集"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%"></i></span>配置・サイズを編集</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">自動配置に戻す</button>' : ''}</span>`;
+    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}カット目の配置とサイズを編集"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.type === 'image' && cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>配置・サイズを編集</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">自動配置に戻す</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span><span class="media-zoom-controls"><label>ズーム率（％）<input class="media-zoom" type="number" min="100" max="300" step="1" placeholder="おまかせ" value="${zoomValue}" aria-label="${i + 1}カット目のズーム率"></label><label>ズーム対象${select('ズーム対象', J.MEDIA_FOCUS, ov.focus)}</label></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label>` : ''}</div>`;
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒"><span class="txt" title="${escapeHtml(cut.name)}">${escapeHtml(cut.name)}</span>${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button></span>${cut.type === 'video' ? `<span class="media-zoom-controls"><label>ズーム率（％）<input class="media-zoom" type="number" min="100" max="300" step="1" placeholder="おまかせ" value="${zoomValue}" aria-label="${i + 1}カット目のズーム率"></label><label>ズーム対象${select('ズーム対象', J.MEDIA_FOCUS, ov.focus)}</label></span>` : ''}${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>クロマキー合成</label><label>色<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}カット目のクロマキー色" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.txt').addEventListener('click', () => seek(cut.start + 0.001));
     ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].forEach((key, n) => li.querySelectorAll('select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || undefined }); replan(); }));
     if (i === 0) li.querySelector('select[aria-label="つなぎ"]').disabled = true;
-    li.querySelector('.media-zoom').addEventListener('change', e => { mediaOv(i, { zoom: e.target.value === '' ? undefined : J.clamp(+e.target.value || 100, 100, 300) }); replan(); });
-    li.querySelector('select[aria-label="ズーム対象"]').addEventListener('change', e => { mediaOv(i, { focus: e.target.value || undefined }); replan(); });
+    if (cut.type === 'video') {
+      li.querySelector('.media-zoom').addEventListener('change', e => { mediaOv(i, { zoom: e.target.value === '' ? undefined : J.clamp(+e.target.value || 100, 100, 300) }); replan(); });
+      li.querySelector('select[aria-label="ズーム対象"]').addEventListener('change', e => { mediaOv(i, { focus: e.target.value || undefined }); replan(); });
+    }
     const videoLoop = li.querySelector('.media-video-loop input');
     if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
     const placementOpen = li.querySelector('.foreground-placement-open');
@@ -961,6 +971,7 @@ function bind() {
   $('mediaAreaAspectLock').addEventListener('change', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric') return; S.areaEdit.lockAspect = e.target.checked; if (e.target.checked) setMediaDraftSize(S.areaEdit.draft.w, S.areaEdit.draft.w * S.areaEdit.ratio); else showAreaDraft(); });
   $('mediaAreaWidth').addEventListener('change', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric') return; const w = J.clamp(+e.target.value / 100, 0.005, 4); setMediaDraftSize(w, S.areaEdit.lockAspect ? w * S.areaEdit.ratio : S.areaEdit.draft.h); });
   $('mediaAreaHeight').addEventListener('change', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric') return; const h = J.clamp(+e.target.value / 100, 0.005, 4); setMediaDraftSize(S.areaEdit.lockAspect ? h / S.areaEdit.ratio : S.areaEdit.draft.w, h); });
+  $('mediaAreaAngle').addEventListener('input', e => { if (!S.areaEdit || S.areaEdit.type !== 'image' || e.target.value === '') return; S.areaEdit.angle = J.clamp(+e.target.value || 0, -180, 180); showAreaDraft(); });
   $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);

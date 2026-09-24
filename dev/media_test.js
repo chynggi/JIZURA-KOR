@@ -51,6 +51,14 @@ assert.equal(tinyPlacement.w, 0.005, 'placement may be smaller than the previous
 const backgroundPlacement = J.planMedia({ seed: 1, media: { items: [{ id: 'bg', name: 'bg.png', type: 'image' }], cutOverrides: { 0: { placement: { cx: 0.4, cy: 0.6, w: 1.5, h: 0.3, lockAspect: false } } } } }, { duration: 4, lines: [] });
 assert.equal(backgroundPlacement.cuts[0].placement.lockAspect, false);
 assert.equal(backgroundPlacement.cuts[0].placement.w, 1.5);
+const rotated = J.planMedia({ seed: 1, foreground: { items: [{ id: 'image', name: 'image.png', type: 'image' }], cutOverrides: { 0: { placement: { cx: 0.5, cy: 0.5, w: 0.4, angle: 90 }, zoom: 225, focus: 'tr' } } } }, { duration: 4, lines: [] }, undefined, 'foreground');
+assert.equal(rotated.cuts[0].placement.angle, 90);
+assert.equal(rotated.cuts[0].zoom, 100, 'legacy image zoom is ignored');
+assert.equal(rotated.cuts[0].focus, 'mc', 'legacy image focus is ignored');
+J.mediaAssets.set('image', { element: { naturalWidth: 160, naturalHeight: 90 } });
+const rotations = [], context2d = { canvas: { width: 1280, height: 720 }, save() {}, restore() {}, translate() {}, scale() {}, rotate: radians => rotations.push(radians), drawImage() {} };
+assert.equal(J.drawMediaCut(context2d, rotated.cuts[0], 1), true);
+assert.ok(Math.abs(rotations[0] - Math.PI / 2) < 1e-9, 'image rotation is applied to the canvas renderer');
 const loop = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), loop: true, cutCount: 5, cutOverrides: { 0: { layout: 'cover' }, 2: { layout: 'contain' } } } }, { duration: 8, lines: [] });
 assert.deepEqual(Array.from(loop.cuts.map(c => c.itemId)), ['a', 'b', 'a', 'b', 'a']);
 assert.equal(loop.cuts[2].layout, 'contain');
@@ -66,7 +74,7 @@ const tapped = J.planMedia({ seed: 1, media: { items, loop: true, cutCount: 1, t
 assert.equal(tapped.cuts.length, 1, 'tap sync may build fewer cuts than uploaded assets');
 assert.equal(tapped.cuts[0].start, 12);
 assert.equal(tapped.duration, 16, 'late taps extend the timeline');
-const zoomed = J.planMedia({ seed: 1, media: { items: items.slice(0, 1), loop: true, cutCount: 2, cutOverrides: { 0: { zoom: 225, focus: 'tr' }, 1: { zoom: 100, focus: 'bl' } } } }, { duration: 8, lines: [] });
+const zoomed = J.planMedia({ seed: 1, media: { items: [{ id: 'v', name: 'v.webm', type: 'video', duration: 4 }], loop: true, cutCount: 2, cutOverrides: { 0: { zoom: 225, focus: 'tr' }, 1: { zoom: 100, focus: 'bl' } } } }, { duration: 8, lines: [] });
 assert.equal(zoomed.cuts[0].zoom, 225);
 assert.equal(zoomed.cuts[0].focus, 'tr');
 assert.equal(zoomed.cuts[1].zoom, 100);
