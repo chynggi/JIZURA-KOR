@@ -23,6 +23,7 @@
       <div class="sec">
         <div class="sec-h"><h2>가사</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사(1행 = 1프레이즈)"></textarea>
+        <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
             <li>한 행이 한 프레이즈입니다. 빈 행은 약간의 간격을 둡니다</li>
@@ -71,7 +72,7 @@
 
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="미리보기">
-      <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="viewMsg" class="overlay-msg" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
+      <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
       <div class="transport">
         <button id="btnPlay" class="play" aria-label="재생">▶</button>
         <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><span id="timeDur" class="tc muted">00:00.00</span>
@@ -123,6 +124,7 @@
             <label class="field">화면 비율<select id="eAspect"><option value="16:9">16:9</option><option value="9:16">9:16 세로</option><option value="4:3">4:3</option><option value="3:4">3:4 세로</option><option value="1:1">1:1</option><option value="4:5">4:5 세로</option><option value="21:9">21:9</option></select></label>
             <label class="field">해상도<select id="eRes"><option value="720">720p</option><option value="1080">1080p</option><option value="1440">1440p</option><option value="2160">4K</option></select></label>
             <label class="field">fps<select id="eFps"><option>24</option><option>30</option><option>60</option></select></label>
+            <label class="field field-wide">배경<select id="eKey"><option value="off">일반(스타일 배경)</option><option value="green">그린 스크린(합성용)</option><option value="black">블랙 배경(합성용)</option></select></label>
           </div>
           <div class="outbtns"><button id="eMP4" class="primary">MP4 내보내기</button></div>
           <button class="terms-open linkish">내보낸 동영상의 권리에 대해</button>
@@ -191,7 +193,9 @@
           <label class="field">해상도<select id="outRes"><option value="720">720p</option><option value="1080">1080p</option><option value="1440">1440p</option><option value="2160">4K</option></select></label>
           <label class="field">fps<select id="outFps"><option>24</option><option>30</option><option>60</option></select></label>
           <label class="field">화질<select id="outQuality"><option value="standard">표준</option><option value="high">높음</option><option value="max">최고</option></select></label>
+          <label class="field field-wide">배경<select id="outKey"><option value="off">일반(스타일 배경)</option><option value="green">그린 스크린(합성용)</option><option value="black">블랙 배경(합성용)</option></select></label>
         </div>
+        <p class="note key-note">그린 스크린/블랙 배경으로 하면 흰 글자와 연출만 단색 배경 위에 그립니다(배경 무늬·종이 질감·입자·주변 감광은 들어가지 않습니다). 미리보기에도 그대로 반영됩니다. 그린 스크린은 영상 편집 프로그램의 크로마 키로, 블랙 배경은 「스크린」 합성이나 휘도 키로 빼서 다른 영상 위에 겹칠 수 있습니다.</p>
         <label class="row" style="gap:6px;margin-top:10px"><input id="outAudio" type="checkbox" checked> 곡을 영상에 포함</label>
         <div class="outbtns">
           <button id="btnMP4" class="primary">MP4 내보내기</button>

@@ -65,8 +65,16 @@ function audioLike() {
   if (T.bpm > 0) return { beats: J.beatGrid(T.bpm, T.beatOffset || 0, 600) };
   return null;
 }
+/* 自動判定のとき、判定結果を言語欄の横に出す */
+function langNote() {
+  const el = $('langNote'); if (!el) return;
+  el.textContent = (S.project.lang || 'auto') === 'auto' ? '→ ' + J.LANG_LABEL[J.resolveLang(S.project)] : '';
+  if (langNote.last !== undefined && langNote.last !== J.lang) { try { renderFontRoles(); } catch (e) {} }   // font menus show the language's faces
+  langNote.last = J.lang;
+}
 function replan() {
   S.plan = J.plan(S.project, audioLike());
+  langNote();
   if (S.t > S.plan.duration) S.t = 0;
   renderLines(); sizeViewport(); drawTimeline(); updateTimeUI();
   S.need = true; autosave(); ensureFonts(); drawSwatch(); showNow();
@@ -320,7 +328,10 @@ function drawStyleGrid() {
   });
 }
 function fontSelectOptions(sel) {
-  return '<option value="">스타일 기본값</option>' + Object.entries(J.FONTS).map(([k, f]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${escapeHtml(f.label)}</option>`).join('');
+  return '<option value="">스타일 기본값</option>' + Object.entries(J.FONTS).map(([k, f]) => {
+    const g = J.faceOf ? J.faceOf(k) : f, alt = g.label && g.label !== f.label ? ' → ' + g.label : '';   // the face actually used for the lyric language
+    return `<option value="${k}" ${sel === k ? 'selected' : ''}>${escapeHtml(f.label + alt)}</option>`;
+  }).join('');
 }
 function renderFontRoles() {
   const box = $('fontRoles'); box.innerHTML = '';
@@ -547,6 +558,11 @@ function syncOut() {
   $('outAspect').value = S.project.aspect; $('outRes').value = String(S.project.res); $('outFps').value = String(S.project.fps);
   $('eAspect').value = S.project.aspect; $('eRes').value = String(S.project.res); $('eFps').value = String(S.project.fps);
   $('outQuality').value = S.project.quality || 'high'; $('outAudio').checked = S.project.includeAudio !== false;
+  const k = J.keyMode(S.project) || 'off';
+  $('outKey').value = k; $('eKey').value = k;
+  const kb = $('keyBadge');
+  kb.hidden = k === 'off';
+  if (k !== 'off') kb.innerHTML = `<i style="background:${J.KEY_BG[k]}"></i>${k === 'green' ? '그린 스크린' : '블랙 배경'}`;
 }
 async function codecNote() {
   const [w, h] = J.outputSize(S.project);
@@ -556,7 +572,10 @@ async function codecNote() {
   if (!vc) $('eMP4').title = '이 브라우저는 MP4 내보내기를 지원하지 않습니다(Chrome / Edge 권장)';
 }
 const EXP_BTNS = ['btnMP4', 'btnPNG', 'btnPNGA', 'eMP4'];
-function baseName() { return ((S.project.title || 'jizura').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'jizura'); }
+function baseName() {
+  const k = J.keyMode(S.project);
+  return ((S.project.title || 'jizura').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'jizura') + (k ? (k === 'green' ? '_greenback' : '_blackback') : '');
+}
 async function runExport(kind) {
   if (S.exporting) return;
   pause();
@@ -621,12 +640,19 @@ function syncUI() {
   $('snap').checked = !!S.project.timing.snap;
   document.querySelectorAll('.wa-toggle').forEach(el => { el.checked = S.project.wa !== false; });
   document.querySelectorAll('.extra-toggle').forEach(el => { el.checked = S.project.extra === true; });
+  $('lyricLang').value = J.LANG_LABEL[S.project.lang] ? S.project.lang : 'auto'; langNote();
   renderFontRoles(); renderColors(); renderFx(); renderTech(); syncOut(); drawStyleGrid();
 }
 
 /* ---------------- wiring ---------------- */
 function bind() {
   $('lyrics').addEventListener('input', e => { S.project.lyrics = e.target.value; replanSoon(260); });
+  $('lyricLang').addEventListener('change', e => {
+    remember();
+    S.project.lang = e.target.value; replan(); renderFontRoles(); commit(); flushSave();
+    const l = J.resolveLang(S.project);
+    toast((S.project.lang === 'auto' ? '가사 언어: 자동 판정 → ' : '가사 언어: ') + J.LANG_LABEL[l]);
+  });
   $('songTitle').addEventListener('input', e => { S.project.title = e.target.value; replanSoon(300); });
   $('songArtist').addEventListener('input', e => { S.project.artist = e.target.value; replanSoon(300); });
   $('btnSyntax').addEventListener('click', e => { const s = $('syntax'); s.hidden = !s.hidden; e.target.setAttribute('aria-expanded', String(!s.hidden)); });
@@ -635,17 +661,7 @@ function bind() {
   $('lineScale').addEventListener('change', e => { S.project.timing.lineScale = J.clamp(parseFloat(e.target.value) || 1, 0.3, 4); replan(); });
   $('snap').addEventListener('change', e => { S.project.timing.snap = e.target.checked; replan(); });
   $('btnResetTimes').addEventListener('click', () => { S.project.timing.lineTimes = {}; replan(); });
-  $('audioFile').addEventListener('change', async e => {
-    const f = e.target.files && e.target.files[0]; if (!f) return;
-    $('audioName').textContent = '분석 중…';
-    try {
-      pause();
-      S.audio = await J.analyzeAudio(f);
-      $('audioName').textContent = `${f.name} (${J.fmtTime(S.audio.duration)} · 약 ${S.audio.bpm}BPM)`;
-      S.project.timing.snap = true;
-      syncUI(); replan();
-    } catch (err) { $('audioName').textContent = '불러올 수 없습니다: ' + err.message; S.audio = null; }
-  });
+  $('audioFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadAudioFile(f); });
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
@@ -710,6 +726,11 @@ function bind() {
   ['outRes', 'eRes'].forEach(id => $(id).addEventListener('change', e => { S.project.res = +e.target.value; syncOut(); autosave(); codecNote(); }));
   ['outFps', 'eFps'].forEach(id => $(id).addEventListener('change', e => { S.project.fps = +e.target.value; syncOut(); replan(); codecNote(); }));
   $('outQuality').addEventListener('change', e => { S.project.quality = e.target.value; autosave(); });
+  ['outKey', 'eKey'].forEach(id => $(id).addEventListener('change', e => {
+    S.project.keyBg = e.target.value; syncOut(); replan(); flushSave();
+    const k = J.keyMode(S.project);
+    toast(k ? `배경: ${k === 'green' ? '그린 스크린' : '블랙 배경'}(흰 글자와 연출만)` : '배경: 일반(스타일 색 배합)');
+  }));
   $('outAudio').addEventListener('change', e => { S.project.includeAudio = e.target.checked; autosave(); });
   $('btnMP4').addEventListener('click', () => runExport('mp4'));
   $('btnPNG').addEventListener('click', () => runExport('png'));
@@ -755,6 +776,19 @@ function bind() {
   if (window.ResizeObserver) new ResizeObserver(() => { sizeViewport(); drawTimeline(); }).observe($('viewport'));
 }
 
+/* song file -> beat analysis (file input, or a host such as the After Effects panel) */
+async function loadAudioFile(f) {
+  $('audioName').textContent = '분석 중…';
+  try {
+    pause();
+    S.audio = await J.analyzeAudio(f);
+    $('audioName').textContent = `${f.name} (${J.fmtTime(S.audio.duration)} · 약 ${S.audio.bpm}BPM)`;
+    S.project.timing.snap = true;
+    syncUI(); replan();
+    return true;
+  } catch (err) { $('audioName').textContent = '불러올 수 없습니다: ' + err.message; S.audio = null; return false; }
+}
+
 /* ---------------- boot ---------------- */
 function boot() {
   S.project = loadLocal();
@@ -768,4 +802,6 @@ function boot() {
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;
+// hooks for hosts that embed the app (the After Effects CEP panel)
+J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview };
 })();

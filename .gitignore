@@ -1,2 +1,3 @@
 .commandcode
 dev/
+__pycache__/
