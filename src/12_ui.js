@@ -354,6 +354,7 @@ function showAreaDraft() {
   if (media && area) { $('mediaAreaAspectLock').checked = edit.lockAspect; $('mediaAreaWidth').value = String(Math.round(area.w * 1000) / 10); $('mediaAreaHeight').value = String(Math.round(area.h * 1000) / 10); }
   $('mediaAreaAngleField').hidden = !media;
   if (media) $('mediaAreaAngle').value = String(edit.angle);
+  $('areaResetFull').hidden = !edit || media;
   $('areaApplyOne').textContent = media ? 'このカットだけに適用' : 'この行だけに適用';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
@@ -401,7 +402,8 @@ function applyAreaEditor(following) {
       mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect, angle: S.areaEdit.angle }, zoom: undefined, focus: undefined }, kind);
     }
   } else {
-    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: draft });
+    const full = draft.x === 0 && draft.y === 0 && draft.w === 1 && draft.h === 1;
+    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: full ? undefined : draft });
   }
   S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
   replan(); commit();
@@ -995,6 +997,7 @@ function bind() {
   $('mediaAreaWidth').addEventListener('change', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric') return; const w = J.clamp(+e.target.value / 100, 0.005, 4); setMediaDraftSize(w, S.areaEdit.lockAspect ? w * S.areaEdit.ratio : S.areaEdit.draft.h); });
   $('mediaAreaHeight').addEventListener('change', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric') return; const h = J.clamp(+e.target.value / 100, 0.005, 4); setMediaDraftSize(S.areaEdit.lockAspect ? h / S.areaEdit.ratio : S.areaEdit.draft.w, h); });
   $('mediaAreaAngle').addEventListener('input', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric' || e.target.value === '') return; S.areaEdit.angle = J.clamp(+e.target.value || 0, -180, 180); showAreaDraft(); });
+  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; showAreaDraft(); });
   $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);

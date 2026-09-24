@@ -434,7 +434,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="プレビュー">
       <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="areaEditOverlay" class="area-edit-overlay" aria-label="表示位置とサイズを編集" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span></div><span class="area-edit-hint">ドラッグして歌詞の表示範囲を指定</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
-      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>アスペクト比を固定</label><label>幅（画面比％）<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>高さ（画面比％）<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">角度（°）<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaApplyOne" class="primary" disabled>この行だけに適用</button><button id="areaApplyFollowing" disabled>これ以降全てに適用</button><button id="areaCancel" class="ghost">キャンセル</button></div>
+      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>アスペクト比を固定</label><label>幅（画面比％）<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>高さ（画面比％）<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">角度（°）<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">全域へリセット</button><button id="areaApplyOne" class="primary" disabled>この行だけに適用</button><button id="areaApplyFollowing" disabled>これ以降全てに適用</button><button id="areaCancel" class="ghost">キャンセル</button></div>
       <div class="transport">
         <button id="btnPlay" class="play" aria-label="再生">▶</button>
         <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><span id="timeDur" class="tc muted">00:00.00</span>
@@ -29544,6 +29544,7 @@ function showAreaDraft() {
   if (media && area) { $('mediaAreaAspectLock').checked = edit.lockAspect; $('mediaAreaWidth').value = String(Math.round(area.w * 1000) / 10); $('mediaAreaHeight').value = String(Math.round(area.h * 1000) / 10); }
   $('mediaAreaAngleField').hidden = !media;
   if (media) $('mediaAreaAngle').value = String(edit.angle);
+  $('areaResetFull').hidden = !edit || media;
   $('areaApplyOne').textContent = media ? 'このカットだけに適用' : 'この行だけに適用';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
@@ -29591,7 +29592,8 @@ function applyAreaEditor(following) {
       mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect, angle: S.areaEdit.angle }, zoom: undefined, focus: undefined }, kind);
     }
   } else {
-    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: draft });
+    const full = draft.x === 0 && draft.y === 0 && draft.w === 1 && draft.h === 1;
+    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: full ? undefined : draft });
   }
   S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
   replan(); commit();
@@ -30185,6 +30187,7 @@ function bind() {
   $('mediaAreaWidth').addEventListener('change', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric') return; const w = J.clamp(+e.target.value / 100, 0.005, 4); setMediaDraftSize(w, S.areaEdit.lockAspect ? w * S.areaEdit.ratio : S.areaEdit.draft.h); });
   $('mediaAreaHeight').addEventListener('change', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric') return; const h = J.clamp(+e.target.value / 100, 0.005, 4); setMediaDraftSize(S.areaEdit.lockAspect ? h / S.areaEdit.ratio : S.areaEdit.draft.w, h); });
   $('mediaAreaAngle').addEventListener('input', e => { if (!S.areaEdit || S.areaEdit.kind === 'lyric' || e.target.value === '') return; S.areaEdit.angle = J.clamp(+e.target.value || 0, -180, 180); showAreaDraft(); });
+  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; showAreaDraft(); });
   $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);
