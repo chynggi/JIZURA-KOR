@@ -389,7 +389,7 @@ FORK_UI = {
     '前景': 'Foreground', '角度': 'Rotation', 'クロマキー': 'Chroma key',
     '表示方法': 'Display mode',
     "chip('l', '表示',": "chip('l', 'Display',",
-    '<option value="">おまかせ</option>': '<option value="">Auto</option>',
+    '<option value="">自動</option>': '<option value="">Auto</option>',
     '<label>色<input': '<label>Color<input',
     'フォントを読み込めませんでした': 'Could not load fonts',
     'プロジェクトを読み込めませんでした': 'Could not load project',
