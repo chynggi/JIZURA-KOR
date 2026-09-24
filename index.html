@@ -3706,7 +3706,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
       zoom: 100, focus: 'mc',
-      videoLoop: item.type === 'video' && ov.videoLoop === true,
+      videoLoop: item.type === 'video' && ov.videoLoop !== false,
       chromaKey: item.type === 'video' && ov.chromaKey === true,
       chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00',
       placement: ov.placement && ['cx', 'cy', 'w'].every(k => Number.isFinite(+ov.placement[k])) ? {
