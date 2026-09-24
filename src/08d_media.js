@@ -60,8 +60,13 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
     if (assigned && Object.hasOwn(assigned, 'itemId')) return items.find(item => item.id === assigned.itemId) || null;
     return order.length ? order[i % order.length] : null;
   };
+  const videoDurationAt = i => {
+    const item = itemAt(i);
+    const setting = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {}).videoDuration;
+    return item && item.type === 'video' && setting != null && Number.isFinite(+setting) && +setting > 0 ? J.clamp(+setting, 0.04, 3600) : null;
+  };
   const manualEnd = Math.max(0, ...Object.entries(m.timing.lineTimes).filter(([i, t]) => +i < count && isFinite(+t)).map(([, t]) => +t + 4));
-  const duration = Math.max(lyricPlan.duration, audioDuration || 0,
+  let duration = Math.max(lyricPlan.duration, audioDuration || 0,
     manualEnd, lyricPlan.lines.length ? 0 : Array.from({ length: count }, (_, i) => itemAt(i)).reduce((n, x) => n + (x && x.type === 'video' ? J.clamp(+x.duration || 4, 1, 12) : 4), 0));
   const lyricCount = Math.min(count, lyricPlan.lines.length);
   const starts = Array.from({ length: count }, (_, i) => {
@@ -71,12 +76,19 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
     if (lyricCount) return lyricPlan.lines[lyricCount - 1].start + (duration - lyricPlan.lines[lyricCount - 1].start) * (i - lyricCount + 1) / (count - lyricCount + 1);
     return i * duration / Math.max(1, count);
   });
-  for (let i = 1; i < starts.length; i++) starts[i] = Math.max(starts[i], starts[i - 1] + 0.04);
+  const lastTail = count ? Math.max(0.04, duration - starts[count - 1]) : 0;
+  for (let i = 1; i < starts.length; i++) {
+    const minimum = starts[i - 1] + (m.timing.lineTimes[i] == null ? videoDurationAt(i - 1) || 0.04 : 0.04);
+    starts[i] = Math.max(starts[i], minimum);
+  }
+  if (count) duration = Math.max(duration, starts[count - 1] + (videoDurationAt(count - 1) ?? lastTail));
   const cuts = Array.from({ length: count }, (_, i) => {
     const item = itemAt(i), ov = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {});
     const seed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, m.seed, i, ov.seed | 0);
     const rng = J.rng(seed), reroll = ov.seed != null;
-    return { index: i, itemId: item ? item.id : null, name: item ? item.name : '画像無し', type: item ? item.type : null, start: starts[i], end: i + 1 < count ? Math.max(starts[i] + 0.04, starts[i + 1]) : duration,
+    const videoDuration = videoDurationAt(i);
+    const nextStart = i + 1 < count ? starts[i + 1] : duration;
+    return { index: i, itemId: item ? item.id : null, name: item ? item.name : '画像無し', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
       layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
@@ -275,16 +287,17 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   ctx.scale(z, z);
   if (!placement) ctx.translate(-focus.x, -focus.y);
   ctx.filter = ({ mono: 'grayscale(1)', sepia: 'sepia(1)', contrast: 'contrast(1.6)', blur: 'blur(8px)' })[cut.treat] || 'none';
-  const source = cut.type === 'video' && cut.chromaKey ? J.chromaSource(src, cut, sw, sh) : src;
+  const previewScale = options.previewEdit ? Math.min(1, w / sw, h / sh) : 1;
+  const source = cut.type === 'video' && cut.chromaKey ? J.chromaSource(src, cut, Math.max(1, Math.round(sw * previewScale)), Math.max(1, Math.round(sh * previewScale))) : src;
   ctx.drawImage(source, -fit[0] / 2, -fit[1] / 2, fit[0], fit[1]); ctx.restore();
   return true;
 };
-J.drawMedia = (ctx, plan, t, owner, layer = 'media') => {
+J.drawMedia = (ctx, plan, t, owner, layer = 'media', previewEdit = false) => {
   const cut = J.mediaAt(plan, t, layer); if (!cut || !J.mediaAssets.has(cut.itemId)) return false;
   const prev = cut.index > 0 ? plan[layer].cuts[cut.index - 1] : null;
   const next = plan[layer].cuts[cut.index + 1];
-  const active = prev && cut.trans && t - cut.start < cut.transDur && Math.abs(prev.end - cut.start) < 0.06 && J.mediaAssets.has(prev.itemId);
-  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !!cut.trans, noExit: !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06) });
+  const active = !previewEdit && prev && cut.trans && t - cut.start < cut.transDur && Math.abs(prev.end - cut.start) < 0.06 && J.mediaAssets.has(prev.itemId);
+  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !!cut.trans, noExit: !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06), previewEdit });
   const w = ctx.canvas.width, h = ctx.canvas.height;
   const canvas = key => {
     const c = owner ? (owner[key] || (owner[key] = document.createElement('canvas'))) : document.createElement('canvas');

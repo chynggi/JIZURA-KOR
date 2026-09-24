@@ -310,6 +310,8 @@ def replace_copy(source, glossary):
 # Fork UI text is translated before the original glossary so short common
 # words such as 歌詞 and 追加 cannot split a longer fork label in half.
 FORK_BODY = {
+    '>曲を削除</button>': '>Remove audio</button>',
+    '<code>\\</code> を制御文字の前に置くと、その文字を歌詞として表示（例：<code>\\*</code>・<code>\\/</code>・<code>\\|</code>・<code>\\!</code>・<code>\\#</code>・<code>\\[</code>・<code>\\\\</code>）': 'Place <code>\\</code> before a control character to display it literally (for example: <code>\\*</code>, <code>\\/</code>, <code>\\|</code>, <code>\\!</code>, <code>\\#</code>, <code>\\[</code>, <code>\\\\</code>)',
     '元に戻す（Ctrl+Z）': 'Undo (Ctrl+Z)',
     'やり直す（Ctrl+Shift+Z）': 'Redo (Ctrl+Shift+Z)',
     '↶ 元に戻す': '↶ Undo',
@@ -398,6 +400,11 @@ FORK_UI = {
     '動画をループ再生': 'Loop video', 'クロマキー合成': 'Chroma key',
     'カット目のクロマキー色': ' cut chroma key color',
     'このカットを再抽選': 'Reroll this cut', 'このカットをロック': 'Lock this cut',
+    'この行の表示エリアを編集': 'Edit this line display area',
+    'このカットの配置とサイズを編集': 'Edit this cut position and size',
+    '曲なし（読み込むと拍を検出してカットを合わせます）': 'No audio (load a song to detect beats and align cuts)',
+    'カット目の動画の長さ（秒）': ' cut video duration (s)',
+    '動画の長さ（秒）': 'Video duration (s)', 'placeholder="自動"': 'placeholder="Auto"',
     'カット数の上限に達しました': 'Maximum number of cuts reached',
     'タップするたびに画像・動画のカットを追加します。終了するまで続けられます。': 'Each tap adds another image or video cut. Continue until you stop.',
     '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。': 'Press Space or the button when each lyric line or media cut starts.',

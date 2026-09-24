@@ -63,12 +63,12 @@ class Renderer {
       this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true }));
       const layer = this.ensure(this.foregroundLayer || (this.foregroundLayer = document.createElement('canvas')), cw, ch);
       const lx = layer.getContext('2d'); lx.setTransform(1, 0, 0, 1, 0, 0); lx.globalAlpha = 1; lx.globalCompositeOperation = 'source-over'; lx.filter = 'none'; lx.clearRect(0, 0, cw, ch);
-      J.drawMedia(lx, plan, t, this, 'foreground');
+      J.drawMedia(lx, plan, t, this, 'foreground', !!opt.previewEdit);
       const previousForeground = foregroundCut.index > 0 && plan.foreground.cuts[foregroundCut.index - 1];
-      if (foregroundCut.chromaKey && foregroundCut.trans && previousForeground && J.mediaAssets.has(previousForeground.itemId) && Math.abs(previousForeground.end - foregroundCut.start) < 0.06 && t - foregroundCut.start < foregroundCut.transDur) {
+      if (!opt.previewEdit && foregroundCut.chromaKey && foregroundCut.trans && previousForeground && J.mediaAssets.has(previousForeground.itemId) && Math.abs(previousForeground.end - foregroundCut.start) < 0.06 && t - foregroundCut.start < foregroundCut.transDur) {
         const mask = this.ensure(this.foregroundKeyMask || (this.foregroundKeyMask = document.createElement('canvas')), cw, ch);
         const mx = mask.getContext('2d'); mx.setTransform(1, 0, 0, 1, 0, 0); mx.globalAlpha = 1; mx.globalCompositeOperation = 'source-over'; mx.filter = 'none'; mx.clearRect(0, 0, cw, ch);
-        J.drawMediaCut(mx, foregroundCut, t, { noEnter: true, noExit: true });
+        J.drawMediaCut(mx, foregroundCut, t, { noEnter: true, noExit: true, previewEdit: !!opt.previewEdit });
         lx.globalCompositeOperation = 'destination-in'; lx.drawImage(mask, 0, 0); lx.globalCompositeOperation = 'source-over';
       }
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = plan.foreground.opacity / 100;
@@ -82,7 +82,7 @@ class Renderer {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
       ctx.clearRect(0, 0, cw, ch);
       ctx.fillStyle = plan.style.schemes[0].bg; ctx.fillRect(0, 0, cw, ch);
-      J.drawMedia(ctx, plan, t, this);
+      J.drawMedia(ctx, plan, t, this, 'media', !!opt.previewEdit);
       ctx.globalAlpha = plan.media.opacity / 100;
       ctx.globalCompositeOperation = { normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.media.blend] || 'source-over';
       ctx.drawImage(layer, 0, 0); ctx.restore();
@@ -190,7 +190,12 @@ class Renderer {
       X.save();
       const area = cut.area, areaX = area ? area.x * W : 0, areaY = area ? area.y * H : 0;
       const contentW = env.W, contentH = env.H;
-      if (area) { X.beginPath(); X.rect(areaX, areaY, contentW, contentH); X.clip(); }
+      if (area) {
+        X.translate(areaX + contentW / 2, areaY + contentH / 2);
+        X.rotate((area.angle || 0) * J.DEG);
+        X.translate(-areaX - contentW / 2, -areaY - contentH / 2);
+        X.beginPath(); X.rect(areaX, areaY, contentW, contentH); X.clip();
+      }
       // camera move for this cut (default: slow push-in)
       let cam = null;
       const CD = J.CAMERA[cut.cam] || J.CAMERA.push;
