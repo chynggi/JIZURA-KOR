@@ -310,6 +310,8 @@ def replace_copy(source, glossary):
 # Fork UI text is translated before the original glossary so short common
 # words such as 歌詞 and 追加 cannot split a longer fork label in half.
 FORK_BODY = {
+    '鎖マークを別のタイムラインの鎖へドラッグしてリンク。×で解除。': 'Drag a chain icon to one on another timeline to link boundaries. Use × to unlink.',
+    'タイムラインの境界リンク': 'Timeline boundary links',
     '素材': 'Source', '前景': 'Foreground',
     'Jevで作る（β）': 'Create with Jev (β)',
     '歌詞からJevで作る（β）': 'Create from lyrics with Jev (β)',
@@ -350,6 +352,10 @@ FORK_BODY = {
 }
 
 FORK_UI = {
+    '境界をリンク': 'Link boundary',
+    'リンクを解除': 'Remove link',
+    '同じレイヤーの境界は同時にリンクできません': 'Boundaries on the same layer cannot be linked together',
+    'この開始位置にはリンクできません': 'Cannot link at this start time',
     '無表示カットの開始秒': 'Blank cut start time (s)',
     '無表示カットを削除': 'Remove blank cut',
     '番目に無表示カットを追加': ' position: add blank cut',

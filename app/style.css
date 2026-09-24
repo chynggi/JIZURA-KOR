@@ -193,6 +193,19 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 #timeline { width: 100%; height: 76px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 #mediaTimeline { width: 100%; height: 52px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 #foregroundTimeline { width: 100%; height: 52px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
+.timeline-stack { position: relative; display: grid; gap: 6px; min-width: 0; }
+.timeline-links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.timeline-links .link-wire { stroke: var(--cyan); stroke-width: 1.5; opacity: .8; }
+.timeline-links .link-preview { stroke: var(--amber); stroke-width: 2; stroke-dasharray: 5 3; }
+.timeline-links .link-handle { pointer-events: all; cursor: grab; }
+.timeline-links .link-handle:active { cursor: grabbing; }
+.timeline-links .link-handle circle { fill: #102524; stroke: var(--cyan); stroke-width: 1.3; }
+.timeline-links .link-handle text { fill: #fff; font: 12px sans-serif; text-anchor: middle; dominant-baseline: central; user-select: none; pointer-events: none; }
+.timeline-links .link-handle.linked circle { fill: #14645c; }
+.timeline-links .link-remove { pointer-events: all; cursor: pointer; }
+.timeline-links .link-remove circle { fill: #21191c; stroke: var(--rose); stroke-width: 1.3; }
+.timeline-links .link-remove text { fill: #fff; font: 12px sans-serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.timeline-link-hint { margin: 1px 0 0; }
 .cutinfo { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; }
 .chip { font-size: 11px; padding: 2px 8px; border-radius: 2px; border: 1px solid var(--line2); color: var(--text); background: var(--raised); }
 .chip b { font-weight: 500; color: var(--muted); margin-right: 5px; }

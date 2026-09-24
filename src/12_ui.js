@@ -12,7 +12,7 @@ const ICON = {
   lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>',
 };
 
-const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, areaEdit: null, timelineDrag: null, slow: false, lineEls: [], blankEls: new Map(), mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
+const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], blankEls: new Map(), mediaLineEls: [], sourceTab: 'lyrics', curLine: -2 };
 
 /* WebAudio player (works inside sandboxed pages where blob media may be blocked) */
 const AP = {
@@ -41,6 +41,7 @@ function mergeProject(p) {
   o.enabled = en;
   o.overrides = (p && p.overrides) || {};
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
+  o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
   o.foreground = J.normalizeMedia(p && p.foreground);
   o.colors = Object.assign({ enabled: false }, (p && p.colors) || {});
@@ -88,7 +89,8 @@ function replan() {
   if (S.tap && S.tap.append && !S.audio) extendTapPreview(S.t);
   langNote();
   if (S.t > S.plan.duration) S.t = 0;
-  renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); updateTimeUI();
+  S.project.timelineLinks = S.project.timelineLinks.filter(link => link && boundaryCut(link.a) && boundaryCut(link.b) && link.a !== link.b);
+  renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); drawTimelineLinks(); updateTimeUI();
   S.need = true; autosave(); ensureFonts(); drawSwatch(); showNow();
   clearTimeout(warmTimer); warmTimer = setTimeout(warm, 450);
 }
@@ -273,7 +275,7 @@ function drawMediaTimeline(layer = 'media') {
 }
 function drawTimelineDragGuide(ctx, width, height, dpr, layer) {
   const drag = S.timelineDrag;
-  if (!drag || !drag.moved || drag.layer !== layer) return;
+  if (!drag || !drag.moved || !linkedRefs(drag.ref).some(ref => boundaryLayer(ref) === layer)) return;
   const px = drag.preview / Math.max(0.001, S.plan.duration) * width;
   ctx.fillStyle = '#16f4d4'; ctx.fillRect(Math.round(px) - 2 * dpr, 0, 4 * dpr, height);
   ctx.fillStyle = '#101318'; ctx.fillRect(J.clamp(px + 5 * dpr, 0, width - 47 * dpr), 1 * dpr, 47 * dpr, 15 * dpr);
@@ -284,6 +286,73 @@ function timelineSeek(ev) {
   const r = ev.currentTarget.getBoundingClientRect();
   seek((ev.clientX - r.left) / r.width * S.plan.duration);
 }
+function boundaryRef(layer, cut) {
+  if (layer === 'foreground') return `f:${cut.index}`;
+  if (layer === 'media') return `m:${cut.index}`;
+  return cut.blank ? `l:blank:${cut.blankId}` : `l:${cut.line}:${cut.part}`;
+}
+function boundaryLayer(ref) { return ref[0] === 'f' ? 'foreground' : ref[0] === 'm' ? 'media' : 'lyrics'; }
+function boundaryCut(ref) {
+  if (typeof ref !== 'string' || !S.plan) return null;
+  const layer = boundaryLayer(ref);
+  if (layer !== 'lyrics') {
+    const index = +ref.slice(2);
+    return Number.isInteger(index) && index >= 0 && ref === `${ref[0]}:${index}` ? S.plan[layer].cuts[index] || null : null;
+  }
+  if (ref.startsWith('l:blank:')) return S.plan.cuts.find(c => c.blank && c.blankId === ref.slice(8)) || null;
+  return S.plan.cuts.find(c => c.line >= 0 && boundaryRef('lyrics', c) === ref) || null;
+}
+function linkedRefs(ref) {
+  const seen = new Set([ref]), queue = [ref];
+  for (const cur of queue) for (const link of S.project.timelineLinks) {
+    const next = link.a === cur ? link.b : link.b === cur ? link.a : null;
+    if (next && !seen.has(next)) { seen.add(next); queue.push(next); }
+  }
+  return queue;
+}
+function timelineMarkers() {
+  const stack = $('timelineStack'), D = Math.max(0.001, S.plan.duration), markers = [];
+  for (const [layer, id] of [['foreground', 'foregroundTimeline'], ['lyrics', 'timeline'], ['media', 'mediaTimeline']]) {
+    const canvas = $(id), cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0 || c.blank) : S.plan[layer].cuts;
+    const y = canvas.offsetTop + 11;
+    for (const cut of cuts) markers.push({ ref: boundaryRef(layer, cut), layer, x: canvas.offsetLeft + cut.start / D * canvas.clientWidth, y });
+  }
+  return markers;
+}
+function drawTimelineLinks() {
+  const svg = $('timelineLinks'), stack = $('timelineStack');
+  if (!svg || !S.plan) return;
+  const width = stack.clientWidth, height = stack.clientHeight;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  const markers = timelineMarkers();
+  if (S.timelineDrag && S.timelineDrag.moved) {
+    const moving = new Set(linkedRefs(S.timelineDrag.ref));
+    for (const marker of markers) if (moving.has(marker.ref)) {
+      const canvas = $(marker.layer === 'lyrics' ? 'timeline' : marker.layer === 'media' ? 'mediaTimeline' : 'foregroundTimeline');
+      marker.x = canvas.offsetLeft + S.timelineDrag.preview / Math.max(0.001, S.plan.duration) * canvas.clientWidth;
+    }
+  }
+  const byRef = new Map(markers.map(m => [m.ref, m]));
+  const links = S.project.timelineLinks.map((link, index) => {
+    const a = byRef.get(link.a), b = byRef.get(link.b);
+    if (!a || !b) return '';
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    return `<line class="link-wire" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><g class="link-remove" data-edge="${index}" role="button" aria-label="リンクを解除"><circle cx="${mx}" cy="${my}" r="9"/><text x="${mx}" y="${my + 0.5}">×</text></g>`;
+  }).join('');
+  const preview = S.linkDrag ? `<line class="link-preview" x1="${S.linkDrag.sourceX}" y1="${S.linkDrag.sourceY}" x2="${S.linkDrag.x}" y2="${S.linkDrag.y}"/>` : '';
+  const handles = markers.map(m => `<g class="link-handle ${linkedRefs(m.ref).length > 1 ? 'linked' : ''}" data-ref="${escapeHtml(m.ref)}" role="button" aria-label="境界をリンク"><circle cx="${m.x}" cy="${m.y}" r="9"/><text x="${m.x}" y="${m.y + 0.5}">🔗</text></g>`).join('');
+  svg.innerHTML = links + preview + handles;
+}
+function markerNear(clientX, clientY, sourceLayer) {
+  const rect = $('timelineStack').getBoundingClientRect(), x = clientX - rect.left, y = clientY - rect.top;
+  let best = null, distance = 18;
+  for (const marker of timelineMarkers()) {
+    if (marker.layer === sourceLayer) continue;
+    const d = Math.hypot(marker.x - x, marker.y - y);
+    if (d < distance) { best = marker; distance = d; }
+  }
+  return best;
+}
 function timelineBoundaryAt(ev, layer) {
   const rect = ev.currentTarget.getBoundingClientRect(), duration = S.plan.duration;
   const cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0 || c.blank) : S.plan[layer].cuts;
@@ -292,7 +361,10 @@ function timelineBoundaryAt(ev, layer) {
     const px = rect.left + cut.start / duration * rect.width, delta = Math.abs(ev.clientX - px);
     if (delta < distance) { chosen = cut; distance = delta; }
   }
-  if (!chosen) return null;
+  return chosen ? timelineBoundaryForCut(chosen, layer) : null;
+}
+function timelineBoundaryForCut(chosen, layer) {
+  const duration = S.plan.duration;
   let min, max, target;
   if (layer !== 'lyrics') {
     const cutsForLayer = S.plan[layer].cuts, index = chosen.index;
@@ -323,10 +395,9 @@ function timelineBoundaryAt(ev, layer) {
     max = chosen.end - 0.22;
     target = { line: chosen.line, part: chosen.part };
   }
-  return max > min ? { layer, start: chosen.start, min, max, ...target } : null;
+  return max > min ? { layer, ref: boundaryRef(layer, chosen), start: chosen.start, min, max, ...target } : null;
 }
-function commitTimelineBoundary(drag) {
-  const t = +drag.preview.toFixed(3);
+function setTimelineBoundaryTime(drag, t) {
   if (drag.layer === 'lyrics') {
     const timing = S.project.timing;
     if (drag.blankId) {
@@ -340,6 +411,34 @@ function commitTimelineBoundary(drag) {
       timing.cutTimes[`${drag.line}:${drag.part}`] = t;
     }
   } else S.project[drag.layer].timing.lineTimes[drag.index] = t;
+}
+function boundaryGroupLimits(ref) {
+  const members = linkedRefs(ref).map(id => {
+    const cut = boundaryCut(id);
+    return cut && timelineBoundaryForCut(cut, boundaryLayer(id));
+  });
+  if (members.some(x => !x)) return null;
+  return { members, min: Math.max(...members.map(x => x.min)), max: Math.min(...members.map(x => x.max)) };
+}
+function commitTimelineBoundary(drag) {
+  const t = +drag.preview.toFixed(3);
+  const group = boundaryGroupLimits(drag.ref);
+  if (!group || group.max < group.min) return;
+  for (const member of group.members) setTimelineBoundaryTime(member, t);
+  replan();
+}
+function connectTimelineBoundaries(source, target) {
+  const from = linkedRefs(source), to = linkedRefs(target);
+  if (from.includes(target)) return;
+  const layers = from.map(boundaryLayer);
+  if (to.some(ref => layers.includes(boundaryLayer(ref)))) { toast('同じレイヤーの境界は同時にリンクできません'); return; }
+  const limits = [source, target].map(boundaryGroupLimits);
+  if (limits.some(x => !x)) return;
+  const min = Math.max(...limits.map(x => x.min)), max = Math.min(...limits.map(x => x.max));
+  const targetTime = boundaryCut(target).start;
+  if (targetTime < min - 0.001 || targetTime > max + 0.001) { toast('この開始位置にはリンクできません'); return; }
+  for (const ref of [...from, ...to]) setTimelineBoundaryTime(timelineBoundaryForCut(boundaryCut(ref), boundaryLayer(ref)), targetTime);
+  S.project.timelineLinks.push({ a: source, b: target });
   replan();
 }
 
@@ -657,6 +756,10 @@ function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   m.cutCount = cuts.length + 1;
   m.cutOverrides = overrides;
   m.timing.lineTimes = times;
+  const prefix = layer === 'foreground' ? 'f:' : 'm:';
+  for (const link of S.project.timelineLinks) for (const end of ['a', 'b']) {
+    if (link[end].startsWith(prefix) && +link[end].slice(2) >= index) link[end] = prefix + (+link[end].slice(2) + 1);
+  }
   replan(); seek(start);
 }
 async function addMediaFiles(files, layer) {
@@ -1252,7 +1355,8 @@ function bind() {
     let drag = null;
     tl.addEventListener('pointerdown', e => {
       const boundary = !S.exporting && !S.tap && timelineBoundaryAt(e, layer);
-      drag = boundary ? { ...boundary, mode: 'boundary', originX: e.clientX, preview: boundary.start, moved: false, duration: S.plan.duration } : { mode: 'seek' };
+      const limits = boundary && boundaryGroupLimits(boundary.ref);
+      drag = boundary && limits && limits.max > limits.min ? { ...boundary, min: limits.min, max: limits.max, mode: 'boundary', originX: e.clientX, preview: boundary.start, moved: false, duration: S.plan.duration } : { mode: 'seek' };
       tl.setPointerCapture(e.pointerId);
       if (boundary) { pause(); S.timelineDrag = drag; }
       else timelineSeek(e);
@@ -1265,6 +1369,7 @@ function bind() {
       const rect = tl.getBoundingClientRect();
       drag.preview = J.clamp((e.clientX - rect.left) / rect.width * drag.duration, drag.min, drag.max);
       drawTimeline();
+      drawTimelineLinks();
     });
     tl.addEventListener('pointerup', () => {
       if (!drag) return;
@@ -1273,11 +1378,44 @@ function bind() {
         if (drag.moved) commitTimelineBoundary(drag);
         else seek(drag.start);
         drawTimeline();
+        drawTimelineLinks();
       }
       drag = null;
     });
-    tl.addEventListener('pointercancel', () => { drag = null; S.timelineDrag = null; drawTimeline(); });
+    tl.addEventListener('pointercancel', () => { drag = null; S.timelineDrag = null; drawTimeline(); drawTimelineLinks(); });
   }
+  const linkSvg = $('timelineLinks');
+  linkSvg.addEventListener('pointerdown', e => {
+    const remove = e.target.closest('.link-remove');
+    if (remove) {
+      e.preventDefault(); e.stopPropagation();
+      S.project.timelineLinks.splice(+remove.dataset.edge, 1);
+      drawTimelineLinks(); autosave();
+      return;
+    }
+    const handle = e.target.closest('.link-handle');
+    if (!handle || S.exporting || S.tap) return;
+    e.preventDefault(); e.stopPropagation(); pause();
+    const marker = timelineMarkers().find(m => m.ref === handle.dataset.ref);
+    if (!marker) return;
+    S.linkDrag = { source: marker.ref, sourceLayer: marker.layer, sourceX: marker.x, sourceY: marker.y, x: marker.x, y: marker.y };
+    linkSvg.setPointerCapture(e.pointerId);
+    drawTimelineLinks();
+  });
+  linkSvg.addEventListener('pointermove', e => {
+    if (!S.linkDrag) return;
+    const rect = $('timelineStack').getBoundingClientRect();
+    S.linkDrag.x = e.clientX - rect.left; S.linkDrag.y = e.clientY - rect.top;
+    drawTimelineLinks();
+  });
+  linkSvg.addEventListener('pointerup', e => {
+    if (!S.linkDrag) return;
+    const drag = S.linkDrag, target = markerNear(e.clientX, e.clientY, drag.sourceLayer);
+    S.linkDrag = null;
+    if (target) connectTimelineBoundaries(drag.source, target.ref);
+    drawTimelineLinks();
+  });
+  linkSvg.addEventListener('pointercancel', () => { S.linkDrag = null; drawTimelineLinks(); });
   document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
     document.querySelectorAll('.tabpane').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; });
@@ -1374,8 +1512,9 @@ function bind() {
     else if (e.code === 'ArrowLeft') seek(S.t - (e.shiftKey ? 1 : 1 / S.plan.fps));
     else if (e.code === 'KeyR' && !e.metaKey && !e.ctrlKey && !e.altKey && !S.exporting) { e.preventDefault(); omakase(); }
   });
-  window.addEventListener('resize', () => { sizeViewport(); drawTimeline(); });
-  if (window.ResizeObserver) new ResizeObserver(() => { sizeViewport(); drawTimeline(); }).observe($('viewport'));
+  window.addEventListener('resize', () => { sizeViewport(); drawTimeline(); drawTimelineLinks(); });
+  if (window.ResizeObserver) new ResizeObserver(() => { sizeViewport(); drawTimeline(); drawTimelineLinks(); }).observe($('viewport'));
+  if (window.ResizeObserver) new ResizeObserver(drawTimelineLinks).observe($('timelineStack'));
 }
 
 /* song file -> beat analysis (file input, or a host such as the After Effects panel) */

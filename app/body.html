@@ -106,9 +106,13 @@
         <button id="btnOmakase" class="primary" title="スタイル・雰囲気・演出・配色をまるごとランダムに（キー R）">おまかせ</button>
         <span class="jev-action"><button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></span>
       </div>
-      <canvas id="foregroundTimeline" aria-label="前景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
-      <canvas id="timeline" aria-label="歌詞タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
-      <canvas id="mediaTimeline" aria-label="背景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
+      <div id="timelineStack" class="timeline-stack">
+        <canvas id="foregroundTimeline" aria-label="前景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
+        <canvas id="timeline" aria-label="歌詞タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
+        <canvas id="mediaTimeline" aria-label="背景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
+        <svg id="timelineLinks" class="timeline-links" aria-label="タイムラインの境界リンク"></svg>
+      </div>
+      <p class="hint timeline-link-hint">鎖マークを別のタイムラインの鎖へドラッグしてリンク。×で解除。</p>
       <div class="cutinfo" id="cutInfo"></div>
     </section>
 
