@@ -122,9 +122,6 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .ln .tools select { padding: 2px 4px; font-size: 11px; max-width: 92px; }
 .media-ln .tools { flex: 1 1 100%; flex-wrap: wrap; }
 .media-ln .tools select { max-width: 78px; }
-.media-zoom-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
-.media-zoom-controls label { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: var(--muted); min-width: 0; }
-.media-zoom-controls input, .media-zoom-controls select { width: 100%; padding: 3px 5px; font-size: 11px; }
 .media-video-loop { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 11px; color: var(--muted); cursor: pointer; }
 .media-video-loop input { margin: 0; accent-color: var(--amber); }
 .media-chroma { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 11px; color: var(--muted); }
@@ -147,6 +144,7 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .area-edit-rect { position: absolute; box-sizing: border-box; border: 2px solid var(--amber); background: rgba(245,165,12,0.12); box-shadow: 0 0 0 1px #000; pointer-events: none; }
 .area-edit-overlay.media-edit { background: rgba(0,0,0,0.14); cursor: default; }
 .area-edit-overlay.media-edit .area-edit-rect { background: rgba(245,165,12,0.04); pointer-events: auto; cursor: move; }
+.area-edit-overlay.media-edit .area-edit-rect::before { content: ''; position: absolute; inset: -18px; border: 1px dashed var(--cyan); pointer-events: none; }
 .area-edit-handle { display: none; position: absolute; width: 15px; height: 15px; border: 2px solid #111; background: var(--amber); border-radius: 2px; transform: translate(-50%,-50%); touch-action: none; }
 .media-edit .area-edit-handle { display: block; }
 .area-edit-handle.nw { left: 0; top: 0; cursor: nwse-resize; }

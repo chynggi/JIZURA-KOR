@@ -59,6 +59,13 @@ J.mediaAssets.set('image', { element: { naturalWidth: 160, naturalHeight: 90 } }
 const rotations = [], context2d = { canvas: { width: 1280, height: 720 }, save() {}, restore() {}, translate() {}, scale() {}, rotate: radians => rotations.push(radians), drawImage() {} };
 assert.equal(J.drawMediaCut(context2d, rotated.cuts[0], 1), true);
 assert.ok(Math.abs(rotations[0] - Math.PI / 2) < 1e-9, 'image rotation is applied to the canvas renderer');
+const rotatedVideo = J.planMedia({ seed: 1, media: { items: [{ id: 'video', name: 'video.webm', type: 'video', duration: 4 }], cutOverrides: { 0: { placement: { cx: 0.5, cy: 0.5, w: 0.4, angle: -45 }, zoom: 225, focus: 'tr' } } } }, { duration: 4, lines: [] });
+assert.equal(rotatedVideo.cuts[0].placement.angle, -45);
+assert.equal(rotatedVideo.cuts[0].zoom, 100, 'legacy video zoom is ignored');
+assert.equal(rotatedVideo.cuts[0].focus, 'mc', 'legacy video focus is ignored');
+J.mediaAssets.set('video', { element: { videoWidth: 160, videoHeight: 90 } });
+assert.equal(J.drawMediaCut(context2d, rotatedVideo.cuts[0], 1), true);
+assert.ok(Math.abs(rotations[1] + Math.PI / 4) < 1e-9, 'video rotation is applied to the canvas renderer');
 const loop = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), loop: true, cutCount: 5, cutOverrides: { 0: { layout: 'cover' }, 2: { layout: 'contain' } } } }, { duration: 8, lines: [] });
 assert.deepEqual(Array.from(loop.cuts.map(c => c.itemId)), ['a', 'b', 'a', 'b', 'a']);
 assert.equal(loop.cuts[2].layout, 'contain');
@@ -75,10 +82,10 @@ assert.equal(tapped.cuts.length, 1, 'tap sync may build fewer cuts than uploaded
 assert.equal(tapped.cuts[0].start, 12);
 assert.equal(tapped.duration, 16, 'late taps extend the timeline');
 const zoomed = J.planMedia({ seed: 1, media: { items: [{ id: 'v', name: 'v.webm', type: 'video', duration: 4 }], loop: true, cutCount: 2, cutOverrides: { 0: { zoom: 225, focus: 'tr' }, 1: { zoom: 100, focus: 'bl' } } } }, { duration: 8, lines: [] });
-assert.equal(zoomed.cuts[0].zoom, 225);
-assert.equal(zoomed.cuts[0].focus, 'tr');
+assert.equal(zoomed.cuts[0].zoom, 100);
+assert.equal(zoomed.cuts[0].focus, 'mc');
 assert.equal(zoomed.cuts[1].zoom, 100);
-assert.equal(zoomed.cuts[1].focus, 'bl');
+assert.equal(zoomed.cuts[1].focus, 'mc');
 assert.deepEqual(JSON.parse(JSON.stringify(J.mediaFocusPoint('tr', 900, 900))), { x: 300, y: -300 });
 assert.deepEqual(JSON.parse(JSON.stringify(J.mediaFocusPoint('mc', 900, 900))), { x: 0, y: 0 });
 assert.equal(a.cuts[0].zoom, b.cuts[0].zoom, 'automatic zoom is deterministic');
