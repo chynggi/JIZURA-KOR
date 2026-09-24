@@ -19,7 +19,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
     def do_GET(self):
-        if self.path not in ('/', '/index.html', '/favicon.ico'):
+        if self.path not in ('/', '/index.html', '/en/', '/en/index.html', '/favicon.ico'):
             self.send_error(404)
             return
         super().do_GET()

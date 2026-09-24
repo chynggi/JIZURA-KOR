@@ -12,6 +12,8 @@ The **Foreground**, **Lyrics**, and **Background** tabs let you place uploaded i
 
 **Create with Jev** selects a style and line effects from your lyrics and optional natural language directions. It requires an API key and the local server included in this repository. Set `TYPESAFE_API_KEY`, then run `python jev_server.py` in the repository root. The browser sends lyrics and directions to that server; audio files stay in the browser. See the [Japanese guide](README.md) for setup details. This fork is based on [the original JIZURA](https://github.com/852wa/JIZURA).
 
+[Jev setup guide](docs/JEV_GUIDE.en.md)
+
 ## Quick start
 
 1. Paste lyrics into the left panel, one phrase per line. The built-in English sample is shown on a fresh install.

@@ -196,6 +196,11 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .key-badge i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(255,255,255,.5); }
 .overlay-msg { position: absolute; left: 12px; bottom: 12px; background: rgba(12,12,14,0.85); border: 1px solid var(--line2); padding: 6px 10px; border-radius: var(--r); font-size: 12px; }
 .transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.jev-action { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.jev-guide { color: var(--cyan); font-size: 11px; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
+.jev-guide:hover { color: var(--text); }
+.easy-hero .jev-action { display: flex; }
+.easy-hero .jev-action button { flex: 1; }
 .transport .tc { font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }
 .transport input[type=range] { flex: 1 1 160px; accent-color: var(--amber); }
 button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
@@ -469,7 +474,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         </span>
         <button id="btnShuffle" class="accent" title="Shuffle the arrangement, keeping locked lines">Shuffle</button>
         <button id="btnOmakase" class="primary" title="Randomize style, mood, effects and colors (R)">Randomize</button>
-        <button id="btnJev" title="Send lyrics to Jev to choose styles and effects for each line">Create with Jev</button>
+        <span class="jev-action"><button id="btnJev" title="Send lyrics to Jev to choose styles and effects for each line">Create with Jev (β)</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.en.md" target="_blank" rel="noopener">Jev guide</a></span>
       </div>
       <canvas id="foregroundTimeline" aria-label="Foreground timeline (drag a cut boundary to change its start time; drag elsewhere to seek)"></canvas>
       <canvas id="timeline" aria-label="Lyrics timeline (drag a cut boundary to change its start time; drag elsewhere to seek)"></canvas>
@@ -482,7 +487,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       <div id="easyPanel" class="easy" hidden>
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">Create a variation</button>
-          <button id="btnJevBig" class="primary">Create from lyrics with Jev</button>
+          <div class="jev-action"><button id="btnJevBig" class="primary">Create from lyrics with Jev (β)</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.en.md" target="_blank" rel="noopener">Jev guide</a></div>
           <p class="hint">Jev sends lyrics to an external API to choose styles, moods, layouts, and motion. A local server and API key are required.</p>
           <p class="hint">Each click changes the style, mood, motion, colors and arrangement. Press <span class="kbd">R</span> to do the same.</p>
           <div class="hist-row">
