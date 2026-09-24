@@ -110,6 +110,10 @@ J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
     case 'rotate': rotation += (p - 0.5) * 0.3; break;
     case 'shake': x += Math.sin(t * 19) * w * 0.009; y += Math.cos(t * 23) * h * 0.009; break;
   }
+  if (J.mediaVariationState) {
+    const v = J.mediaVariationState(cut, p, fade, out, w, h);
+    x += v.x; y += v.y; rotation += v.rotation; scale *= v.scale; alpha *= v.alpha;
+  }
   ctx.translate(x * amount, y * amount); ctx.rotate(rotation * amount); ctx.scale(Math.max(0.001, 1 + (scale - 1) * amount), Math.max(0.001, 1 + (scale - 1) * amount)); ctx.globalAlpha *= alpha;
   const mask = (type, q) => {
     if (q >= 1) return;
@@ -122,7 +126,7 @@ J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
     else if (type === 'diamond') { ctx.moveTo(0, -h * a); ctx.lineTo(w * a, 0); ctx.lineTo(0, h * a); ctx.lineTo(-w * a, 0); ctx.closePath(); }
     else if (type === 'blinds') { for (let i = 0; i < 10; i++) ctx.rect(-w / 2, -h / 2 + i * h / 10, w, h * a / 10); }
     else if (type === 'tiles') { for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { const s = J.clamp(q * 1.8 - (i + j) / 12, 0, 1); ctx.rect(-w / 2 + (i + (1 - s) / 2) * w / 6, -h / 2 + (j + (1 - s) / 2) * h / 4, w * s / 6, h * s / 4); } }
-    else return;
+    else if (!J.mediaVariationMask || !J.mediaVariationMask(ctx, type, q, w, h, cut.seed)) return;
     ctx.clip();
   };
   mask(cut.enter, fade); mask(cut.exit, out);
@@ -134,6 +138,7 @@ J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
     for (const n of [-2, -1, 1, 2]) { if (cut.treat === 'prism') ctx.filter = `hue-rotate(${n * 65}deg)`; draw(n * w * .035 * treatment); }
     ctx.restore();
   }
+  if (J.drawMediaVariation && J.drawMediaVariation(ctx, source, fit, cut, p, treatment)) return;
   if (cut.treat === 'triptych' && treatment > 0) { for (const n of [-1, 0, 1]) draw(n * w / 3, 0, w / 3, h / 3); }
   else if (cut.treat === 'glitch' && treatment > 0) {
     for (let i = 0; i < 12; i++) { ctx.save(); ctx.beginPath(); ctx.rect(-w, -h / 2 + i * h / 12, w * 2, h / 12 + .5); ctx.clip(); draw(Math.sin(Math.floor(p * 32) * 19 + i * 31 + cut.seed) * w * .035 * treatment); ctx.restore(); }

@@ -30,8 +30,8 @@ const assert = require('node:assert/strict');
         await page.locator('.media-technique').selectOption('');
         await page.locator('#disableMediaEffects').click();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'none');
-        await page.locator('[data-media-tech="pop"]').check();
-        assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'pop');
+        await page.locator('[data-media-tech="pixelScatter"]').check();
+        assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'pixelScatter');
         await page.locator('#enableMediaEffects').click();
         await page.locator('.media-technique').selectOption('none');
         await page.locator('#shuffleMediaEffects').click();
@@ -73,17 +73,34 @@ const assert = require('node:assert/strict');
           if(ctx.getImageData(40,50,1,1).data[3]) failures.push(key+':chroma leaked');
           if(!ctx.getImageData(160,90,1,1).data[3]) failures.push(key+':subject disappeared');
         }
+        // Scratch buffers must render the current video frame, never a cached still.
+        for (const key of J.MEDIA_VARIATION_KEYS) {
+          const project={seed:3,foreground:{items:[video],cutOverrides:{0:{technique:key,placement:{cx:.5,cy:.5,w:.4}}}}};
+          const cut=J.planMedia(project,{duration:4,lines:[]},0,'foreground').cuts[0];
+          const snapshots=[];
+          for(const offset of [0,30]) {
+            x.clearRect(0,0,120,80); x.fillStyle='#ff4060';x.fillRect(25+offset,20,20,25);
+            ctx.clearRect(0,0,320,180);ctx.globalAlpha=.3;J.drawMediaCut(ctx,cut,2);ctx.globalAlpha=1;
+            if(ctx.getImageData(0,0,1,1).data[3])failures.push(key+':transparent corner filled');
+            snapshots.push(c.toDataURL());
+          }
+          if(snapshots[0]===snapshots[1])failures.push(key+':video frame did not update');
+          ctx.clearRect(0,0,320,180);J.drawMediaCut(ctx,cut,.12);const first=c.toDataURL();
+          ctx.clearRect(0,0,320,180);J.drawMediaCut(ctx,cut,3.9);
+          ctx.clearRect(0,0,320,180);J.drawMediaCut(ctx,cut,.12);
+          if(c.toDataURL()!==first)failures.push(key+':seeking changed rendering');
+        }
         return {failures,distinct:signatures.size,total:Object.keys(J.MEDIA_TECH).length};
       });
-      assert.deepEqual(report.failures,[]); assert.ok(report.distinct>=30,JSON.stringify(report)); assert.equal(report.total,47);
-      await page.locator('.media-technique').selectOption('glitch');
+      assert.deepEqual(report.failures,[]); assert.ok(report.distinct>=60,JSON.stringify(report)); assert.equal(report.total,80);
+      await page.locator('.media-technique').selectOption('neonContour');
       await page.locator('#btnUndo').click();
       assert.equal(await page.locator('.media-technique').inputValue(),'none');
       await page.locator('#btnRedo').click();
-      assert.equal(await page.locator('.media-technique').inputValue(),'glitch');
+      assert.equal(await page.locator('.media-technique').inputValue(),'neonContour');
       if(!locale) await page.screenshot({path:'../media-effects-ui.png',fullPage:true});
       await page.reload(); await page.locator('#sourceForeground').click();
-      assert.equal(await page.locator('.media-technique').inputValue(),'glitch');
+      assert.equal(await page.locator('.media-technique').inputValue(),'neonContour');
       assert.deepEqual(errors,[]);
       console.log(locale || 'ja',report);
       await page.close();

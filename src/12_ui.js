@@ -1106,10 +1106,15 @@ async function addMediaFiles(files, layer) {
   }
   replan();
 }
+const MEDIA_EFFECT_GROUPS = {
+  cinema: J.mediaLabel('シネマ・カメラ', 'Cinema / camera'), dynamic: J.mediaLabel('ダイナミックモーション', 'Dynamic motion'),
+  mask: J.mediaLabel('マスク・出現', 'Masks / reveals'), texture: J.mediaLabel('色・質感', 'Color / texture'),
+  graphic: J.mediaLabel('分割・残像・グリッチ', 'Panels / echoes / glitch'), transition: J.mediaLabel('カット間のつなぎ', 'Cut transitions'),
+};
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${Object.entries(J.MEDIA_TECH).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</select>`;
+  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
 
   const addButton = index => {
     const row = document.createElement('li'); row.className = 'media-cut-insert';
@@ -1586,9 +1591,9 @@ function renderMediaEffects() {
     const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
     row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project); next[key] = +e.target.value; S.project.mediaEffects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + key); replanSoon(100); }); box.querySelector('#mediaEffectSliders').appendChild(row);
   }
-  const groups = { transition: L('カット間のつなぎ', 'Cut transitions'), cinema: L('シネマ・カメラ', 'Cinema / camera'), dynamic: L('ダイナミックモーション', 'Dynamic motion'), mask: L('マスク・出現', 'Masks / reveals'), texture: L('色・質感', 'Color / texture'), graphic: L('分割・残像・グリッチ', 'Panels / echoes / glitch') };
+  const groups = MEDIA_EFFECT_GROUPS;
   for (const [group, name] of Object.entries(groups)) {
-    const section = document.createElement('fieldset'); section.className = 'media-tech-group'; section.innerHTML = `<legend>${name}</legend>`;
+    const section = document.createElement('fieldset'); section.className = 'media-tech-group'; section.innerHTML = `<legend>${name} (${Object.values(J.MEDIA_TECH).filter(def => def.group === group).length})</legend>`;
     for (const [key, def] of Object.entries(J.MEDIA_TECH).filter(([, d]) => d.group === group)) {
       const row = document.createElement('label'); row.className = 'check'; row.innerHTML = `<input type="checkbox" data-media-tech="${key}" ${settings.enabled[key] !== false ? 'checked' : ''}><span>${def.name}</span>`;
       row.querySelector('input').addEventListener('change', e => { const next = J.mediaEffectSettings(S.project); next.enabled = Object.assign({}, next.enabled, { [key]: e.target.checked }); S.project.mediaEffects = next; replan(); }); section.appendChild(row);
