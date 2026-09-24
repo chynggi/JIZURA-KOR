@@ -3805,6 +3805,22 @@ J.chromaSource = (src, cut, w, h) => {
     const saturationMatch = J.clamp((range / max - 0.18) / 0.17, 0, 1);
     d[i + 3] = Math.round(d[i + 3] * (1 - hueMatch * saturationMatch));
   }
+  // Green-screen exports may include black padding inside the video frame.
+  // Trim dark runs from the four edges without erasing enclosed dark subject details.
+  const trim = (start, step, length) => {
+    for (let n = 0, i = start; n < length; n++, i += step) {
+      if (d[i] > 24 || d[i + 1] > 24 || d[i + 2] > 24) break;
+      d[i + 3] = 0;
+    }
+  };
+  for (let row = 0; row < h; row++) {
+    trim(row * w * 4, 4, w);
+    trim((row * w + w - 1) * 4, -4, w);
+  }
+  for (let col = 0; col < w; col++) {
+    trim(col * 4, w * 4, h);
+    trim(((h - 1) * w + col) * 4, -w * 4, h);
+  }
   x.putImageData(pixels, 0, 0); return c;
 };
 J.drawMediaCut = (ctx, cut, t, options = {}) => {

@@ -76,5 +76,17 @@ context.document = { createElement: () => {
 } };
 const chromaPixels = [100, 211, 63, 255, 0, 255, 0, 255, 180, 170, 170, 255, 0, 0, 0, 255];
 const keyed = J.chromaSource({ pixels: chromaPixels }, { chromaColor: '#00ff00' }, 4, 1);
-assert.deepEqual(Array.from(keyed.data.filter((_, i) => i % 4 === 3)), [0, 0, 255, 255], 'real green-screen shades must be transparent while the subject and black stay opaque');
+assert.deepEqual(Array.from(keyed.data.filter((_, i) => i % 4 === 3)), [0, 0, 255, 0], 'green shades and black padding must be transparent while the subject stays opaque');
+const black = [0, 0, 0, 255], green = [100, 211, 63, 255], subject = [180, 170, 170, 255];
+const grid = [
+  [black, black, black, black, black],
+  [black, green, subject, green, black],
+  [black, green, black, green, black],
+  [black, green, green, green, black],
+  [black, black, black, black, black],
+].flat(2);
+const keyedGrid = J.chromaSource({ pixels: grid }, { chromaColor: '#00ff00' }, 5, 5);
+assert.equal(keyedGrid.data[3], 0, 'black padding at the video edge must disappear');
+assert.equal(keyedGrid.data[(1 * 5 + 2) * 4 + 3], 255, 'subject must stay visible');
+assert.equal(keyedGrid.data[(2 * 5 + 2) * 4 + 3], 255, 'enclosed black subject detail must stay visible');
 console.log('Media planning tests passed');
