@@ -370,6 +370,46 @@ function timelineMarkers() {
   }
   return markers;
 }
+function rerollLyricLine(index) {
+  const line = S.plan.lines[index]; if (!line) return;
+  const current = S.project.overrides[index] || {};
+  setOv(index, { seed: (current.seed | 0) + 1, lock: false });
+  replan(); seek(line.start + 0.001);
+}
+function toggleLyricLineLock(index) {
+  const line = S.plan.lines[index]; if (!line) return;
+  const current = S.project.overrides[index] || {};
+  setOv(index, current.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: line.seed });
+  replan();
+}
+function mediaCutOptions(layer, index) {
+  const cut = S.plan[layer].cuts[index]; if (!cut) return null;
+  const media = S.project[layer];
+  return Object.assign({}, media.overrides[cut.itemId] || {}, media.cutOverrides[index] || {});
+}
+function rerollMediaCut(layer, index) {
+  const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
+  if (!cut || !options) return;
+  mediaOv(index, { seed: (options.seed | 0) + 1, lock: false }, layer);
+  replan(); seek(cut.start + 0.001);
+}
+function toggleMediaCutLock(layer, index) {
+  const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
+  if (!cut || !options) return;
+  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }, layer);
+  replan();
+}
+function performTimelineAction(control) {
+  const layer = control.dataset.layer, index = +control.dataset.index;
+  if (!Number.isInteger(index) || index < 0) return;
+  if (layer === 'lyrics') {
+    if (control.dataset.action === 'dice') rerollLyricLine(index);
+    else toggleLyricLineLock(index);
+  } else if (layer === 'foreground' || layer === 'media') {
+    if (control.dataset.action === 'dice') rerollMediaCut(layer, index);
+    else toggleMediaCutLock(layer, index);
+  }
+}
 function drawTimelineLinks() {
   const svg = $('timelineLinks'), stack = $('timelineStack');
   if (!svg || !S.plan) return;
@@ -392,7 +432,22 @@ function drawTimelineLinks() {
   }).join('');
   const preview = S.linkDrag ? `<line class="link-preview" x1="${S.linkDrag.sourceX}" y1="${S.linkDrag.sourceY}" x2="${S.linkDrag.x}" y2="${S.linkDrag.y}"/>` : '';
   const handles = markers.map(m => `<g class="link-handle ${linkedRefs(m.ref).length > 1 ? 'linked' : ''}" data-ref="${escapeHtml(m.ref)}" role="button" aria-label="境界をリンク"><circle cx="${m.x}" cy="${m.y}" r="9"/><text x="${m.x}" y="${m.y + 0.5}">🔗</text></g>`).join('');
-  svg.innerHTML = links + preview + handles;
+  const action = (layer, cut, index, locked) => {
+    const canvas = $(layer === 'lyrics' ? 'timeline' : layer === 'foreground' ? 'foregroundTimeline' : 'mediaTimeline');
+    const startX = canvas.offsetLeft + cut.start / Math.max(0.001, S.plan.duration) * canvas.clientWidth;
+    const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 42);
+    const y = canvas.offsetTop + 11;
+    return [['dice', false, layer === 'lyrics' ? 'この行を再抽選' : 'このカットを再抽選', ICON.dice], ['lock', locked, layer === 'lyrics' ? 'この行の構成をロック' : 'このカットをロック', ICON.lock]].map(([name, active, label, icon], n) => {
+      const x = left + n * 20, graphic = icon.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
+      return `<g class="timeline-action ${active ? 'locked' : ''}" data-action="${name}" data-layer="${layer}" data-index="${index}" role="button" tabindex="0" aria-label="${label}" ${name === 'lock' ? `aria-pressed="${active}"` : ''} transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
+    }).join('');
+  };
+  const lyricActions = S.plan.lines.map(line => {
+    const cut = S.plan.cuts.find(c => c.line === line.index && c.part === 0);
+    return cut ? action('lyrics', cut, line.index, !!(S.project.overrides[line.index] || {}).lock) : '';
+  }).join('');
+  const mediaActions = ['foreground', 'media'].map(layer => S.plan[layer].cuts.map(cut => action(layer, cut, cut.index, !!mediaCutOptions(layer, cut.index).lock)).join('')).join('');
+  svg.innerHTML = links + preview + handles + lyricActions + mediaActions;
 }
 function markerNear(clientX, clientY, sourceLayer) {
   const rect = $('timelineStack').getBoundingClientRect(), x = clientX - rect.left, y = clientY - rect.top;
@@ -584,13 +639,8 @@ function renderLines() {
     li.querySelector('.txt').addEventListener('click', () => seek(ln.start + 0.001));
     li.querySelector('.lyric-area-thumb').addEventListener('click', () => openAreaEditor(i));
     li.querySelector('select').addEventListener('change', e => { setOv(i, { layout: e.target.value || undefined }); replan(); });
-    li.querySelector('.dice').addEventListener('click', () => { const cur = ov[i] || {}; setOv(i, { seed: (cur.seed | 0) + 1, lock: false }); replan(); seek(ln.start + 0.001); });
-    li.querySelector('.lock').addEventListener('click', () => {
-      const cur = ov[i] || {};
-      if (cur.lock) setOv(i, { lock: false, lockedSeed: undefined });
-      else setOv(i, { lock: true, lockedSeed: ln.seed });
-      replan();
-    });
+    li.querySelector('.dice').addEventListener('click', () => rerollLyricLine(i));
+    li.querySelector('.lock').addEventListener('click', () => toggleLyricLineLock(i));
     const cutsEl = li.querySelector('.cuts');
     S.plan.cuts.filter(c => c.line === i && J.LAYOUTS[c.layout] && !J.LAYOUTS[c.layout].special).forEach(c => {
       const sp = document.createElement('span'); sp.textContent = J.LAYOUTS[c.layout].name; sp.title = `${c.text}｜${J.ENTER[c.enter].name} → ${J.EXIT[c.exit].name}`;
@@ -869,8 +919,8 @@ function renderMediaLines() {
       chroma.addEventListener('change', e => { mediaOv(i, { chromaKey: e.target.checked }); replan(); });
       li.querySelector('.media-chroma-color').addEventListener('change', e => { mediaOv(i, { chromaColor: e.target.value }); replan(); });
     }
-    li.querySelector('.dice').addEventListener('click', () => { mediaOv(i, { seed: (ov.seed | 0) + 1, lock: false }); replan(); seek(cut.start + 0.001); });
-    li.querySelector('.lock').addEventListener('click', () => { mediaOv(i, ov.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }); replan(); });
+    li.querySelector('.dice').addEventListener('click', () => rerollMediaCut(layer, i));
+    li.querySelector('.lock').addEventListener('click', () => toggleMediaCutLock(layer, i));
     ol.appendChild(li); S.mediaLineEls.push(li);
   });
   addButton(S.plan[layer].cuts.length);
@@ -1440,6 +1490,8 @@ function bind() {
   }
   const linkSvg = $('timelineLinks');
   linkSvg.addEventListener('pointerdown', e => {
+    const action = e.target.closest('.timeline-action');
+    if (action) { e.preventDefault(); e.stopPropagation(); performTimelineAction(action); return; }
     const remove = e.target.closest('.link-remove');
     if (remove) {
       e.preventDefault(); e.stopPropagation();
@@ -1470,6 +1522,10 @@ function bind() {
     drawTimelineLinks();
   });
   linkSvg.addEventListener('pointercancel', () => { S.linkDrag = null; drawTimelineLinks(); });
+  linkSvg.addEventListener('keydown', e => {
+    const action = e.target.closest('.timeline-action');
+    if (action && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); performTimelineAction(action); }
+  });
   document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
     document.querySelectorAll('.tabpane').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; });

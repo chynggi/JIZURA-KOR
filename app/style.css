@@ -206,6 +206,12 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 .timeline-links .link-remove { pointer-events: all; cursor: pointer; }
 .timeline-links .link-remove circle { fill: #21191c; stroke: var(--rose); stroke-width: 1.3; }
 .timeline-links .link-remove text { fill: #fff; font: 12px sans-serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.timeline-links .timeline-action { pointer-events: all; cursor: pointer; color: var(--text); }
+.timeline-links .timeline-action rect { fill: #1b1b20; stroke: #72727a; stroke-width: 1; }
+.timeline-links .timeline-action:hover rect, .timeline-links .timeline-action:focus-visible rect { stroke: var(--amber); }
+.timeline-links .timeline-action.locked { color: #081713; }
+.timeline-links .timeline-action.locked rect { fill: var(--cyan); stroke: var(--cyan); }
+.timeline-links .timeline-action svg { pointer-events: none; }
 .timeline-link-hint { margin: 1px 0 0; }
 .cutinfo { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; }
 .chip { font-size: 11px; padding: 2px 8px; border-radius: 2px; border: 1px solid var(--line2); color: var(--text); background: var(--raised); }
