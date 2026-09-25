@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
       const page = await browser.newPage({viewport:{width:1500,height:1000}}), errors = [];
       page.on('pageerror', e => errors.push(e.message));
       await page.route('https://fonts.googleapis.com/**', route => route.fulfill({contentType:'text/css',body:''}));
+      await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({contentType:'text/css',body:''}));
       await page.goto('http://127.0.0.1:8765/' + locale);
       await page.locator('#modePro').click();
       for (const layer of ['foreground','media']) {
@@ -21,7 +22,7 @@ const assert = require('node:assert/strict');
       // Import a real old-format project with shared settings and automatic cuts.
       const legacy = await page.evaluate(() => {
         const p = structuredClone(J.ui.project); p.lyrics = '';
-        p.mediaEffects = {motion:.65,treatment:.4,duration:.6,autoPlacement:false,enabled:Object.fromEntries(Object.keys(J.MEDIA_TECH).map(key => [key,key === 'iris']))};
+        p.mediaEffects = {motion:.65,treatment:.4,duration:.6,autoPlacement:false,enabled:Object.fromEntries(Object.keys(J.MEDIA_TECH).map(key => [key,key === 'neonContour']))};
         for (const layer of ['foreground','media']) {
           delete p[layer].effects;
           Object.assign(p[layer], {loop:true,cutCount:6,randomOrder:true,cutOverrides:Object.fromEntries(Array.from({length:6},(_,i) => [i,{technique:null}]))});
@@ -34,7 +35,7 @@ const assert = require('node:assert/strict');
       for (const layer of ['foreground','media']) {
         const initial = await snapshot(layer);
         assert.deepEqual(initial.project.effects, legacy.mediaEffects, 'old shared values must survive migration');
-        assert.ok(initial.cuts.every(c => c.technique === 'iris' && c.placement === null));
+        assert.ok(initial.cuts.every(c => c.technique === 'neonContour' && c.placement === null));
         assert.ok(initial.cuts.every(c => JSON.stringify(c.effectSettings) === JSON.stringify(legacy.mediaEffects)));
       }
       assert.equal(await page.evaluate(() => J.ui.project.foreground.effects.enabled === J.ui.project.media.effects.enabled), false);
@@ -47,8 +48,8 @@ const assert = require('node:assert/strict');
         assert.equal(await tab.innerText(), layer === 'foreground' ? (locale ? 'Foreground' : '前景') : (locale ? 'Background' : '背景'));
         assert.equal(await panel.isVisible(), true);
         assert.equal(await page.locator(`#${other}EffectsPanel`).isVisible(), false);
-        assert.equal(await panel.locator('[data-media-tech]').count(), 80);
-        assert.equal(await panel.locator('details[data-media-group]').count(),6);
+        assert.equal(await panel.locator('[data-media-tech]').count(), await page.evaluate(()=>Object.keys(J.MEDIA_TECH).length));
+        assert.equal(await panel.locator('details[data-media-group]').count(),8);
         assert.equal(await panel.locator('details[open]').count(),0,'categories initially collapse independently per layer');
         assert.equal(await panel.locator('[data-media-tech]').first().isVisible(),false);
         const cinema = panel.locator('[data-media-group="cinema"]'), total = await cinema.locator('[data-media-tech]').count();
@@ -77,7 +78,7 @@ const assert = require('node:assert/strict');
 
         await panel.locator('[data-media-action="disable"]').click();
         assert.ok((await snapshot(layer)).cuts.every(c => c.technique === 'none'));
-        const technique = layer === 'foreground' ? 'pixelScatter' : 'pushIn';
+        const technique = layer === 'foreground' ? 'neonContour' : 'pushIn';
         await panel.locator('details').filter({has:page.locator(`[data-media-tech="${technique}"]`)}).locator('summary').click();
         await panel.locator(`[data-media-tech="${technique}"]`).check();
         assert.ok((await snapshot(layer)).cuts.every(c => c.technique === technique));
@@ -87,7 +88,7 @@ const assert = require('node:assert/strict');
         await page.locator('#btnRedo').click();
         assert.ok((await snapshot(layer)).cuts.every(c => c.technique === technique));
         await panel.locator('[data-media-action="enable"]').click();
-        assert.equal(await panel.locator('[data-media-tech]:checked').count(), 80);
+        assert.equal(await panel.locator('[data-media-tech]:checked').count(), await page.evaluate(()=>Object.keys(J.MEDIA_TECH).length));
         assert.deepEqual(await snapshot(other), untouched, 'enable/disable and undo must stay local to the tab');
         await page.locator('#btnUndo').click();
 

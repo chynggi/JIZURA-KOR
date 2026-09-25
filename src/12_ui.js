@@ -486,7 +486,7 @@ function rerollMediaCut(layer, index) {
 function toggleMediaCutLock(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
+  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedEntrance: undefined, lockedDeparture: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedEntrance: cut.entrance, lockedDeparture: cut.departure, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
   replan();
 }
 function performTimelineAction(control) {
@@ -1178,15 +1178,20 @@ async function addMediaFiles(files, layer) {
   replan();
 }
 const MEDIA_EFFECT_GROUPS = {
+  enter: J.mediaLabel('登場', 'Entrance'), exit: J.mediaLabel('退場', 'Exit'),
   cinema: J.mediaLabel('シネマ・カメラ', 'Cinema / camera'), dynamic: J.mediaLabel('ダイナミックモーション', 'Dynamic motion'),
-  mask: J.mediaLabel('マスク・出現', 'Masks / reveals'), texture: J.mediaLabel('色・質感', 'Color / texture'),
+  bpm: J.mediaLabel('BPM同期', 'BPM sync'), texture: J.mediaLabel('色・質感', 'Color / texture'),
   graphic: J.mediaLabel('分割・残像・グリッチ', 'Panels / echoes / glitch'), transition: J.mediaLabel('カット間のつなぎ', 'Cut transitions'),
 };
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${J.MEDIA_TECH[cut.technique]?.stage ? `<option value="${cut.technique}" selected>${J.mediaTechniqueName(cut)} (${J.mediaLabel('従来の設定', 'Legacy settings')})</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).filter(([group]) => !['enter', 'exit'].includes(group)).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group && !def.stage).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  const selectPhase = (ov, cut, stage, field) => {
+    const value = ov[field] ?? '', title = MEDIA_EFFECT_GROUPS[stage];
+    return `<label>${title}<select class="media-phase" data-media-phase="${field}" aria-label="${title}"><option value="" ${!value ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option><option value="none" ${value === 'none' ? 'selected' : ''}>${J.mediaLabel('即時（なし）', 'Instant (none)')}</option>${J.mediaPhaseOptions(stage).map(([key, def]) => `<option value="${key}" ${value === key ? 'selected' : ''}>${def.name}</option>`).join('')}</select></label>`;
 
+  };
   const addButton = index => {
     const row = document.createElement('li'); row.className = 'media-cut-insert';
     row.innerHTML = `<button class="ghost small" type="button" aria-label="${index + 1}番目にカットを追加">＋ カットを追加</button>`;
@@ -1206,6 +1211,10 @@ function renderMediaLines() {
     const li = document.createElement('li'); li.className = 'ln media-ln';
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.mediaTechniqueName(cut)}</span></span><span class="tools">${selectTechnique(ov, cut)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}カット目を削除">削除</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label><label class="media-video-duration">動画の長さ（秒）<input type="number" min="0.04" max="3600" step="0.01" placeholder="自動" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}カット目の動画の長さ（秒）"></label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>クロマキー合成</label><label>色<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}カット目のクロマキー色" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
+    li.querySelector('.foreground-placement-controls').insertAdjacentHTML('beforebegin', `<div class="media-phase-controls">${selectPhase(ov, cut, 'enter', 'entrance')}${selectPhase(ov, cut, 'exit', 'departure')}</div>`);
+    li.querySelectorAll('[data-media-phase]').forEach(select => select.addEventListener('change', e => {
+      mediaOv(i, { [select.dataset.mediaPhase]: e.target.value || null, lock: false }, layer); replan();
+    }));
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.media-cut-file').addEventListener('change', e => { mediaOv(i, { itemId: e.target.value || null }, layer); replan(); });
     li.querySelector('.media-technique').addEventListener('change', e => { if (e.target.value !== 'legacy') { mediaOv(i, { technique: e.target.value || null, lock: false, lockedTechnique: undefined }, layer); replan(); } });
@@ -1686,6 +1695,9 @@ function renderMediaEffects(layer) {
   const randomNote = document.createElement('p'); randomNote.className = 'note';
   randomNote.textContent = L('「おまかせ」では前景・背景それぞれの手法チェックをランダムに設定します。', 'Randomize selects a random set of checked techniques independently for foreground and background.');
   box.appendChild(randomNote);
+  const beatNote = document.createElement('p'); beatNote.className = 'note';
+  beatNote.textContent = L('登場・退場はカットごとに独立して設定できます（初期値：自動）。BPM同期は「曲・タイミング」のBPMを使用し、未設定時は120 BPMで動きます。', 'Set entrance and exit independently for each cut (default: Auto). BPM sync uses the BPM in Audio and timing, or 120 BPM when unset.');
+  box.appendChild(beatNote);
   for (const [key, name, max, step] of [['motion', L('動きの強さ', 'Motion intensity'), 2, .05], ['treatment', L('加工の強さ', 'Treatment intensity'), 1, .05], ['duration', L('登場・退場時間', 'Entrance / exit (s)'), 1.5, .05]]) {
     const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input data-media-setting="${key}" type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
     row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project, layer); next[key] = +e.target.value; S.project[layer].effects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + layer + ':' + key); replanSoon(100); }); box.querySelector('.media-effect-sliders').appendChild(row);

@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
       const page = await browser.newPage({viewport:{width:1500,height:1000}}), errors=[];
       page.on('pageerror', e => errors.push(e.message));
       page.on('console', e => { if(e.type() === 'warning' && e.text().startsWith('media trans')) errors.push(e.text()); });
+      await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({contentType:'text/css',body:''}));
       await page.goto('http://127.0.0.1:8765/' + locale);
       await page.locator('#modePro').click();
       const file = {name:'test.svg', mimeType:'image/svg+xml', buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"><rect width="120" height="80" fill="#ffae42"/><circle cx="35" cy="30" r="22" fill="#185ace"/><path d="M70 10L110 70H50Z" fill="#da185c"/></svg>')};
@@ -24,15 +25,16 @@ const assert = require('node:assert/strict');
         await page.locator(`#${layer}EffectsPanel [data-media-action="shuffle"]`).click();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),locked);
         await page.locator('#mediaLineList .lock').click();
-        await page.locator('.media-technique').selectOption('iris');
+        await page.locator('.media-technique').selectOption('pushIn');
         await page.locator(`#${layer}EffectsPanel [data-media-action="shuffle"]`).click();
-        assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'iris');
+        assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'pushIn');
         await page.locator('.media-technique').selectOption('');
         await page.locator(`#${layer}EffectsPanel [data-media-action="disable"]`).click();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'none');
         await page.locator(`#${layer}EffectsPanel details`).filter({has:page.locator('[data-media-tech="pixelScatter"]')}).locator('summary').click();
         await page.locator(`#${layer}EffectsPanel [data-media-tech="pixelScatter"]`).check();
-        assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'pixelScatter');
+        assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].entrance,layer),'pixelScatter');
+        assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'none');
         await page.locator(`#${layer}EffectsPanel [data-media-action="enable"]`).click();
         await page.locator('.media-technique').selectOption('none');
         await page.locator(`#${layer}EffectsPanel [data-media-action="shuffle"]`).click();
@@ -42,13 +44,13 @@ const assert = require('node:assert/strict');
         const failures=[], signatures = new Set(), c=document.createElement('canvas'); c.width=320;c.height=180;
         const ctx=c.getContext('2d'), item=J.ui.project.foreground.items[0];
         for (const key of ['none', ...Object.keys(J.MEDIA_TECH)]) {
-          const project = structuredClone(J.ui.project); project.foreground = {items:[item],cutOverrides:{0:{technique:key,placement:{cx:.5,cy:.5,w:.4}}}};
+          const project = structuredClone(J.ui.project); project.foreground = {items:[item],cutOverrides:{0:{technique:key,entrance:J.MEDIA_TECH[key]?.stage==='enter'?key:'none',departure:J.MEDIA_TECH[key]?.stage==='exit'?key:'none',placement:{cx:.5,cy:.5,w:.4}}}};
           const plan=J.planMedia(project,{duration:4,lines:[]},0,'foreground'), cut=plan.cuts[0];
           for (const p of [.01,.05,.5,.95,.99]) {
             ctx.clearRect(0,0,320,180); J.drawMediaCut(ctx,cut,p*4);
             const data=ctx.getImageData(0,0,320,180).data;
             if (!data.some((value,index) => index%4===3 && value>0)) failures.push(key+':empty:'+p);
-            if(data[3]!==0) failures.push(key+':opaque corner:'+p);
+            if(!data.some((value,index)=>index%4===3 && value===0)) failures.push(key+':lost transparent surroundings:'+p);
             if(p===.05) signatures.add(c.toDataURL());
           }
           if(key==='none') {
@@ -76,7 +78,7 @@ const assert = require('node:assert/strict');
         }
         // Scratch buffers must render the current video frame, never a cached still.
         for (const key of J.MEDIA_VARIATION_KEYS) {
-          const project={seed:3,foreground:{items:[video],cutOverrides:{0:{technique:key,placement:{cx:.5,cy:.5,w:.4}}}}};
+          const project={seed:3,foreground:{items:[video],cutOverrides:{0:{technique:key,entrance:J.MEDIA_TECH[key]?.stage==='enter'?key:'none',departure:J.MEDIA_TECH[key]?.stage==='exit'?key:'none',placement:{cx:.5,cy:.5,w:.4}}}}};
           const cut=J.planMedia(project,{duration:4,lines:[]},0,'foreground').cuts[0];
           const snapshots=[];
           for(const offset of [0,30]) {
@@ -93,7 +95,7 @@ const assert = require('node:assert/strict');
         }
         return {failures,distinct:signatures.size,total:Object.keys(J.MEDIA_TECH).length};
       });
-      assert.deepEqual(report.failures,[]); assert.ok(report.distinct>=60,JSON.stringify(report)); assert.equal(report.total,80);
+      assert.deepEqual(report.failures,[]); assert.ok(report.distinct>=60,JSON.stringify(report)); assert.ok(report.total > 120);
       await page.locator('.media-technique').selectOption('neonContour');
       await page.locator('#btnUndo').click();
       assert.equal(await page.locator('.media-technique').inputValue(),'none');

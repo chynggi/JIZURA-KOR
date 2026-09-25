@@ -165,6 +165,9 @@ button.remove-media-cut:hover, button.remove-media-cut:focus-visible { color: #f
 .media-video-loop input { margin: 0; accent-color: var(--amber); }
 .media-video-duration { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 11px; color: var(--muted); }
 .media-video-duration input { width: 72px; padding: 3px 5px; }
+.media-phase-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 100%; }
+.media-phase-controls label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); min-width: 0; }
+.media-phase-controls select { min-width: 0; width: 100%; font-size: 11px; padding: 4px; }
 .media-chroma { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 11px; color: var(--muted); }
 .media-chroma label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .media-chroma input[type=color] { width: 38px; height: 27px; padding: 1px; background: transparent; border: 1px solid var(--line2); cursor: pointer; }
@@ -4258,6 +4261,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   if (J.mediaTechnique) for (const cut of cuts) {
     const ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[cut.index] || {});
     Object.assign(cut, J.mediaTechnique(project, ov, J.rng(J.h(cut.seed, 173)), layer));
+    if (J.applyMediaPhases) J.applyMediaPhases(project, cut, ov, layer);
     cut.effectTransition = cut.trans;
     delete cut.trans;
   }
@@ -4444,7 +4448,7 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const w = ctx.canvas.width, h = ctx.canvas.height, d = Math.max(0.04, cut.end - cut.start), p = J.clamp((t - cut.start) / d, 0, 1);
   const fade = options.noEnter ? 1 : Math.min(1, (t - cut.start) / Math.min(cut.effectSettings?.duration || 0.45, d * 0.3));
   const out = options.noExit ? 1 : Math.min(1, (cut.end - t) / Math.min(cut.effectSettings?.duration || 0.45, d * 0.3));
-  if (cut.technique && cut.technique !== 'legacy' && J.paintMediaEffect) {
+  if (cut.technique && (cut.technique !== 'legacy' || cut.independentPhases) && J.paintMediaEffect) {
     const placement = cut.placement && J.mediaPlacementRect(cut.placement, sw, sh, w, h);
     const scale = cut.layout === 'cover' ? Math.max(w / sw, h / sh) : Math.min(w / sw, h / sh);
     const fit = placement ? [placement.w * w, placement.h * h] : [sw * scale, sh * scale];
@@ -4484,7 +4488,7 @@ J.drawMedia = (ctx, plan, t, owner, layer = 'media', previewEdit = false) => {
   const prev = cut.index > 0 ? plan[layer].cuts[cut.index - 1] : null;
   const next = plan[layer].cuts[cut.index + 1];
   const active = !previewEdit && prev && cut.trans && t - cut.start < cut.transDur && Math.abs(prev.end - cut.start) < 0.06 && J.mediaAssets.has(prev.itemId);
-  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !!cut.trans, noExit: !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06), previewEdit });
+  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !cut.independentPhases && !!cut.trans, noExit: !cut.independentPhases && !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06), previewEdit });
   const w = ctx.canvas.width, h = ctx.canvas.height;
   const canvas = key => {
     const c = owner ? (owner[key] || (owner[key] = document.createElement('canvas'))) : document.createElement('canvas');
@@ -4498,7 +4502,7 @@ J.drawMedia = (ctx, plan, t, owner, layer = 'media', previewEdit = false) => {
   const priorAsset = J.mediaAssets.get(prev.itemId);
   const prevSource = prev.type === 'video' ? (snapshot && snapshot.plan === plan && snapshot.index === prev.index ? snapshot.canvas : prev.itemId === cut.itemId && priorAsset.posterElement && priorAsset.posterElement.complete ? priorAsset.posterElement : null) : null;
   J.drawMediaCut(clear(A), prev, Math.max(prev.start, prev.end - 0.001), { noExit: true, source: prevSource });
-  J.drawMediaCut(clear(B), cut, t, { noEnter: true });
+  J.drawMediaCut(clear(B), cut, t, { noEnter: !cut.independentPhases });
   const p = J.clamp((t - cut.start) / cut.transDur);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
   if (cut.trans === 'crossfade' || !J.TRANS || !J.TRANS[cut.trans]) {
@@ -4774,7 +4778,7 @@ J.mediaTechnique = (project, ov, rng, layer = 'media') => {
     key = ov.seed != null ? null : 'none';
   }
   if (key !== 'none' && !J.MEDIA_TECH[key]) {
-    const pool = Object.keys(J.MEDIA_TECH).filter(k => settings.enabled[k] !== false);
+    const pool = Object.keys(J.MEDIA_TECH).filter(k => !J.MEDIA_TECH[k].stage && settings.enabled[k] !== false);
     key = pool.length ? rng.pick(pool) : 'none';
   }
   // Keep the cut's source filename; technique labels are read from MEDIA_TECH.
@@ -4786,7 +4790,7 @@ J.mediaTechniqueName = cut => cut.technique === 'legacy' ? label('従来の設�
 J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
   const settings = cut.effectSettings || {}, amount = settings.motion ?? 1, treatment = settings.treatment ?? 1;
   const w = fit[0], h = fit[1], tau = Math.PI * 2, t = p * tau;
-  let x = 0, y = 0, rotation = 0, scale = 1, alpha = 1, blur = 0;
+  let x = 0, y = 0, rotation = 0, scale = 1, sx = 1, sy = 1, alpha = 1, blur = 0;
   const progress = q => 1 - Math.pow(1 - J.clamp(q, 0, 1), 3);
   const phase = (type, q, leaving) => {
     const a = 1 - progress(q), sign = leaving ? -1 : 1;
@@ -4801,6 +4805,12 @@ J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
     if (type === 'swing') { rotation += sign * a * 0.7; y -= a * h * 0.4; alpha *= progress(q); }
     if (type === 'blur') { blur += a * 22; alpha *= progress(q); }
     if (type === 'glitch') { x += Math.sin(q * 61) * a * w * 0.22; alpha *= progress(q); }
+    if (type === 'slideLeft') x -= sign * a * w;
+    if (type === 'fall') y -= sign * a * h;
+    if (type === 'flipX') { sx *= Math.sin(J.clamp(q) * Math.PI / 2); x += sign * a * w * .15; alpha *= progress(q); }
+    if (type === 'flipY') { sy *= Math.sin(J.clamp(q) * Math.PI / 2); y += sign * a * h * .15; alpha *= progress(q); }
+    if (type === 'squeezeX') { sx *= progress(q); sy *= 1 + a * .4; alpha *= progress(q); }
+    if (type === 'squeezeY') { sy *= progress(q); sx *= 1 + a * .4; alpha *= progress(q); }
   };
   phase(cut.enter, fade, false); phase(cut.exit, out, true);
   switch (cut.hold) {
@@ -4822,7 +4832,11 @@ J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
     const v = J.mediaVariationState(cut, p, fade, out, w, h);
     x += v.x; y += v.y; rotation += v.rotation; scale *= v.scale; alpha *= v.alpha;
   }
-  ctx.translate(x * amount, y * amount); ctx.rotate(rotation * amount); ctx.scale(Math.max(0.001, 1 + (scale - 1) * amount), Math.max(0.001, 1 + (scale - 1) * amount)); ctx.globalAlpha *= alpha;
+  if (J.mediaBeatState) {
+    const v = J.mediaBeatState(cut, p, w, h);
+    x += v.x; y += v.y; rotation += v.rotation; scale *= v.scale; alpha *= v.alpha;
+  }
+  ctx.translate(x * amount, y * amount); ctx.rotate(rotation * amount); ctx.scale(Math.max(0.001, 1 + (scale * sx - 1) * amount), Math.max(0.001, 1 + (scale * sy - 1) * amount)); ctx.globalAlpha *= alpha;
   const mask = (type, q) => {
     if (q >= 1) return;
     const a = progress(q); ctx.beginPath();
@@ -5068,6 +5082,80 @@ J.drawMediaVariation = (ctx, source, fit, cut, p, amount) => {
     } draw();
   } else ctx.drawImage(renderTexture(source, fit, type, p, amount), -w / 2, -h / 2, w, h);
   ctx.restore(); return true;
+};
+})();
+
+/* Independent media entrances/exits and motions on the project's beat clock. */
+(() => {
+'use strict';
+const L = J.mediaLabel;
+const moved = new Set(['dissolve', 'pop', 'spin', 'whip', 'impact', 'spiralApproach', 'rubberLaunch', 'boomerang']);
+for (const [key, def] of Object.entries(J.MEDIA_TECH)) {
+  if (def.group !== 'mask' && !moved.has(key)) continue;
+  def.group = 'enter'; def.stage = 'enter'; def.motion = def.enter;
+  J.MEDIA_TECH['exit_' + key] = { ...def, name: L('退場：', 'Exit: ') + def.name, group: 'exit', stage: 'exit', motion: def.exit };
+}
+for (const [motion, ja, en] of [
+  ['fade', 'フェード', 'Fade'], ['slide', '右からスライド', 'Slide from right'],
+  ['slideLeft', '左からスライド', 'Slide from left'], ['rise', '下からスライド', 'Slide from below'],
+  ['fall', '上からスライド', 'Slide from above'], ['diagonal', '対角スライド', 'Diagonal slide'],
+  ['zoom', 'ズーム', 'Zoom'], ['shrink', 'スケール', 'Scale'], ['blur', 'ぼかし', 'Blur'],
+  ['swing', 'スイング', 'Swing'], ['glitch', 'グリッチ', 'Glitch'],
+  ['flipX', '横フリップ', 'Horizontal flip'], ['flipY', '縦フリップ', 'Vertical flip'],
+  ['squeezeX', '横ストレッチ', 'Horizontal stretch'], ['squeezeY', '縦ストレッチ', 'Vertical stretch'],
+]) for (const stage of ['enter', 'exit']) {
+  const name = stage === 'enter' ? L('登場：', 'Enter: ') : L('退場：', 'Exit: ');
+  J.MEDIA_TECH[stage + '_' + motion] = { name: name + (stage === 'exit' && ({slide:1,slideLeft:1,rise:1,fall:1})[motion] ? ({slide:L('左へスライド','Slide to left'),slideLeft:L('右へスライド','Slide to right'),rise:L('上へスライド','Slide upward'),fall:L('下へスライド','Slide downward')})[motion] : L(ja, en)), group: stage, stage, motion,
+    enter: stage === 'enter' ? motion : 'cut', exit: stage === 'exit' ? motion : 'cut', hold: 'still', treat: 'none', trans: 'none' };
+}
+for (const [key, ja, en] of [
+  ['beatPulse', 'ビート・ズーム', 'Beat zoom'], ['beatBounce', 'ビート・バウンス', 'Beat bounce'],
+  ['beatSway', 'ビート・スウェイ', 'Beat sway'], ['beatOrbit', 'ビート・オービット', 'Beat orbit'],
+  ['beatTurn', '拍ごとに回転', 'Beat turn'], ['beatShake', 'ビート・シェイク', 'Beat shake'],
+  ['beatHeart', 'ダブル・ハートビート', 'Double heartbeat'], ['beatBreathe', '2拍ブリーズ', 'Two-beat breathing'],
+  ['beatStep', 'ビート・ステップ', 'Beat steps'], ['beatFade', 'ビート・フェード', 'Beat fade'],
+]) J.MEDIA_TECH[key] = { name: L(ja, en), group: 'bpm', enter: 'cut', hold: key, exit: 'cut', treat: 'none', trans: 'none' };
+
+J.mediaPhaseOptions = stage => Object.entries(J.MEDIA_TECH).filter(([, def]) => def.stage === stage);
+J.applyMediaPhases = (project, cut, ov, layer) => {
+  cut.bpm = Number.isFinite(+project.timing?.bpm) && +project.timing.bpm > 0 ? +project.timing.bpm : 120;
+  cut.beatOffset = Number.isFinite(+project.timing?.beatOffset) ? +project.timing.beatOffset : 0;
+  const settings = cut.effectSettings || J.mediaEffectSettings(project, layer);
+  for (const [stage, field, lockedField, salt] of [['enter', 'entrance', 'lockedEntrance', 821], ['exit', 'departure', 'lockedDeparture', 823]]) {
+    // Keep saved six-option recipes until this phase is explicitly changed.
+    if (cut.technique === 'legacy' && ov[field] === undefined) continue;
+    let key = ov.lock && ov[lockedField] != null ? ov[lockedField] : ov[field];
+    // Old explicit reveal recipes remain readable without appearing in the
+    // new main-motion menu. New cuts use independent automatic phase pools.
+    if (key === undefined && J.MEDIA_TECH[ov.technique]?.stage === 'enter') key = stage === 'enter' ? ov.technique : 'exit_' + ov.technique;
+    if (key !== 'none' && J.MEDIA_TECH[key]?.stage !== stage) {
+      const pool = J.mediaPhaseOptions(stage).filter(([id]) => settings.enabled[id] !== false);
+      key = pool.length ? J.rng(J.h(cut.seed, salt)).pick(pool)[0] : 'none';
+    }
+    cut[field] = key;
+    cut[stage] = J.MEDIA_TECH[key]?.motion || 'cut';
+    cut.independentPhases = true;
+  }
+  if (cut.independentPhases) cut.effectSettings = settings;
+};
+
+J.mediaBeatState = (cut, p, w, h) => {
+  const v = { x: 0, y: 0, rotation: 0, scale: 1, alpha: 1 };
+  const beat = (cut.start + p * (cut.end - cut.start) - (cut.beatOffset || 0)) * (cut.bpm || 120) / 60;
+  const phase = ((beat % 1) + 1) % 1, a = Math.exp(-phase * 8), t = beat * Math.PI * 2;
+  switch (cut.hold) {
+    case 'beatPulse': v.scale = 1 + a * .18; break;
+    case 'beatBounce': v.y = -Math.abs(Math.sin(beat * Math.PI)) * h * .16; break;
+    case 'beatSway': v.rotation = Math.sin(t) * .12; break;
+    case 'beatOrbit': v.x = Math.sin(t) * w * .08; v.y = Math.cos(t) * h * .08; break;
+    case 'beatTurn': v.rotation = (Math.floor(beat) + 1 - Math.pow(1 - Math.min(1, phase * 4), 3)) * Math.PI / 2; break;
+    case 'beatShake': v.x = Math.sin(phase * 61) * w * .025 * a; v.y = Math.cos(phase * 47) * h * .025 * a; break;
+    case 'beatHeart': v.scale = 1 + .16 * Math.max(a, phase >= .3 ? .65 * Math.exp(-(phase - .3) * 14) : 0); break;
+    case 'beatBreathe': v.scale = 1 + (1 - Math.cos(t / 2)) * .06; break;
+    case 'beatStep': { const step = Math.floor(beat); v.x = J.rs(step, cut.seed, 11) * w * .12; v.y = J.rs(step, cut.seed, 12) * h * .12; break; }
+    case 'beatFade': v.alpha = .4 + .6 * a; break;
+  }
+  return v;
 };
 })();
 
@@ -30870,7 +30958,7 @@ function rerollMediaCut(layer, index) {
 function toggleMediaCutLock(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
+  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedEntrance: undefined, lockedDeparture: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedEntrance: cut.entrance, lockedDeparture: cut.departure, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
   replan();
 }
 function performTimelineAction(control) {
@@ -31562,15 +31650,20 @@ async function addMediaFiles(files, layer) {
   replan();
 }
 const MEDIA_EFFECT_GROUPS = {
+  enter: J.mediaLabel('登場', 'Entrance'), exit: J.mediaLabel('退場', 'Exit'),
   cinema: J.mediaLabel('シネマ・カメラ', 'Cinema / camera'), dynamic: J.mediaLabel('ダイナミックモーション', 'Dynamic motion'),
-  mask: J.mediaLabel('マスク・出現', 'Masks / reveals'), texture: J.mediaLabel('色・質感', 'Color / texture'),
+  bpm: J.mediaLabel('BPM同期', 'BPM sync'), texture: J.mediaLabel('色・質感', 'Color / texture'),
   graphic: J.mediaLabel('分割・残像・グリッチ', 'Panels / echoes / glitch'), transition: J.mediaLabel('カット間のつなぎ', 'Cut transitions'),
 };
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${J.MEDIA_TECH[cut.technique]?.stage ? `<option value="${cut.technique}" selected>${J.mediaTechniqueName(cut)} (${J.mediaLabel('従来の設定', 'Legacy settings')})</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).filter(([group]) => !['enter', 'exit'].includes(group)).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group && !def.stage).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  const selectPhase = (ov, cut, stage, field) => {
+    const value = ov[field] ?? '', title = MEDIA_EFFECT_GROUPS[stage];
+    return `<label>${title}<select class="media-phase" data-media-phase="${field}" aria-label="${title}"><option value="" ${!value ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option><option value="none" ${value === 'none' ? 'selected' : ''}>${J.mediaLabel('即時（なし）', 'Instant (none)')}</option>${J.mediaPhaseOptions(stage).map(([key, def]) => `<option value="${key}" ${value === key ? 'selected' : ''}>${def.name}</option>`).join('')}</select></label>`;
 
+  };
   const addButton = index => {
     const row = document.createElement('li'); row.className = 'media-cut-insert';
     row.innerHTML = `<button class="ghost small" type="button" aria-label="${index + 1}番目にカットを追加">＋ カットを追加</button>`;
@@ -31590,6 +31683,10 @@ function renderMediaLines() {
     const li = document.createElement('li'); li.className = 'ln media-ln';
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.mediaTechniqueName(cut)}</span></span><span class="tools">${selectTechnique(ov, cut)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}カット目を削除">削除</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label><label class="media-video-duration">動画の長さ（秒）<input type="number" min="0.04" max="3600" step="0.01" placeholder="自動" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}カット目の動画の長さ（秒）"></label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>クロマキー合成</label><label>色<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}カット目のクロマキー色" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
+    li.querySelector('.foreground-placement-controls').insertAdjacentHTML('beforebegin', `<div class="media-phase-controls">${selectPhase(ov, cut, 'enter', 'entrance')}${selectPhase(ov, cut, 'exit', 'departure')}</div>`);
+    li.querySelectorAll('[data-media-phase]').forEach(select => select.addEventListener('change', e => {
+      mediaOv(i, { [select.dataset.mediaPhase]: e.target.value || null, lock: false }, layer); replan();
+    }));
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.media-cut-file').addEventListener('change', e => { mediaOv(i, { itemId: e.target.value || null }, layer); replan(); });
     li.querySelector('.media-technique').addEventListener('change', e => { if (e.target.value !== 'legacy') { mediaOv(i, { technique: e.target.value || null, lock: false, lockedTechnique: undefined }, layer); replan(); } });
@@ -32070,6 +32167,9 @@ function renderMediaEffects(layer) {
   const randomNote = document.createElement('p'); randomNote.className = 'note';
   randomNote.textContent = L('「おまかせ」では前景・背景それぞれの手法チェックをランダムに設定します。', 'Randomize selects a random set of checked techniques independently for foreground and background.');
   box.appendChild(randomNote);
+  const beatNote = document.createElement('p'); beatNote.className = 'note';
+  beatNote.textContent = L('登場・退場はカットごとに独立して設定できます（初期値：自動）。BPM同期は「曲・タイミング」のBPMを使用し、未設定時は120 BPMで動きます。', 'Set entrance and exit independently for each cut (default: Auto). BPM sync uses the BPM in Audio and timing, or 120 BPM when unset.');
+  box.appendChild(beatNote);
   for (const [key, name, max, step] of [['motion', L('動きの強さ', 'Motion intensity'), 2, .05], ['treatment', L('加工の強さ', 'Treatment intensity'), 1, .05], ['duration', L('登場・退場時間', 'Entrance / exit (s)'), 1.5, .05]]) {
     const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input data-media-setting="${key}" type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
     row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project, layer); next[key] = +e.target.value; S.project[layer].effects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + layer + ':' + key); replanSoon(100); }); box.querySelector('.media-effect-sliders').appendChild(row);

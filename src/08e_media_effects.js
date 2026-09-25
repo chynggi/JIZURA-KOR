@@ -78,7 +78,7 @@ J.mediaTechnique = (project, ov, rng, layer = 'media') => {
     key = ov.seed != null ? null : 'none';
   }
   if (key !== 'none' && !J.MEDIA_TECH[key]) {
-    const pool = Object.keys(J.MEDIA_TECH).filter(k => settings.enabled[k] !== false);
+    const pool = Object.keys(J.MEDIA_TECH).filter(k => !J.MEDIA_TECH[k].stage && settings.enabled[k] !== false);
     key = pool.length ? rng.pick(pool) : 'none';
   }
   // Keep the cut's source filename; technique labels are read from MEDIA_TECH.
@@ -90,7 +90,7 @@ J.mediaTechniqueName = cut => cut.technique === 'legacy' ? label('従来の設�
 J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
   const settings = cut.effectSettings || {}, amount = settings.motion ?? 1, treatment = settings.treatment ?? 1;
   const w = fit[0], h = fit[1], tau = Math.PI * 2, t = p * tau;
-  let x = 0, y = 0, rotation = 0, scale = 1, alpha = 1, blur = 0;
+  let x = 0, y = 0, rotation = 0, scale = 1, sx = 1, sy = 1, alpha = 1, blur = 0;
   const progress = q => 1 - Math.pow(1 - J.clamp(q, 0, 1), 3);
   const phase = (type, q, leaving) => {
     const a = 1 - progress(q), sign = leaving ? -1 : 1;
@@ -105,6 +105,12 @@ J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
     if (type === 'swing') { rotation += sign * a * 0.7; y -= a * h * 0.4; alpha *= progress(q); }
     if (type === 'blur') { blur += a * 22; alpha *= progress(q); }
     if (type === 'glitch') { x += Math.sin(q * 61) * a * w * 0.22; alpha *= progress(q); }
+    if (type === 'slideLeft') x -= sign * a * w;
+    if (type === 'fall') y -= sign * a * h;
+    if (type === 'flipX') { sx *= Math.sin(J.clamp(q) * Math.PI / 2); x += sign * a * w * .15; alpha *= progress(q); }
+    if (type === 'flipY') { sy *= Math.sin(J.clamp(q) * Math.PI / 2); y += sign * a * h * .15; alpha *= progress(q); }
+    if (type === 'squeezeX') { sx *= progress(q); sy *= 1 + a * .4; alpha *= progress(q); }
+    if (type === 'squeezeY') { sy *= progress(q); sx *= 1 + a * .4; alpha *= progress(q); }
   };
   phase(cut.enter, fade, false); phase(cut.exit, out, true);
   switch (cut.hold) {
@@ -126,7 +132,11 @@ J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
     const v = J.mediaVariationState(cut, p, fade, out, w, h);
     x += v.x; y += v.y; rotation += v.rotation; scale *= v.scale; alpha *= v.alpha;
   }
-  ctx.translate(x * amount, y * amount); ctx.rotate(rotation * amount); ctx.scale(Math.max(0.001, 1 + (scale - 1) * amount), Math.max(0.001, 1 + (scale - 1) * amount)); ctx.globalAlpha *= alpha;
+  if (J.mediaBeatState) {
+    const v = J.mediaBeatState(cut, p, w, h);
+    x += v.x; y += v.y; rotation += v.rotation; scale *= v.scale; alpha *= v.alpha;
+  }
+  ctx.translate(x * amount, y * amount); ctx.rotate(rotation * amount); ctx.scale(Math.max(0.001, 1 + (scale * sx - 1) * amount), Math.max(0.001, 1 + (scale * sy - 1) * amount)); ctx.globalAlpha *= alpha;
   const mask = (type, q) => {
     if (q >= 1) return;
     const a = progress(q); ctx.beginPath();

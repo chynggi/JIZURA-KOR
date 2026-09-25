@@ -148,6 +148,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   if (J.mediaTechnique) for (const cut of cuts) {
     const ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[cut.index] || {});
     Object.assign(cut, J.mediaTechnique(project, ov, J.rng(J.h(cut.seed, 173)), layer));
+    if (J.applyMediaPhases) J.applyMediaPhases(project, cut, ov, layer);
     cut.effectTransition = cut.trans;
     delete cut.trans;
   }
@@ -334,7 +335,7 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const w = ctx.canvas.width, h = ctx.canvas.height, d = Math.max(0.04, cut.end - cut.start), p = J.clamp((t - cut.start) / d, 0, 1);
   const fade = options.noEnter ? 1 : Math.min(1, (t - cut.start) / Math.min(cut.effectSettings?.duration || 0.45, d * 0.3));
   const out = options.noExit ? 1 : Math.min(1, (cut.end - t) / Math.min(cut.effectSettings?.duration || 0.45, d * 0.3));
-  if (cut.technique && cut.technique !== 'legacy' && J.paintMediaEffect) {
+  if (cut.technique && (cut.technique !== 'legacy' || cut.independentPhases) && J.paintMediaEffect) {
     const placement = cut.placement && J.mediaPlacementRect(cut.placement, sw, sh, w, h);
     const scale = cut.layout === 'cover' ? Math.max(w / sw, h / sh) : Math.min(w / sw, h / sh);
     const fit = placement ? [placement.w * w, placement.h * h] : [sw * scale, sh * scale];
@@ -374,7 +375,7 @@ J.drawMedia = (ctx, plan, t, owner, layer = 'media', previewEdit = false) => {
   const prev = cut.index > 0 ? plan[layer].cuts[cut.index - 1] : null;
   const next = plan[layer].cuts[cut.index + 1];
   const active = !previewEdit && prev && cut.trans && t - cut.start < cut.transDur && Math.abs(prev.end - cut.start) < 0.06 && J.mediaAssets.has(prev.itemId);
-  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !!cut.trans, noExit: !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06), previewEdit });
+  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !cut.independentPhases && !!cut.trans, noExit: !cut.independentPhases && !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06), previewEdit });
   const w = ctx.canvas.width, h = ctx.canvas.height;
   const canvas = key => {
     const c = owner ? (owner[key] || (owner[key] = document.createElement('canvas'))) : document.createElement('canvas');
@@ -388,7 +389,7 @@ J.drawMedia = (ctx, plan, t, owner, layer = 'media', previewEdit = false) => {
   const priorAsset = J.mediaAssets.get(prev.itemId);
   const prevSource = prev.type === 'video' ? (snapshot && snapshot.plan === plan && snapshot.index === prev.index ? snapshot.canvas : prev.itemId === cut.itemId && priorAsset.posterElement && priorAsset.posterElement.complete ? priorAsset.posterElement : null) : null;
   J.drawMediaCut(clear(A), prev, Math.max(prev.start, prev.end - 0.001), { noExit: true, source: prevSource });
-  J.drawMediaCut(clear(B), cut, t, { noEnter: true });
+  J.drawMediaCut(clear(B), cut, t, { noEnter: !cut.independentPhases });
   const p = J.clamp((t - cut.start) / cut.transDur);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
   if (cut.trans === 'crossfade' || !J.TRANS || !J.TRANS[cut.trans]) {
