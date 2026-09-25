@@ -433,6 +433,17 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .media-lyric-insert .field {margin-bottom:8px}
 .media-lyric-insert > button {width:100%;white-space:normal}
 .media-lyric-insert .hint {margin:6px 0 0}
+.lyric-auto-size-range { margin: -2px 0 10px 24px; max-width: 420px; }
+.range-title { font-size: 11px; color: var(--muted); }
+.range-pair { position: relative; height: 24px; display: flex; align-items: center; touch-action: pan-y; }
+.range-pair::before { content: ''; position: absolute; inset: 10px 0; border-radius: 5px; background: linear-gradient(to right, var(--line) 0 var(--range-min), var(--amber) var(--range-min) var(--range-max), var(--line) var(--range-max) 100%); }
+.range-pair input { position: absolute; inset: 0; width: 100%; height: 24px; margin: 0; appearance: none; background: transparent; pointer-events: none; }
+.range-pair input::-webkit-slider-runnable-track { height: 4px; background: transparent; }
+.range-pair input::-moz-range-track { height: 4px; background: transparent; }
+.range-pair input::-webkit-slider-thumb { width: 14px; height: 14px; margin-top: -5px; border: 2px solid var(--panel); border-radius: 50%; background: var(--amber); appearance: none; pointer-events: auto; cursor: ew-resize; }
+.range-pair input::-moz-range-thumb { width: 10px; height: 10px; border: 2px solid var(--panel); border-radius: 50%; background: var(--amber); pointer-events: auto; cursor: ew-resize; }
+.range-pair-values { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.range-pair-values output { color: var(--text); font-variant-numeric: tabular-nums; }
 .media-tech-group .checks {grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
 .media-technique {max-width:240px}
 .media-effects-panel {max-height:calc(100vh - 190px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
@@ -532,11 +543,12 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         <div id="mediaCutInsert" class="media-lyric-insert">
           <div class="sec-h"><h2>カット挿入</h2></div>
           <label class="field">一括挿入の基準<select id="mediaLyricInsertMode"><option value="line">行に合わせる</option><option value="cut">カットに合わせる</option></select></label>
+          <label class="check"><input id="mediaGroupLyrics" type="checkbox" checked><span>{ }で囲まれた歌詞は1カット</span></label>
           <button id="btnMediaFromLyrics" type="button" aria-describedby="mediaLyricInsertHint">歌詞に合わせて一括挿入</button>
           <button id="btnTapMedia" type="button" title="動画を見ながら各カットのタイミングでタップ">動画を見ながらタップで挿入</button>
           <p id="mediaLyricInsertHint" class="hint"></p>
           <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で挿入</span></label>
-          <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ</span></label>
+          <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ<small>素材数よりカットが多い場合、素材をループして挿入します。</small></span></label>
         </div>
       </div>
 
@@ -699,6 +711,14 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       <div class="tabpane" data-pane="tech" hidden>
         <div class="pick-sets">
           <label class="check"><input id="lyricAutoPlacement" type="checkbox"><span>配置・サイズにも自動で変化をつける<small>オフでは全画面を使用。手動の表示エリアは維持します。「自動配置に戻す」で手動指定を解除できます。</small></span></label>
+          <div id="lyricAutoSizeRange" class="lyric-auto-size-range">
+            <div class="range-title">最小・最大サイズ倍率（％）</div>
+            <div class="range-pair" id="lyricAutoSizeSlider" style="--range-min:15%;--range-max:25%">
+              <input id="lyricAutoSizeMin" type="range" min="0" max="500" step="5" value="75" aria-label="自動サイズの最小倍率">
+              <input id="lyricAutoSizeMax" type="range" min="0" max="500" step="5" value="125" aria-label="自動サイズの最大倍率">
+            </div>
+            <div class="range-pair-values"><span>最小 <output id="lyricAutoSizeMinValue">75%</output></span><span>最大 <output id="lyricAutoSizeMaxValue">125%</output></span></div>
+          </div>
           <label class="check"><input id="lyricAvoidForeground" type="checkbox" checked><span>前景との重なりを避ける<small>自動配置時に前景の表示領域を避けます。*強調*したカットには適用しません。</small></span></label>
           <label class="slider"><span>重なり回避の強度</span><input id="lyricAvoidanceStrength" type="range" min="0" max="1" step="0.05" value="1"><output id="lyricAvoidanceStrengthValue">1.00</output></label>
           <p class="note">1で前景の範囲を避け、下げると周辺の重なりを許容します。0では回避しません。空き領域がない場合は最も重なりの少ない配置を使います。</p>
@@ -4173,7 +4193,7 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
   placement.cy = anchor(placement.cy, placement.h, edges.top, edges.bottom);
   return placement;
 };
-const defaults = () => ({ items: [], randomOrder: false, loop: false, lyricInsertMode: 'line', cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
+const defaults = () => ({ items: [], randomOrder: false, loop: false, lyricInsertMode: 'line', groupLyricsAsOneCut: true, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
   const o = Object.assign(defaults(), m || {});
   o.items = Array.isArray(o.items) ? o.items.filter(x => x && x.id && x.name && ['image', 'video'].includes(x.type)) : [];
@@ -4182,6 +4202,7 @@ J.normalizeMedia = m => {
   o.cutOverrides = o.cutOverrides || {};
   o.loop = !!o.loop;
   o.lyricInsertMode = o.lyricInsertMode === 'cut' ? 'cut' : 'line';
+  o.groupLyricsAsOneCut = o.groupLyricsAsOneCut !== false;
   o.manualCuts = !!o.manualCuts;
   o.cutCount = J.clamp(Math.floor(+o.cutCount || 0), 0, 1000);
   if (!['normal', 'multiply', 'screen'].includes(o.blend)) o.blend = 'normal';
@@ -4527,9 +4548,12 @@ const percent = (value, fallback) => value != null && value !== '' && Number.isF
 J.lyricEffectSettings = project => {
   const settings = project.lyricEffects || {};
   const min = percent(settings.opacityMin, 0), max = percent(settings.opacityMax, 100);
+  const sizeMin = settings.sizeMin != null && Number.isFinite(+settings.sizeMin) ? J.clamp(+settings.sizeMin, 0, 500) : 75;
+  const sizeMax = settings.sizeMax != null && Number.isFinite(+settings.sizeMax) ? J.clamp(+settings.sizeMax, 0, 500) : 125;
   return {
     autoPlacement: settings.autoPlacement === true, avoidForeground: settings.avoidForeground !== false,
     avoidanceStrength: settings.avoidanceStrength != null && Number.isFinite(+settings.avoidanceStrength) ? J.clamp(+settings.avoidanceStrength, 0, 1) : 1,
+    sizeMin: Math.min(sizeMin, sizeMax), sizeMax: Math.max(sizeMin, sizeMax),
     randomBlend: settings.randomBlend === true, randomOpacity: settings.randomOpacity === true,
     opacityMin: Math.min(min, max), opacityMax: Math.max(min, max),
   };
@@ -4604,12 +4628,16 @@ function emptyRegions(obstacles) {
   return regions;
 }
 
-J.autoLyricArea = (cut, plan, obstacles = []) => {
+J.autoLyricArea = (cut, plan, obstacles = [], settings = J.lyricEffectSettings({})) => {
   const rng = J.rng(J.h(cut.seed, 947));
   const portrait = plan.W < plan.H;
   let w = cut.emphasis ? rng.range(.82, .95) : cut.suppressed ? rng.range(.28, .4) : rng.range(.48, .72);
   let h = cut.emphasis ? rng.range(.7, .92) : cut.suppressed ? rng.range(.2, .3) : rng.range(.4, .62);
   if (portrait && !cut.emphasis) { w = Math.min(.9, w * 1.2); h *= .8; }
+  const minSize = Math.min(settings.sizeMin, settings.sizeMax), maxSize = Math.max(settings.sizeMin, settings.sizeMax);
+  const scale = rng.range(minSize, maxSize) / 100;
+  const fitScale = Math.min(scale, 1 / w, 1 / h);
+  w = Math.max(.04, w * fitScale); h = Math.max(.04, h * fitScale);
   const regions = emptyRegions(obstacles);
   if (regions.length) {
     const candidates = regions.map(r => ({ r, w: Math.min(w, r.w), h: Math.min(h, r.h) }));
@@ -4672,7 +4700,7 @@ J.finishLyricPlan = (project, plan, audio) => {
           const w = (box.w + .04) * s, h = (box.h + .04) * s;
           return { x: box.x + box.w / 2 - w / 2, y: box.y + box.h / 2 - h / 2, w, h };
         });
-      cut.area = J.autoLyricArea(cut, plan, obstacles);
+      cut.area = J.autoLyricArea(cut, plan, obstacles, settings);
       cut.areaMode = 'auto';
     }
     // Some layouts choose columns or orientation during planning. Give those
@@ -31643,22 +31671,32 @@ function syncSourceTab() {
   $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
   $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
+  $('mediaGroupLyrics').checked = !media || m.groupLyricsAsOneCut !== false;
   $('audioTimingSection').hidden = media;
-  const targets = mediaLyricTargets(layer), byCut = media && m.lyricInsertMode === 'cut';
-  $('mediaLyricInsertMode').value = byCut ? 'cut' : 'line';
+  const targets = mediaLyricTargets(layer);
+  $('mediaLyricInsertMode').value = media && m.lyricInsertMode === 'cut' ? 'cut' : 'line';
   $('btnMediaFromLyrics').disabled = !targets.length;
   $('mediaLyricInsertHint').textContent = !media || !m.items.length
     ? J.mediaLabel('画像・動画を追加すると使用できます。', 'Add images or videos to use this feature.')
     : !targets.length
       ? J.mediaLabel('対象となる歌詞の行・カットがありません。', 'There are no lyric lines or cuts to align to.')
-      : J.mediaLabel(`${targets.length}カットを歌詞の${byCut ? 'カット開始位置' : '行頭'}にリンクして作成。既存カットは置き換えます（元に戻すで復元可能）。ループOFF時は素材数まで。`, `Create ${targets.length} cuts linked to lyric ${byCut ? 'cut' : 'line'} starts. Replaces existing cuts (Undo restores them). With Loop cuts off, each file is used once.`);
+      : '';
 }
 function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
 function mediaLyricTargets(layer) {
   const m = layer && S.project[layer];
   if (!m || !m.items.length) return [];
   // Cut mode includes every linkable lyric boundary, including blanks/interludes.
-  const targets = S.plan.cuts.filter(cut => m.lyricInsertMode === 'cut' ? cut.line >= 0 || cut.blank : cut.line >= 0 && cut.part === 0);
+  let targets = S.plan.cuts.filter(cut => m.lyricInsertMode === 'cut' ? cut.line >= 0 || cut.blank : cut.line >= 0 && cut.part === 0);
+  if (m.groupLyricsAsOneCut !== false) {
+    const seen = new Set();
+    targets = targets.filter(cut => {
+      const group = cut.line >= 0 ? S.plan.lines[cut.line]?.group : null;
+      if (group == null) return true;
+      if (seen.has(group)) return false;
+      seen.add(group); return true;
+    });
+  }
   return targets.slice(0, m.loop ? 1000 : Math.min(1000, m.items.length));
 }
 function insertMediaFromLyrics() {
@@ -31677,7 +31715,7 @@ function insertMediaFromLyrics() {
   S.project.timelineLinks = S.project.timelineLinks.filter(link => !link.a.startsWith(prefix) && !link.b.startsWith(prefix));
   targets.forEach((cut, index) => {
     // Keep upload order as the base assignment; the planner applies random order.
-    m.cutOverrides[index] = { itemId: m.items[index % m.items.length].id };
+    m.cutOverrides[index] = { itemId: m.items[index % m.items.length].id, technique: null };
     m.timing.lineTimes[index] = cut.start;
     // Keep linked inner boundaries fixed when the line start is moved later.
     if (m.lyricInsertMode === 'cut' && cut.line >= 0 && cut.part !== 0) S.project.timing.cutTimes[`${cut.line}:${cut.part}`] = cut.start;
@@ -31741,7 +31779,7 @@ function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   cuts.forEach((cut, i) => {
     overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId });
   });
-  overrides[index] = { itemId: null };
+  overrides[index] = { itemId: null, technique: null };
   let start;
   if (!cuts.length) start = 0;
   else if (index === 0) {
@@ -31803,7 +31841,10 @@ async function addMediaFiles(files, layer) {
       const el = await J.attachMedia(item, file);
       el.addEventListener('seeked', () => { S.need = true; });
       if (type === 'video') item.duration = el.duration || 0;
-      if (!existing) m.items.push(item);
+      if (!existing) {
+        m.items.push(item);
+        m.overrides[item.id] = { ...(m.overrides[item.id] || {}), technique: null };
+      }
       await J.storeMedia(item.id, file);
     } catch (err) { toast(`${file.name}: 読み込めませんでした`); }
   }
@@ -32128,6 +32169,13 @@ function techItems(g) { return J.order(g).filter(k => J.registry(g)[k] && !J.reg
 function renderTech() {
   const lyricEffects = J.lyricEffectSettings(S.project);
   $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
+  $('lyricAutoSizeRange').hidden = !lyricEffects.autoPlacement;
+  $('lyricAutoSizeMin').value = lyricEffects.sizeMin;
+  $('lyricAutoSizeMax').value = lyricEffects.sizeMax;
+  $('lyricAutoSizeMinValue').textContent = `${lyricEffects.sizeMin}%`;
+  $('lyricAutoSizeMaxValue').textContent = `${lyricEffects.sizeMax}%`;
+  $('lyricAutoSizeSlider').style.setProperty('--range-min', `${lyricEffects.sizeMin / 5}%`);
+  $('lyricAutoSizeSlider').style.setProperty('--range-max', `${lyricEffects.sizeMax / 5}%`);
   $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
   $('lyricAvoidanceStrength').value = lyricEffects.avoidanceStrength;
   $('lyricAvoidanceStrengthValue').textContent = lyricEffects.avoidanceStrength.toFixed(2);
@@ -32297,7 +32345,7 @@ function tapNow() {
     const m = S.project[S.tap.layer];
     if (i === 0) { m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true; }
     m.cutCount = i + 1;
-    m.cutOverrides[i] = { itemId: m.items.length ? m.items[i % m.items.length].id : null };
+    m.cutOverrides[i] = { itemId: m.items.length ? m.items[i % m.items.length].id : null, technique: null };
     m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();
@@ -32448,6 +32496,20 @@ function bind() {
   for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground'], ['lyricRandomBlend', 'randomBlend'], ['lyricRandomOpacity', 'randomOpacity']]) {
     $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; renderTech(); replan(); });
   }
+  const updateAutoLyricSize = changed => {
+    let min = +$('lyricAutoSizeMin').value, max = +$('lyricAutoSizeMax').value;
+    if (changed === 'min' && min > max) max = min;
+    if (changed === 'max' && max < min) min = max;
+    const settings = { ...J.lyricEffectSettings(S.project), sizeMin: min, sizeMax: max };
+    S.project.lyricEffects = settings;
+    $('lyricAutoSizeMin').value = min; $('lyricAutoSizeMax').value = max;
+    $('lyricAutoSizeMinValue').textContent = `${min}%`; $('lyricAutoSizeMaxValue').textContent = `${max}%`;
+    $('lyricAutoSizeSlider').style.setProperty('--range-min', `${min / 5}%`);
+    $('lyricAutoSizeSlider').style.setProperty('--range-max', `${max / 5}%`);
+    markUndoGroup('lyricAutoSize'); replanSoon(100);
+  };
+  $('lyricAutoSizeMin').addEventListener('input', () => updateAutoLyricSize('min'));
+  $('lyricAutoSizeMax').addEventListener('input', () => updateAutoLyricSize('max'));
   for (const [id, key] of [['lyricOpacityMin', 'opacityMin'], ['lyricOpacityMax', 'opacityMax']]) {
     $(id).addEventListener('change', e => {
       const settings = J.lyricEffectSettings(S.project);
@@ -32469,6 +32531,11 @@ function bind() {
   $('mediaLyricInsertMode').addEventListener('change', e => {
     const layer = activeMediaLayer(); if (!layer) return;
     S.project[layer].lyricInsertMode = e.target.value;
+    syncSourceTab(); autosave();
+  });
+  $('mediaGroupLyrics').addEventListener('change', e => {
+    const layer = activeMediaLayer(); if (!layer) return;
+    S.project[layer].groupLyricsAsOneCut = e.target.checked;
     syncSourceTab(); autosave();
   });
   const areaOverlay = $('areaEditOverlay');

@@ -334,6 +334,9 @@ def replace_copy(source, glossary):
 # words such as 歌詞 and 追加 cannot split a longer fork label in half.
 FORK_BODY = {
     '配置・サイズにも自動で変化をつける': 'Vary lyric position and size automatically',
+    '最小・最大サイズ倍率（％）': 'Minimum / maximum area scale (%)',
+    '自動サイズの最小倍率': 'Minimum automatic size scale', '自動サイズの最大倍率': 'Maximum automatic size scale',
+    '最小 ': 'Min ', '最大 ': 'Max ',
     'オフでは全画面を使用。手動の表示エリアは維持します。「自動配置に戻す」で手動指定を解除できます。': 'When off, use the full stage. Manual areas are preserved; use Reset automatic placement to clear them.',
     '前景との重なりを避ける': 'Avoid overlapping the foreground',
     '合成方法もランダム': 'Randomize lyric blend modes',
@@ -350,6 +353,10 @@ FORK_BODY = {
     '<code>~ささやき~</code> … 抑制（表示と動きを小さく）': '<code>~whisper~</code> … a smaller display with gentler motion.',
     r'<code>\</code> を制御文字の前に置くと、その文字を歌詞として表示（例：<code>\*</code>・<code>\~</code>・<code>\{</code>・<code>\}</code>・<code>\/</code>・<code>\|</code>・<code>\!</code>・<code>\#</code>・<code>\[</code>・<code>\\</code>）': r'Place <code>\</code> before a control character to display it literally: <code>\*</code>, <code>\~</code>, <code>\{</code>, <code>\}</code>, <code>\/</code>, <code>\|</code>, <code>\!</code>, <code>\#</code>, <code>\[</code>, <code>\\</code>.',
     '歌詞に合わせて一括挿入': 'Insert cuts aligned to lyrics',
+    '{ }で囲まれた歌詞は1カット': 'Treat lyrics enclosed in { } as one cut',
+    'ランダム順で挿入': 'Insert in random order',
+    'ループ<small>素材数よりカットが多い場合、素材をループして挿入します。</small>': 'Loop<small>If there are more cuts than files, the files are inserted in a loop.</small>',
+    '素材数よりカットが多い場合、素材をループして挿入します。': 'If there are more cuts than files, the files are inserted in a loop.',
     '一括挿入の基準': 'Align inserted cuts to', '行に合わせる': 'Lyric lines', 'カットに合わせる': 'Lyric cuts',
     '空カット・ロック済みカットは維持します。素材の個別指定はオフにすると使えます。': 'Blank and locked cuts are preserved. Turn this off to select files per cut.',
     'タイムラインを縮小': 'Zoom timeline out', 'タイムラインを拡大': 'Zoom timeline in',

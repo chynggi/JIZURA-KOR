@@ -7,9 +7,12 @@ const percent = (value, fallback) => value != null && value !== '' && Number.isF
 J.lyricEffectSettings = project => {
   const settings = project.lyricEffects || {};
   const min = percent(settings.opacityMin, 0), max = percent(settings.opacityMax, 100);
+  const sizeMin = settings.sizeMin != null && Number.isFinite(+settings.sizeMin) ? J.clamp(+settings.sizeMin, 0, 500) : 75;
+  const sizeMax = settings.sizeMax != null && Number.isFinite(+settings.sizeMax) ? J.clamp(+settings.sizeMax, 0, 500) : 125;
   return {
     autoPlacement: settings.autoPlacement === true, avoidForeground: settings.avoidForeground !== false,
     avoidanceStrength: settings.avoidanceStrength != null && Number.isFinite(+settings.avoidanceStrength) ? J.clamp(+settings.avoidanceStrength, 0, 1) : 1,
+    sizeMin: Math.min(sizeMin, sizeMax), sizeMax: Math.max(sizeMin, sizeMax),
     randomBlend: settings.randomBlend === true, randomOpacity: settings.randomOpacity === true,
     opacityMin: Math.min(min, max), opacityMax: Math.max(min, max),
   };
@@ -84,12 +87,16 @@ function emptyRegions(obstacles) {
   return regions;
 }
 
-J.autoLyricArea = (cut, plan, obstacles = []) => {
+J.autoLyricArea = (cut, plan, obstacles = [], settings = J.lyricEffectSettings({})) => {
   const rng = J.rng(J.h(cut.seed, 947));
   const portrait = plan.W < plan.H;
   let w = cut.emphasis ? rng.range(.82, .95) : cut.suppressed ? rng.range(.28, .4) : rng.range(.48, .72);
   let h = cut.emphasis ? rng.range(.7, .92) : cut.suppressed ? rng.range(.2, .3) : rng.range(.4, .62);
   if (portrait && !cut.emphasis) { w = Math.min(.9, w * 1.2); h *= .8; }
+  const minSize = Math.min(settings.sizeMin, settings.sizeMax), maxSize = Math.max(settings.sizeMin, settings.sizeMax);
+  const scale = rng.range(minSize, maxSize) / 100;
+  const fitScale = Math.min(scale, 1 / w, 1 / h);
+  w = Math.max(.04, w * fitScale); h = Math.max(.04, h * fitScale);
   const regions = emptyRegions(obstacles);
   if (regions.length) {
     const candidates = regions.map(r => ({ r, w: Math.min(w, r.w), h: Math.min(h, r.h) }));
@@ -152,7 +159,7 @@ J.finishLyricPlan = (project, plan, audio) => {
           const w = (box.w + .04) * s, h = (box.h + .04) * s;
           return { x: box.x + box.w / 2 - w / 2, y: box.y + box.h / 2 - h / 2, w, h };
         });
-      cut.area = J.autoLyricArea(cut, plan, obstacles);
+      cut.area = J.autoLyricArea(cut, plan, obstacles, settings);
       cut.areaMode = 'auto';
     }
     // Some layouts choose columns or orientation during planning. Give those

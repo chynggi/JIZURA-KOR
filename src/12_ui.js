@@ -1027,22 +1027,32 @@ function syncSourceTab() {
   $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
   $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
+  $('mediaGroupLyrics').checked = !media || m.groupLyricsAsOneCut !== false;
   $('audioTimingSection').hidden = media;
-  const targets = mediaLyricTargets(layer), byCut = media && m.lyricInsertMode === 'cut';
-  $('mediaLyricInsertMode').value = byCut ? 'cut' : 'line';
+  const targets = mediaLyricTargets(layer);
+  $('mediaLyricInsertMode').value = media && m.lyricInsertMode === 'cut' ? 'cut' : 'line';
   $('btnMediaFromLyrics').disabled = !targets.length;
   $('mediaLyricInsertHint').textContent = !media || !m.items.length
     ? J.mediaLabel('画像・動画を追加すると使用できます。', 'Add images or videos to use this feature.')
     : !targets.length
       ? J.mediaLabel('対象となる歌詞の行・カットがありません。', 'There are no lyric lines or cuts to align to.')
-      : J.mediaLabel(`${targets.length}カットを歌詞の${byCut ? 'カット開始位置' : '行頭'}にリンクして作成。既存カットは置き換えます（元に戻すで復元可能）。ループOFF時は素材数まで。`, `Create ${targets.length} cuts linked to lyric ${byCut ? 'cut' : 'line'} starts. Replaces existing cuts (Undo restores them). With Loop cuts off, each file is used once.`);
+      : '';
 }
 function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
 function mediaLyricTargets(layer) {
   const m = layer && S.project[layer];
   if (!m || !m.items.length) return [];
   // Cut mode includes every linkable lyric boundary, including blanks/interludes.
-  const targets = S.plan.cuts.filter(cut => m.lyricInsertMode === 'cut' ? cut.line >= 0 || cut.blank : cut.line >= 0 && cut.part === 0);
+  let targets = S.plan.cuts.filter(cut => m.lyricInsertMode === 'cut' ? cut.line >= 0 || cut.blank : cut.line >= 0 && cut.part === 0);
+  if (m.groupLyricsAsOneCut !== false) {
+    const seen = new Set();
+    targets = targets.filter(cut => {
+      const group = cut.line >= 0 ? S.plan.lines[cut.line]?.group : null;
+      if (group == null) return true;
+      if (seen.has(group)) return false;
+      seen.add(group); return true;
+    });
+  }
   return targets.slice(0, m.loop ? 1000 : Math.min(1000, m.items.length));
 }
 function insertMediaFromLyrics() {
@@ -1061,7 +1071,7 @@ function insertMediaFromLyrics() {
   S.project.timelineLinks = S.project.timelineLinks.filter(link => !link.a.startsWith(prefix) && !link.b.startsWith(prefix));
   targets.forEach((cut, index) => {
     // Keep upload order as the base assignment; the planner applies random order.
-    m.cutOverrides[index] = { itemId: m.items[index % m.items.length].id };
+    m.cutOverrides[index] = { itemId: m.items[index % m.items.length].id, technique: null };
     m.timing.lineTimes[index] = cut.start;
     // Keep linked inner boundaries fixed when the line start is moved later.
     if (m.lyricInsertMode === 'cut' && cut.line >= 0 && cut.part !== 0) S.project.timing.cutTimes[`${cut.line}:${cut.part}`] = cut.start;
@@ -1125,7 +1135,7 @@ function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   cuts.forEach((cut, i) => {
     overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId });
   });
-  overrides[index] = { itemId: null };
+  overrides[index] = { itemId: null, technique: null };
   let start;
   if (!cuts.length) start = 0;
   else if (index === 0) {
@@ -1187,7 +1197,10 @@ async function addMediaFiles(files, layer) {
       const el = await J.attachMedia(item, file);
       el.addEventListener('seeked', () => { S.need = true; });
       if (type === 'video') item.duration = el.duration || 0;
-      if (!existing) m.items.push(item);
+      if (!existing) {
+        m.items.push(item);
+        m.overrides[item.id] = { ...(m.overrides[item.id] || {}), technique: null };
+      }
       await J.storeMedia(item.id, file);
     } catch (err) { toast(`${file.name}: 読み込めませんでした`); }
   }
@@ -1512,6 +1525,13 @@ function techItems(g) { return J.order(g).filter(k => J.registry(g)[k] && !J.reg
 function renderTech() {
   const lyricEffects = J.lyricEffectSettings(S.project);
   $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
+  $('lyricAutoSizeRange').hidden = !lyricEffects.autoPlacement;
+  $('lyricAutoSizeMin').value = lyricEffects.sizeMin;
+  $('lyricAutoSizeMax').value = lyricEffects.sizeMax;
+  $('lyricAutoSizeMinValue').textContent = `${lyricEffects.sizeMin}%`;
+  $('lyricAutoSizeMaxValue').textContent = `${lyricEffects.sizeMax}%`;
+  $('lyricAutoSizeSlider').style.setProperty('--range-min', `${lyricEffects.sizeMin / 5}%`);
+  $('lyricAutoSizeSlider').style.setProperty('--range-max', `${lyricEffects.sizeMax / 5}%`);
   $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
   $('lyricAvoidanceStrength').value = lyricEffects.avoidanceStrength;
   $('lyricAvoidanceStrengthValue').textContent = lyricEffects.avoidanceStrength.toFixed(2);
@@ -1681,7 +1701,7 @@ function tapNow() {
     const m = S.project[S.tap.layer];
     if (i === 0) { m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true; }
     m.cutCount = i + 1;
-    m.cutOverrides[i] = { itemId: m.items.length ? m.items[i % m.items.length].id : null };
+    m.cutOverrides[i] = { itemId: m.items.length ? m.items[i % m.items.length].id : null, technique: null };
     m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();
@@ -1832,6 +1852,20 @@ function bind() {
   for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground'], ['lyricRandomBlend', 'randomBlend'], ['lyricRandomOpacity', 'randomOpacity']]) {
     $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; renderTech(); replan(); });
   }
+  const updateAutoLyricSize = changed => {
+    let min = +$('lyricAutoSizeMin').value, max = +$('lyricAutoSizeMax').value;
+    if (changed === 'min' && min > max) max = min;
+    if (changed === 'max' && max < min) min = max;
+    const settings = { ...J.lyricEffectSettings(S.project), sizeMin: min, sizeMax: max };
+    S.project.lyricEffects = settings;
+    $('lyricAutoSizeMin').value = min; $('lyricAutoSizeMax').value = max;
+    $('lyricAutoSizeMinValue').textContent = `${min}%`; $('lyricAutoSizeMaxValue').textContent = `${max}%`;
+    $('lyricAutoSizeSlider').style.setProperty('--range-min', `${min / 5}%`);
+    $('lyricAutoSizeSlider').style.setProperty('--range-max', `${max / 5}%`);
+    markUndoGroup('lyricAutoSize'); replanSoon(100);
+  };
+  $('lyricAutoSizeMin').addEventListener('input', () => updateAutoLyricSize('min'));
+  $('lyricAutoSizeMax').addEventListener('input', () => updateAutoLyricSize('max'));
   for (const [id, key] of [['lyricOpacityMin', 'opacityMin'], ['lyricOpacityMax', 'opacityMax']]) {
     $(id).addEventListener('change', e => {
       const settings = J.lyricEffectSettings(S.project);
@@ -1853,6 +1887,11 @@ function bind() {
   $('mediaLyricInsertMode').addEventListener('change', e => {
     const layer = activeMediaLayer(); if (!layer) return;
     S.project[layer].lyricInsertMode = e.target.value;
+    syncSourceTab(); autosave();
+  });
+  $('mediaGroupLyrics').addEventListener('change', e => {
+    const layer = activeMediaLayer(); if (!layer) return;
+    S.project[layer].groupLyricsAsOneCut = e.target.checked;
     syncSourceTab(); autosave();
   });
   const areaOverlay = $('areaEditOverlay');

@@ -73,7 +73,7 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
   placement.cy = anchor(placement.cy, placement.h, edges.top, edges.bottom);
   return placement;
 };
-const defaults = () => ({ items: [], randomOrder: false, loop: false, lyricInsertMode: 'line', cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
+const defaults = () => ({ items: [], randomOrder: false, loop: false, lyricInsertMode: 'line', groupLyricsAsOneCut: true, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
   const o = Object.assign(defaults(), m || {});
   o.items = Array.isArray(o.items) ? o.items.filter(x => x && x.id && x.name && ['image', 'video'].includes(x.type)) : [];
@@ -82,6 +82,7 @@ J.normalizeMedia = m => {
   o.cutOverrides = o.cutOverrides || {};
   o.loop = !!o.loop;
   o.lyricInsertMode = o.lyricInsertMode === 'cut' ? 'cut' : 'line';
+  o.groupLyricsAsOneCut = o.groupLyricsAsOneCut !== false;
   o.manualCuts = !!o.manualCuts;
   o.cutCount = J.clamp(Math.floor(+o.cutCount || 0), 0, 1000);
   if (!['normal', 'multiply', 'screen'].includes(o.blend)) o.blend = 'normal';
