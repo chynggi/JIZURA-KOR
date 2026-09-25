@@ -24,7 +24,14 @@ const assert = require('node:assert/strict');
             for(const cut of first) {
               const r=J.mediaPlacementRect(cut.placement,width,height,W,H);
               if(Math.abs(r.w*W/(r.h*H)-width/height)>1e-8)failures.push('aspect ratio changed');
-              if(r.x<.025||r.y<.025||r.x+r.w> .975||r.y+r.h>.975)failures.push('base placement outside safe bounds');
+              if(layer==='media') {
+                const fit=J.mediaPlacementRect(null,width,height,W,H);
+                if(r.w<fit.w-1e-9||r.h<fit.h-1e-9)failures.push('background smaller than 100% full fit');
+                for(const [start,extent] of [[r.x,r.w],[r.y,r.h]]) {
+                  if(extent>=1 && (start>1e-9||start+extent<1-1e-9))failures.push('enlarged background exposes an edge');
+                  if(extent<1 && (start<0||start+extent>1))failures.push('background cropped on the smaller axis');
+                }
+              } else if(r.x<.025||r.y<.025||r.x+r.w> .975||r.y+r.h>.975)failures.push('base placement outside safe bounds');
             }
             project.seed=200;
             if(same(first.map(c=>c.placement),plan().map(c=>c.placement)))failures.push('shuffle did not change placement');

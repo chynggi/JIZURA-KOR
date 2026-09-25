@@ -42,7 +42,7 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
   const sh = source && (source.videoHeight || source.naturalHeight || source.height) || item.height || H;
   const fit = J.mediaPlacementRect(null, sw, sh, W, H);
   const rng = J.rng(J.h(cut.seed, J.sid(layer), 733));
-  // These are compositions, not crops: the fitted aspect ratio stays intact.
+  // Automatic framing preserves the fitted source aspect ratio.
   const [px, py, size] = rng.pick([
     [.5, .5, .92], [.5, .5, .7], [.27, .5, .64], [.73, .5, .64],
     [.5, .27, .64], [.5, .73, .64], [.26, .26, .48], [.74, .26, .48],
@@ -50,10 +50,15 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
   ]);
   const group = J.MEDIA_TECH?.[cut.technique]?.group;
   const dynamic = group === 'dynamic' || group === 'graphic';
-  const factor = layer === 'media' ? 1.08 : .9;
-  const scale = J.clamp(size * factor * rng.range(.92, 1.08), .36, dynamic ? .72 : .94);
+  const background = layer === 'media';
+  const scale = background ? rng.range(1, 1.35) : J.clamp(size * .9 * rng.range(.92, 1.08), .36, dynamic ? .72 : .94);
   const w = fit.w * scale, h = fit.h * scale, margin = dynamic ? .07 : .03;
-  const position = (center, extent) => J.clamp(center + rng.range(-.025, .025), extent / 2 + margin, 1 - extent / 2 - margin);
+  const position = (center, extent) => {
+    const target = center + rng.range(-.025, .025);
+    // Pan inside the available crop on enlarged axes; keep smaller axes in view.
+    if (background) return .5 + (J.clamp(target, 0, 1) - .5) * Math.abs(1 - extent);
+    return J.clamp(target, extent / 2 + margin, 1 - extent / 2 - margin);
+  };
   return { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
 };
 const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
