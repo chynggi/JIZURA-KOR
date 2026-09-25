@@ -421,6 +421,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .stile.set-off { opacity: 0.55; }
 
 .media-lyric-insert {margin-bottom:14px}
+.media-lyric-insert .field {margin-bottom:8px}
 .media-lyric-insert > button {width:100%;white-space:normal}
 .media-lyric-insert .hint {margin:6px 0 0}
 .media-tech-group {border:1px solid var(--line);border-radius:8px;margin:14px 0;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
@@ -485,7 +486,6 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         <div id="mediaList" class="media-list"></div>
         <label class="check"><input id="mediaRandom" type="checkbox"><span>Shuffle order<small>Blank and locked cuts are preserved. Turn this off to select files per cut.</small></span></label>
         <label class="check"><input id="mediaLoop" type="checkbox"><span>Loop cuts<small>Repeat the files in order and create more cuts than files.</small></span></label>
-        <label class="field" id="mediaCutCountField" hidden>Number of cuts<input id="mediaCutCount" type="number" min="0" max="1000" step="1" inputmode="numeric"></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
           <label class="field">Foreground blend mode<select id="mediaBlend"><option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option></select></label>
           <label class="field">Foreground opacity (%)<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
@@ -519,6 +519,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 
       <div class="sec">
         <div id="mediaLyricInsert" class="media-lyric-insert" hidden>
+          <label class="field">Align inserted cuts to<select id="mediaLyricInsertMode"><option value="line">Lyric lines</option><option value="cut">Lyric cuts</option></select></label>
           <button id="btnMediaFromLyrics" type="button" aria-describedby="mediaLyricInsertHint">Insert cuts aligned to lyrics</button>
           <p id="mediaLyricInsertHint" class="hint"></p>
         </div>
@@ -4102,7 +4103,7 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
   };
   return { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
 };
-const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
+const defaults = () => ({ items: [], randomOrder: false, loop: false, lyricInsertMode: 'line', cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
   const o = Object.assign(defaults(), m || {});
   o.items = Array.isArray(o.items) ? o.items.filter(x => x && x.id && x.name && ['image', 'video'].includes(x.type)) : [];
@@ -4110,6 +4111,7 @@ J.normalizeMedia = m => {
   o.overrides = o.overrides || {};
   o.cutOverrides = o.cutOverrides || {};
   o.loop = !!o.loop;
+  o.lyricInsertMode = o.lyricInsertMode === 'cut' ? 'cut' : 'line';
   o.manualCuts = !!o.manualCuts;
   o.cutCount = J.clamp(Math.floor(+o.cutCount || 0), 0, 1000);
   if (!['normal', 'multiply', 'screen'].includes(o.blend)) o.blend = 'normal';
@@ -31325,22 +31327,23 @@ function syncSourceTab() {
   $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
   $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上Newすると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
-  $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
   $('mediaLyricInsert').hidden = !media;
-  const targets = mediaLyricTargets(layer);
+  const targets = mediaLyricTargets(layer), byCut = media && m.lyricInsertMode === 'cut';
+  $('mediaLyricInsertMode').value = byCut ? 'cut' : 'line';
   $('btnMediaFromLyrics').disabled = !targets.length;
-  $('mediaLyricInsertHint').textContent = !S.plan.lines.length
-    ? J.mediaLabel('歌詞を入力すると使用できます。', 'Enter lyrics to use this feature.')
-    : !media || !m.items.length
-      ? J.mediaLabel('画像 · 動画をNewすると使用できます。', 'Add images or videos to use this feature.')
-      : J.mediaLabel(`${targets.length}cutsを歌詞のline 頭にリンクして作成。既存cutsは置き換えます（元に戻すで復元可能). ループOFF時は素材数まで。`, `Create ${targets.length} cuts linked to lyric line starts. Replaces existing cuts (Undo restores them). With Loop cuts off, each file is used once.`);
+  $('mediaLyricInsertHint').textContent = !media || !m.items.length
+    ? J.mediaLabel('画像 · 動画をNewすると使用できます。', 'Add images or videos to use this feature.')
+    : !targets.length
+      ? J.mediaLabel('対象となる歌詞のline  · cutsがありません。', 'There are no lyric lines or cuts to align to.')
+      : J.mediaLabel(`${targets.length}cutsを歌詞の${byCut ? 'cuts開始位置' : 'line 頭'}にリンクして作成。既存cutsは置き換えます（元に戻すで復元可能). ループOFF時は素材数まで。`, `Create ${targets.length} cuts linked to lyric ${byCut ? 'cut' : 'line'} starts. Replaces existing cuts (Undo restores them). With Loop cuts off, each file is used once.`);
 }
 function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
 function mediaLyricTargets(layer) {
   const m = layer && S.project[layer];
   if (!m || !m.items.length) return [];
-  // Link only line starts, not inner lyric cuts, title cards, or blank cuts.
-  return S.plan.cuts.filter(cut => cut.line >= 0 && cut.part === 0).slice(0, m.loop ? 1000 : Math.min(1000, m.items.length));
+  // Cut mode includes every linkable lyric boundary, including blanks/interludes.
+  const targets = S.plan.cuts.filter(cut => m.lyricInsertMode === 'cut' ? cut.line >= 0 || cut.blank : cut.line >= 0 && cut.part === 0);
+  return targets.slice(0, m.loop ? 1000 : Math.min(1000, m.items.length));
 }
 function insertMediaFromLyrics() {
   const layer = activeMediaLayer();
@@ -31360,6 +31363,8 @@ function insertMediaFromLyrics() {
     // Keep upload order as the base assignment; the planner applies random order.
     m.cutOverrides[index] = { itemId: m.items[index % m.items.length].id };
     m.timing.lineTimes[index] = cut.start;
+    // Keep linked inner boundaries fixed when the line start is moved later.
+    if (m.lyricInsertMode === 'cut' && cut.line >= 0 && cut.part !== 0) S.project.timing.cutTimes[`${cut.line}:${cut.part}`] = cut.start;
     S.project.timelineLinks.push({ a: prefix + index, b: boundaryRef('lyrics', cut) });
   });
   replan(); seek(targets[0].start);
@@ -31390,8 +31395,6 @@ function renderMediaList() {
   });
   $('mediaRandom').checked = !!m.randomOrder;
   $('mediaLoop').checked = !!m.loop;
-  $('mediaCutCount').min = '0';
-  $('mediaCutCount').value = String(m.manualCuts ? m.cutCount : m.cutCount || m.items.length * 2 || 1);
   $('mediaBlend').value = m.blend;
   $('mediaOpacity').value = m.opacity;
 }
@@ -32012,6 +32015,11 @@ function bind() {
   $('sourceMedia').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'media'; renderMediaList(); renderMediaLines(); });
   $('sourceForeground').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'foreground'; renderMediaList(); renderMediaLines(); });
   $('btnMediaFromLyrics').addEventListener('click', insertMediaFromLyrics);
+  $('mediaLyricInsertMode').addEventListener('change', e => {
+    const layer = activeMediaLayer(); if (!layer) return;
+    S.project[layer].lyricInsertMode = e.target.value;
+    syncSourceTab(); autosave();
+  });
   const areaOverlay = $('areaEditOverlay');
   areaOverlay.addEventListener('pointerdown', e => {
     if (!S.areaEdit) return;
@@ -32058,17 +32066,6 @@ function bind() {
   $('mediaLoop').addEventListener('change', e => {
     const m = S.project[activeMediaLayer()]; m.loop = e.target.checked;
     if (e.target.checked && !m.cutCount) m.cutCount = Math.min(1000, m.items.length * 2);
-    replan();
-  });
-  $('mediaCutCount').addEventListener('change', e => {
-    const layer = activeMediaLayer(), m = S.project[layer], count = J.clamp(Math.floor(+e.target.value || 0), 0, 1000);
-    if (count !== S.plan[layer].cuts.length) {
-      freezeMediaCuts(layer);
-      for (let i = m.cutCount; i < count; i++) m.cutOverrides[i] = { itemId: null };
-      for (const key of Object.keys(m.cutOverrides)) if (+key >= count) delete m.cutOverrides[key];
-      for (const key of Object.keys(m.timing.lineTimes)) if (+key >= count) delete m.timing.lineTimes[key];
-    }
-    m.cutCount = count;
     replan();
   });
   $('lyricBlend').addEventListener('change', e => { S.project.media.blend = e.target.value; replan(); });

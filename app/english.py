@@ -311,6 +311,7 @@ def replace_copy(source, glossary):
 # words such as 歌詞 and 追加 cannot split a longer fork label in half.
 FORK_BODY = {
     '歌詞に合わせて一括挿入': 'Insert cuts aligned to lyrics',
+    '一括挿入の基準': 'Align inserted cuts to', '行に合わせる': 'Lyric lines', 'カットに合わせる': 'Lyric cuts',
     '空カット・ロック済みカットは維持します。素材の個別指定はオフにすると使えます。': 'Blank and locked cuts are preserved. Turn this off to select files per cut.',
     'タイムラインを縮小': 'Zoom timeline out', 'タイムラインを拡大': 'Zoom timeline in',
     '動画サイズ': 'Video size', '画面比と解像度から指定': 'Use aspect ratio and resolution',
@@ -356,7 +357,6 @@ FORK_BODY = {
     '画像・動画をここへドラッグ＆ドロップ、または「追加」から選択できます。素材はこのブラウザに保存されます。': 'Drop images or videos here, or use Add to select files. Files are stored in this browser.',
     'ランダム順で表示': 'Shuffle order', 'ループ表示': 'Loop cuts',
     '素材を順に繰り返し、素材数より多いカットを作成できます': 'Repeat the files in order and create more cuts than files.',
-    'カット数': 'Number of cuts',
     '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。': 'Press Space or the button when each lyric line or media cut starts.',
     '表示位置とサイズを編集': 'Edit position and size',
     'ドラッグして歌詞の表示範囲を指定': 'Drag to select the lyrics display area',

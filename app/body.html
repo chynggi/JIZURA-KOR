@@ -52,7 +52,6 @@
         <div id="mediaList" class="media-list"></div>
         <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で表示<small>空カット・ロック済みカットは維持します。素材の個別指定はオフにすると使えます。</small></span></label>
         <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ表示<small>素材を順に繰り返し、素材数より多いカットを作成できます</small></span></label>
-        <label class="field" id="mediaCutCountField" hidden>カット数<input id="mediaCutCount" type="number" min="0" max="1000" step="1" inputmode="numeric"></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
           <label class="field">前景の合成方法<select id="mediaBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
           <label class="field">前景不透明度（％）<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
@@ -86,6 +85,7 @@
 
       <div class="sec">
         <div id="mediaLyricInsert" class="media-lyric-insert" hidden>
+          <label class="field">一括挿入の基準<select id="mediaLyricInsertMode"><option value="line">行に合わせる</option><option value="cut">カットに合わせる</option></select></label>
           <button id="btnMediaFromLyrics" type="button" aria-describedby="mediaLyricInsertHint">歌詞に合わせて一括挿入</button>
           <p id="mediaLyricInsertHint" class="hint"></p>
         </div>

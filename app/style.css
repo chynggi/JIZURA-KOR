@@ -403,6 +403,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .stile.set-off { opacity: 0.55; }
 
 .media-lyric-insert {margin-bottom:14px}
+.media-lyric-insert .field {margin-bottom:8px}
 .media-lyric-insert > button {width:100%;white-space:normal}
 .media-lyric-insert .hint {margin:6px 0 0}
 .media-tech-group {border:1px solid var(--line);border-radius:8px;margin:14px 0;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
