@@ -470,7 +470,7 @@ function rerollMediaCut(layer, index) {
 function toggleMediaCutLock(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique }, layer);
+  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode }, layer);
   replan();
 }
 function performTimelineAction(control) {
@@ -1131,7 +1131,7 @@ function renderMediaLines() {
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
     const sw = source && (source.videoWidth || source.naturalWidth), sh = source && (source.videoHeight || source.naturalHeight);
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
-    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}カット目の配置とサイズを編集"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>配置・サイズを編集</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">自動配置に戻す</button>' : ''}</span>`;
+    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}カット目の配置とサイズを編集"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>配置・サイズを編集</button>${cut.placementMode === 'auto' ? `<span class="tagl">${J.mediaLabel('自動配置', 'Auto placement')}</span>` : ''}${cut.placementMode === 'manual' ? '<button class="foreground-placement-reset ghost" type="button">自動配置に戻す</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.mediaTechniqueName(cut)}</span></span><span class="tools">${selectTechnique(ov, cut)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}カット目を削除">削除</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label><label class="media-video-duration">動画の長さ（秒）<input type="number" min="0.04" max="3600" step="0.01" placeholder="自動" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}カット目の動画の長さ（秒）"></label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>クロマキー合成</label><label>色<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}カット目のクロマキー色" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
@@ -1145,7 +1145,7 @@ function renderMediaLines() {
     const placementOpen = li.querySelector('.foreground-placement-open');
     if (placementOpen) placementOpen.addEventListener('click', () => openMediaEditor(i, layer));
     const placementReset = li.querySelector('.foreground-placement-reset');
-    if (placementReset) placementReset.addEventListener('click', () => { mediaOv(i, { placement: undefined }); replan(); });
+    if (placementReset) placementReset.addEventListener('click', () => { mediaOv(i, { placement: null, lock: false, lockedPlacement: undefined, lockedPlacementMode: undefined }); replan(); });
     const chroma = li.querySelector('.media-chroma-toggle');
     if (chroma) {
       chroma.addEventListener('change', e => { mediaOv(i, { chromaKey: e.target.checked }); replan(); });
@@ -1586,7 +1586,7 @@ function shuffleMediaEffects() {
 function renderMediaEffects() {
   const box = $('mediaEffectsPanel'); if (!box) return;
   const settings = J.mediaEffectSettings(S.project), L = J.mediaLabel;
-  box.innerHTML = `<p class="note">${L('前景・背景で共通。チェックした手法を「自動」とシャッフルで使用します。手動指定した手法とロック済みカットは維持されます。', 'Shared by foreground and background. Checked techniques are used by Auto and Shuffle. Explicit selections and locked cuts are preserved.')}</p><div id="mediaEffectSliders"></div><div class="row"><button type="button" id="shuffleMediaEffects">${L('画像・動画をシャッフル', 'Shuffle media')}</button><button type="button" id="enableMediaEffects">${L('全て有効', 'Enable all')}</button><button type="button" id="disableMediaEffects">${L('全て無効', 'Disable all')}</button></div>`;
+  box.innerHTML = `<p class="note">${L('前景・背景で共通。チェックした手法を「自動」とシャッフルで使用します。手動指定した手法とロック済みカットは維持されます。', 'Shared by foreground and background. Checked techniques are used by Auto and Shuffle. Explicit selections and locked cuts are preserved.')}</p><label class="check"><input id="mediaAutoPlacement" type="checkbox" ${settings.autoPlacement !== false ? 'checked' : ''}><span>${L('配置・サイズにも自動で変化を付ける', 'Vary position and size automatically')}<small>${L('手動配置とロックは維持します。演出無しは中央に全体表示します。', 'Manual placement and locks are preserved. No effects keeps the centered full view.')}</small></span></label><div id="mediaEffectSliders"></div><div class="row"><button type="button" id="shuffleMediaEffects">${L('画像・動画をシャッフル', 'Shuffle media')}</button><button type="button" id="enableMediaEffects">${L('全て有効', 'Enable all')}</button><button type="button" id="disableMediaEffects">${L('全て無効', 'Disable all')}</button></div>`;
   for (const [key, name, max, step] of [['motion', L('動きの強さ', 'Motion intensity'), 2, .05], ['treatment', L('加工の強さ', 'Treatment intensity'), 1, .05], ['duration', L('登場・退場時間', 'Entrance / exit (s)'), 1.5, .05]]) {
     const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
     row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project); next[key] = +e.target.value; S.project.mediaEffects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + key); replanSoon(100); }); box.querySelector('#mediaEffectSliders').appendChild(row);
@@ -1600,6 +1600,7 @@ function renderMediaEffects() {
     }
     box.appendChild(section);
   }
+  $('mediaAutoPlacement').onchange = e => { const next = J.mediaEffectSettings(S.project); next.autoPlacement = e.target.checked; S.project.mediaEffects = next; replan(); };
   $('shuffleMediaEffects').onclick = () => { shuffleMediaEffects(); for (const layer of ['media', 'foreground']) S.project[layer].seed++; replan(); };
   const all = value => { const next = J.mediaEffectSettings(S.project); next.enabled = Object.fromEntries(Object.keys(J.MEDIA_TECH).map(key => [key, value])); S.project.mediaEffects = next; renderMediaEffects(); replan(); };
   $('enableMediaEffects').onclick = () => all(true); $('disableMediaEffects').onclick = () => all(false);

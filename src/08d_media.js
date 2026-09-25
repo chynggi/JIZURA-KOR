@@ -29,6 +29,33 @@ J.mediaPlacementRect = (placement, sw, sh, w, h) => {
   return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
 };
 J.mediaAssets = new Map();
+J.normalizeMediaPlacement = p => p && ['cx', 'cy', 'w'].every(k => Number.isFinite(+p[k])) ? {
+  cx: +p.cx, cy: +p.cy, w: +p.w,
+  h: p.h != null && Number.isFinite(+p.h) ? +p.h : undefined,
+  lockAspect: p.lockAspect !== false,
+  angle: p.angle != null && Number.isFinite(+p.angle) ? J.clamp(+p.angle, -180, 180) : 0,
+} : null;
+J.autoMediaPlacement = (project, cut, item, plan, layer) => {
+  const [W, H] = plan.W && plan.H ? [plan.W, plan.H] : J.designSize ? J.designSize(project) : [1920, 1080];
+  const source = J.mediaAssets.get(cut.itemId)?.element;
+  const sw = source && (source.videoWidth || source.naturalWidth || source.width) || item.width || W;
+  const sh = source && (source.videoHeight || source.naturalHeight || source.height) || item.height || H;
+  const fit = J.mediaPlacementRect(null, sw, sh, W, H);
+  const rng = J.rng(J.h(cut.seed, J.sid(layer), 733));
+  // These are compositions, not crops: the fitted aspect ratio stays intact.
+  const [px, py, size] = rng.pick([
+    [.5, .5, .92], [.5, .5, .7], [.27, .5, .64], [.73, .5, .64],
+    [.5, .27, .64], [.5, .73, .64], [.26, .26, .48], [.74, .26, .48],
+    [.26, .74, .48], [.74, .74, .48],
+  ]);
+  const group = J.MEDIA_TECH?.[cut.technique]?.group;
+  const dynamic = group === 'dynamic' || group === 'graphic';
+  const factor = layer === 'media' ? 1.08 : .9;
+  const scale = J.clamp(size * factor * rng.range(.92, 1.08), .36, dynamic ? .72 : .94);
+  const w = fit.w * scale, h = fit.h * scale, margin = dynamic ? .07 : .03;
+  const position = (center, extent) => J.clamp(center + rng.range(-.025, .025), extent / 2 + margin, 1 - extent / 2 - margin);
+  return { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
+};
 const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
   const o = Object.assign(defaults(), m || {});
@@ -102,18 +129,26 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
       videoLoop: !!item && item.type === 'video' && ov.videoLoop !== false,
       chromaKey: !!item && item.type === 'video' && ov.chromaKey === true,
       chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00',
-      placement: ov.placement && ['cx', 'cy', 'w'].every(k => Number.isFinite(+ov.placement[k])) ? {
-        cx: +ov.placement.cx, cy: +ov.placement.cy, w: +ov.placement.w,
-        h: Number.isFinite(+ov.placement.h) && ov.placement.h != null ? +ov.placement.h : undefined,
-        lockAspect: ov.placement.lockAspect !== false,
-        angle: ov.placement.angle != null && Number.isFinite(+ov.placement.angle) ? J.clamp(+ov.placement.angle, -180, 180) : 0,
-      } : null, seed };
+      placement: J.normalizeMediaPlacement(ov.placement), seed };
   });
   if (J.mediaTechnique) for (const cut of cuts) {
     const ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[cut.index] || {});
     Object.assign(cut, J.mediaTechnique(project, ov, J.rng(J.h(cut.seed, 173))));
     cut.effectTransition = cut.trans;
     delete cut.trans;
+  }
+  for (const cut of cuts) {
+    const ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[cut.index] || {});
+    cut.placementMode = cut.placement ? 'manual' : 'default';
+    if (cut.placement || !cut.itemId) continue;
+    if (ov.lock) {
+      // Old locks without a stored placement retain their original centered framing.
+      cut.placement = J.normalizeMediaPlacement(ov.lockedPlacement);
+      cut.placementMode = ov.lockedPlacementMode || (cut.placement ? 'auto' : 'default');
+    } else if (cut.technique && !['none', 'legacy'].includes(cut.technique) && cut.effectSettings?.autoPlacement !== false) {
+      cut.placement = J.autoMediaPlacement(project, cut, items.find(item => item.id === cut.itemId), lyricPlan, layer);
+      cut.placementMode = 'auto';
+    }
   }
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
@@ -160,6 +195,8 @@ J.attachMedia = (item, file) => new Promise((resolve, reject) => {
   const el = document.createElement(item.type === 'video' ? 'video' : 'img');
   if (item.type === 'video') { el.muted = true; el.playsInline = true; el.preload = 'auto'; }
   const ready = () => {
+    item.width = el.videoWidth || el.naturalWidth;
+    item.height = el.videoHeight || el.naturalHeight;
     let poster = url;
     if (item.type === 'video') {
       try { const c = document.createElement('canvas'); c.width = 96; c.height = 54; c.getContext('2d').drawImage(el, 0, 0, 96, 54); poster = c.toDataURL('image/png'); } catch (e) {}

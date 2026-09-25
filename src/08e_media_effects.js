@@ -52,7 +52,7 @@ for (const [key, ja, en] of [
   ['flashCross', 'フラッシュ接続', 'Flash cross transition'],
 ]) add('transition_' + key, ja, en, 'transition', 'fade', 'still', 'fade', 'none', key);
 J.mediaEffectSettings = p => {
-  const settings = Object.assign({ motion: 1, treatment: 1, duration: 0.45, enabled: {} }, p.mediaEffects || {});
+  const settings = Object.assign({ motion: 1, treatment: 1, duration: 0.45, autoPlacement: true, enabled: {} }, p.mediaEffects || {});
   for (const [key, min, max, fallback] of [['motion', 0, 2, 1], ['treatment', 0, 1, 1], ['duration', .05, 1.5, .45]]) settings[key] = Number.isFinite(+settings[key]) ? J.clamp(+settings[key], min, max) : fallback;
   settings.enabled = settings.enabled && typeof settings.enabled === 'object' ? settings.enabled : {};
   return settings;

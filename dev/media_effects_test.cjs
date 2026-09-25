@@ -68,7 +68,7 @@ const assert = require('node:assert/strict');
         const x=source.getContext('2d');x.fillStyle='#00ff00';x.fillRect(0,0,120,80);x.fillStyle='red';x.fillRect(40,20,40,40);
         const video={id:'keyed',name:'keyed',type:'video'};J.mediaAssets.set(video.id,{element:source});
         for (const key of ['none','iris','echo','glitch']) {
-          const plan=J.planMedia({seed:1,foreground:{items:[video],cutOverrides:{0:{technique:key,chromaKey:true}}}},{duration:4,lines:[]},0,'foreground');
+          const plan=J.planMedia({seed:1,foreground:{items:[video],cutOverrides:{0:{technique:key,chromaKey:true,placement:{cx:.5,cy:.5,w:.84375}}}}},{duration:4,lines:[]},0,'foreground');
           ctx.clearRect(0,0,320,180);ctx.globalAlpha=.3;J.drawMediaCut(ctx,plan.cuts[0],2);ctx.globalAlpha=1;
           if(ctx.getImageData(40,50,1,1).data[3]) failures.push(key+':chroma leaked');
           if(!ctx.getImageData(160,90,1,1).data[3]) failures.push(key+':subject disappeared');
