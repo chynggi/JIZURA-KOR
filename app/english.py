@@ -459,7 +459,7 @@ FORK_BODY = {
     '歌詞からJevで作る（β）': 'Create from lyrics with Jev (β)',
     'Jevの使い方': 'Jev guide',
     'オリジナル版（852wa/JIZURA）': 'Original edition (852wa/JIZURA)',
-    '字面 JIZURA（hirazi fork)': 'JIZURA (hirazi fork)',
+    '字面 JIZURA（hirazi fork）': 'JIZURA (hirazi fork)',
     'Jevへの追加指示（任意）': 'Additional directions for Jev (optional)',
     'Jevへの追加指示': 'Additional directions for Jev',
     '例：夜の街のような静かな雰囲気。サビは大胆に。': 'Example: A quiet night city mood. Make the chorus bold.',

@@ -353,7 +353,125 @@ async def test_fork_features(b, url):
     assert not errs, errs
     await pg.close()
 
-TESTS = [test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end, test_fork_features]
+def near(rgba, rgb, tol=30):
+    return rgba[3] > 200 and all(abs(rgba[i] - rgb[i]) <= tol for i in range(3))
+
+async def test_cut_times_follow_line(b, url):
+    # 손으로 정한 컷 경계(timing.cutTimes, 초)는 행 시작이 움직이면 같이 움직여야 한다.
+    # 재현: 경계 0:1 = 4.0, 0행을 2 s → 8 s로 옮기면 고치기 전에는 첫 컷이 8.00–8.22 s가 됐다.
+    pg, errs = await open_app(b, url)
+    r = await pg.evaluate('''async () => {
+      document.querySelector('#modePro').click();
+      const ta = document.querySelector('#lyrics');
+      ta.value = '밤하늘에 빛나는 별들을 보며\\n둘째 줄'; ta.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 1500));
+      const P = J.ui.project;
+      P.overrides = { 0: { cuts: 2 } };
+      P.timing.lineTimes = { 0: 2, 1: 20 }; P.timing.cutTimes = { '0:1': 4 };
+      J.uiApi.replan();
+      const first = () => { const c = J.ui.plan.cuts.find(c => c.line === 0 && c.part === 0); return { start: c.start, end: c.end }; };
+      const out = { before: first() };
+      // 탭 동기화(버튼과 같은 경로): 0행을 8 s에 탭하고 종료
+      document.querySelector('#btnTap').click();
+      J.ui.t = 8; document.querySelector('#tapBtn').click();
+      document.querySelector('#tapStop').click();
+      out.tap = Object.assign(first(), { ct: P.timing.cutTimes['0:1'] });
+      // 행 목록의 시각 입력란: 0행을 5 s로
+      const f = J.ui.lineEls[0].querySelector('.time'); f.value = '5'; f.dispatchEvent(new Event('change'));
+      out.field = Object.assign(first(), { ct: J.ui.project.timing.cutTimes['0:1'] });
+      // 가사 지우기: 행 번호에 묶인 것은 모두 지운다
+      J.ui.project.lyricCutOptions = { '0:0': { frontmost: true } };
+      J.ui.project.lyricBlankCuts = [{ id: 'bx', beforeLine: 1, start: 15 }];
+      document.querySelector('#btnClearLyrics').click();
+      const Q = J.ui.project;
+      out.cleared = { cutTimes: Object.keys(Q.timing.cutTimes || {}).length, opts: Object.keys(Q.lyricCutOptions || {}).length,
+                      blanks: (Q.lyricBlankCuts || []).length, links: (Q.timelineLinks || []).length };
+      return out;
+    }''')
+    assert abs(r['before']['start'] - 2) < 1e-6 and abs(r['before']['end'] - 4) < 1e-6, r
+    assert abs(r['tap']['start'] - 8) < 1e-6, r
+    assert r['tap']['end'] - r['tap']['start'] > 0.5, f'첫 컷이 너무 짧습니다(경계가 따라오지 않음): {r}'
+    assert abs(r['tap']['ct'] - 10) < 1e-6, f'경계가 Δ(+6 s)만큼 옮겨지지 않았습니다: {r}'
+    assert abs(r['field']['start'] - 5) < 1e-6 and abs(r['field']['ct'] - 7) < 1e-6, f'시각 입력란 경로: {r}'
+    assert r['cleared'] == {'cutTimes': 0, 'opts': 0, 'blanks': 0, 'links': 0}, r
+    assert not errs, errs
+    await pg.close()
+
+# 레이어 픽셀 스텁: 배경 컷 = 전체 빨강, 전경 컷 = 오른쪽 30% 노랑, 소재 뒤 = 왼쪽 40% 초록, 소재 앞 = 40~60% 파랑
+STUB_LAYERS = '''
+  const dm = J.drawMedia, da = J.drawAssets, dc = J.Renderer.prototype.drawCut;
+  J.drawMedia = (ctx, plan, t, o, layer) => {
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+    if (layer === 'media') { ctx.fillStyle = '#ff0000'; ctx.fillRect(0, 0, w, h); }
+    else if (layer === 'foreground') { ctx.fillStyle = '#ffff00'; ctx.fillRect(w * 0.7, 0, w * 0.3, h); }
+  };
+  J.drawAssets = (ctx, plan, layer) => {
+    const w = plan.W, h = plan.H;
+    if (layer === 'back') { ctx.fillStyle = '#00ff00'; ctx.fillRect(0, 0, w * 0.4, h); }
+    else if (layer === 'front') { ctx.fillStyle = '#0000ff'; ctx.fillRect(w * 0.4, 0, w * 0.2, h); }
+  };
+  J.Renderer.prototype.drawCut = () => null;
+  const restore = () => { J.drawMedia = dm; J.drawAssets = da; J.Renderer.prototype.drawCut = dc; J.mediaAssets.delete('m'); J.mediaAssets.delete('f'); };
+  const cv = document.createElement('canvas'); cv.width = 160; cv.height = 90;
+  const ctx = cv.getContext('2d');
+  const at = fx => Array.from(ctx.getImageData(Math.round(cv.width * fx), Math.round(cv.height / 2), 1, 1).data);
+  const OPT = { noPost: true, noHud: true, noTrans: true, noGhost: true, scale: cv.width / J.ui.plan.W };
+'''
+
+async def test_layered_export_media(b, url):
+    # 투명 PNG 앞/뒤 레이어(11_export.js: R.frame(..., { transparent: true, layer: 'back' | 'front' })):
+    # 배경 컷은 뒤 레이어에만, 전경 컷은 앞 레이어에만 들어가야 한다
+    pg, errs = await open_app(b, url)
+    px = await pg.evaluate('() => {' + STUB_LAYERS + '''
+      const plan = J.ui.plan, cut = plan.cuts.find(c => !c.blank) || plan.cuts[0];
+      cut.frontmost = false; plan.assets = [];
+      plan.media = { cuts: [{ start: 0, end: 999, index: 0, itemId: 'm' }], opacity: 100, blend: 'normal' };
+      plan.foreground = { cuts: [{ start: 0, end: 999, index: 0, itemId: 'f' }], opacity: 100, blend: 'normal' };
+      J.mediaAssets.set('m', {}); J.mediaAssets.set('f', {});
+      const t = (cut.start + cut.end) / 2, out = {};
+      try {
+        for (const layer of ['back', 'front']) {
+          new J.Renderer().frame(ctx, plan, t, Object.assign({ transparent: true, layer }, OPT));
+          out[layer] = { left: at(0.2), right: at(0.85) };
+        }
+      } finally { restore(); }
+      return out;
+    }''')
+    assert near(px['back']['left'], (255, 0, 0)), f'뒤 레이어에 배경 컷이 없습니다: {px}'
+    assert near(px['back']['right'], (255, 0, 0)), f'뒤 레이어에 전경 컷이 들어갔습니다: {px}'
+    assert near(px['front']['right'], (255, 255, 0)), f'앞 레이어에 전경 컷이 없습니다: {px}'
+    assert px['front']['left'][3] < 10, f'앞 레이어에 배경 컷이 들어갔습니다: {px}'
+    assert not errs, errs
+    await pg.close()
+
+async def test_blank_cut_keeps_assets(b, url):
+    # 빈 가사 컷에서도 소재(뒤·앞)는 보여야 한다
+    pg, errs = await open_app(b, url)
+    r = await pg.evaluate('''async () => {
+      document.querySelector('#modePro').click();
+      const ta = document.querySelector('#lyrics');
+      ta.value = '하나\\n둘'; ta.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 1500));
+      const P = J.ui.project;
+      P.timing.lineTimes = { 0: 2, 1: 10 }; P.lyricBlankCuts = [{ id: 'b1', beforeLine: 1, start: 7 }];
+      J.uiApi.replan();''' + STUB_LAYERS + '''
+      const plan = J.ui.plan, blank = plan.cuts.find(c => c.blank);
+      plan.assets = [{ id: 'x' }]; plan.media = { cuts: [] }; plan.foreground = { cuts: [] };
+      const out = { blank: !!blank };
+      try {
+        new J.Renderer().frame(ctx, plan, (blank.start + blank.end) / 2, OPT);
+        out.back = at(0.2); out.front = at(0.5);
+      } finally { restore(); }
+      return out;
+    }''')
+    assert r['blank'], r
+    assert near(r['back'], (0, 255, 0)), f'빈 컷에서 소재(뒤)가 사라졌습니다: {r}'
+    assert near(r['front'], (0, 0, 255)), f'빈 컷에서 소재(앞)가 사라졌습니다: {r}'
+    assert not errs, errs
+    await pg.close()
+
+TESTS = [test_cut_times_follow_line, test_layered_export_media, test_blank_cut_keeps_assets,
+         test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end, test_fork_features]
 async def main():
     with serve() as url:
         async with async_playwright() as p:

@@ -493,6 +493,25 @@ function tlHandleAt(ev) {
   for (const ln of S.plan.lines) { const d = Math.abs((ln.start - off) / vd * r.width - (ev.clientX - r.left)); if (d < bd) { bd = d; best = ln.index; } }
   return best;
 }
+// hand-set cut boundaries (timing.cutTimes 'line:part' / 'line:interlude', seconds) follow their line when its start
+// moves (line-start handle, tap sync, 곡에서 초안, the time field): base = the boundaries and line starts before the
+// change, so a drag or a tap pass is always measured from where it began; one that no longer fits its line is dropped
+function lineShiftBase() {
+  return { cutTimes: Object.assign({}, S.project.timing.cutTimes || {}), starts: new Map(S.plan.lines.map(l => [l.index, l.start])) };
+}
+function followLineStarts(base) {
+  if (!base) return;
+  const lines = new Map(S.plan.lines.map(l => [l.index, l])), out = {};
+  for (const [key, v] of Object.entries(base.cutTimes)) {
+    const ln = lines.get(parseInt(key, 10)), s0 = base.starts.get(parseInt(key, 10));
+    const d = ln && s0 != null && Number.isFinite(+v) ? ln.start - s0 : 0;
+    if (Math.abs(d) < 1e-6) { out[key] = v; continue; }
+    const t = +(+v + d).toFixed(3);
+    if (t > ln.start && t < ln.end) out[key] = t;
+  }
+  if (JSON.stringify(out) === JSON.stringify(S.project.timing.cutTimes || {})) return;
+  S.project.timing.cutTimes = out; replan();
+}
 function tlDragTo(i, ev) {
   let t = tlTime(ev);
   if (!ev.shiftKey && S.plan.beats && S.plan.beats.length) {       // snap to the nearest beat (Shift: free)
@@ -505,7 +524,7 @@ function tlDragTo(i, ev) {
   // pin the neighbours too, so moving one boundary never shifts the lines after it
   L.forEach(ln => { if (S.project.timing.lineTimes[ln.index] == null) S.project.timing.lineTimes[ln.index] = +ln.start.toFixed(3); });
   S.project.timing.lineTimes[i] = t;
-  replan(); seek(t + 0.001);
+  replan(); followLineStarts(TL.base); seek(t + 0.001);
 }
 
 /* ---------------- keep the playing line in view (the list scrolls inside its column) ---------------- */
@@ -553,7 +572,7 @@ function timelineMarkers() {
   for (const [layer, id] of [['foreground', 'foregroundTimeline'], ['lyrics', 'timeline'], ['media', 'mediaTimeline']]) {
     const canvas = $(id), cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0 || c.blank) : S.plan[layer].cuts;
     const y = canvas.offsetTop + 11;
-    for (const cut of cuts) markers.push({ ref: boundaryRef(layer, cut), layer, x: canvas.offsetLeft + cut.start / D * canvas.clientWidth, y });
+    for (const cut of cuts) if (layer !== 'lyrics' || !/^interlude:/.test(cut.part)) markers.push({ ref: boundaryRef(layer, cut), layer, x: canvas.offsetLeft + cut.start / D * canvas.clientWidth, y });
   }
   return markers;
 }
@@ -682,6 +701,8 @@ function timelineBoundaryAt(ev, layer) {
   return chosen ? timelineBoundaryForCut(chosen, layer) : null;
 }
 function timelineBoundaryForCut(chosen, layer) {
+  // the later pieces of a long interlude ('interlude:k') are split by the planner and have no stored time: not draggable
+  if (layer === 'lyrics' && /^interlude:/.test(chosen.part)) return null;
   const duration = S.plan.duration;
   let min, max, target;
   if (layer !== 'lyrics') {
@@ -952,8 +973,9 @@ function renderLines() {
     q('.time').addEventListener('change', e => {
       const v = parseFloat(e.target.value);
       if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
+      const base = lineShiftBase();
       if (isFinite(v)) S.project.timing.lineTimes[i] = Math.max(0, v); else delete S.project.timing.lineTimes[i];
-      replan();
+      replan(); followLineStarts(base);
     });
     q('.txt').addEventListener('click', () => seek(ln.start + 0.001));
     q('.txt').addEventListener('dblclick', () => editLine(li, ln));
@@ -1021,7 +1043,8 @@ function clearLyrics() {
   const P = S.project;
   if (!P.lyrics.trim() && !Object.keys(P.timing.lineTimes || {}).length) { $('lyrics').focus(); return; }
   pause();
-  P.lyrics = ''; P.timing.lineTimes = {}; P.overrides = {}; P.exportRange = null; $('lyrics').value = '';
+  P.lyrics = ''; P.timing.lineTimes = {}; P.timing.cutTimes = {}; P.overrides = {}; P.exportRange = null; $('lyrics').value = '';
+  P.lyricCutOptions = {}; P.lyricBlankCuts = []; P.timelineLinks = [];
   replan(); flushSave(); seek(0);
   toast('가사를 지웠습니다(‘실행 취소’나 Ctrl+Z로 복구 가능)');
 }
@@ -1031,10 +1054,13 @@ async function resetAll() {
   if (S.exporting) return;
   if (S.tap) stopTap();
   pause();
+  // 배경·전경 files go too (reset also drops the undo history that could bring them back)
+  for (const id of [...S.project.media.items, ...S.project.foreground.items].map(item => item.id).concat([...J.mediaAssets.keys()])) queueMediaDeletion(id);
   S.project = mergeProject(null); S.project.lyrics = '';
   S.audio = null; if ($('audioFile')) $('audioFile').value = '';
   if (J.forgetSong) await J.forgetSong();
   for (const id of [...J.ASSETS.keys()]) await J.assetForget(id);
+  await cleanupDeletedMedia();
   try { localStorage.removeItem('jizura.mlConsent'); } catch (e) {}
   renderAssets();
   $('audioName').textContent = audioNameDefault;
@@ -1225,9 +1251,9 @@ function syncSourceTab() {
   $('foregroundBlendFields').hidden = layer !== 'foreground';
   $('lyricBlend').value = S.project.media.blend;
   $('lyricOpacity').value = S.project.media.opacity;
-  $('linesInfo').textContent = media ? `소재 ${m.items.length} / 컷 ${S.plan[layer].cuts.length}` : `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
+  $('linesInfo').textContent = media ? `파일 ${m.items.length} / 컷 ${S.plan[layer].cuts.length}` : `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
   $('mediaRandom').disabled = !media || m.items.length < 2 || m.manualCuts;
-  $('mediaRandom').title = media && m.manualCuts ? '수동으로 추가한 컷에서는 소재를 개별로 지정합니다' : '';
+  $('mediaRandom').title = media && m.manualCuts ? '수동으로 추가한 컷에서는 파일을 개별로 지정합니다' : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
   $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
 }
@@ -1235,7 +1261,7 @@ function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground'
 function mediaThumb(item, cls = '') {
   if (!item) return `<span class="missing media-ln-thumb" aria-hidden="true">—</span>`;
   const asset = J.mediaAssets.get(item.id);
-  if (!asset) return `<span class="missing">소재 없음</span>`;
+  if (!asset) return `<span class="missing">파일 없음</span>`;
   return `<img class="${cls}" src="${asset.poster || asset.url}" alt="">`;
 }
 function renderMediaList() {
@@ -1363,7 +1389,7 @@ function renderMediaLines() {
   S.plan[layer].cuts.forEach((cut, i) => {
     addButton(i);
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
-    const fileSelect = `<select class="media-cut-file" aria-label="${i + 1}컷 소재"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
+    const fileSelect = `<select class="media-cut-file" aria-label="${i + 1}컷 파일"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (ov[key] === undefined) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
@@ -1532,7 +1558,15 @@ function histGo(d) {
   remember();                    // hand edits made since the last step become a stop of their own
   const j = H.i + d; if (j < 0 || j >= H.list.length) return;
   H.i = j;
-  Object.assign(S.project, JSON.parse(H.list[j]));
+  const snap = JSON.parse(H.list[j]);
+  // 표시 영역 is not part of a look: keep the rows' current areas (as おまかせ does)
+  if (snap.overrides) {
+    const ov = {};
+    for (const [i, o] of Object.entries(snap.overrides)) { const { area, ...rest } = o || {}; if (Object.keys(rest).length) ov[i] = rest; }
+    for (const [i, o] of Object.entries(S.project.overrides || {})) if (o && o.area) ov[i] = Object.assign({}, ov[i], { area: o.area });
+    snap.overrides = ov;
+  }
+  Object.assign(S.project, snap);
   fontKey = ''; syncUI(); replan(); updateHist();
   toast(`${j + 1} / ${H.list.length}번째 안`);
   restartPreview();
@@ -1724,7 +1758,7 @@ function syncOut() {
   const k = J.keyMode(S.project) || 'off';
   $('outKey').value = k; $('eKey').value = k;
   $('outCenter').checked = $('eCenter').checked = !!S.project.centerFree;
-  const tall = J.designSize(S.project.aspect)[1] > J.designSize(S.project.aspect)[0] * 1.1;
+  const [dW, dH] = J.designSize(S.project), tall = dH > dW * 1.1;   // the planner's frame (직접 지정한 영상 크기 포함)
   document.querySelectorAll('.center-dir').forEach(el => { el.hidden = !(S.project.centerFree && tall); });
   document.querySelectorAll('.centerDirSel').forEach(el => { el.value = S.project.centerDir === 'lr' ? 'lr' : 'tb'; });
   const kb = $('keyBadge');
@@ -2017,7 +2051,8 @@ async function prepareAssets() {
   S.need = true; renderAssets();
 }
 
-// replace the project; 소재 files the new one does not use are dropped from this browser's storage.
+// replace the project; 소재 and 배경·전경 files the new one does not use are queued for deletion (Ctrl+Z can still bring
+// the previous project back with its files; they go on pagehide / next start when no current setting uses them).
 // A file saved with 「곡·소재 포함 저장」 carries p.bundle (older files: p.media with .files and no .items):
 // its files go into this browser's storage first.
 // (project.media is also the 背景 cut settings, which have items[] and no files{}: only the bundle form is taken out)
@@ -2029,10 +2064,12 @@ async function openProject(p) {
     for (const [k, r] of Object.entries(bundle.files || {})) await J.idbPut(k, { name: r.name, type: r.type, data: fromB64(r.data) });
     for (const [id, r] of Object.entries(bundle.mediaFiles || {})) await J.storeMedia(id, new File([fromB64(r.data)], r.name, { type: r.type || '' }));
   }
-  const old = S.project.assets.map(a => a.id);
+  const mediaIds = P => [...P.media.items, ...P.foreground.items].map(item => item.id);
+  const old = S.project.assets.map(a => a.id), oldMedia = mediaIds(S.project);
   S.project = mergeProject(p); syncUI(); replan();
-  const keep = new Set(S.project.assets.map(a => a.id));
-  for (const id of old) if (!keep.has(id)) await J.assetForget(id);
+  const keep = new Set(S.project.assets.map(a => a.id)), keepMedia = new Set(mediaIds(S.project));
+  for (const id of old) if (!keep.has(id)) queueAssetDeletion(id);
+  for (const id of oldMedia) if (!keepMedia.has(id)) queueMediaDeletion(id);
   await prepareAssets();
   await Promise.all([restoreMediaAssets(), J.restoreFontFiles(S.project.userFonts)]); fontKey = ''; ensureFonts();
   if (bundle && bundle.song) {
@@ -2077,8 +2114,9 @@ async function draftFromSong() {
   try { ts = await J.draftLineStarts(S.audio, lines.map(l => l.text)); } catch (e) { console.warn(e); }
   showMsg(null);
   if (ts.length !== lines.length) { toast('곡에서 행의 시작을 찾지 못했습니다'); return; }
+  const base = lineShiftBase();
   S.project.timing.lineTimes = {}; ts.forEach((t, i) => { S.project.timing.lineTimes[i] = t; });
-  replan(); flushSave();
+  replan(); followLineStarts(base); flushSave();
   toast(`${lines.length}행의 시작을 곡에서 추정했습니다(초안). 어긋난 행은 ◎ Shift+클릭이나 타임라인으로 고치세요. Ctrl+Z로 되돌릴 수 있습니다`);
 }
 
@@ -2090,9 +2128,9 @@ function startTap(from = 0, single = false) {
   if (!(layer ? S.plan[layer].cuts.length || S.project[layer].loop : S.plan.lines.length)) return;
   if (layer) { from = 0; single = false; }
   else from = J.clamp(from | 0, 0, S.plan.lines.length - 1);
-  S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop };
+  S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop, base: layer ? null : lineShiftBase() };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
-  $('tapHint').textContent = S.tap.append ? '탭할 때마다 소재를 순환하며 컷을 추가합니다. 종료할 때까지 계속할 수 있습니다.' : '곡에 맞춰 각 행·소재가 시작되는 순간 Space나 버튼을 누르세요.';
+  $('tapHint').textContent = S.tap.append ? '탭할 때마다 배경·전경 파일을 순환하며 컷을 추가합니다. 종료할 때까지 계속할 수 있습니다.' : '곡에 맞춰 각 행·컷이 시작되는 순간 Space나 버튼을 누르세요.';
   $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
   let t0 = 0;
   if (!layer && from > 0) {
@@ -2128,17 +2166,17 @@ function tapNow() {
   if (!layer) for (const k of Object.keys(LT)) if (+k > i && LT[k] <= t + 0.2) delete LT[k];
   S.tap.i++;
   if (S.tap.single) { stopTap(); toast(`${i + 1}행의 시작을 ${J.fmtTime(t)}로 맞췄습니다`); return; }
-  replan();
+  replan(); followLineStarts(S.tap.base);
   if (S.tap.i >= (layer ? S.plan[layer].cuts.length : S.plan.lines.length)) stopTap(); else updateTap();
 }
 function tapBack() {                    // 1つ戻る: undo the last tap and jump back a little
   if (!S.tap || !S.tap.done.length) return;
   const d = S.tap.done.pop(), LT = (S.tap.layer ? S.project[S.tap.layer].timing : S.project.timing).lineTimes;
   if (d.had != null) LT[d.i] = d.had; else delete LT[d.i];
-  S.tap.i = d.i; replan(); updateTap();
+  S.tap.i = d.i; replan(); followLineStarts(S.tap.base); updateTap();
   seek(Math.max(0, S.t - 3)); if (!S.playing) play();
 }
-function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); flushSave(); }
+function stopTap() { const base = S.tap && S.tap.base; S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); followLineStarts(base); flushSave(); }
 function updateTap() {
   const bb = $('tapBack'); if (bb) bb.disabled = !S.tap.done.length;
   if (S.tap.append) {
@@ -2327,7 +2365,7 @@ function bind() {
     tl.addEventListener('pointerdown', e => {
       // lyric timeline: the line-start handles in the top band (snap to the beat; Shift: free)
       const h = layer === 'lyrics' && !S.tap && !S.exporting ? tlHandleAt(e) : -1;
-      if (h >= 0) { tl.setPointerCapture(e.pointerId); TL.drag = h; pause(); tl.style.cursor = 'ew-resize'; drag = { mode: 'handle' }; return; }
+      if (h >= 0) { tl.setPointerCapture(e.pointerId); TL.drag = h; TL.base = lineShiftBase(); pause(); tl.style.cursor = 'ew-resize'; drag = { mode: 'handle' }; return; }
       const boundary = !S.exporting && !S.tap && timelineBoundaryAt(e, layer);
       const limits = boundary && boundaryGroupLimits(boundary.ref);
       drag = boundary && limits && limits.max > limits.min ? { ...boundary, min: limits.min, max: limits.max, mode: 'boundary', originX: e.clientX, preview: boundary.start, moved: false, duration: S.plan.duration } : { mode: 'seek' };

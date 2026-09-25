@@ -541,9 +541,9 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
   <main class="work">
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="가사와 타이밍">
-      <nav class="source-tabs" role="tablist" aria-label="소재"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
+      <nav class="source-tabs" role="tablist" aria-label="가사·배경·전경"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
       <div class="sec" id="lyricsPane">
-        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(‘되돌리기’나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
+        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
         <label class="ai-prompt-label" for="aiPrompt">AI에게 추가 지시(선택)</label>
         <textarea id="aiPrompt" rows="2" maxlength="1000" placeholder="예: 밤거리 같은 조용한 분위기. 사비는 대담하게." aria-label="AI에게 추가 지시"></textarea>
@@ -572,10 +572,10 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
 
       <div class="sec" id="mediaPane" hidden>
         <div class="sec-h"><h2 id="mediaPaneTitle">배경</h2><label class="file">추가<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
-        <p class="hint">이미지·동영상을 여기로 드래그 앤 드롭하거나 '추가'에서 선택할 수 있습니다. 소재는 이 브라우저에 저장됩니다.</p>
+        <p class="hint">이미지·동영상을 여기로 드래그 앤 드롭하거나 '추가'에서 선택할 수 있습니다. 배경·전경 파일은 이 브라우저에 저장됩니다.</p>
         <div id="mediaList" class="media-list"></div>
         <label class="check"><input id="mediaRandom" type="checkbox"><span>무작위 순서로 표시</span></label>
-        <label class="check"><input id="mediaLoop" type="checkbox"><span>반복 표시<small>소재를 순서대로 반복해 소재 수보다 많은 컷을 만들 수 있습니다</small></span></label>
+        <label class="check"><input id="mediaLoop" type="checkbox"><span>반복 표시<small>파일을 순서대로 반복해 파일 수보다 많은 컷을 만들 수 있습니다</small></span></label>
         <label class="field" id="mediaCutCountField" hidden>컷 수<input id="mediaCutCount" type="number" min="0" max="1000" step="1" inputmode="numeric"></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
           <label class="field">전경 합성 방식<select id="mediaBlend"><option value="normal">표준</option><option value="multiply">곱하기</option><option value="screen">스크린</option></select></label>
@@ -811,9 +811,10 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
       <li>가사·곡명·아티스트</li>
       <li>불러온 음원(이 브라우저에 보관된 파일 포함)</li>
       <li>소재(이미지·피사체 마스크)</li>
+      <li>배경·전경 컷(이 브라우저에 보관된 이미지·동영상 파일 포함)</li>
       <li>타이밍·행별 설정·내보낼 범위</li>
       <li>스타일·연출·배색·글꼴 등의 설정</li>
-      <li>버전 기록(◀ ▶)과 가사·타이밍의 ‘되돌리기’ 기록</li>
+      <li>버전 기록(◀ ▶)과 「실행 취소」 기록</li>
     </ul>
     <p class="terms-sub">표시 모드(간단/상세), 미리보기 음량, 화면 언어는 그대로입니다. 저장한 프로젝트 파일(.json)도 지워지지 않습니다.</p>
     <div class="terms-foot"><span></span><span class="row"><button value="cancel" class="ghost">취소</button><button value="reset" class="danger">초기화</button></span></div>
@@ -837,7 +838,7 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
     <p class="muted mono">© 2026 hakoniwa · MIT</p>
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
-      <h3 id="termsForkTitle">字面 JIZURA（hirazi fork)</h3>
+      <h3 id="termsForkTitle">字面 JIZURA（hirazi fork）</h3>
       <p>이 사이트는 오리지널판을 기반으로 한 fork판입니다. AI로 고르기를 통한 구성 선정과 배경·전경 이미지·동영상 편집 기능 등을 추가했습니다.</p>
       <p>평소에는 가사·곡·소재를 브라우저 안에서만 처리합니다. 「AI로 고르기」를 쓰면 가사·곡명·아티스트·추가 지시를 직접 설정한 결정 서버(기본은 내 PC 안)로 보냅니다. 음성·이미지·동영상은 보내지 않습니다.</p>
       <p>fork판 소스 코드: <a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
@@ -5135,7 +5136,8 @@ class Renderer {
     const W = plan.W, H = plan.H, scale = opt.scale || 1;
     const cw = ctx.canvas.width, ch = ctx.canvas.height;
     const foregroundCut = plan.foreground && J.mediaAt(plan, t, 'foreground');
-    if (!opt.noForeground && foregroundCut && J.mediaAssets.has(foregroundCut.itemId)) {
+    // 透過PNG 前景／後景 (opt.layer): the 전경 컷 belongs to the front layer only, the 배경 컷 to the back layer only
+    if (!opt.noForeground && opt.layer !== 'back' && foregroundCut && J.mediaAssets.has(foregroundCut.itemId)) {
       const step = J.stepDur(plan.fx, plan.fps);
       const lyricCut = J.cutAt(plan, Math.floor(t / step + 1e-6) * step);
       const frontmost = !!(lyricCut && lyricCut.frontmost);
@@ -5163,12 +5165,12 @@ class Renderer {
       }
       return;
     }
-    if (!opt.noMedia && !opt.transparent && plan.media && J.mediaAt(plan, t) && J.mediaAssets.has(J.mediaAt(plan, t).itemId)) {
+    if (!opt.noMedia && (!opt.transparent || opt.layer === 'back') && plan.media && J.mediaAt(plan, t) && J.mediaAssets.has(J.mediaAt(plan, t).itemId)) {
       const layer = this.ensure(this.mediaLayer || (this.mediaLayer = document.createElement('canvas')), cw, ch);
       this.frame(layer.getContext('2d'), plan, t, Object.assign({}, opt, { transparent: true, noMedia: true }));
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
       ctx.clearRect(0, 0, cw, ch);
-      ctx.fillStyle = plan.style.schemes[0].bg; ctx.fillRect(0, 0, cw, ch);
+      if (!opt.transparent) { ctx.fillStyle = plan.style.schemes[0].bg; ctx.fillRect(0, 0, cw, ch); }
       J.drawMedia(ctx, plan, t, this, 'media', !!opt.previewEdit);
       ctx.globalAlpha = plan.media.opacity / 100;
       ctx.globalCompositeOperation = { normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.media.blend] || 'source-over';
@@ -5209,6 +5211,12 @@ class Renderer {
       }
     }
     if (mainCut && mainCut.blank) {
+      // a blank lyric cut still shows the 소재 (behind and in front: there are no lyrics between them)
+      const bl = opt.transparent ? opt.layer || null : null;
+      if (!key && !opt.noAssets && J.drawAssets && plan.assets && plan.assets.length) {
+        if (bl !== 'front') J.drawAssets(ctx, plan, 'back');
+        if (bl !== 'back') J.drawAssets(ctx, plan, 'front');
+      }
       ctx.restore();
       if (key && !opt.noPost) this.keyFinish(ctx, key, opt);
       return;
@@ -31635,6 +31643,25 @@ function tlHandleAt(ev) {
   for (const ln of S.plan.lines) { const d = Math.abs((ln.start - off) / vd * r.width - (ev.clientX - r.left)); if (d < bd) { bd = d; best = ln.index; } }
   return best;
 }
+// hand-set cut boundaries (timing.cutTimes 'line:part' / 'line:interlude', seconds) follow their line when its start
+// moves (line-start handle, tap sync, 곡에서 초안, the time field): base = the boundaries and line starts before the
+// change, so a drag or a tap pass is always measured from where it began; one that no longer fits its line is dropped
+function lineShiftBase() {
+  return { cutTimes: Object.assign({}, S.project.timing.cutTimes || {}), starts: new Map(S.plan.lines.map(l => [l.index, l.start])) };
+}
+function followLineStarts(base) {
+  if (!base) return;
+  const lines = new Map(S.plan.lines.map(l => [l.index, l])), out = {};
+  for (const [key, v] of Object.entries(base.cutTimes)) {
+    const ln = lines.get(parseInt(key, 10)), s0 = base.starts.get(parseInt(key, 10));
+    const d = ln && s0 != null && Number.isFinite(+v) ? ln.start - s0 : 0;
+    if (Math.abs(d) < 1e-6) { out[key] = v; continue; }
+    const t = +(+v + d).toFixed(3);
+    if (t > ln.start && t < ln.end) out[key] = t;
+  }
+  if (JSON.stringify(out) === JSON.stringify(S.project.timing.cutTimes || {})) return;
+  S.project.timing.cutTimes = out; replan();
+}
 function tlDragTo(i, ev) {
   let t = tlTime(ev);
   if (!ev.shiftKey && S.plan.beats && S.plan.beats.length) {       // snap to the nearest beat (Shift: free)
@@ -31647,7 +31674,7 @@ function tlDragTo(i, ev) {
   // pin the neighbours too, so moving one boundary never shifts the lines after it
   L.forEach(ln => { if (S.project.timing.lineTimes[ln.index] == null) S.project.timing.lineTimes[ln.index] = +ln.start.toFixed(3); });
   S.project.timing.lineTimes[i] = t;
-  replan(); seek(t + 0.001);
+  replan(); followLineStarts(TL.base); seek(t + 0.001);
 }
 
 /* ---------------- keep the playing line in view (the list scrolls inside its column) ---------------- */
@@ -31695,7 +31722,7 @@ function timelineMarkers() {
   for (const [layer, id] of [['foreground', 'foregroundTimeline'], ['lyrics', 'timeline'], ['media', 'mediaTimeline']]) {
     const canvas = $(id), cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0 || c.blank) : S.plan[layer].cuts;
     const y = canvas.offsetTop + 11;
-    for (const cut of cuts) markers.push({ ref: boundaryRef(layer, cut), layer, x: canvas.offsetLeft + cut.start / D * canvas.clientWidth, y });
+    for (const cut of cuts) if (layer !== 'lyrics' || !/^interlude:/.test(cut.part)) markers.push({ ref: boundaryRef(layer, cut), layer, x: canvas.offsetLeft + cut.start / D * canvas.clientWidth, y });
   }
   return markers;
 }
@@ -31824,6 +31851,8 @@ function timelineBoundaryAt(ev, layer) {
   return chosen ? timelineBoundaryForCut(chosen, layer) : null;
 }
 function timelineBoundaryForCut(chosen, layer) {
+  // the later pieces of a long interlude ('interlude:k') are split by the planner and have no stored time: not draggable
+  if (layer === 'lyrics' && /^interlude:/.test(chosen.part)) return null;
   const duration = S.plan.duration;
   let min, max, target;
   if (layer !== 'lyrics') {
@@ -32094,8 +32123,9 @@ function renderLines() {
     q('.time').addEventListener('change', e => {
       const v = parseFloat(e.target.value);
       if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
+      const base = lineShiftBase();
       if (isFinite(v)) S.project.timing.lineTimes[i] = Math.max(0, v); else delete S.project.timing.lineTimes[i];
-      replan();
+      replan(); followLineStarts(base);
     });
     q('.txt').addEventListener('click', () => seek(ln.start + 0.001));
     q('.txt').addEventListener('dblclick', () => editLine(li, ln));
@@ -32163,7 +32193,8 @@ function clearLyrics() {
   const P = S.project;
   if (!P.lyrics.trim() && !Object.keys(P.timing.lineTimes || {}).length) { $('lyrics').focus(); return; }
   pause();
-  P.lyrics = ''; P.timing.lineTimes = {}; P.overrides = {}; P.exportRange = null; $('lyrics').value = '';
+  P.lyrics = ''; P.timing.lineTimes = {}; P.timing.cutTimes = {}; P.overrides = {}; P.exportRange = null; $('lyrics').value = '';
+  P.lyricCutOptions = {}; P.lyricBlankCuts = []; P.timelineLinks = [];
   replan(); flushSave(); seek(0);
   toast('가사를 지웠습니다(‘실행 취소’나 Ctrl+Z로 복구 가능)');
 }
@@ -32173,10 +32204,13 @@ async function resetAll() {
   if (S.exporting) return;
   if (S.tap) stopTap();
   pause();
+  // 배경·전경 files go too (reset also drops the undo history that could bring them back)
+  for (const id of [...S.project.media.items, ...S.project.foreground.items].map(item => item.id).concat([...J.mediaAssets.keys()])) queueMediaDeletion(id);
   S.project = mergeProject(null); S.project.lyrics = '';
   S.audio = null; if ($('audioFile')) $('audioFile').value = '';
   if (J.forgetSong) await J.forgetSong();
   for (const id of [...J.ASSETS.keys()]) await J.assetForget(id);
+  await cleanupDeletedMedia();
   try { localStorage.removeItem('jizura.mlConsent'); } catch (e) {}
   renderAssets();
   $('audioName').textContent = audioNameDefault;
@@ -32367,9 +32401,9 @@ function syncSourceTab() {
   $('foregroundBlendFields').hidden = layer !== 'foreground';
   $('lyricBlend').value = S.project.media.blend;
   $('lyricOpacity').value = S.project.media.opacity;
-  $('linesInfo').textContent = media ? `소재 ${m.items.length} / 컷 ${S.plan[layer].cuts.length}` : `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
+  $('linesInfo').textContent = media ? `파일 ${m.items.length} / 컷 ${S.plan[layer].cuts.length}` : `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
   $('mediaRandom').disabled = !media || m.items.length < 2 || m.manualCuts;
-  $('mediaRandom').title = media && m.manualCuts ? '수동으로 추가한 컷에서는 소재를 개별로 지정합니다' : '';
+  $('mediaRandom').title = media && m.manualCuts ? '수동으로 추가한 컷에서는 파일을 개별로 지정합니다' : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
   $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
 }
@@ -32377,7 +32411,7 @@ function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground'
 function mediaThumb(item, cls = '') {
   if (!item) return `<span class="missing media-ln-thumb" aria-hidden="true">—</span>`;
   const asset = J.mediaAssets.get(item.id);
-  if (!asset) return `<span class="missing">소재 없음</span>`;
+  if (!asset) return `<span class="missing">파일 없음</span>`;
   return `<img class="${cls}" src="${asset.poster || asset.url}" alt="">`;
 }
 function renderMediaList() {
@@ -32505,7 +32539,7 @@ function renderMediaLines() {
   S.plan[layer].cuts.forEach((cut, i) => {
     addButton(i);
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
-    const fileSelect = `<select class="media-cut-file" aria-label="${i + 1}컷 소재"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
+    const fileSelect = `<select class="media-cut-file" aria-label="${i + 1}컷 파일"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (ov[key] === undefined) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
@@ -32674,7 +32708,15 @@ function histGo(d) {
   remember();                    // hand edits made since the last step become a stop of their own
   const j = H.i + d; if (j < 0 || j >= H.list.length) return;
   H.i = j;
-  Object.assign(S.project, JSON.parse(H.list[j]));
+  const snap = JSON.parse(H.list[j]);
+  // 표시 영역 is not part of a look: keep the rows' current areas (as おまかせ does)
+  if (snap.overrides) {
+    const ov = {};
+    for (const [i, o] of Object.entries(snap.overrides)) { const { area, ...rest } = o || {}; if (Object.keys(rest).length) ov[i] = rest; }
+    for (const [i, o] of Object.entries(S.project.overrides || {})) if (o && o.area) ov[i] = Object.assign({}, ov[i], { area: o.area });
+    snap.overrides = ov;
+  }
+  Object.assign(S.project, snap);
   fontKey = ''; syncUI(); replan(); updateHist();
   toast(`${j + 1} / ${H.list.length}번째 안`);
   restartPreview();
@@ -32866,7 +32908,7 @@ function syncOut() {
   const k = J.keyMode(S.project) || 'off';
   $('outKey').value = k; $('eKey').value = k;
   $('outCenter').checked = $('eCenter').checked = !!S.project.centerFree;
-  const tall = J.designSize(S.project.aspect)[1] > J.designSize(S.project.aspect)[0] * 1.1;
+  const [dW, dH] = J.designSize(S.project), tall = dH > dW * 1.1;   // the planner's frame (직접 지정한 영상 크기 포함)
   document.querySelectorAll('.center-dir').forEach(el => { el.hidden = !(S.project.centerFree && tall); });
   document.querySelectorAll('.centerDirSel').forEach(el => { el.value = S.project.centerDir === 'lr' ? 'lr' : 'tb'; });
   const kb = $('keyBadge');
@@ -33159,7 +33201,8 @@ async function prepareAssets() {
   S.need = true; renderAssets();
 }
 
-// replace the project; 소재 files the new one does not use are dropped from this browser's storage.
+// replace the project; 소재 and 배경·전경 files the new one does not use are queued for deletion (Ctrl+Z can still bring
+// the previous project back with its files; they go on pagehide / next start when no current setting uses them).
 // A file saved with 「곡·소재 포함 저장」 carries p.bundle (older files: p.media with .files and no .items):
 // its files go into this browser's storage first.
 // (project.media is also the 背景 cut settings, which have items[] and no files{}: only the bundle form is taken out)
@@ -33171,10 +33214,12 @@ async function openProject(p) {
     for (const [k, r] of Object.entries(bundle.files || {})) await J.idbPut(k, { name: r.name, type: r.type, data: fromB64(r.data) });
     for (const [id, r] of Object.entries(bundle.mediaFiles || {})) await J.storeMedia(id, new File([fromB64(r.data)], r.name, { type: r.type || '' }));
   }
-  const old = S.project.assets.map(a => a.id);
+  const mediaIds = P => [...P.media.items, ...P.foreground.items].map(item => item.id);
+  const old = S.project.assets.map(a => a.id), oldMedia = mediaIds(S.project);
   S.project = mergeProject(p); syncUI(); replan();
-  const keep = new Set(S.project.assets.map(a => a.id));
-  for (const id of old) if (!keep.has(id)) await J.assetForget(id);
+  const keep = new Set(S.project.assets.map(a => a.id)), keepMedia = new Set(mediaIds(S.project));
+  for (const id of old) if (!keep.has(id)) queueAssetDeletion(id);
+  for (const id of oldMedia) if (!keepMedia.has(id)) queueMediaDeletion(id);
   await prepareAssets();
   await Promise.all([restoreMediaAssets(), J.restoreFontFiles(S.project.userFonts)]); fontKey = ''; ensureFonts();
   if (bundle && bundle.song) {
@@ -33219,8 +33264,9 @@ async function draftFromSong() {
   try { ts = await J.draftLineStarts(S.audio, lines.map(l => l.text)); } catch (e) { console.warn(e); }
   showMsg(null);
   if (ts.length !== lines.length) { toast('곡에서 행의 시작을 찾지 못했습니다'); return; }
+  const base = lineShiftBase();
   S.project.timing.lineTimes = {}; ts.forEach((t, i) => { S.project.timing.lineTimes[i] = t; });
-  replan(); flushSave();
+  replan(); followLineStarts(base); flushSave();
   toast(`${lines.length}행의 시작을 곡에서 추정했습니다(초안). 어긋난 행은 ◎ Shift+클릭이나 타임라인으로 고치세요. Ctrl+Z로 되돌릴 수 있습니다`);
 }
 
@@ -33232,9 +33278,9 @@ function startTap(from = 0, single = false) {
   if (!(layer ? S.plan[layer].cuts.length || S.project[layer].loop : S.plan.lines.length)) return;
   if (layer) { from = 0; single = false; }
   else from = J.clamp(from | 0, 0, S.plan.lines.length - 1);
-  S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop };
+  S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop, base: layer ? null : lineShiftBase() };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
-  $('tapHint').textContent = S.tap.append ? '탭할 때마다 소재를 순환하며 컷을 추가합니다. 종료할 때까지 계속할 수 있습니다.' : '곡에 맞춰 각 행·소재가 시작되는 순간 Space나 버튼을 누르세요.';
+  $('tapHint').textContent = S.tap.append ? '탭할 때마다 배경·전경 파일을 순환하며 컷을 추가합니다. 종료할 때까지 계속할 수 있습니다.' : '곡에 맞춰 각 행·컷이 시작되는 순간 Space나 버튼을 누르세요.';
   $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
   let t0 = 0;
   if (!layer && from > 0) {
@@ -33270,17 +33316,17 @@ function tapNow() {
   if (!layer) for (const k of Object.keys(LT)) if (+k > i && LT[k] <= t + 0.2) delete LT[k];
   S.tap.i++;
   if (S.tap.single) { stopTap(); toast(`${i + 1}행의 시작을 ${J.fmtTime(t)}로 맞췄습니다`); return; }
-  replan();
+  replan(); followLineStarts(S.tap.base);
   if (S.tap.i >= (layer ? S.plan[layer].cuts.length : S.plan.lines.length)) stopTap(); else updateTap();
 }
 function tapBack() {                    // 1つ戻る: undo the last tap and jump back a little
   if (!S.tap || !S.tap.done.length) return;
   const d = S.tap.done.pop(), LT = (S.tap.layer ? S.project[S.tap.layer].timing : S.project.timing).lineTimes;
   if (d.had != null) LT[d.i] = d.had; else delete LT[d.i];
-  S.tap.i = d.i; replan(); updateTap();
+  S.tap.i = d.i; replan(); followLineStarts(S.tap.base); updateTap();
   seek(Math.max(0, S.t - 3)); if (!S.playing) play();
 }
-function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); flushSave(); }
+function stopTap() { const base = S.tap && S.tap.base; S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); followLineStarts(base); flushSave(); }
 function updateTap() {
   const bb = $('tapBack'); if (bb) bb.disabled = !S.tap.done.length;
   if (S.tap.append) {
@@ -33469,7 +33515,7 @@ function bind() {
     tl.addEventListener('pointerdown', e => {
       // lyric timeline: the line-start handles in the top band (snap to the beat; Shift: free)
       const h = layer === 'lyrics' && !S.tap && !S.exporting ? tlHandleAt(e) : -1;
-      if (h >= 0) { tl.setPointerCapture(e.pointerId); TL.drag = h; pause(); tl.style.cursor = 'ew-resize'; drag = { mode: 'handle' }; return; }
+      if (h >= 0) { tl.setPointerCapture(e.pointerId); TL.drag = h; TL.base = lineShiftBase(); pause(); tl.style.cursor = 'ew-resize'; drag = { mode: 'handle' }; return; }
       const boundary = !S.exporting && !S.tap && timelineBoundaryAt(e, layer);
       const limits = boundary && boundaryGroupLimits(boundary.ref);
       drag = boundary && limits && limits.max > limits.min ? { ...boundary, min: limits.min, max: limits.max, mode: 'boundary', originX: e.clientX, preview: boundary.start, moved: false, duration: S.plan.duration } : { mode: 'seek' };

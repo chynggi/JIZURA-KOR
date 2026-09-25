@@ -32,9 +32,9 @@
   <main class="work">
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="가사와 타이밍">
-      <nav class="source-tabs" role="tablist" aria-label="소재"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
+      <nav class="source-tabs" role="tablist" aria-label="가사·배경·전경"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
       <div class="sec" id="lyricsPane">
-        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(‘되돌리기’나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
+        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
         <label class="ai-prompt-label" for="aiPrompt">AI에게 추가 지시(선택)</label>
         <textarea id="aiPrompt" rows="2" maxlength="1000" placeholder="예: 밤거리 같은 조용한 분위기. 사비는 대담하게." aria-label="AI에게 추가 지시"></textarea>
@@ -63,10 +63,10 @@
 
       <div class="sec" id="mediaPane" hidden>
         <div class="sec-h"><h2 id="mediaPaneTitle">배경</h2><label class="file">추가<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
-        <p class="hint">이미지·동영상을 여기로 드래그 앤 드롭하거나 '추가'에서 선택할 수 있습니다. 소재는 이 브라우저에 저장됩니다.</p>
+        <p class="hint">이미지·동영상을 여기로 드래그 앤 드롭하거나 '추가'에서 선택할 수 있습니다. 배경·전경 파일은 이 브라우저에 저장됩니다.</p>
         <div id="mediaList" class="media-list"></div>
         <label class="check"><input id="mediaRandom" type="checkbox"><span>무작위 순서로 표시</span></label>
-        <label class="check"><input id="mediaLoop" type="checkbox"><span>반복 표시<small>소재를 순서대로 반복해 소재 수보다 많은 컷을 만들 수 있습니다</small></span></label>
+        <label class="check"><input id="mediaLoop" type="checkbox"><span>반복 표시<small>파일을 순서대로 반복해 파일 수보다 많은 컷을 만들 수 있습니다</small></span></label>
         <label class="field" id="mediaCutCountField" hidden>컷 수<input id="mediaCutCount" type="number" min="0" max="1000" step="1" inputmode="numeric"></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
           <label class="field">전경 합성 방식<select id="mediaBlend"><option value="normal">표준</option><option value="multiply">곱하기</option><option value="screen">스크린</option></select></label>
@@ -302,9 +302,10 @@
       <li>가사·곡명·아티스트</li>
       <li>불러온 음원(이 브라우저에 보관된 파일 포함)</li>
       <li>소재(이미지·피사체 마스크)</li>
+      <li>배경·전경 컷(이 브라우저에 보관된 이미지·동영상 파일 포함)</li>
       <li>타이밍·행별 설정·내보낼 범위</li>
       <li>스타일·연출·배색·글꼴 등의 설정</li>
-      <li>버전 기록(◀ ▶)과 가사·타이밍의 ‘되돌리기’ 기록</li>
+      <li>버전 기록(◀ ▶)과 「실행 취소」 기록</li>
     </ul>
     <p class="terms-sub">표시 모드(간단/상세), 미리보기 음량, 화면 언어는 그대로입니다. 저장한 프로젝트 파일(.json)도 지워지지 않습니다.</p>
     <div class="terms-foot"><span></span><span class="row"><button value="cancel" class="ghost">취소</button><button value="reset" class="danger">초기화</button></span></div>
@@ -328,7 +329,7 @@
     <p class="muted mono">© 2026 hakoniwa · MIT</p>
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
-      <h3 id="termsForkTitle">字面 JIZURA（hirazi fork)</h3>
+      <h3 id="termsForkTitle">字面 JIZURA（hirazi fork）</h3>
       <p>이 사이트는 오리지널판을 기반으로 한 fork판입니다. AI로 고르기를 통한 구성 선정과 배경·전경 이미지·동영상 편집 기능 등을 추가했습니다.</p>
       <p>평소에는 가사·곡·소재를 브라우저 안에서만 처리합니다. 「AI로 고르기」를 쓰면 가사·곡명·아티스트·추가 지시를 직접 설정한 결정 서버(기본은 내 PC 안)로 보냅니다. 음성·이미지·동영상은 보내지 않습니다.</p>
       <p>fork판 소스 코드: <a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>

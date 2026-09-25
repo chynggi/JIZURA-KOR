@@ -166,4 +166,26 @@ class Http(unittest.TestCase):
         with urllib.request.urlopen(self.base + '/index.html?v=1') as r: self.assertIn(b'<html', r.read()[:200].lower())
         with self.assertRaises(urllib.error.HTTPError): urllib.request.urlopen(self.base + '/decision_server.py')
 
+class BadShapes(unittest.TestCase):
+    """예상 밖 모양의 백엔드 응답은 연결을 끊지 말고 한국어 502로 답해야 한다."""
+    MSG = '결정 모델 서버의 응답을 처리하지 못했습니다'
+    def run_case(self, backend, reply):
+        Fake.seen = []; Fake.reply = reply
+        fake = start(Fake)
+        path = '/v1/systemone' if backend == 'systemone' else '/v1/chat/completions'
+        srv = ds.make_server('127.0.0.1', 0, env={'DECISION_BACKEND': backend, 'DECISION_URL': f'http://127.0.0.1:{fake.server_port}{path}'})
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            req = urllib.request.Request(f'http://127.0.0.1:{srv.server_port}/api/decide', data=json.dumps({'state': STATE, 'questions': Q}).encode(), method='POST', headers={'Content-Type': 'application/json'})
+            try:
+                with urllib.request.urlopen(req, timeout=5) as r: return r.status, json.loads(r.read())
+            except urllib.error.HTTPError as e: return e.code, json.loads(e.read() or b'{}')
+        finally: srv.shutdown(); srv.server_close(); fake.shutdown(); fake.server_close()
+    def test_llm_content_is_list(self):
+        code, data = self.run_case('llm', lambda body: (200, {'choices': [{'message': {'content': ['B']}}]}))
+        self.assertEqual((code, data), (502, {'error': self.MSG}))
+    def test_systemone_response_not_dict(self):
+        code, data = self.run_case('systemone', lambda body: (200, ['answers']))
+        self.assertEqual((code, data), (502, {'error': self.MSG}))
+
 if __name__ == '__main__': unittest.main()

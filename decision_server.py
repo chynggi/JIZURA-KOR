@@ -236,6 +236,8 @@ def make_server(host, port, env=None):
                 self.reply(200, {'answers': decide(body, env)})
             except BackendError as e:
                 self.reply(502, {'error': str(e)})
+            except Exception:   # an unexpected backend reply shape (content not a string, reply not an object, ...)
+                self.reply(502, {'error': '결정 모델 서버의 응답을 처리하지 못했습니다'})
 
     return http.server.ThreadingHTTPServer((host, port), Handler)
 

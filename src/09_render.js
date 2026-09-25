@@ -59,7 +59,8 @@ class Renderer {
     const W = plan.W, H = plan.H, scale = opt.scale || 1;
     const cw = ctx.canvas.width, ch = ctx.canvas.height;
     const foregroundCut = plan.foreground && J.mediaAt(plan, t, 'foreground');
-    if (!opt.noForeground && foregroundCut && J.mediaAssets.has(foregroundCut.itemId)) {
+    // 透過PNG 前景／後景 (opt.layer): the 전경 컷 belongs to the front layer only, the 배경 컷 to the back layer only
+    if (!opt.noForeground && opt.layer !== 'back' && foregroundCut && J.mediaAssets.has(foregroundCut.itemId)) {
       const step = J.stepDur(plan.fx, plan.fps);
       const lyricCut = J.cutAt(plan, Math.floor(t / step + 1e-6) * step);
       const frontmost = !!(lyricCut && lyricCut.frontmost);
@@ -87,12 +88,12 @@ class Renderer {
       }
       return;
     }
-    if (!opt.noMedia && !opt.transparent && plan.media && J.mediaAt(plan, t) && J.mediaAssets.has(J.mediaAt(plan, t).itemId)) {
+    if (!opt.noMedia && (!opt.transparent || opt.layer === 'back') && plan.media && J.mediaAt(plan, t) && J.mediaAssets.has(J.mediaAt(plan, t).itemId)) {
       const layer = this.ensure(this.mediaLayer || (this.mediaLayer = document.createElement('canvas')), cw, ch);
       this.frame(layer.getContext('2d'), plan, t, Object.assign({}, opt, { transparent: true, noMedia: true }));
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
       ctx.clearRect(0, 0, cw, ch);
-      ctx.fillStyle = plan.style.schemes[0].bg; ctx.fillRect(0, 0, cw, ch);
+      if (!opt.transparent) { ctx.fillStyle = plan.style.schemes[0].bg; ctx.fillRect(0, 0, cw, ch); }
       J.drawMedia(ctx, plan, t, this, 'media', !!opt.previewEdit);
       ctx.globalAlpha = plan.media.opacity / 100;
       ctx.globalCompositeOperation = { normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.media.blend] || 'source-over';
@@ -133,6 +134,12 @@ class Renderer {
       }
     }
     if (mainCut && mainCut.blank) {
+      // a blank lyric cut still shows the 소재 (behind and in front: there are no lyrics between them)
+      const bl = opt.transparent ? opt.layer || null : null;
+      if (!key && !opt.noAssets && J.drawAssets && plan.assets && plan.assets.length) {
+        if (bl !== 'front') J.drawAssets(ctx, plan, 'back');
+        if (bl !== 'back') J.drawAssets(ctx, plan, 'front');
+      }
       ctx.restore();
       if (key && !opt.noPost) this.keyFinish(ctx, key, opt);
       return;
