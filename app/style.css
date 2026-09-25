@@ -339,3 +339,5 @@ button.small.primary { padding: 4px 12px; }
 .unify-box { margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
 .center-dir { gap: 6px; margin: -2px 0 8px 26px; font-size: 12px; }
 .center-dir select { width: auto; }
+.ln .warn { margin-left: 2px; font-style: normal; font-weight: 700; color: var(--amber); cursor: help; }
+.ln.fast .txt { text-decoration: underline wavy var(--amber); text-underline-offset: 3px; }
