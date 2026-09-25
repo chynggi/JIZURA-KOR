@@ -54,7 +54,7 @@ J.addUserFont = (key, label, family, weight = 400, kind = 'custom') => {
   J.metrics.clear();
 };
 J.COMPOSITE_PARTS = {
-  kana: 'ひらがな・カタカナ', kanji: '漢字', symbols: '記号', digits: '半角数字', latin: '半角アルファベット', punctuation: '約物', gaiji: '外字',
+  kana: '히라가나·가타카나', kanji: '한자', symbols: '기호', digits: '반각 숫자', latin: '반각 알파벳', punctuation: '문장 부호', gaiji: '외자',
 };
 J.compositeCategory = ch => {
   const cp = ch.codePointAt(0);

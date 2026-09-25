@@ -32,7 +32,7 @@
   <main class="work">
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="가사와 타이밍">
-      <nav class="source-tabs" role="tablist" aria-label="素材"><button id="sourceForeground" role="tab" aria-selected="false">前景</button><button id="sourceLyrics" role="tab" aria-selected="true">歌詞</button><button id="sourceMedia" role="tab" aria-selected="false">背景</button></nav>
+      <nav class="source-tabs" role="tablist" aria-label="소재"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(‘되돌리기’나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
@@ -40,8 +40,8 @@
         <textarea id="jevPrompt" rows="2" maxlength="1000" placeholder="例：夜の街のような静かな雰囲気。サビは大胆に。" aria-label="Jevへの追加指示"></textarea>
         <div class="hint">「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。</div>
         <div class="fields media-blend-fields">
-          <label class="field">歌詞の合成方法<select id="lyricBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
-          <label class="field">歌詞不透明度（％）<input id="lyricOpacity" type="number" min="0" max="100" step="1"></label>
+          <label class="field">가사 합성 방식<select id="lyricBlend"><option value="normal">표준</option><option value="multiply">곱하기</option><option value="screen">스크린</option></select></label>
+          <label class="field">가사 불투명도(%)<input id="lyricOpacity" type="number" min="0" max="100" step="1"></label>
         </div>
         <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option><option value="en">English</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
@@ -55,22 +55,22 @@
             <li><code>&lt;00:12.48&gt;너를</code> … 확장 LRC 단어 시각(컷 경계·가라오케 채움이 단어에 맞춰짐)</li>
             <li><code>[간주 8]</code> … 다음 행 앞에 8초 간주(<code>[간주]</code>는 사이 공간만, <code>[간주 8 | 문구]</code>로 하단 문구, <code>[01:20.00][간주]</code>로 시작 시각)</li>
             <li><code>[마무리]</code> / <code>[End 8]</code> … 마지막 가사 뒤 엔드 카드(<code>[03:45.00][마무리]</code>로 시작 시각)</li>
-            <li><code>\</code> を制御文字の前に置くと、その文字を歌詞として表示（例：<code>\*</code>・<code>\/</code>・<code>\|</code>・<code>\!</code>・<code>\#</code>・<code>\[</code>・<code>\\</code>）</li>
+            <li><code>\</code>를 제어 문자 앞에 두면 그 문자를 가사로 표시(예: <code>\*</code>·<code>\/</code>·<code>\|</code>·<code>\!</code>·<code>\#</code>·<code>\[</code>·<code>\\</code>)</li>
             <li><code>#</code>으로 시작하는 행 … 주석(무시)</li>
           </ul>
         </div>
       </div>
 
       <div class="sec" id="mediaPane" hidden>
-        <div class="sec-h"><h2 id="mediaPaneTitle">背景</h2><label class="file">追加<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
-        <p class="hint">画像・動画をここへドラッグ＆ドロップ、または「追加」から選択できます。素材はこのブラウザに保存されます。</p>
+        <div class="sec-h"><h2 id="mediaPaneTitle">배경</h2><label class="file">추가<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
+        <p class="hint">이미지·동영상을 여기로 드래그 앤 드롭하거나 '추가'에서 선택할 수 있습니다. 소재는 이 브라우저에 저장됩니다.</p>
         <div id="mediaList" class="media-list"></div>
-        <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で表示</span></label>
-        <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ表示<small>素材を順に繰り返し、素材数より多いカットを作成できます</small></span></label>
-        <label class="field" id="mediaCutCountField" hidden>カット数<input id="mediaCutCount" type="number" min="0" max="1000" step="1" inputmode="numeric"></label>
+        <label class="check"><input id="mediaRandom" type="checkbox"><span>무작위 순서로 표시</span></label>
+        <label class="check"><input id="mediaLoop" type="checkbox"><span>반복 표시<small>소재를 순서대로 반복해 소재 수보다 많은 컷을 만들 수 있습니다</small></span></label>
+        <label class="field" id="mediaCutCountField" hidden>컷 수<input id="mediaCutCount" type="number" min="0" max="1000" step="1" inputmode="numeric"></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
-          <label class="field">前景の合成方法<select id="mediaBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
-          <label class="field">前景不透明度（％）<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
+          <label class="field">전경 합성 방식<select id="mediaBlend"><option value="normal">표준</option><option value="multiply">곱하기</option><option value="screen">스크린</option></select></label>
+          <label class="field">전경 불투명도(%)<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
         </div>
       </div>
 
@@ -79,7 +79,7 @@
         <div id="audioName" class="muted audio-name">곡 없음(불러오면 박을 감지해 컷을 맞춥니다)</div>
         <div class="row">
           <label class="file" title="mp3 / wav / m4a 등">곡 불러오기<input id="audioFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"></label>
-          <button id="btnRemoveAudio" class="ghost" type="button" hidden>曲を削除</button>
+          <button id="btnRemoveAudio" class="ghost" type="button" hidden>곡 삭제</button>
           <button id="btnTap" title="곡을 재생하며 각 행 시작 지점에서 탭">탭으로 동기화</button>
           <button id="btnDraft" title="곡의 보컬 대역 음량 변화로 각 행의 시작을 추정합니다(초안. 어긋난 행은 탭이나 타임라인으로 고치세요)">곡에서 초안</button>
         </div>
@@ -116,15 +116,15 @@
 
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="미리보기">
-      <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="areaEditOverlay" class="area-edit-overlay" aria-label="表示位置とサイズを編集" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span></div><span class="area-edit-hint">ドラッグして歌詞の表示範囲を指定</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
-      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>アスペクト比を固定</label><label>幅（画面比％）<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>高さ（画面比％）<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">角度（°）<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">全域へリセット</button><button id="areaApplyOne" class="primary" disabled>この行だけに適用</button><button id="areaApplyFollowing" disabled>これ以降全てに適用</button><button id="areaCancel" class="ghost">キャンセル</button></div>
+      <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="areaEditOverlay" class="area-edit-overlay" aria-label="표시 위치와 크기 편집" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span></div><span class="area-edit-hint">드래그하여 가사 표시 범위 지정</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
+      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>가로세로 비율 고정</label><label>너비(화면 비율 %)<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>높이(화면 비율 %)<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">각도(°)<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">전체 영역으로 초기화</button><button id="areaApplyOne" class="primary" disabled>이 행에만 적용</button><button id="areaApplyFollowing" disabled>이후 전부 적용</button><button id="areaCancel" class="ghost">취소</button></div>
       <div class="transport">
         <button id="btnPlay" class="play" aria-label="재생">▶</button>
-        <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><button id="timeDur" class="tc muted duration-value" type="button" title="動画全体の長さを入力（空欄で自動）" aria-label="動画全体の長さを入力">00:00.00</button><input id="timeDurInput" class="tc duration-input" type="text" inputmode="decimal" aria-label="動画全体の長さ（秒または分:秒、空欄で自動）" hidden>
+        <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><button id="timeDur" class="tc muted duration-value" type="button" title="동영상 전체 길이 입력(비워두면 자동)" aria-label="동영상 전체 길이 입력">00:00.00</button><input id="timeDurInput" class="tc duration-input" type="text" inputmode="decimal" aria-label="동영상 전체 길이(초 또는 분:초, 비워두면 자동)" hidden>
         <input id="scrub" type="range" min="0" max="10000" value="0" aria-label="재생 위치">
         <button id="btnLoop" class="ghost small" aria-pressed="true">반복</button>
         <span class="vol"><button id="btnMute" class="ghost small" aria-pressed="false" title="클릭하여 음소거/해제 (미리보기 전용이며 내보내기 음량은 바뀌지 않습니다)">음량</button><input id="vol" type="range" min="0" max="100" value="80" aria-label="미리보기 음량"></span>
-        <span class="undo-btns"><button id="btnUndo" class="ghost small" type="button" title="元に戻す（Ctrl+Z）" disabled>↶ 元に戻す</button><button id="btnRedo" class="ghost small" type="button" title="やり直す（Ctrl+Shift+Z）" disabled>↷ やり直す</button></span>
+        <span class="undo-btns"><button id="btnUndo" class="ghost small" type="button" title="실행 취소(Ctrl+Z)" disabled>↶ 실행 취소</button><button id="btnRedo" class="ghost small" type="button" title="다시 실행(Ctrl+Shift+Z)" disabled>↷ 다시 실행</button></span>
         <span class="hist-btns">
           <button id="btnPrev" class="ghost small icon-txt" title="이전 안으로 돌아가기" aria-label="이전 안">◀</button>
           <button id="btnNext" class="ghost small icon-txt" title="다음 안으로 이동" aria-label="다음 안">▶</button>
@@ -139,15 +139,15 @@
           <button id="btnUndoEdit" class="ghost small" title="가사·타이밍 변경 되돌리기(Ctrl+Z)" disabled>되돌리기</button>
         </span>
       </div>
-      <div class="timeline-zoom"><button id="timelineZoomOut" type="button" aria-label="タイムラインを縮小">−</button><span id="timelineZoomValue" aria-live="polite">100%</span><button id="timelineZoomIn" type="button" aria-label="タイムラインを拡大">＋</button></div>
+      <div class="timeline-zoom"><button id="timelineZoomOut" type="button" aria-label="타임라인 축소">−</button><span id="timelineZoomValue" aria-live="polite">100%</span><button id="timelineZoomIn" type="button" aria-label="타임라인 확대">＋</button></div>
       <div id="timelineScroll" class="timeline-scroll"><div id="timelineStack" class="timeline-stack">
-        <canvas id="foregroundTimeline" aria-label="前景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
+        <canvas id="foregroundTimeline" aria-label="전경 타임라인(경계를 드래그하여 시작 시각 변경, 그 외에는 재생 위치 이동)"></canvas>
         <canvas id="timeline" aria-label="타임라인(클릭으로 이동, 행 구분은 드래그로 조정)"></canvas>
-        <canvas id="mediaTimeline" aria-label="背景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）"></canvas>
-        <svg id="timelineLinks" class="timeline-links" aria-label="タイムラインの境界リンク"></svg>
-        <button id="timelineDurationHandle" class="timeline-duration-handle" type="button" title="ドラッグして動画全体の長さを変更" aria-label="動画全体の長さをドラッグして変更"><span aria-hidden="true">◀▶</span></button>
+        <canvas id="mediaTimeline" aria-label="배경 타임라인(경계를 드래그하여 시작 시각 변경, 그 외에는 재생 위치 이동)"></canvas>
+        <svg id="timelineLinks" class="timeline-links" aria-label="타임라인 경계 링크"></svg>
+        <button id="timelineDurationHandle" class="timeline-duration-handle" type="button" title="드래그하여 동영상 전체 길이 변경" aria-label="동영상 전체 길이를 드래그하여 변경"><span aria-hidden="true">◀▶</span></button>
       </div></div>
-      <p class="hint timeline-link-hint">末尾の◀▶をドラッグして全体の長さを変更。再生時間の分母をクリックして直接入力。鎖マークを別のタイムラインの鎖へドラッグしてリンク。×で解除。</p>
+      <p class="hint timeline-link-hint">끝의 ◀▶를 드래그하면 전체 길이를 바꿀 수 있습니다. 재생 시간의 분모를 클릭하면 직접 입력할 수 있습니다. 사슬 표시를 다른 타임라인의 사슬로 드래그하면 연결됩니다. ×로 해제합니다.</p>
       <div class="cutinfo" id="cutInfo"></div>
     </section>
 
@@ -189,8 +189,8 @@
           <div class="fields">
             <label class="field">화면 비율<select id="eAspect"><option value="16:9">16:9</option><option value="9:16">9:16 세로</option><option value="4:3">4:3</option><option value="3:4">3:4 세로</option><option value="1:1">1:1</option><option value="4:5">4:5 세로</option><option value="21:9">21:9</option></select></label>
             <label class="field">해상도<select id="eRes"><option value="720">720p</option><option value="1080">1080p</option><option value="1440">1440p</option><option value="2160">4K</option></select></label>
-            <label class="field field-wide">動画サイズ<select id="eVideoSize"><option value="legacy">画面比と解像度から指定</option><option value="1920x1080">1920 × 1080（フルHD）</option><option value="1280x720">1280 × 720（HD）</option><option value="3840x2160">3840 × 2160（4K）</option><option value="1080x1920">1080 × 1920（縦型）</option><option value="1080x1080">1080 × 1080（正方形）</option><option value="1080x1350">1080 × 1350（4:5）</option><option value="custom">自由入力</option></select></label>
-            <label class="field video-size-custom" hidden>幅（px）<input id="eVideoWidth" type="number" min="16" max="8192" step="2"></label><label class="field video-size-custom" hidden>高さ（px）<input id="eVideoHeight" type="number" min="16" max="8192" step="2"></label>
+            <label class="field field-wide">동영상 크기<select id="eVideoSize"><option value="legacy">화면 비율과 해상도로 지정</option><option value="1920x1080">1920 × 1080(풀HD)</option><option value="1280x720">1280 × 720(HD)</option><option value="3840x2160">3840 × 2160(4K)</option><option value="1080x1920">1080 × 1920(세로형)</option><option value="1080x1080">1080 × 1080(정사각형)</option><option value="1080x1350">1080 × 1350(4:5)</option><option value="custom">직접 입력</option></select></label>
+            <label class="field video-size-custom" hidden>너비(px)<input id="eVideoWidth" type="number" min="16" max="8192" step="2"></label><label class="field video-size-custom" hidden>높이(px)<input id="eVideoHeight" type="number" min="16" max="8192" step="2"></label>
             <label class="field">fps<select id="eFps"><option>24</option><option>30</option><option>60</option></select></label>
             <label class="field field-wide">배경<select id="eKey"><option value="off">일반(스타일 배경)</option><option value="green">그린 스크린(합성용)</option><option value="black">블랙 배경(합성용)</option></select></label>
           </div>
@@ -221,8 +221,8 @@
           <button id="btnAddFont">추가</button>
         </div>
         <div class="row" style="margin-top:8px"><label class="file">글꼴 파일(.ttf/.otf)<input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2"></label></div>
-        <div class="row font-import" style="margin-top:8px"><button id="btnListFonts" type="button">PCのフォントを一覧表示</button><select id="installedFonts" aria-label="PCのフォント" hidden></select><button id="btnImportFont" type="button" hidden>選択したフォントを取り込む</button></div>
-        <h3>合成フォント</h3><div class="composite-font"><label>設定名<input id="compositeName" type="text" maxlength="60"></label><label>ベースになるフォント<select id="compositeBase"></select></label><div id="compositeParts"></div><button id="btnSaveComposite" type="button">合成フォントを保存</button><div id="compositeList"></div></div>
+        <div class="row font-import" style="margin-top:8px"><button id="btnListFonts" type="button">PC 글꼴 목록 표시</button><select id="installedFonts" aria-label="PC 글꼴" hidden></select><button id="btnImportFont" type="button" hidden>선택한 글꼴 가져오기</button></div>
+        <h3>합성 글꼴</h3><div class="composite-font"><label>설정 이름<input id="compositeName" type="text" maxlength="60"></label><label>기준 글꼴<select id="compositeBase"></select></label><div id="compositeParts"></div><button id="btnSaveComposite" type="button">합성 글꼴 저장</button><div id="compositeList"></div></div>
         <h3>강조색·색 어긋남</h3>
         <label class="check"><input id="accentOn" type="checkbox"><span>내 색으로 덮어쓰기<small>전체 장면에 적용. 배경에 맞춰 밝기를 자동 조절합니다</small></span></label>
         <div class="color-row" id="colorRowAccent"></div>
@@ -268,8 +268,8 @@
         <div class="fields">
           <label class="field">화면 비율<select id="outAspect"><option value="16:9">16:9</option><option value="9:16">9:16 세로</option><option value="4:3">4:3</option><option value="3:4">3:4 세로</option><option value="1:1">1:1</option><option value="4:5">4:5 세로</option><option value="21:9">21:9</option></select></label>
           <label class="field">해상도<select id="outRes"><option value="720">720p</option><option value="1080">1080p</option><option value="1440">1440p</option><option value="2160">4K</option></select></label>
-          <label class="field field-wide">動画サイズ<select id="outVideoSize"><option value="legacy">画面比と解像度から指定</option><option value="1920x1080">1920 × 1080（フルHD）</option><option value="1280x720">1280 × 720（HD）</option><option value="3840x2160">3840 × 2160（4K）</option><option value="1080x1920">1080 × 1920（縦型）</option><option value="1080x1080">1080 × 1080（正方形）</option><option value="1080x1350">1080 × 1350（4:5）</option><option value="custom">自由入力</option></select></label>
-          <label class="field video-size-custom" hidden>幅（px）<input id="outVideoWidth" type="number" min="16" max="8192" step="2"></label><label class="field video-size-custom" hidden>高さ（px）<input id="outVideoHeight" type="number" min="16" max="8192" step="2"></label>
+          <label class="field field-wide">동영상 크기<select id="outVideoSize"><option value="legacy">화면 비율과 해상도로 지정</option><option value="1920x1080">1920 × 1080(풀HD)</option><option value="1280x720">1280 × 720(HD)</option><option value="3840x2160">3840 × 2160(4K)</option><option value="1080x1920">1080 × 1920(세로형)</option><option value="1080x1080">1080 × 1080(정사각형)</option><option value="1080x1350">1080 × 1350(4:5)</option><option value="custom">직접 입력</option></select></label>
+          <label class="field video-size-custom" hidden>너비(px)<input id="outVideoWidth" type="number" min="16" max="8192" step="2"></label><label class="field video-size-custom" hidden>높이(px)<input id="outVideoHeight" type="number" min="16" max="8192" step="2"></label>
           <label class="field">fps<select id="outFps"><option>24</option><option>30</option><option>60</option></select></label>
           <label class="field">화질<select id="outQuality"><option value="standard">표준</option><option value="high">높음</option><option value="max">최고</option></select></label>
           <label class="field field-wide">배경<select id="outKey"><option value="off">일반(스타일 배경)</option><option value="green">그린 스크린(합성용)</option><option value="black">블랙 배경(합성용)</option></select></label>
@@ -317,7 +317,7 @@
   <form method="dialog">
     <h2 id="termsTitle">이용 안내</h2>
     <section class="terms-section" aria-labelledby="termsOriginalTitle">
-      <h3 id="termsOriginalTitle">オリジナル版（852wa/JIZURA）</h3>
+      <h3 id="termsOriginalTitle">오리지널판(852wa/JIZURA)</h3>
     <div class="terms-main">
       <p class="terms-big">이 도구로 만든 <strong>동영상·이미지(출력물)의 권리는 만든 사람</strong>에게 귀속됩니다.</p>
       <p class="terms-sub">※ 사용한 가사·곡의 권리는 각 권리자에게 귀속됩니다.</p>
@@ -332,9 +332,9 @@
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
       <h3 id="termsForkTitle">字面 JIZURA（hirazi fork)</h3>
-      <p>このサイトはオリジナル版を基にしたfork版です。Jevによる構成選定と、背景・前景の画像・動画編集機能などを追加しています。</p>
-      <p>通常の編集と書き出しはブラウザ内で処理します。「Jevで作る」を使う場合は、歌詞と任意の追加指示をローカルサーバー経由で Jev API に送信します。曲の音声ファイルは送信しません。</p>
-      <p>fork版のソースコード：<a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
+      <p>이 사이트는 오리지널판을 기반으로 한 fork판입니다. Jev를 통한 구성 선정과 배경·전경 이미지·동영상 편집 기능 등을 추가했습니다.</p>
+      <p>일반적인 편집과 내보내기는 브라우저 안에서 처리합니다. 'Jev로 만들기'를 사용하는 경우, 가사와 선택적인 추가 지시를 로컬 서버를 통해 Jev API로 전송합니다. 곡의 음원 파일은 전송하지 않습니다.</p>
+      <p>fork판 소스 코드: <a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>
     <div class="terms-foot"><button value="close" class="primary" autofocus>닫기</button></div>

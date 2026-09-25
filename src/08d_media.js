@@ -1,16 +1,16 @@
 /* Uploaded-image/video planning and browser-local asset storage. */
 (() => {
 'use strict';
-J.MEDIA_LAYOUT = { cover: '全画面', contain: '全体を表示' };
-J.MEDIA_ENTER = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム', cut: '即時' };
-J.MEDIA_HOLD = { still: '静止', push: 'ゆっくり拡大', pan: '横移動' };
-J.MEDIA_EXIT = { fade: 'フェード', slide: 'スライド', zoom: 'ズーム', cut: '即時' };
-J.MEDIA_TREAT = { none: 'なし', mono: 'モノクロ', sepia: 'セピア', contrast: '高コントラスト', blur: 'ぼかし' };
-J.MEDIA_FOCUS = { tl: '左上', tc: '上', tr: '右上', ml: '左', mc: '中央', mr: '右', bl: '左下', bc: '下', br: '右下' };
+J.MEDIA_LAYOUT = { cover: '전체 화면', contain: '전체 보이기' };
+J.MEDIA_ENTER = { fade: '페이드', slide: '슬라이드', zoom: '줌', cut: '즉시' };
+J.MEDIA_HOLD = { still: '정지', push: '천천히 확대', pan: '가로 이동' };
+J.MEDIA_EXIT = { fade: '페이드', slide: '슬라이드', zoom: '줌', cut: '즉시' };
+J.MEDIA_TREAT = { none: '없음', mono: '흑백', sepia: '세피아', contrast: '고대비', blur: '흐림' };
+J.MEDIA_FOCUS = { tl: '왼쪽 위', tc: '위', tr: '오른쪽 위', ml: '왼쪽', mc: '가운데', mr: '오른쪽', bl: '왼쪽 아래', bc: '아래', br: '오른쪽 아래' };
 J.MEDIA_TRANS_KEYS = ['wipe', 'diagonalWipe', 'clockWipe', 'irisOpen', 'pushSlide', 'cover', 'uncover', 'zoomThrough', 'checker', 'blockDissolve', 'flashCross'];
 J.mediaTransOptions = () => {
   const trans = J.TRANS || {};
-  return Object.assign({ none: 'なし', crossfade: 'クロスフェード' }, Object.fromEntries(J.MEDIA_TRANS_KEYS.filter(k => trans[k]).map(k => [k, trans[k].name])));
+  return Object.assign({ none: '없음', crossfade: '크로스페이드' }, Object.fromEntries(J.MEDIA_TRANS_KEYS.filter(k => trans[k]).map(k => [k, trans[k].name])));
 };
 J.mediaFocusPoint = (focus, w, h) => {
   const index = Object.keys(J.MEDIA_FOCUS).indexOf(focus);
@@ -94,7 +94,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
     const rng = J.rng(seed), reroll = ov.seed != null;
     const videoDuration = videoDurationAt(i);
     const nextStart = i + 1 < count ? starts[i + 1] : duration;
-    return { index: i, itemId: item ? item.id : null, name: item ? item.name : '画像無し', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
+    return { index: i, itemId: item ? item.id : null, name: item ? item.name : '이미지 없음', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
       layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
@@ -160,7 +160,7 @@ J.attachMedia = (item, file) => new Promise((resolve, reject) => {
     if (posterElement) posterElement.src = poster;
     J.mediaAssets.set(item.id, { url, element: el, type: item.type, poster, posterElement }); resolve(el);
   };
-  el.onerror = () => { URL.revokeObjectURL(url); reject(new Error('画像・動画を読み込めませんでした')); };
+  el.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지·동영상을 불러올 수 없습니다')); };
   if (item.type === 'video') el.onloadeddata = ready; else el.onload = ready;
   el.src = url;
 });
@@ -169,7 +169,7 @@ const seekMediaVideo = async (v, target, signal) => {
   if (Math.abs(v.currentTime - target) < 0.002 && v.readyState >= 2) return;
   await new Promise((resolve, reject) => {
     const finish = () => { v.removeEventListener('seeked', ok); v.removeEventListener('error', fail); if (signal) signal.removeEventListener('abort', abort); };
-    const ok = () => { finish(); resolve(); }, fail = () => { finish(); reject(new Error('動画を読み込めませんでした')); }, abort = () => { finish(); reject(new Error('キャンセルしました')); };
+    const ok = () => { finish(); resolve(); }, fail = () => { finish(); reject(new Error('동영상을 불러올 수 없습니다')); }, abort = () => { finish(); reject(new Error('취소했습니다')); };
     v.addEventListener('seeked', ok, { once: true }); v.addEventListener('error', fail, { once: true });
     if (signal) signal.addEventListener('abort', abort, { once: true });
     v.currentTime = target;

@@ -50,7 +50,7 @@ function initVolume() {
   el.addEventListener('input', () => { AP.setVol(el.value / 100, false); show(); save(); });
   mb.addEventListener('click', () => { AP.setVol(null, !AP.muted); show(); save(); });
 }
-const NO_AUDIO_LABEL = '曲なし（読み込むと拍を検出してカットを合わせます）';
+const NO_AUDIO_LABEL = '곡 없음(불러오면 박을 감지해 컷을 맞춥니다)';
 function removeAudio() {
   if (!S.audio) return;
   pause(); S.audio = null;
@@ -318,7 +318,7 @@ function setProjectDuration(seconds) {
   if (S.exporting || S.tap) return false;
   const minimum = minimumProjectDuration();
   if (seconds != null && (!Number.isFinite(seconds) || seconds < minimum - 1e-6 || seconds > 21600)) {
-    toast(`動画全体の長さは ${J.fmtTime(minimum)} ～ 06:00:00 の範囲で入力してください`);
+    toast(`동영상 전체 길이는 ${J.fmtTime(minimum)} ~ 06:00:00 범위로 입력해 주세요`);
     return false;
   }
   if (S.areaEdit) cancelAreaEditor();
@@ -410,7 +410,7 @@ function drawTimeline() {
     if (x1 - x0 > 34 * dpr) {
       x.fillStyle = 'rgba(236,231,225,0.85)'; x.font = `${10 * dpr}px ${getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace'}`;
       x.save(); x.beginPath(); x.rect(x0, top, x1 - x0 - 3, bot - top); x.clip();
-      x.fillText(cut.blank ? '無表示' : (cut.text || cut.lineText || (J.LAYOUTS[cut.layout] || {}).name || cut.layout), x0 + 5 * dpr, top + 13 * dpr); x.restore();
+      x.fillText(cut.blank ? '무표시' : (cut.text || cut.lineText || (J.LAYOUTS[cut.layout] || {}).name || cut.layout), x0 + 5 * dpr, top + 13 * dpr); x.restore();
     }
   }
   x.font = `${10 * dpr}px monospace`;
@@ -444,7 +444,7 @@ function drawMediaTimeline(layer = 'media') {
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
   const x = c.getContext('2d'), D = Math.max(0.001, S.plan.duration), X = t => t / D * w;
   x.fillStyle = '#131316'; x.fillRect(0, 0, w, h);
-  x.fillStyle = '#8e8a94'; x.font = `${10 * dpr}px monospace`; x.fillText(layer === 'media' ? '背景' : '前景', 6 * dpr, 12 * dpr);
+  x.fillStyle = '#8e8a94'; x.font = `${10 * dpr}px monospace`; x.fillText(layer === 'media' ? '배경' : '전경', 6 * dpr, 12 * dpr);
   for (const cut of S.plan[layer].cuts) {
     const a = X(cut.start), b = X(cut.end);
     x.fillStyle = cut.type === 'video' ? 'rgba(22,244,212,0.28)' : 'rgba(245,165,12,0.28)'; x.fillRect(a, 17 * dpr, Math.max(1, b - a - 1), h - 20 * dpr);
@@ -617,18 +617,18 @@ function drawTimelineLinks() {
     const a = byRef.get(link.a), b = byRef.get(link.b);
     if (!a || !b) return '';
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    return `<line class="link-wire" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><g class="link-remove" data-edge="${index}" role="button" aria-label="リンクを解除"><circle cx="${mx}" cy="${my}" r="9"/><text x="${mx}" y="${my + 0.5}">×</text></g>`;
+    return `<line class="link-wire" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><g class="link-remove" data-edge="${index}" role="button" aria-label="링크 해제"><circle cx="${mx}" cy="${my}" r="9"/><text x="${mx}" y="${my + 0.5}">×</text></g>`;
   }).join('');
   const preview = S.linkDrag ? `<line class="link-preview" x1="${S.linkDrag.sourceX}" y1="${S.linkDrag.sourceY}" x2="${S.linkDrag.x}" y2="${S.linkDrag.y}"/>` : '';
-  const handles = markers.map(m => `<g class="link-handle ${linkedRefs(m.ref).length > 1 ? 'linked' : ''}" data-ref="${escapeHtml(m.ref)}" role="button" aria-label="境界をリンク"><circle cx="${m.x}" cy="${m.y}" r="9"/><text x="${m.x}" y="${m.y + 0.5}">🔗</text></g>`).join('');
+  const handles = markers.map(m => `<g class="link-handle ${linkedRefs(m.ref).length > 1 ? 'linked' : ''}" data-ref="${escapeHtml(m.ref)}" role="button" aria-label="경계 연결"><circle cx="${m.x}" cy="${m.y}" r="9"/><text x="${m.x}" y="${m.y + 0.5}">🔗</text></g>`).join('');
   const action = (layer, cut, index, locked) => {
     const canvas = $(layer === 'lyrics' ? 'timeline' : layer === 'foreground' ? 'foregroundTimeline' : 'mediaTimeline');
     const startX = canvas.offsetLeft + cut.start / Math.max(0.001, S.plan.duration) * canvas.clientWidth;
     const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 63);
     const y = canvas.offsetTop + 11;
     const areaIcon = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/><path d="M2 6h12M5 3v10"/></svg>';
-    const actions = [['dice', false, layer === 'lyrics' ? 'この行を再抽選' : 'このカットを再抽選', ICON.dice], ['lock', locked, layer === 'lyrics' ? 'この行の構成をロック' : 'このカットをロック', ICON.lock]];
-    if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? 'この行の表示エリアを編集' : 'このカットの配置とサイズを編集', areaIcon]);
+    const actions = [['dice', false, layer === 'lyrics' ? '이 행 다시 뽑기' : '이 컷 다시 뽑기', ICON.dice], ['lock', locked, layer === 'lyrics' ? '이 행의 구성 잠금' : '이 컷 잠금', ICON.lock]];
+    if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? '이 행의 표시 영역을 편집' : '이 컷의 배치·크기 편집', areaIcon]);
     return actions.map(([name, active, label, icon], n) => {
       const x = left + n * 20, graphic = icon.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
       return `<g class="timeline-action ${active ? 'locked' : ''}" data-action="${name}" data-layer="${layer}" data-index="${index}" role="button" tabindex="0" aria-label="${label}" ${name === 'lock' ? `aria-pressed="${active}"` : ''} transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
@@ -643,7 +643,7 @@ function drawTimelineLinks() {
     const x = J.clamp(startX + 10, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 9);
     const y = canvas.offsetTop + 33, active = !!cut.frontmost;
     const graphic = ICON.frontmost.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
-    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}行目${cut.part + 1}カット目を最前に表示" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
+    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}행 ${cut.part + 1}컷을 맨 앞에 표시" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
   }).join('');
   const mediaActions = ['foreground', 'media'].map(layer => S.plan[layer].cuts.map(cut => action(layer, cut, cut.index, !!mediaCutOptions(layer, cut.index).lock)).join('')).join('');
   svg.innerHTML = links + preview + handles + lyricActions + frontmostActions + mediaActions;
@@ -736,12 +736,12 @@ function connectTimelineBoundaries(source, target) {
   const from = linkedRefs(source), to = linkedRefs(target);
   if (from.includes(target)) return;
   const layers = from.map(boundaryLayer);
-  if (to.some(ref => layers.includes(boundaryLayer(ref)))) { toast('同じレイヤーの境界は同時にリンクできません'); return; }
+  if (to.some(ref => layers.includes(boundaryLayer(ref)))) { toast('같은 레이어의 경계는 동시에 링크할 수 없습니다'); return; }
   const limits = [source, target].map(boundaryGroupLimits);
   if (limits.some(x => !x)) return;
   const min = Math.max(...limits.map(x => x.min)), max = Math.min(...limits.map(x => x.max));
   const targetTime = boundaryCut(target).start;
-  if (targetTime < min - 0.001 || targetTime > max + 0.001) { toast('この開始位置にはリンクできません'); return; }
+  if (targetTime < min - 0.001 || targetTime > max + 0.001) { toast('이 시작 위치에는 링크할 수 없습니다'); return; }
   for (const ref of [...from, ...to]) setTimelineBoundaryTime(timelineBoundaryForCut(boundaryCut(ref), boundaryLayer(ref)), targetTime);
   S.project.timelineLinks.push({ a: source, b: target });
   replan();
@@ -765,7 +765,7 @@ function updateCutInfo() {
   if (!cut && !mc && !fc) { el.innerHTML = '<span class="hint">이 위치에는 컷이 없습니다</span>'; return; }
   const chip = (cls, k, v) => `<span class="chip ${cls}"><b>${k}</b>${v}</span>`;
   const n = (tbl, k) => (tbl[k] ? tbl[k].name : k);
-  el.innerHTML = (cut && cut.blank ? [chip('l', '歌詞', '無表示')] : cut ? [
+  el.innerHTML = (cut && cut.blank ? [chip('l', '가사', '무표시')] : cut ? [
     `<span class="chip mono">#${String(cut.index + 1).padStart(2, '0')}</span>`,
     chip('l', '레이아웃', n(J.LAYOUTS, cut.layout)), chip('e', '등장', n(J.ENTER, cut.enter)), chip('h', '유지', n(J.HOLD, cut.hold)), chip('x', '퇴장', n(J.EXIT, cut.exit)),
     cut.decor && cut.decor.length ? chip('', '장식', cut.decor.map(d => n(J.DECOR, d.id)).join('·')) : '',
@@ -773,7 +773,7 @@ function updateCutInfo() {
     cut.bg && cut.bg !== 'none' ? chip('b', '배경', n(J.BG, cut.bg)) : '',
     cut.cam && cut.cam !== 'push' ? chip('c', '카메라', n(J.CAMERA, cut.cam)) : '',
     cut.trans ? chip('c', '전환', n(J.TRANS, cut.trans)) : '',
-  ] : []).concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '前景' : '背景', escapeHtml(mediaCut.name)), chip('l', '表示', J.MEDIA_LAYOUT[mediaCut.layout]), chip('e', '登場', J.MEDIA_ENTER[mediaCut.enter]), chip('h', '保持', J.MEDIA_HOLD[mediaCut.hold]), chip('x', '退場', J.MEDIA_EXIT[mediaCut.exit]), chip('t', '加工', J.MEDIA_TREAT[mediaCut.treat]), mediaCut.trans ? chip('c', 'つなぎ', J.mediaTransOptions()[mediaCut.trans]) : '', mediaCut.placement && mediaCut.placement.angle ? chip('c', '角度', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', 'クロマキー', mediaCut.chromaColor) : ''] : [])).join('');
+  ] : []).concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '전경' : '배경', escapeHtml(mediaCut.name)), chip('l', '표시', J.MEDIA_LAYOUT[mediaCut.layout]), chip('e', '등장', J.MEDIA_ENTER[mediaCut.enter]), chip('h', '유지', J.MEDIA_HOLD[mediaCut.hold]), chip('x', '퇴장', J.MEDIA_EXIT[mediaCut.exit]), chip('t', '가공', J.MEDIA_TREAT[mediaCut.treat]), mediaCut.trans ? chip('c', '전환', J.mediaTransOptions()[mediaCut.trans]) : '', mediaCut.placement && mediaCut.placement.angle ? chip('c', '각도', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', '크로마키', mediaCut.chromaColor) : ''] : [])).join('');
 }
 
 /* ---------------- line list ---------------- */
@@ -784,7 +784,7 @@ function readRate(ln) {
   return [...ln.text.replace(/\s+/g, '')].length / Math.max(0.05, (ln.visEnd ?? ln.end) - ln.start);
 }
 function insertLyricBlankCut(rows, position) {
-  if (S.project.lyricBlankCuts.length >= 1000) { toast('カット数の上限に達しました'); return; }
+  if (S.project.lyricBlankCuts.length >= 1000) { toast('컷 수 상한에 도달했습니다'); return; }
   const previous = rows[position - 1], next = rows[position];
   let start = previous ? (next ? (previous.start + next.start) / 2 : (previous.start + S.plan.duration) / 2) : 0;
   if (next && next.start - start < 0.04) {
@@ -895,7 +895,7 @@ function renderLines() {
   const rows = [...S.plan.lines.map(ln => ({ line: ln.index, start: ln.start })), ...S.plan.cuts.filter(c => c.blank).map(c => ({ blankId: c.blankId, beforeLine: c.beforeLine, start: c.start }))].sort((a, b) => a.start - b.start);
   const addButton = position => {
     const row = document.createElement('li'); row.className = 'media-cut-insert';
-    row.innerHTML = `<button class="ghost small" type="button" aria-label="${position + 1}番目に無表示カットを追加">＋ 無表示カットを追加</button>`;
+    row.innerHTML = `<button class="ghost small" type="button" aria-label="${position + 1}번째에 무표시 컷 추가">＋ 무표시 컷 추가</button>`;
     row.querySelector('button').addEventListener('click', () => insertLyricBlankCut(rows, position));
     ol.appendChild(row);
   };
@@ -903,7 +903,7 @@ function renderLines() {
     addButton(position);
     if (row.blankId) {
       const li = document.createElement('li'); li.className = 'ln lyric-ln lyric-blank-ln';
-      li.innerHTML = `<span class="no">—</span><input class="time mono" type="number" step="0.01" min="0" value="${row.start.toFixed(2)}" aria-label="無表示カットの開始秒"><span class="txt">無表示</span><div class="meta"><span class="cuts"></span><span class="tools"><button class="ghost small remove-blank" type="button" aria-label="無表示カットを削除">削除</button></span></div>`;
+      li.innerHTML = `<span class="no">—</span><input class="time mono" type="number" step="0.01" min="0" value="${row.start.toFixed(2)}" aria-label="무표시 컷 시작 초"><span class="txt">무표시</span><div class="meta"><span class="cuts"></span><span class="tools"><button class="ghost small remove-blank" type="button" aria-label="무표시 컷 삭제">삭제</button></span></div>`;
       li.querySelector('.time').addEventListener('change', e => { const blank = S.project.lyricBlankCuts.find(b => b.id === row.blankId); if (blank) blank.start = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
       li.querySelector('.txt').addEventListener('click', () => seek(row.start + 0.001));
       li.querySelector('.remove-blank').addEventListener('click', () => { S.project.lyricBlankCuts = S.project.lyricBlankCuts.filter(b => b.id !== row.blankId); replan(); });
@@ -920,7 +920,7 @@ function renderLines() {
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}${fast ? `<i class="warn" title="빠름: 초당 ${rate.toFixed(1)}자(기준 ${lim}자). 다 읽기 전에 지나갈 수 있습니다. 시간을 늘리거나 행을 나눠 보세요">!</i>` : ''}</span>
       <input class="time mono" type="number" step="0.01" min="0" value="${ln.start.toFixed(2)}" title="시작(초)${manual ? ' · 수동' : ' · 자동'}" aria-label="${i + 1}행 시작(초)" style="${manual ? 'border-color:var(--cyan)' : ''}">
       <span class="txt" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
-      <button class="lyric-area-thumb" title="${i + 1}行目の歌詞表示エリアを編集" aria-label="${i + 1}行目の歌詞表示エリアを編集"><i style="left:${area.x * 100}%;top:${area.y * 100}%;width:${area.w * 100}%;height:${area.h * 100}%;transform:rotate(${area.angle || 0}deg)"></i></button>
+      <button class="lyric-area-thumb" title="${i + 1}행 가사 표시 영역 편집" aria-label="${i + 1}행 가사 표시 영역 편집"><i style="left:${area.x * 100}%;top:${area.y * 100}%;width:${area.w * 100}%;height:${area.h * 100}%;transform:rotate(${area.angle || 0}deg)"></i></button>
       <div class="meta"><span class="cuts"></span>
       <span class="tools">
         <button class="icon ghost edit" title="이 행의 가사 고치기" aria-label="${i + 1}행 가사 고치기">${ICON.pen}</button>
@@ -965,9 +965,9 @@ function renderLines() {
       name.addEventListener('click', () => seek(c.start + Math.min(c.dur * 0.5, c.inDur + 0.05)));
       const label = document.createElement('label'); label.className = 'lyric-frontmost';
       const input = document.createElement('input'); input.type = 'checkbox'; input.checked = !!c.frontmost;
-      input.setAttribute('aria-label', `${i + 1}行目${c.part + 1}カット目を最前に表示`);
+      input.setAttribute('aria-label', `${i + 1}행 ${c.part + 1}컷을 맨 앞에 표시`);
       input.addEventListener('change', () => toggleLyricCutFrontmost(i, c.part));
-      label.append(input, document.createTextNode('最前に表示'));
+      label.append(input, document.createTextNode('맨 앞에 표시'));
       cutOption.append(name, label); cutsEl.appendChild(cutOption);
     });
     ol.appendChild(li); S.lineEls.push(li);
@@ -1107,13 +1107,13 @@ function showAreaDraft() {
   rect.hidden = !area;
   if (area) Object.assign(rect.style, { left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%`, transform: `rotate(${edit.angle}deg)` });
   $('areaEditOverlay').classList.toggle('media-edit', !!edit);
-  $('areaEditOverlay').querySelector('.area-edit-hint').textContent = '内側をドラッグして移動・四隅でサイズ変更・枠の周囲をドラッグして回転';
+  $('areaEditOverlay').querySelector('.area-edit-hint').textContent = '안쪽을 드래그하여 이동·네 모서리로 크기 변경·테두리 주변을 드래그하여 회전';
   $('mediaAreaSizeControls').hidden = !edit;
   if (area) { $('mediaAreaAspectLock').checked = edit.lockAspect; $('mediaAreaWidth').value = String(Math.round(area.w * 1000) / 10); $('mediaAreaHeight').value = String(Math.round(area.h * 1000) / 10); }
   $('mediaAreaAngleField').hidden = !edit;
   if (edit) $('mediaAreaAngle').value = String(edit.angle);
   $('areaResetFull').hidden = !edit || media;
-  $('areaApplyOne').textContent = media ? 'このカットだけに適用' : 'この行だけに適用';
+  $('areaApplyOne').textContent = media ? '이 컷에만 적용' : '이 행에만 적용';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
   S.need = true;
@@ -1128,7 +1128,7 @@ function openAreaEditor(index) {
   S.areaEdit = { kind: 'lyric', index, oldTime: S.t, draft: saved || { x: 0, y: 0, w: 1, h: 1 }, ratio: saved ? saved.h / saved.w : 1, lockAspect: saved ? saved.lockAspect : true, angle: saved ? saved.angle : 0, drag: null };
   const cut = S.plan.cuts.find(c => c.line === index);
   seek(cut ? cut.start + Math.min(cut.dur * 0.6, cut.inDur + 0.25) : line.start);
-  $('areaEditTitle').textContent = `${index + 1}行目「${line.text}」の表示エリア`;
+  $('areaEditTitle').textContent = `${index + 1}행 「${line.text}」의 표시 영역`;
   $('areaEditOverlay').hidden = false; $('areaEditControls').hidden = false;
   positionAreaEditor(); showAreaDraft();
 }
@@ -1144,7 +1144,7 @@ function openMediaEditor(index, layer) {
   clearTimeout(warmTimer); ++warmJob;
   S.areaEdit = { kind: layer, index, oldTime: S.t, draft, ratio: S.plan.W / S.plan.H * sh / sw, lockAspect: !cut.placement || cut.placement.lockAspect !== false, type: cut.type, angle: cut.placement && cut.placement.angle || 0, drag: null };
   seek(cut.start + Math.min(0.5, Math.max(0.001, (cut.end - cut.start) / 2)));
-  $('areaEditTitle').textContent = `${index + 1}カット目「${cut.name}」の配置・サイズ`;
+  $('areaEditTitle').textContent = `${index + 1}컷 「${cut.name}」의 배치·크기`;
   $('areaEditOverlay').hidden = false; $('areaEditControls').hidden = false;
   positionAreaEditor(); showAreaDraft();
 }
@@ -1229,13 +1229,13 @@ function syncSourceTab() {
   $('sourceForeground').setAttribute('aria-selected', String(layer === 'foreground'));
   $('lyricsPane').hidden = media; $('mediaPane').hidden = !media;
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
-  $('mediaPaneTitle').textContent = layer === 'foreground' ? '前景' : '背景';
+  $('mediaPaneTitle').textContent = layer === 'foreground' ? '전경' : '배경';
   $('foregroundBlendFields').hidden = layer !== 'foreground';
   $('lyricBlend').value = S.project.media.blend;
   $('lyricOpacity').value = S.project.media.opacity;
-  $('linesInfo').textContent = media ? `${m.items.length}素材 / ${S.plan[layer].cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
+  $('linesInfo').textContent = media ? `소재 ${m.items.length} / 컷 ${S.plan[layer].cuts.length}` : `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
   $('mediaRandom').disabled = !media || m.items.length < 2 || m.manualCuts;
-  $('mediaRandom').title = media && m.manualCuts ? '手動で追加したカットでは素材を個別に指定します' : '';
+  $('mediaRandom').title = media && m.manualCuts ? '수동으로 추가한 컷에서는 소재를 개별로 지정합니다' : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
   $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
 }
@@ -1243,7 +1243,7 @@ function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground'
 function mediaThumb(item, cls = '') {
   if (!item) return `<span class="missing media-ln-thumb" aria-hidden="true">—</span>`;
   const asset = J.mediaAssets.get(item.id);
-  if (!asset) return `<span class="missing">素材なし</span>`;
+  if (!asset) return `<span class="missing">소재 없음</span>`;
   return `<img class="${cls}" src="${asset.poster || asset.url}" alt="">`;
 }
 function renderMediaList() {
@@ -1251,7 +1251,7 @@ function renderMediaList() {
   const box = $('mediaList'); box.innerHTML = '';
   m.items.forEach((item, i) => {
     const row = document.createElement('div'); row.className = 'media-item'; row.dataset.id = item.id;
-    row.innerHTML = `${mediaThumb(item)}<span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><button class="ghost small" aria-label="${escapeHtml(item.name)}を削除">×</button>`;
+    row.innerHTML = `${mediaThumb(item)}<span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><button class="ghost small" aria-label="${escapeHtml(item.name)} 삭제">×</button>`;
     row.querySelector('button').addEventListener('click', () => {
       freezeMediaCuts(layer);
       m.items.splice(i, 1);
@@ -1284,7 +1284,7 @@ function freezeMediaCuts(layer) {
 }
 function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   const m = S.project[layer], cuts = S.plan[layer].cuts;
-  if (cuts.length >= 1000) { toast('カット数の上限に達しました'); return; }
+  if (cuts.length >= 1000) { toast('컷 수 상한에 도달했습니다'); return; }
   const starts = cuts.map(cut => cut.start);
   const overrides = {};
   cuts.forEach((cut, i) => {
@@ -1354,37 +1354,37 @@ async function addMediaFiles(files, layer) {
       if (type === 'video') item.duration = el.duration || 0;
       if (!existing) m.items.push(item);
       await J.storeMedia(item.id, file);
-    } catch (err) { toast(`${file.name}: 読み込めませんでした`); }
+    } catch (err) { toast(`${file.name}: 불러올 수 없습니다`); }
   }
   replan();
 }
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const select = (key, obj, val) => `<select aria-label="${key}"><option value="">自動</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
+  const select = (key, obj, val) => `<select aria-label="${key}"><option value="">자동</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
   const addButton = index => {
     const row = document.createElement('li'); row.className = 'media-cut-insert';
-    row.innerHTML = `<button class="ghost small" type="button" aria-label="${index + 1}番目にカットを追加">＋ カットを追加</button>`;
+    row.innerHTML = `<button class="ghost small" type="button" aria-label="${index + 1}번째에 컷 추가">＋ 컷 추가</button>`;
     row.querySelector('button').addEventListener('click', () => insertMediaCut(index, layer));
     ol.appendChild(row);
   };
   S.plan[layer].cuts.forEach((cut, i) => {
     addButton(i);
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
-    const fileSelect = `<select class="media-cut-file" aria-label="${i + 1}カット目の素材"><option value="">画像無し</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
+    const fileSelect = `<select class="media-cut-file" aria-label="${i + 1}컷 소재"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (ov[key] === undefined) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
     const sw = source && (source.videoWidth || source.naturalWidth), sh = source && (source.videoHeight || source.naturalHeight);
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
-    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}カット目の配置とサイズを編集"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>配置・サイズを編集</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">自動配置に戻す</button>' : ''}</span>`;
+    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}컷 배치와 크기 편집"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>배치·크기 편집</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">자동 배치로 되돌리기</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}カット目の開始秒">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('表示方法', J.MEDIA_LAYOUT, ov.layout)}${select('登場', J.MEDIA_ENTER, ov.enter)}${select('保持', J.MEDIA_HOLD, ov.hold)}${select('退場', J.MEDIA_EXIT, ov.exit)}${select('加工', J.MEDIA_TREAT, ov.treat)}${select('つなぎ', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="このカットを再抽選">${ICON.dice}</button><button class="icon ghost lock" title="このカットをロック" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}カット目を削除">削除</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>動画をループ再生</label><label class="media-video-duration">動画の長さ（秒）<input type="number" min="0.04" max="3600" step="0.01" placeholder="自動" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}カット目の動画の長さ（秒）"></label>` : ''}</div>`;
-    if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>クロマキー合成</label><label>色<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}カット目のクロマキー色" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}컷 시작 초">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('표시 방법', J.MEDIA_LAYOUT, ov.layout)}${select('등장', J.MEDIA_ENTER, ov.enter)}${select('유지', J.MEDIA_HOLD, ov.hold)}${select('퇴장', J.MEDIA_EXIT, ov.exit)}${select('가공', J.MEDIA_TREAT, ov.treat)}${select('전환', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="이 컷 다시 뽑기">${ICON.dice}</button><button class="icon ghost lock" title="이 컷 잠금" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}컷 삭제">삭제</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>동영상 반복 재생</label><label class="media-video-duration">동영상 길이(초)<input type="number" min="0.04" max="3600" step="0.01" placeholder="자동" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}컷 동영상 길이(초)"></label>` : ''}</div>`;
+    if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>크로마키 합성</label><label>색<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}컷 크로마키 색" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.media-cut-file').addEventListener('change', e => { mediaOv(i, { itemId: e.target.value || null }, layer); replan(); });
     ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].forEach((key, n) => li.querySelectorAll('.tools select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || null }, layer); replan(); }));
-    if (i === 0) li.querySelector('select[aria-label="つなぎ"]').disabled = true;
+    if (i === 0) li.querySelector('select[aria-label="전환"]').disabled = true;
     const videoLoop = li.querySelector('.media-video-loop input');
     if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
     const videoDuration = li.querySelector('.media-video-duration input');
@@ -1472,9 +1472,9 @@ function renderCompositeFonts() {
   const selected = base.value; base.innerHTML = choices;
   if (selected && J.FONTS[selected]) base.value = selected;
   const parts = $('compositeParts'), existing = Object.fromEntries([...parts.querySelectorAll('select')].map(el => [el.dataset.part, el.value]));
-  parts.innerHTML = Object.entries(J.COMPOSITE_PARTS).map(([key, label]) => `<label>${label}<select data-part="${key}"><option value="">ベースを使用</option>${choices}</select></label>`).join('');
+  parts.innerHTML = Object.entries(J.COMPOSITE_PARTS).map(([key, label]) => `<label>${label}<select data-part="${key}"><option value="">기준 글꼴 사용</option>${choices}</select></label>`).join('');
   for (const select of parts.querySelectorAll('select')) if (existing[select.dataset.part]) select.value = existing[select.dataset.part];
-  $('compositeList').innerHTML = (S.project.compositeFonts || []).map(def => `<div class="composite-saved"><span>${escapeHtml(def.name)}</span><button type="button" data-key="${escapeHtml(def.key)}" aria-label="${escapeHtml(def.name)}を削除">×</button></div>`).join('');
+  $('compositeList').innerHTML = (S.project.compositeFonts || []).map(def => `<div class="composite-saved"><span>${escapeHtml(def.name)}</span><button type="button" data-key="${escapeHtml(def.key)}" aria-label="${escapeHtml(def.name)} 삭제">×</button></div>`).join('');
 }
 const BASE_KEYS = [['bg', '배경'], ['fg', '글자'], ['sub', '보조']];
 const ACCENT_KEYS = [['accent', '강조'], ['ghostA', '색 어긋남 A'], ['ghostB', '색 어긋남 B']];
@@ -2087,7 +2087,7 @@ function startTap(from = 0, single = false) {
   else { from = J.clamp(from | 0, 0, S.plan.lines.length - 1); pushEdit(); }
   S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
-  $('tapHint').textContent = S.tap.append ? 'タップするたびに素材をループしてカットを追加します。終了するまで続けられます。' : '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。';
+  $('tapHint').textContent = S.tap.append ? '탭할 때마다 소재를 순환하며 컷을 추가합니다. 종료할 때까지 계속할 수 있습니다.' : '곡에 맞춰 각 행·소재가 시작되는 순간 Space나 버튼을 누르세요.';
   $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
   let t0 = 0;
   if (!layer && from > 0) {
@@ -2112,7 +2112,7 @@ function tapNow() {
     m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();
-    if (S.tap.i >= 1000) { pause(); stopTap(); toast('カット数の上限に達しました'); }
+    if (S.tap.i >= 1000) { pause(); stopTap(); toast('컷 수 상한에 도달했습니다'); }
     else updateTap();
     return;
   }
@@ -2138,7 +2138,7 @@ function updateTap() {
   const bb = $('tapBack'); if (bb) bb.disabled = !S.tap.done.length;
   if (S.tap.append) {
     const order = J.mediaOrder(S.project, S.tap.layer);
-    $('tapLine').textContent = `${S.tap.i + 1}. ${order.length ? order[S.tap.i % order.length].name : '画像無し'}`; return;
+    $('tapLine').textContent = `${S.tap.i + 1}. ${order.length ? order[S.tap.i % order.length].name : '이미지 없음'}`; return;
   }
   const ln = S.tap.layer ? S.plan[S.tap.layer].cuts[S.tap.i] : S.plan.lines[S.tap.i];
   $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.layer ? ln.name : ln.interlude ? '[간주]' : ln.text}${S.tap.single ? ' (이 행만)' : ''}` : '—';
@@ -2451,7 +2451,7 @@ function bind() {
     fontKey = ''; renderFontRoles(); replan();
   });
   $('btnListFonts').addEventListener('click', async () => {
-    if (typeof window.queryLocalFonts !== 'function') { toast('このブラウザではPCフォント一覧を取得できません'); return; }
+    if (typeof window.queryLocalFonts !== 'function') { toast('이 브라우저에서는 PC 글꼴 목록을 가져올 수 없습니다'); return; }
     try {
       const fonts = await window.queryLocalFonts();
       const unique = new Map();
@@ -2462,8 +2462,8 @@ function bind() {
         option.style.fontFamily = `"${font.family.replace(/"/g, '')}"`; option._font = font; selector.appendChild(option);
       }
       selector.hidden = !$('installedFonts').options.length; $('btnImportFont').hidden = selector.hidden;
-      if (selector.hidden) toast('フォントが見つかりませんでした');
-    } catch (error) { toast('PCフォント一覧の取得が許可されませんでした'); }
+      if (selector.hidden) toast('글꼴을 찾을 수 없습니다');
+    } catch (error) { toast('PC 글꼴 목록 가져오기가 허용되지 않았습니다'); }
   });
   $('btnImportFont').addEventListener('click', () => {
     const selector = $('installedFonts'), font = selector.selectedOptions[0]?._font;
@@ -2477,7 +2477,7 @@ function bind() {
   });
   $('btnSaveComposite').addEventListener('click', () => {
     const name = $('compositeName').value.trim(), base = $('compositeBase').value;
-    if (!name || !J.FONTS[base] || J.FONTS[base].composite) { toast('設定名とベースフォントを指定してください'); return; }
+    if (!name || !J.FONTS[base] || J.FONTS[base].composite) { toast('설정 이름과 기준 글꼴을 지정해 주세요'); return; }
     const parts = Object.fromEntries([...$('compositeParts').querySelectorAll('select')].filter(el => el.value && J.FONTS[el.value] && !J.FONTS[el.value].composite).map(el => [el.dataset.part, el.value]));
     const key = 'composite_' + Math.random().toString(36).slice(2, 11);
     S.project.compositeFonts.push({ key, name, base, parts }); J.setCompositeFonts(S.project.compositeFonts);

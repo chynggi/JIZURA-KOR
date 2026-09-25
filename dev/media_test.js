@@ -94,7 +94,7 @@ const noLoop = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), loop: f
 assert.equal(noLoop.cuts.length, 2);
 const manual = J.planMedia({ seed: 1, media: { items: items.slice(0, 2), manualCuts: true, cutCount: 3, cutOverrides: { 0: { itemId: 'a' }, 1: { itemId: null }, 2: { itemId: 'b' } } } }, { duration: 8, lines: [] });
 assert.deepEqual(Array.from(manual.cuts.map(c => c.itemId)), ['a', null, 'b'], 'manual cuts keep their chosen files and blank slots');
-assert.equal(manual.cuts[1].name, '画像無し');
+assert.equal(manual.cuts[1].name, '이미지 없음');
 const blankOnly = J.planMedia({ seed: 1, foreground: { items: [], manualCuts: true, cutCount: 1, cutOverrides: { 0: { itemId: null } } } }, { duration: 3, lines: [] }, undefined, 'foreground');
 assert.equal(blankOnly.cuts.length, 1, 'a blank cut remains after its file is removed');
 assert.equal(blankOnly.cuts[0].itemId, null);
