@@ -525,15 +525,22 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         <div class="sec-h"><h2 id="mediaPaneTitle">背景</h2><label class="file">追加<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
         <p class="hint">画像・動画をここへドラッグ＆ドロップ、または「追加」から選択できます。素材はこのブラウザに保存されます。</p>
         <div id="mediaList" class="media-list"></div>
-        <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で表示<small>空カット・ロック済みカットは維持します。素材の個別指定はオフにすると使えます。</small></span></label>
-        <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ表示<small>素材を順に繰り返し、素材数より多いカットを作成できます</small></span></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
           <label class="field">前景の合成方法<select id="mediaBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
           <label class="field">前景不透明度（％）<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
         </div>
+        <div id="mediaCutInsert" class="media-lyric-insert">
+          <div class="sec-h"><h2>カット挿入</h2></div>
+          <label class="field">一括挿入の基準<select id="mediaLyricInsertMode"><option value="line">行に合わせる</option><option value="cut">カットに合わせる</option></select></label>
+          <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で挿入</span></label>
+          <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ</span></label>
+          <button id="btnMediaFromLyrics" type="button" aria-describedby="mediaLyricInsertHint">歌詞に合わせて一括挿入</button>
+          <button id="btnTapMedia" type="button" title="動画を見ながら各カットのタイミングでタップ">動画を見ながらタップで挿入</button>
+          <p id="mediaLyricInsertHint" class="hint"></p>
+        </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="audioTimingSection">
         <div class="sec-h"><h2>曲とタイミング</h2></div>
         <div id="audioName" class="muted audio-name">曲なし（読み込むと拍を検出してカットを合わせます）</div>
         <div class="row">
@@ -551,20 +558,15 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
           <label class="row" style="gap:6px"><input id="snap" type="checkbox"> 拍にスナップ</label>
           <button id="btnResetTimes" class="ghost small">手動タイミングを消す</button>
         </div>
-        <div id="tapPanel" class="tapbox" hidden>
-          <div class="hint" id="tapHint">曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。</div>
-          <div class="next">次: <b id="tapLine">—</b></div>
-          <button id="tapBtn" class="tap">TAP</button>
-          <button id="tapStop" class="ghost">終了する</button>
-        </div>
+      </div>
+      <div id="tapPanel" class="tapbox" hidden>
+        <div class="hint" id="tapHint">曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。</div>
+        <div class="next">次: <b id="tapLine">—</b></div>
+        <button id="tapBtn" class="tap">TAP</button>
+        <button id="tapStop" class="ghost">終了する</button>
       </div>
 
       <div class="sec">
-        <div id="mediaLyricInsert" class="media-lyric-insert" hidden>
-          <label class="field">一括挿入の基準<select id="mediaLyricInsertMode"><option value="line">行に合わせる</option><option value="cut">カットに合わせる</option></select></label>
-          <button id="btnMediaFromLyrics" type="button" aria-describedby="mediaLyricInsertHint">歌詞に合わせて一括挿入</button>
-          <p id="mediaLyricInsertHint" class="hint"></p>
-        </div>
         <div class="sec-h"><h2>行とカット</h2><span id="linesInfo" class="muted mono"></span></div>
         <ol id="lineList"></ol>
         <ol id="mediaLineList" hidden></ol>
@@ -30738,7 +30740,7 @@ function undoMove(direction) {
   pause(); clearTimeout(replanTimer);
   if (S.areaEdit) cancelAreaEditor();
   S.tap = null; S.timelineDrag = null; S.linkDrag = null;
-  $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false');
+  $('tapPanel').hidden = true; syncTapButtons();
   U.restoring = true; U.i = next; U.pendingGroup = null; U.lastGroup = null;
   S.project = mergeProject(JSON.parse(U.list[next]));
   if (S.project.audioAsset?.id !== S.audioAssetId) {
@@ -31641,7 +31643,7 @@ function syncSourceTab() {
   $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
   $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
-  $('mediaLyricInsert').hidden = !media;
+  $('audioTimingSection').hidden = media;
   const targets = mediaLyricTargets(layer), byCut = media && m.lyricInsertMode === 'cut';
   $('mediaLyricInsertMode').value = byCut ? 'cut' : 'line';
   $('btnMediaFromLyrics').disabled = !targets.length;
@@ -32283,7 +32285,7 @@ function startTap() {
   S.tap = { i: 0, layer, append: !!layer && S.project[layer].loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
   $('tapHint').textContent = S.tap.append ? 'タップするたびに素材をループしてカットを追加します。終了するまで続けられます。' : '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。';
-  $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
+  $('tapPanel').hidden = false; syncTapButtons();
   if (S.tap.append && !S.audio) extendTapPreview(0);
   seek(0); play(); updateTap();
   $('tapBtn').focus();
@@ -32309,7 +32311,10 @@ function tapNow() {
   replan();
   if (S.tap.i >= (layer ? S.plan[layer].cuts.length : S.plan.lines.length)) stopTap(); else updateTap();
 }
-function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); }
+function stopTap() { S.tap = null; $('tapPanel').hidden = true; syncTapButtons(); replan(); }
+function syncTapButtons() {
+  for (const id of ['btnTap', 'btnTapMedia']) $(id).setAttribute('aria-pressed', String(!!S.tap));
+}
 function updateTap() {
   if (S.tap.append) {
     const order = J.mediaOrder(S.project, S.tap.layer);
@@ -32548,6 +32553,7 @@ function bind() {
   $('audioFile').addEventListener('change', e => { const f = e.target.files?.[0]; if (f) loadAudioFile(f); });
   $('btnRemoveAudio').addEventListener('click', removeAudio);
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
+  $('btnTapMedia').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
   $('btnPlay').addEventListener('click', () => (S.playing ? pause() : play()));
@@ -32899,7 +32905,7 @@ function replaceProject(project, audio, audioFile, assets) {
   pause(); clearTimeout(replanTimer); clearTimeout(saveTimer);
   if (S.areaEdit) cancelAreaEditor();
   S.tap = null; S.timelineDrag = null; S.linkDrag = null; S.scrubbing = false;
-  $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed','false');
+  $('tapPanel').hidden = true; syncTapButtons();
   releaseProjectAssets(J.mediaAssets);
   for (const [id,asset] of assets) { J.mediaAssets.set(id,asset); asset.element.addEventListener('seeked',()=>{S.need=true}); }
   for (const font of S.project.userFonts || []) delete J.FONTS[font.key];

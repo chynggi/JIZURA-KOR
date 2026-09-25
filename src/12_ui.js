@@ -124,7 +124,7 @@ function undoMove(direction) {
   pause(); clearTimeout(replanTimer);
   if (S.areaEdit) cancelAreaEditor();
   S.tap = null; S.timelineDrag = null; S.linkDrag = null;
-  $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false');
+  $('tapPanel').hidden = true; syncTapButtons();
   U.restoring = true; U.i = next; U.pendingGroup = null; U.lastGroup = null;
   S.project = mergeProject(JSON.parse(U.list[next]));
   if (S.project.audioAsset?.id !== S.audioAssetId) {
@@ -1027,7 +1027,7 @@ function syncSourceTab() {
   $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
   $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
-  $('mediaLyricInsert').hidden = !media;
+  $('audioTimingSection').hidden = media;
   const targets = mediaLyricTargets(layer), byCut = media && m.lyricInsertMode === 'cut';
   $('mediaLyricInsertMode').value = byCut ? 'cut' : 'line';
   $('btnMediaFromLyrics').disabled = !targets.length;
@@ -1669,7 +1669,7 @@ function startTap() {
   S.tap = { i: 0, layer, append: !!layer && S.project[layer].loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
   $('tapHint').textContent = S.tap.append ? 'タップするたびに素材をループしてカットを追加します。終了するまで続けられます。' : '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。';
-  $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
+  $('tapPanel').hidden = false; syncTapButtons();
   if (S.tap.append && !S.audio) extendTapPreview(0);
   seek(0); play(); updateTap();
   $('tapBtn').focus();
@@ -1695,7 +1695,10 @@ function tapNow() {
   replan();
   if (S.tap.i >= (layer ? S.plan[layer].cuts.length : S.plan.lines.length)) stopTap(); else updateTap();
 }
-function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); }
+function stopTap() { S.tap = null; $('tapPanel').hidden = true; syncTapButtons(); replan(); }
+function syncTapButtons() {
+  for (const id of ['btnTap', 'btnTapMedia']) $(id).setAttribute('aria-pressed', String(!!S.tap));
+}
 function updateTap() {
   if (S.tap.append) {
     const order = J.mediaOrder(S.project, S.tap.layer);
@@ -1934,6 +1937,7 @@ function bind() {
   $('audioFile').addEventListener('change', e => { const f = e.target.files?.[0]; if (f) loadAudioFile(f); });
   $('btnRemoveAudio').addEventListener('click', removeAudio);
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
+  $('btnTapMedia').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
   $('btnPlay').addEventListener('click', () => (S.playing ? pause() : play()));
@@ -2285,7 +2289,7 @@ function replaceProject(project, audio, audioFile, assets) {
   pause(); clearTimeout(replanTimer); clearTimeout(saveTimer);
   if (S.areaEdit) cancelAreaEditor();
   S.tap = null; S.timelineDrag = null; S.linkDrag = null; S.scrubbing = false;
-  $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed','false');
+  $('tapPanel').hidden = true; syncTapButtons();
   releaseProjectAssets(J.mediaAssets);
   for (const [id,asset] of assets) { J.mediaAssets.set(id,asset); asset.element.addEventListener('seeked',()=>{S.need=true}); }
   for (const font of S.project.userFonts || []) delete J.FONTS[font.key];

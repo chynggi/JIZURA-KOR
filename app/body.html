@@ -58,15 +58,22 @@
         <div class="sec-h"><h2 id="mediaPaneTitle">背景</h2><label class="file">追加<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
         <p class="hint">画像・動画をここへドラッグ＆ドロップ、または「追加」から選択できます。素材はこのブラウザに保存されます。</p>
         <div id="mediaList" class="media-list"></div>
-        <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で表示<small>空カット・ロック済みカットは維持します。素材の個別指定はオフにすると使えます。</small></span></label>
-        <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ表示<small>素材を順に繰り返し、素材数より多いカットを作成できます</small></span></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
           <label class="field">前景の合成方法<select id="mediaBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
           <label class="field">前景不透明度（％）<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
         </div>
+        <div id="mediaCutInsert" class="media-lyric-insert">
+          <div class="sec-h"><h2>カット挿入</h2></div>
+          <label class="field">一括挿入の基準<select id="mediaLyricInsertMode"><option value="line">行に合わせる</option><option value="cut">カットに合わせる</option></select></label>
+          <label class="check"><input id="mediaRandom" type="checkbox"><span>ランダム順で挿入</span></label>
+          <label class="check"><input id="mediaLoop" type="checkbox"><span>ループ</span></label>
+          <button id="btnMediaFromLyrics" type="button" aria-describedby="mediaLyricInsertHint">歌詞に合わせて一括挿入</button>
+          <button id="btnTapMedia" type="button" title="動画を見ながら各カットのタイミングでタップ">動画を見ながらタップで挿入</button>
+          <p id="mediaLyricInsertHint" class="hint"></p>
+        </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="audioTimingSection">
         <div class="sec-h"><h2>曲とタイミング</h2></div>
         <div id="audioName" class="muted audio-name">曲なし（読み込むと拍を検出してカットを合わせます）</div>
         <div class="row">
@@ -84,20 +91,15 @@
           <label class="row" style="gap:6px"><input id="snap" type="checkbox"> 拍にスナップ</label>
           <button id="btnResetTimes" class="ghost small">手動タイミングを消す</button>
         </div>
-        <div id="tapPanel" class="tapbox" hidden>
-          <div class="hint" id="tapHint">曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。</div>
-          <div class="next">次: <b id="tapLine">—</b></div>
-          <button id="tapBtn" class="tap">TAP</button>
-          <button id="tapStop" class="ghost">終了する</button>
-        </div>
+      </div>
+      <div id="tapPanel" class="tapbox" hidden>
+        <div class="hint" id="tapHint">曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。</div>
+        <div class="next">次: <b id="tapLine">—</b></div>
+        <button id="tapBtn" class="tap">TAP</button>
+        <button id="tapStop" class="ghost">終了する</button>
       </div>
 
       <div class="sec">
-        <div id="mediaLyricInsert" class="media-lyric-insert" hidden>
-          <label class="field">一括挿入の基準<select id="mediaLyricInsertMode"><option value="line">行に合わせる</option><option value="cut">カットに合わせる</option></select></label>
-          <button id="btnMediaFromLyrics" type="button" aria-describedby="mediaLyricInsertHint">歌詞に合わせて一括挿入</button>
-          <p id="mediaLyricInsertHint" class="hint"></p>
-        </div>
         <div class="sec-h"><h2>行とカット</h2><span id="linesInfo" class="muted mono"></span></div>
         <ol id="lineList"></ol>
         <ol id="mediaLineList" hidden></ol>
