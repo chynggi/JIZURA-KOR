@@ -3,7 +3,7 @@
 BODY = {
     '<summary>プロジェクト</summary>': '<summary>Project</summary>',
     '<summary>出力</summary>': '<summary>Export</summary>',
-    'このfork版は、ワンストップで動画作成が完成する事を目指して<br>オリジナル版JIZURAに機能を追加したものです。<br>編集・書き出しはブラウザ内で処理します。': 'This fork adds features to the original JIZURA<br>with the aim of completing video creation in one place.<br>Editing and export run in your browser.',
+    'このfork版は、ワンストップでのリリックビデオ作成をコンセプトに<br>オリジナル版JIZURAに機能を追加したものです。<br>編集・書き出しはブラウザ内で処理します。': 'This fork adds features to the original JIZURA<br>based on the concept of one-stop lyric video creation.<br>Editing and export run in your browser.',
 
     'テーマ設定': 'Theme settings', '選択を解除': 'Clear selection',
     '複数選択できます。おまかせでは、選んだテーマのいずれかに合う設定候補から構成します。未選択の場合は制限しません。': 'Select multiple themes. Randomize builds an arrangement from candidates matching one of your selected themes. No selection means unrestricted.',
