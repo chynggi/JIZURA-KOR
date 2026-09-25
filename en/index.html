@@ -520,7 +520,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
   <main class="work">
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="Lyrics and timing">
-      <nav class="source-tabs" role="tablist" aria-label="Source"><button id="sourceForeground" role="tab" aria-selected="false">Foreground</button><button id="sourceLyrics" role="tab" aria-selected="true">Lyrics</button><button id="sourceMedia" role="tab" aria-selected="false">Background</button></nav>
+      <nav class="source-tabs" role="tablist" aria-label="Source"><button id="sourceForeground" role="tab" aria-selected="false">Foreground</button><button id="sourceLyrics" role="tab" aria-selected="true">Lyrics & music</button><button id="sourceMedia" role="tab" aria-selected="false">Background</button></nav>
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>Lyrics</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">Syntax</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="Lyrics (one phrase per line)"></textarea>
@@ -589,7 +589,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       </div>
 
       <div class="sec">
-        <div class="sec-h"><h2>Lines and cuts</h2><span id="linesInfo" class="muted mono"></span></div>
+        <div class="sec-h"><h2 id="cutsHeading">Lines and cuts</h2><span id="linesInfo" class="muted mono"></span></div>
         <ol id="lineList"></ol>
         <ol id="mediaLineList" hidden></ol>
       </div>
@@ -31655,8 +31655,8 @@ function drawTimelineLinks() {
     const y = canvas.offsetTop + 11;
     const actions = [['dice', false, layer === 'lyrics' ? 'Reroll this line' : 'Reroll this cut', ICON.dice], ['lock', locked, layer === 'lyrics' ? 'Lock this line' : 'Lock this cut', ICON.lock]];
     if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? 'Edit this line display area' : 'Edit this cut position and size', ICON.area]);
-    if (layer !== 'lyrics') actions.push(['remove', false, 'Remove this cut', ICON.remove]);
     if (layer !== 'lyrics') actions.push(['details', false, J.mediaLabel('cutsの詳細編集','Edit cut details'), ICON.details]);
+    if (layer !== 'lyrics') actions.push(['remove', false, 'Remove this cut', ICON.remove]);
     const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - (actions.length - 1) * 20 - 23);
     return actions.map(([name, active, label, icon], n) => {
       const x = left + n * 20, graphic = icon.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
@@ -32135,6 +32135,7 @@ function syncSourceTab() {
   $('sourceForeground').setAttribute('aria-selected', String(layer === 'foreground'));
   $('lyricsPane').hidden = media; $('mediaPane').hidden = !media;
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
+  $('cutsHeading').textContent = media ? J.mediaLabel('cuts', 'Cuts') : J.mediaLabel('line とcuts', 'Lines and cuts');
   $('mediaPaneTitle').textContent = layer === 'foreground' ? 'Foreground' : 'Background';
   $('foregroundBlendFields').hidden = layer !== 'foreground';
   $('linesInfo').textContent = media ? `${m.items.length}files / ${S.plan[layer].cuts.length}cuts` : `${S.plan.lines.length} lines / ${S.plan.cuts.length} cuts`;
@@ -32375,7 +32376,7 @@ function renderMediaLines() {
       li.querySelector('.media-chroma-color').addEventListener('change', e => { mediaOv(i, { chromaColor: e.target.value }); replan(); });
     }
     li.querySelector('.dice').addEventListener('click', () => rerollMediaCut(layer, i));
-    li.querySelector('.tools').appendChild(detailButton(() => openCutDetails(layer,i)));
+    li.querySelector('.tools').insertBefore(detailButton(() => openCutDetails(layer,i)), li.querySelector('.remove-media-cut'));
     li.querySelector('.lock').addEventListener('click', () => toggleMediaCutLock(layer, i));
     li.querySelector('.remove-media-cut').addEventListener('click', () => removeMediaCut(i, layer));
     ol.appendChild(li); S.mediaLineEls.push(li);

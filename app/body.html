@@ -32,7 +32,7 @@
   <main class="work">
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="歌詞とタイミング">
-      <nav class="source-tabs" role="tablist" aria-label="素材"><button id="sourceForeground" role="tab" aria-selected="false">前景</button><button id="sourceLyrics" role="tab" aria-selected="true">歌詞</button><button id="sourceMedia" role="tab" aria-selected="false">背景</button></nav>
+      <nav class="source-tabs" role="tablist" aria-label="素材"><button id="sourceForeground" role="tab" aria-selected="false">前景</button><button id="sourceLyrics" role="tab" aria-selected="true">歌詞・曲</button><button id="sourceMedia" role="tab" aria-selected="false">背景</button></nav>
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>歌詞</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">記法</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="歌詞（1行 = 1フレーズ）"></textarea>
@@ -101,7 +101,7 @@
       </div>
 
       <div class="sec">
-        <div class="sec-h"><h2>行とカット</h2><span id="linesInfo" class="muted mono"></span></div>
+        <div class="sec-h"><h2 id="cutsHeading">行とカット</h2><span id="linesInfo" class="muted mono"></span></div>
         <ol id="lineList"></ol>
         <ol id="mediaLineList" hidden></ol>
       </div>

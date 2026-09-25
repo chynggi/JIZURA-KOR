@@ -703,8 +703,8 @@ function drawTimelineLinks() {
     const y = canvas.offsetTop + 11;
     const actions = [['dice', false, layer === 'lyrics' ? 'この行を再抽選' : 'このカットを再抽選', ICON.dice], ['lock', locked, layer === 'lyrics' ? 'この行の構成をロック' : 'このカットをロック', ICON.lock]];
     if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? 'この行の表示エリアを編集' : 'このカットの配置とサイズを編集', ICON.area]);
-    if (layer !== 'lyrics') actions.push(['remove', false, 'このカットを削除', ICON.remove]);
     if (layer !== 'lyrics') actions.push(['details', false, J.mediaLabel('カットの詳細編集','Edit cut details'), ICON.details]);
+    if (layer !== 'lyrics') actions.push(['remove', false, 'このカットを削除', ICON.remove]);
     const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - (actions.length - 1) * 20 - 23);
     return actions.map(([name, active, label, icon], n) => {
       const x = left + n * 20, graphic = icon.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
@@ -1183,6 +1183,7 @@ function syncSourceTab() {
   $('sourceForeground').setAttribute('aria-selected', String(layer === 'foreground'));
   $('lyricsPane').hidden = media; $('mediaPane').hidden = !media;
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
+  $('cutsHeading').textContent = media ? J.mediaLabel('カット', 'Cuts') : J.mediaLabel('行とカット', 'Lines and cuts');
   $('mediaPaneTitle').textContent = layer === 'foreground' ? '前景' : '背景';
   $('foregroundBlendFields').hidden = layer !== 'foreground';
   $('linesInfo').textContent = media ? `${m.items.length}素材 / ${S.plan[layer].cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
@@ -1423,7 +1424,7 @@ function renderMediaLines() {
       li.querySelector('.media-chroma-color').addEventListener('change', e => { mediaOv(i, { chromaColor: e.target.value }); replan(); });
     }
     li.querySelector('.dice').addEventListener('click', () => rerollMediaCut(layer, i));
-    li.querySelector('.tools').appendChild(detailButton(() => openCutDetails(layer,i)));
+    li.querySelector('.tools').insertBefore(detailButton(() => openCutDetails(layer,i)), li.querySelector('.remove-media-cut'));
     li.querySelector('.lock').addEventListener('click', () => toggleMediaCutLock(layer, i));
     li.querySelector('.remove-media-cut').addEventListener('click', () => removeMediaCut(i, layer));
     ol.appendChild(li); S.mediaLineEls.push(li);
