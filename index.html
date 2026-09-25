@@ -33170,19 +33170,25 @@ async function prepareAssets() {
 }
 
 // replace the project; 소재 files the new one does not use are dropped from this browser's storage.
-// A file saved with 「곡·소재 포함 저장」 carries p.media: its files go into this browser's storage first.
+// A file saved with 「곡·소재 포함 저장」 carries p.bundle (older files: p.media with .files and no .items):
+// its files go into this browser's storage first.
 // (project.media is also the 背景 cut settings, which have items[] and no files{}: only the bundle form is taken out)
 async function openProject(p) {
-  const media = p && p.media && p.media.files && !Array.isArray(p.media.items) ? p.media : null; if (media) delete p.media;
-  if (media) for (const [k, r] of Object.entries(media.files || {})) await J.idbPut(k, { name: r.name, type: r.type, data: fromB64(r.data) });
+  let bundle = p && p.bundle;
+  if (!bundle && p && p.media && p.media.files && !Array.isArray(p.media.items)) { bundle = p.media; delete p.media; }
+  if (p) delete p.bundle;
+  if (bundle) {
+    for (const [k, r] of Object.entries(bundle.files || {})) await J.idbPut(k, { name: r.name, type: r.type, data: fromB64(r.data) });
+    for (const [id, r] of Object.entries(bundle.mediaFiles || {})) await J.storeMedia(id, new File([fromB64(r.data)], r.name, { type: r.type || '' }));
+  }
   const old = S.project.assets.map(a => a.id);
   S.project = mergeProject(p); syncUI(); replan();
   const keep = new Set(S.project.assets.map(a => a.id));
   for (const id of old) if (!keep.has(id)) await J.assetForget(id);
   await prepareAssets();
   await Promise.all([restoreMediaAssets(), J.restoreFontFiles(S.project.userFonts)]); fontKey = ''; ensureFonts();
-  if (media && media.song) {
-    const f = new File([fromB64(media.song.data)], media.song.name, { type: media.song.type || '' }), snap = S.project.timing.snap;
+  if (bundle && bundle.song) {
+    const f = new File([fromB64(bundle.song.data)], bundle.song.name, { type: bundle.song.type || '' }), snap = S.project.timing.snap;
     S.audio = null;
     if (await loadAudioFile(f)) { S.project.timing.snap = snap; replan(); }
   }
@@ -33195,18 +33201,22 @@ const fromB64 = b64 => { const s = atob(b64), u = new Uint8Array(s.length); for 
 async function saveBundle() {
   showMsg('곡과 소재를 모으는 중…');
   try {
-    const media = { version: 1, files: {} };
+    const bundle = { version: 2, files: {}, mediaFiles: {} };
     const song = S.audio && J.loadSong ? await J.loadSong() : null;
     const hasSong = !!(song && song.name === S.project.audioName);
-    if (hasSong) media.song = { name: song.name, type: song.type, data: toB64(await song.arrayBuffer()) };
+    if (hasSong) bundle.song = { name: song.name, type: song.type, data: toB64(await song.arrayBuffer()) };
     for (const a of S.project.assets) for (const k of ['asset:', 'mask:']) {
       const r = await J.idbGet(k + a.id);
-      if (r) media.files[k + a.id] = { name: r.name, type: r.type, data: toB64(r.data) };
+      if (r) bundle.files[k + a.id] = { name: r.name, type: r.type, data: toB64(r.data) };
     }
-    const text = JSON.stringify(Object.assign({}, S.project, { media }));
+    for (const item of [...S.project.media.items, ...S.project.foreground.items]) {
+      const f = await J.loadMedia(item.id).catch(() => null);
+      if (f) bundle.mediaFiles[item.id] = { name: item.name, type: f.type || '', data: toB64(await f.arrayBuffer()) };
+    }
+    const text = JSON.stringify(Object.assign({}, S.project, { bundle }));
     showMsg(null);
     await J.saveFile(baseName() + '_all.jizura.json', text);
-    toast(`저장했습니다(${(text.length / 1048576).toFixed(1)}MB${hasSong ? ' · 곡 포함' : ''} · 소재 ${S.project.assets.length}개)` + (S.audio && !hasSong ? '. 곡은 이 브라우저에 보관되지 않아 빠졌습니다' : ''));
+    toast(`저장했습니다(${(text.length / 1048576).toFixed(1)}MB${hasSong ? ' · 곡 포함' : ''} · 소재 ${S.project.assets.length}개 · 배경·전경 ${Object.keys(bundle.mediaFiles).length}개)` + (S.audio && !hasSong ? '. 곡은 이 브라우저에 보관되지 않아 빠졌습니다' : ''));
   } catch (e) { showMsg(null); toast('저장하지 못했습니다: ' + (e.message || e)); }
 }
 
@@ -33847,7 +33857,7 @@ function boot() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;
 // hooks for hosts that embed the app (the After Effects CEP panel)
-J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines };
+J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines, saveBundle, openProject };
 })();
 
 </script>
