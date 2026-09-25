@@ -2158,7 +2158,7 @@ function bind() {
     if (S.projectBusy) return;
     S.projectBusy = true; $('btnSave').disabled = true;
     const project = JSON.parse(JSON.stringify(S.project)), audio = S.audioFile;
-    try { await J.saveFile(baseName() + '.jizura', await J.packProject(project, audio)); }
+    try { await J.saveFile(baseName() + '.jizuraichi', await J.packProject(project, audio)); }
     catch (err) { toast(J.mediaLabel('保存できませんでした：', 'Could not save: ') + err.message); }
     finally { S.projectBusy = false; $('btnSave').disabled = false; }
   });

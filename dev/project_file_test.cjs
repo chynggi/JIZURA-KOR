@@ -7,7 +7,7 @@ for(let i=0;i<16000;i++)wav.writeInt16LE(Math.round(Math.sin(i/16000*440*2*Math.
  const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});
  try{for(const lang of ['', 'en/']){
   const errors=[],setup=async()=>{const c=await browser.newContext({viewport:{width:1500,height:1000}}),p=await c.newPage();p.on('pageerror',e=>errors.push(e.message));await p.route('https://fonts.googleapis.com/**',r=>r.fulfill({contentType:'text/css',body:''}));await p.goto('http://127.0.0.1:8765/'+lang);await p.locator('#modePro').click();return p};
-  const p=await setup();
+  const p=await setup();assert.equal(await p.title(),'字面一 JIZURA ONE STOP EDITION');assert.equal(await p.locator('#fileProject').getAttribute('accept'),'.jizuraichi');
   await p.locator('#btnNew').click();await p.locator('#newProjectAspect').selectOption('9:16');await p.locator('#btnCreateProject').click();
   assert.deepEqual(await p.evaluate(()=>[J.ui.project.lyrics,J.ui.project.aspect,J.ui.plan.cuts.length,J.mediaAssets.size,J.ui.audio]),['','9:16',0,0,null]);
   await p.locator('#songTitle').fill('Portable test');await p.locator('#songTitle').dispatchEvent('input');
@@ -21,13 +21,13 @@ for(let i=0;i<16000;i++)wav.writeInt16LE(Math.round(Math.sin(i/16000*440*2*Math.
   await p.locator('#fontFile').setInputFiles('C:/Windows/Fonts/arial.ttf');await p.waitForFunction(()=>J.ui.project.userFonts?.some(f=>f.file));
   const before=await p.evaluate(()=>JSON.parse(JSON.stringify(J.ui.project)));
   const wait=p.waitForEvent('download');await p.locator('#btnSave').click();const download=await wait;
-  assert.match(download.suggestedFilename(),/\.jizura$/);const bytes=await fs.readFile(await download.path());assert.equal(bytes.subarray(0,8).toString(),'JIZURA01');
-  const q=await setup();await q.locator('#fileProject').setInputFiles({name:'portable.jizura',mimeType:'application/octet-stream',buffer:bytes});await q.waitForFunction(()=>J.ui.project.title==='Portable test'&&!J.ui.projectBusy);
+  assert.match(download.suggestedFilename(),/\.jizuraichi$/);const bytes=await fs.readFile(await download.path());assert.equal(bytes.subarray(0,8).toString(),'JIZURA01');
+  const q=await setup();await q.locator('#fileProject').setInputFiles({name:'portable.jizuraichi',mimeType:'application/octet-stream',buffer:bytes});await q.waitForFunction(()=>J.ui.project.title==='Portable test'&&!J.ui.projectBusy);
   assert.deepEqual(await q.evaluate(()=>JSON.parse(JSON.stringify(J.ui.project))),before);
   assert.deepEqual(await q.evaluate(()=>[J.mediaAssets.size,!!J.ui.audio,J.ui.audioFile.size,Array.from(J.mediaAssets.values()).map(a=>a.element.videoWidth||a.element.naturalWidth)]),[2,true,wav.length,[120,120]]);
   const sizes=await q.evaluate(async()=>{const data=await J.unpackProject(await J.packProject(J.ui.project,J.ui.audioFile));return data.files.map(e=>[e.kind,e.file.size])});assert.deepEqual(sizes.slice(0,3),[['media',video.length],['media',img.length],['audio',wav.length]]);assert.equal(sizes[3][0],'font');assert.ok(sizes[3][1]>1000);
   // Reject a truncated file without replacing the current edit.
-  await q.locator('#fileProject').setInputFiles({name:'bad.jizura',mimeType:'application/octet-stream',buffer:bytes.subarray(0,bytes.length-5)});await q.waitForFunction(()=>!J.ui.projectBusy);assert.equal(await q.locator('#songTitle').inputValue(),'Portable test');
+  await q.locator('#fileProject').setInputFiles({name:'bad.jizuraichi',mimeType:'application/octet-stream',buffer:bytes.subarray(0,bytes.length-5)});await q.waitForFunction(()=>!J.ui.projectBusy);assert.equal(await q.locator('#songTitle').inputValue(),'Portable test');
   await q.reload();await q.waitForFunction(()=>!!J.ui.audio&&J.mediaAssets.size===2);assert.equal(await q.evaluate(()=>J.ui.project.timing.bpm),144);
   await q.locator('#btnRemoveAudio').click();assert.equal(await q.evaluate(()=>J.ui.audio),null);
   await q.locator('#btnUndo').click();await q.waitForFunction(()=>!!J.ui.audio);

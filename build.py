@@ -13,7 +13,7 @@ def build(lang):
     english = lang == 'en'
     title = 'JIZURA — Lyric Motion Video Maker' if english else 'JIZURA 字面'
     description = ('Turn lyrics into animated lyric videos in your browser and export MP4.' if english else '歌詞を入れると文字PV（リリックモーション）を自動で組み立てて MP4 に書き出すブラウザアプリ')
-    title = 'JIZURA (hirazi fork) — Lyric Motion Video Maker' if english else '字面 JIZURA（hirazi fork)'
+    title = '字面一 JIZURA ONE STOP EDITION'
     canonical = 'https://hirazisora.github.io/JIZURA/en/' if english else 'https://hirazisora.github.io/JIZURA/'
     language_nav = ('<nav class="lang-switch" aria-label="Language"><a href="../index.html" lang="ja">日本語</a><span aria-current="page">English</span></nav>' if english else '<nav class="lang-switch" aria-label="言語"><span aria-current="page">日本語</span><a href="en/index.html" lang="en">English</a></nav>')
     body = read('app/body.html').replace('    <div class="acts">', '    ' + language_nav + '\n    <div class="acts">', 1)
