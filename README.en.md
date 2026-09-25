@@ -74,3 +74,5 @@ For local preview run `python preview_server.py` and open `http://127.0.0.1:8765
 ### Header menus
 
 **Project** contains New, Open and Save. **Export** contains MP4, PNG sequence ZIP, transparent PNG ZIP, and AE arrangement data. MP4/PNG open a settings dialog sharing the settings in Advanced → Export. MP4 includes quality and audio settings; PNG shows the applicable image settings. Start export, monitor progress and cancel from the dialog.
+
+Set **File name** in the export dialog for MP4, PNG sequence ZIP and transparent PNG ZIP. Project Save and Export for AE also ask for a name. Extensions are added automatically without duplication. Blank names fall back to the song title; unsupported filename characters are replaced.

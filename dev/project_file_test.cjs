@@ -20,7 +20,7 @@ for(let i=0;i<16000;i++)wav.writeInt16LE(Math.round(Math.sin(i/16000*440*2*Math.
   await p.locator('#bpm').fill('144');await p.locator('#bpm').dispatchEvent('change');
   await p.locator('#fontFile').setInputFiles('C:/Windows/Fonts/arial.ttf');await p.waitForFunction(()=>J.ui.project.userFonts?.some(f=>f.file));
   const before=await p.evaluate(()=>JSON.parse(JSON.stringify(J.ui.project)));
-  const wait=p.waitForEvent('download');await p.locator('#projectMenu summary').click();await p.locator('#btnSave').click();const download=await wait;
+  const wait=p.waitForEvent('download');await p.locator('#projectMenu summary').click();await p.locator('#btnSave').click();await p.locator('#saveFilename').fill('素材 保存 テスト.jizuraichi');await p.locator('#filenameDlg button[value="save"]').click();const download=await wait;
   assert.match(download.suggestedFilename(),/\.jizuraichi$/);const bytes=await fs.readFile(await download.path());assert.equal(bytes.subarray(0,8).toString(),'JIZURA01');
   const q=await setup();await q.locator('#fileProject').setInputFiles({name:'portable.jizuraichi',mimeType:'application/octet-stream',buffer:bytes});await q.waitForFunction(()=>J.ui.project.title==='Portable test'&&!J.ui.projectBusy);
   assert.deepEqual(await q.evaluate(()=>JSON.parse(JSON.stringify(J.ui.project))),before);

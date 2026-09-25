@@ -6,6 +6,13 @@
 'use strict';
 
 /* ---------- saving ---------- */
+J.exportFilename = (value, extension, fallback = 'jizura') => {
+  let name = String(value || '').trim().replace(/[\\/:*?"<>|\x00-\x1f\x7f]/g, '_').replace(/[. ]+$/g, '');
+  if (name.toLowerCase().endsWith(extension.toLowerCase())) name = name.slice(0, -extension.length);
+  name = name.replace(/[. ]+$/g, '').slice(0, 160) || fallback;
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)) name = '_' + name;
+  return name + extension;
+};
 J.saveFile = async (filename, data) => {
   const blob = data instanceof Blob ? data : new Blob([data]);
   try {

@@ -324,6 +324,16 @@
 
 <dialog id="exportDlg" class="terms export-dialog" aria-labelledby="exportDlgTitle">
  <h2 id="exportDlgTitle">出力</h2>
+ <label class="field filename-field">ファイル名<input id="exportFilename" type="text" maxlength="180" autocomplete="off"></label>
+ <p class="note">拡張子は自動で付加されます。使用できない文字は置き換えます。</p>
  <div id="exportDialogContent"></div>
  <div class="terms-foot"><button id="btnCloseExport" type="button">閉じる</button></div>
+</dialog>
+<dialog id="filenameDlg" class="terms" aria-labelledby="filenameDlgTitle">
+ <form method="dialog">
+  <h2 id="filenameDlgTitle">ファイル名</h2>
+  <label class="field filename-field">ファイル名<input id="saveFilename" type="text" maxlength="180" autocomplete="off"></label>
+  <p class="note">拡張子は自動で付加されます。使用できない文字は置き換えます。</p>
+  <div class="terms-foot"><button value="cancel">キャンセル</button><button value="save" class="primary">保存</button></div>
+ </form>
 </dialog>

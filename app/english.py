@@ -1,6 +1,8 @@
 """English copy for the browser edition. The Japanese source stays authoritative."""
 
 BODY = {
+    'ファイル名': 'File name',
+    '拡張子は自動で付加されます。使用できない文字は置き換えます。': 'The file extension is added automatically. Unsupported characters are replaced.',
     '<summary>プロジェクト</summary>': '<summary>Project</summary>',
     '<summary>出力</summary>': '<summary>Export</summary>',
     'このfork版は、ワンストップでのリリックビデオ作成をコンセプトに<br>オリジナル版JIZURAに機能を追加したものです。<br>編集・書き出しはブラウザ内で処理します。': 'This fork adds features to the original JIZURA<br>based on the concept of one-stop lyric video creation.<br>Editing and export run in your browser.',

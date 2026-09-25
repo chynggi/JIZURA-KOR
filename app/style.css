@@ -433,3 +433,4 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .header-menu-items button, .header-menu-items .file { width: 100%; text-align: left; justify-content: flex-start; white-space: nowrap; }
 .export-dialog .fields { margin-bottom: 12px; }
 .export-dialog .outbtns { margin: 16px 0; }
+.filename-field { margin-bottom: 10px; }
