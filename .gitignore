@@ -1,2 +1,4 @@
 .commandcode
 dev/
+__pycache__/
+build/

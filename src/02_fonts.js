@@ -63,7 +63,7 @@ J.loadFontFile = async (file) => {
 };
 
 J.fontCSS = (key, px) => {
-  const f = J.FONTS[key] || J.FONTS.gothic_bold;
+  const f = J.faceOf ? J.faceOf(key) : (J.FONTS[key] || J.FONTS.gothic_bold);   // per-language face (02b_lang.js)
   return `${f.weight} ${px.toFixed(2)}px ${f.family},${f.fb}`;
 };
 
@@ -98,13 +98,16 @@ J.ensureFonts = async (text, keys) => {
   if (!document.fonts || !document.fonts.load) return;
   const uniq = [...new Set([...text])].join('') || 'あ';
   const list = (keys || Object.keys(J.FONTS)).filter(k => J.FONTS[k]);
-  const specs = [...new Set(list.map(k => J.FONTS[k].gf).filter(Boolean))];
-  if (/[가-힣ᄀ-ᇿ㄰-㆏]/.test(text)) specs.push('Noto+Sans+KR:wght@300;500;700;900', 'Noto+Serif+KR:wght@300;500;700;900', 'Black+Han+Sans');
-  await Promise.all(specs.map(attachFamily));
-  const jobs = [];
-  for (const k of list) {
-    const f = J.FONTS[k];
-    jobs.push(document.fonts.load(`${f.weight} 64px ${f.family}`, uniq).catch(() => null));
+  // faces in the current lyric language (+ its fallback sans / serif), each with the weight it is drawn at
+  const faces = list.map(k => (J.faceOf ? J.faceOf(k) : J.FONTS[k]));
+  if (J.langBaseFaces) for (const b of J.langBaseFaces(list)) faces.push({ family: '"' + b.family + '"', weight: b.weight, gf: b.gf });
+  if (/[가-힣ᄀ-ᇿ㄰-㆏]/.test(text)) faces.push({ family: '"Noto Sans KR"', weight: 900, gf: 'Noto+Sans+KR:wght@300;500;700;900' }, { family: '"Noto Serif KR"', weight: 700, gf: 'Noto+Serif+KR:wght@300;500;700;900' }, { family: '"Black Han Sans"', weight: 400, gf: 'Black+Han+Sans' });
+  await Promise.all([...new Set(faces.map(f => f.gf).filter(Boolean))].map(attachFamily));
+  const jobs = [], seen = new Set();
+  for (const f of faces) {
+    const spec = `${f.weight} 64px ${f.family}`;
+    if (seen.has(spec)) continue; seen.add(spec);
+    jobs.push(document.fonts.load(spec, uniq).catch(() => null));
   }
   await Promise.all(jobs);
   if (document.fonts.ready) await document.fonts.ready;

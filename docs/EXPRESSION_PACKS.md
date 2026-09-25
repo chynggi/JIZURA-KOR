@@ -208,6 +208,11 @@ python3 dev/pack_sheet.py --page t_<pack> --group layout --ids key1,key2 --out o
 문법 검사: `node -e "new Function(require('fs').readFileSync('src/11p_<pack>.js','utf8'))"`. 마지막으로 `python3 build.py`를 실행하세요.
 
 ## After Effects
-AE 패널은 오리지널 세트만 구현합니다. 모든 새 layout / enter / exit / hold / decor 항목에 가장 가까운 `ae` 대응 항목을
-부여하세요(위의 "After Effects 대응 항목" 참조; src/11_export.js의 `J.AE_MAP`로 재정의 가능) — 브라우저 → AE JSON
-내보내기가 계속 동작하도록. fx 항목은 `ae`를 선언할 수 있습니다. 글자 가공·배경·카메라 움직임·컷 간 전환은 브라우저 전용입니다.
+AE 패널(`ae/*.jsx`, `python3 build_ae.py`로 빌드)은 자체 레지스트리를 가집니다: `ae/05_reg.jsx`의 `jzReg(group, key, def)`,
+코어 항목은 `ae/20_motion.jsx` … `ae/45_core.jsx`, 이식된 팩은 팩마다 파일 하나(`ae/p_*.jsx`). 플래닝 메타데이터(가중치·태그·
+추가분/일본풍 플래그·fits·길이)는 `node tools/export_ae_data.js`로 브라우저 엔진에서 `ae/data.json`으로 내보내므로 두 플래너가
+같은 결정을 내립니다. 아직 AE 이식이 없는 브라우저 항목은 가장 가까운 이식 항목(`ae` 대응 항목, 위의 "After Effects 대응 항목"
+참조; src/11_export.js의 `J.AE_MAP`로 재정의 가능)으로 대체됩니다 — 브라우저 → AE JSON 내보내기가 계속 동작하도록 새 항목에는
+계속 `ae` 대응 항목을 부여하세요.
+점검(처음 한 번 `cd dev && npm install` 필요): `node dev/ae_test.js`는 ES3 환경의 에뮬레이션된 AE 오브젝트 모델 위에서 모든
+스타일 × 여러 시드를 빌드하고, `node dev/ae_check.js --group layout --ids all`은 한 그룹의 이식된 부품을 점검합니다.

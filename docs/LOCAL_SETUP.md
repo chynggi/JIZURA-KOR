@@ -62,7 +62,7 @@ python3 build_ae.py
 node dev/ae_test.js
 ```
 
-마지막 줄이 `alerts 0`이고 `expr errors 0`이면 정상입니다. 브라우저에서 내보낸 AE용 JSON도 인자로 넘겨 검증할 수 있습니다: `node dev/ae_test.js plan_ae.json`
+`expr syntax errors 0`·`problems 0`·`warnings 0`이면 정상입니다. 브라우저에서 내보낸 AE용 JSON도 인자로 넘겨 검증할 수 있습니다: `node dev/ae_test.js plan_ae.json`
 
 ### 브라우저 렌더링 (Playwright)
 

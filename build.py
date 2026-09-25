@@ -1,24 +1,41 @@
-"""Build the single-file web app (index.html) from src/, app/ and vendor/.
-usage: python3 build.py            -> index.html (served by GitHub Pages)
+"""Build the Korean single-file browser edition from src/, app/ and vendor/.
+This fork's sources are Korean, so the English edition (app/english.py translates the Japanese source) is not rebuilt here;
+en/index.html is kept as shipped upstream.
+usage: python3 build.py            -> index.html (GitHub Pages)
        python3 build.py --dev      -> also dev/www/jizura.js + dev/www/test.html for the test tools"""
 import glob, os, sys
+from app.english import localize_body, localize_js
 ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(ROOT)
 read = lambda p: open(p, encoding='utf-8').read()
-js = '\n'.join(read(f) for f in sorted(glob.glob('src/*.js')))
+sources = sorted(glob.glob('src/*.js'))
+js = '\n'.join(read(f) for f in sources)
 mux = '/*! mp4-muxer v5.2.2 | MIT License | (c) 2023 Vanilagy | see THIRD_PARTY_NOTICES.md */\n' + read('vendor/mp4-muxer.min.js')
-html = f'''<!doctype html>
-<html lang="ko">
+def build(lang):
+    english = lang == 'en'
+    title = 'JIZURA — Lyric Motion Video Maker' if english else 'JIZURA 字面 — 문자 PV 자동 구성 도구'
+    description = ('Turn lyrics into animated lyric videos in your browser and export MP4.' if english else '가사를 넣으면 문자 PV(리릭 모션)를 자동으로 구성해 MP4로 내보내는 브라우저 앱')
+    canonical = 'https://852wa.github.io/JIZURA/en/' if english else 'https://852wa.github.io/JIZURA/'
+    language_nav = ('<nav class="lang-switch" aria-label="Language"><a href="../index.html" lang="ja">日本語</a><span aria-current="page">English</span></nav>' if english else '<nav class="lang-switch" aria-label="언어"><span aria-current="page">한국어</span><a href="en/index.html" lang="en">English</a></nav>')
+    body = read('app/body.html').replace('    <div class="acts">', '    ' + language_nav + '\n    <div class="acts">', 1)
+    if english: body = localize_body(body)
+    script = '\n'.join(localize_js(read(f), f) for f in sources) if english else js
+    if english:
+        marker = '/* ============================================================\n   JIZURA — editor UI'
+        if marker not in script: raise ValueError('Could not find browser UI entry point')
+        script = script.replace(marker, read('app/english.js') + '\n' + marker, 1)
+    html = f'''<!doctype html>
+<html lang="{lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>JIZURA 字面 — 문자 PV 자동 구성 도구</title>
-<meta name="description" content="가사를 넣으면 문자 PV(리릭 모션)를 자동으로 구성해 MP4로 내보내는 브라우저 앱">
-<link rel="canonical" href="https://852wa.github.io/JIZURA/">
+<title>{title}</title>
+<meta name="description" content="{description}">
+<link rel="canonical" href="{canonical}">
 <meta property="og:type" content="website">
-<meta property="og:title" content="JIZURA 字面 — 문자 PV 자동 구성 도구">
-<meta property="og:description" content="가사를 넣으면 문자 PV(리릭 모션)를 자동으로 구성해 MP4로 내보내는 브라우저 앱">
-<meta property="og:url" content="https://852wa.github.io/JIZURA/">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{description}">
+<meta property="og:url" content="{canonical}">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%230c0c0e'/><text x='32' y='46' font-size='38' text-anchor='middle' fill='%23f5a50c' font-family='serif'>字</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,18 +45,21 @@ html = f'''<!doctype html>
 </style>
 </head>
 <body>
-{read('app/body.html')}
+{body}
 <script>
 {mux}
 </script>
 <script>
-{js}
+{script}
 </script>
 </body>
 </html>
 '''
-open('index.html', 'w', encoding='utf-8').write(html)
-print('index.html', len(html), 'bytes')
+    target = 'en/index.html' if english else 'index.html'
+    os.makedirs(os.path.dirname(target) or '.', exist_ok=True)
+    open(target, 'w', encoding='utf-8').write(html)
+    print(target, len(html), 'bytes')
+build('ko')
 if '--dev' in sys.argv:
     os.makedirs('dev/www', exist_ok=True)
     open('dev/www/jizura.js', 'w', encoding='utf-8').write(js)

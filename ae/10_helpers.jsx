@@ -1,7 +1,8 @@
 // ================================================================ builder helpers
 var JZLOG = [];
 function jzWarn(m) { if (JZLOG.length < 400) JZLOG.push(m); }
-function jzN(x) { return String(Math.round(x * 10000) / 10000); }
+// number for expression source; negatives are parenthesised so 'a-' + jzN(-2) never becomes the syntax error 'a--2'
+function jzN(x) { var v = Math.round(x * 10000) / 10000; return v < 0 ? '(' + String(v) + ')' : String(v); }
 
 // ---- fonts: map JIZURA font keys to PostScript names, verify when the API exists
 var JZ_FONT_CANDIDATES = {
@@ -13,18 +14,18 @@ var JZ_FONT_CANDIDATES = {
     kr_serif_bold: ['NotoSerifKR-Bold', 'NanumMyeongjo-Bold', 'Batang-Bold'],
     kr_serif: ['NotoSerifKR-Medium', 'NanumMyeongjo-Regular', 'Batang'],
     kr_ui: ['IBMPlexSansKR-Medium', 'NotoSansKR-Medium', 'MalgunGothic-Regular'],
-    gothic_black: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'NanumGothic-Bold', 'NotoSansJP-Black', 'NotoSansCJKjp-Black', 'SourceHanSansJP-Heavy', 'KozGoPr6N-Heavy', 'YuGothic-Bold', 'Meiryo-Bold'],
-    gothic_bold: ['NotoSansKR-Bold', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'NanumGothic-Bold', 'NotoSansJP-Bold', 'NotoSansCJKjp-Bold', 'SourceHanSansJP-Bold', 'KozGoPr6N-Bold', 'YuGothic-Bold', 'Meiryo-Bold'],
-    gothic_med: ['NotoSansKR-Medium', 'AppleSDGothicNeo-Medium', 'MalgunGothic-Regular', 'NanumGothic-Regular', 'NotoSansJP-Medium', 'NotoSansCJKjp-Medium', 'SourceHanSansJP-Medium', 'KozGoPr6N-Medium', 'YuGothic-Medium', 'Meiryo'],
-    gothic_light: ['NotoSansKR-Light', 'AppleSDGothicNeo-Regular', 'MalgunGothic-Regular', 'NanumGothic-Regular', 'NotoSansJP-Light', 'NotoSansCJKjp-Light', 'KozGoPr6N-Light', 'YuGothic-Light', 'Meiryo'],
+    gothic_black: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'NanumGothic-Bold', 'NotoSansJP-Black', 'NotoSansCJKjp-Black', 'SourceHanSansJP-Heavy', 'KozGoPr6N-Heavy', 'HiraginoSans-W8', 'YuGothic-Bold', 'Meiryo-Bold'],
+    gothic_bold: ['NotoSansKR-Bold', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'NanumGothic-Bold', 'NotoSansJP-Bold', 'NotoSansCJKjp-Bold', 'SourceHanSansJP-Bold', 'KozGoPr6N-Bold', 'HiraginoSans-W6', 'YuGothic-Bold', 'Meiryo-Bold'],
+    gothic_med: ['NotoSansKR-Medium', 'AppleSDGothicNeo-Medium', 'MalgunGothic-Regular', 'NanumGothic-Regular', 'NotoSansJP-Medium', 'NotoSansCJKjp-Medium', 'SourceHanSansJP-Medium', 'KozGoPr6N-Medium', 'HiraginoSans-W4', 'YuGothic-Medium', 'Meiryo'],
+    gothic_light: ['NotoSansKR-Light', 'AppleSDGothicNeo-Regular', 'MalgunGothic-Regular', 'NanumGothic-Regular', 'NotoSansJP-Light', 'NotoSansCJKjp-Light', 'KozGoPr6N-Light', 'HiraginoSans-W2', 'YuGothic-Light', 'Meiryo'],
     dela: ['BlackHanSans-Regular', 'Jua-Regular', 'MalgunGothic-Bold', 'DelaGothicOne-Regular', 'NotoSansJP-Black', 'KozGoPr6N-Heavy', 'YuGothic-Bold'],
     zenkaku: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'ZenKakuGothicNew-Black', 'NotoSansJP-Black', 'KozGoPr6N-Heavy', 'YuGothic-Bold'],
-    mincho_black: ['NotoSerifKR-Black', 'NanumMyeongjo-Bold', 'Batang-Bold', 'ZenOldMincho-Black', 'NotoSerifJP-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold'],
-    mincho_bold: ['NotoSerifKR-Bold', 'NanumMyeongjo-Bold', 'Batang-Bold', 'NotoSerifJP-Bold', 'NotoSerifCJKjp-Bold', 'SourceHanSerifJP-Bold', 'KozMinPr6N-Bold', 'YuMincho-Demibold'],
-    mincho: ['NotoSerifKR-Medium', 'NanumMyeongjo-Regular', 'Batang', 'NotoSerifJP-Medium', 'NotoSerifCJKjp-Medium', 'SourceHanSerifJP-Medium', 'KozMinPr6N-Medium', 'YuMincho-Regular', 'MS-Mincho'],
-    mincho_light: ['NotoSerifKR-Light', 'NanumMyeongjo-Regular', 'Batang', 'NotoSerifJP-Light', 'NotoSerifCJKjp-Light', 'KozMinPr6N-Light', 'YuMincho-Light', 'YuMincho-Regular'],
+    mincho_black: ['NotoSerifKR-Black', 'NanumMyeongjo-Bold', 'Batang-Bold', 'ZenOldMincho-Black', 'NotoSerifJP-Black', 'KozMinPr6N-Heavy', 'HiraMinProN-W6', 'YuMincho-Demibold'],
+    mincho_bold: ['NotoSerifKR-Bold', 'NanumMyeongjo-Bold', 'Batang-Bold', 'NotoSerifJP-Bold', 'NotoSerifCJKjp-Bold', 'SourceHanSerifJP-Bold', 'KozMinPr6N-Bold', 'HiraMinProN-W6', 'YuMincho-Demibold'],
+    mincho: ['NotoSerifKR-Medium', 'NanumMyeongjo-Regular', 'Batang', 'NotoSerifJP-Medium', 'NotoSerifCJKjp-Medium', 'SourceHanSerifJP-Medium', 'KozMinPr6N-Medium', 'HiraMinProN-W3', 'YuMincho-Regular', 'MS-Mincho'],
+    mincho_light: ['NotoSerifKR-Light', 'NanumMyeongjo-Regular', 'Batang', 'NotoSerifJP-Light', 'NotoSerifCJKjp-Light', 'KozMinPr6N-Light', 'HiraMinProN-W3', 'YuMincho-Light', 'YuMincho-Regular'],
     tokumin: ['NotoSerifKR-Bold', 'NanumMyeongjo-Bold', 'Batang-Bold', 'KaiseiTokumin-ExtraBold', 'ZenOldMincho-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold'],
-    round: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'MPLUSRounded1c-ExtraBold', 'RoundedMplus1c-Black', 'NotoSansJP-Black', 'YuGothic-Bold'],
+    round: ['NotoSansKR-Black', 'MalgunGothic-Bold', 'AppleSDGothicNeo-Bold', 'MPLUSRounded1c-ExtraBold', 'RoundedMplus1c-Black', 'HiraMaruProN-W4', 'NotoSansJP-Black', 'YuGothic-Bold'],
     pop: ['BlackHanSans-Regular', 'Jua-Regular', 'MalgunGothic-Bold', 'MochiyPopOne-Regular', 'MPLUSRounded1c-ExtraBold', 'YuGothic-Bold'],
     dot: ['NotoSansKR-Medium', 'MalgunGothic-Regular', 'DotGothic16-Regular', 'MS-Gothic', 'YuGothic-Regular'],
     brush: ['NanumBrushScript-Regular', 'NanumPenScript-Regular', 'YujiSyuku-Regular', 'YuMincho-Demibold'],
@@ -34,8 +35,8 @@ var JZ_FONT_CANDIDATES = {
     rampart: ['BlackHanSans-Regular', 'MalgunGothic-Bold', 'RampartOne-Regular', 'NotoSansJP-Black', 'YuGothic-Bold'],
     potta: ['BlackHanSans-Regular', 'MalgunGothic-Bold', 'PottaOne-Regular', 'MochiyPopOne-Regular', 'YuGothic-Bold'],
     kiwi: ['NotoSansKR-Bold', 'MalgunGothic-Bold', 'KiwiMaru-Medium', 'MPLUSRounded1c-ExtraBold', 'YuGothic-Medium'],
-    klee: ['NotoSerifKR-Medium', 'NanumMyeongjo-Regular', 'KleeOne-SemiBold', 'YuMincho-Demibold'],
-    shippori: ['NotoSerifKR-Black', 'NanumMyeongjo-Bold', 'Batang-Bold', 'ShipporiMinchoB1-ExtraBold', 'ZenOldMincho-Black', 'KozMinPr6N-Heavy', 'YuMincho-Demibold']
+    klee: ['NotoSerifKR-Medium', 'NanumMyeongjo-Regular', 'KleeOne-SemiBold', 'Klee-Demibold', 'Klee-Medium', 'YuMincho-Demibold'],
+    shippori: ['NotoSerifKR-Black', 'NanumMyeongjo-Bold', 'Batang-Bold', 'ShipporiMinchoB1-ExtraBold', 'ZenOldMincho-Black', 'KozMinPr6N-Heavy', 'HiraMinProN-W6', 'YuMincho-Demibold']
 };
 var JZ_ROLE_DEFAULT = { display: 'MalgunGothic-Bold', serif: 'Batang-Bold', body: 'MalgunGothic-Regular', mono: 'Consolas' };
 var JZ_FONT_CACHE = {};
@@ -54,13 +55,99 @@ function jzRoleOf(key) {
     return 'display';
 }
 // resolve: explicit user role font > key candidates that exist > role default
+// JZ_FONT_MISSING collects the keys whose own typeface (the browser's Google Font) is not installed, for the build report
+var JZ_FONT_MISSING = {}, JZ_FONT_NOAPI = false;
+// ---- lyric language (plan.lang from the browser): Chinese / Korean lyrics are drawn with faces that have their glyphs.
+// Per language: key → PostScript candidates (the browser's Google Font first, then OS fonts that always cover the script).
+var JZ_LANG = 'ja';
+var JZ_LANG_SYS = {
+    'zh-Hant': { sansB: ['PingFangTC-Semibold', 'MicrosoftJhengHeiBold', 'NotoSansCJKtc-Bold', 'SourceHanSansTC-Bold'], sans: ['PingFangTC-Regular', 'MicrosoftJhengHeiRegular', 'NotoSansCJKtc-Regular', 'SourceHanSansTC-Regular'],
+                 serifB: ['STSongti-TC-Bold', 'NotoSerifCJKtc-Bold', 'SourceHanSerifTC-Bold', 'PMingLiU'], serif: ['STSongti-TC-Regular', 'NotoSerifCJKtc-Regular', 'SourceHanSerifTC-Regular', 'PMingLiU'] },
+    'zh-Hans': { sansB: ['PingFangSC-Semibold', 'MicrosoftYaHei-Bold', 'NotoSansCJKsc-Bold', 'SourceHanSansSC-Bold'], sans: ['PingFangSC-Regular', 'MicrosoftYaHei', 'NotoSansCJKsc-Regular', 'SourceHanSansSC-Regular'],
+                 serifB: ['STSongti-SC-Bold', 'NotoSerifCJKsc-Bold', 'SourceHanSerifSC-Bold', 'SimSun'], serif: ['STSongti-SC-Regular', 'NotoSerifCJKsc-Regular', 'SourceHanSerifSC-Regular', 'SimSun'] },
+    ko: { sansB: ['AppleSDGothicNeo-Bold', 'MalgunGothicBold', 'NotoSansCJKkr-Bold', 'SourceHanSansKR-Bold'], sans: ['AppleSDGothicNeo-Regular', 'MalgunGothic', 'NotoSansCJKkr-Regular', 'SourceHanSansKR-Regular'],
+          serifB: ['AppleMyungjo', 'NotoSerifCJKkr-Bold', 'SourceHanSerifKR-Bold', 'Batang'], serif: ['AppleMyungjo', 'NotoSerifCJKkr-Regular', 'SourceHanSerifKR-Regular', 'Batang'] }
+};
+// [family (for messages), own PostScript names…, system group]
+var JZ_LANG_FONTS = {
+    'zh-Hant': {
+        gothic_black: ['Noto Sans TC', 'NotoSansTC-Black', 'NotoSansTCThin-Black', 'sansB'], gothic_bold: ['Noto Sans TC', 'NotoSansTC-Bold', 'NotoSansTCThin-Bold', 'sansB'],
+        gothic_med: ['Noto Sans TC', 'NotoSansTC-Medium', 'NotoSansTCThin-Medium', 'sans'], gothic_light: ['Noto Sans TC', 'NotoSansTC-Light', 'NotoSansTCThin-Light', 'sans'],
+        zenkaku: ['Noto Sans TC', 'NotoSansTC-Black', 'NotoSansTCThin-Black', 'sansB'], sansui: ['Noto Sans TC', 'NotoSansTC-Medium', 'NotoSansTCThin-Medium', 'sans'],
+        dot: ['Noto Sans TC', 'NotoSansTC-Medium', 'NotoSansTCThin-Medium', 'sans'],
+        mincho_black: ['Noto Serif TC', 'NotoSerifTC-Black', 'NotoSerifTCExtraLight-Black', 'serifB'], mincho_bold: ['Noto Serif TC', 'NotoSerifTC-Bold', 'NotoSerifTCExtraLight-Bold', 'serifB'],
+        mincho: ['Noto Serif TC', 'NotoSerifTC-Medium', 'NotoSerifTCExtraLight-Medium', 'serif'], mincho_light: ['Noto Serif TC', 'NotoSerifTC-Light', 'NotoSerifTCExtraLight-Light', 'serif'],
+        tokumin: ['Noto Serif TC', 'NotoSerifTC-ExtraBold', 'NotoSerifTCExtraLight-ExtraBold', 'serifB'], shippori: ['Noto Serif TC', 'NotoSerifTC-ExtraBold', 'NotoSerifTCExtraLight-ExtraBold', 'serifB'],
+        dela: ['WDXL Lubrifont TC', 'WDXLLubrifontTC-Regular', 'NotoSansTC-Black', 'sansB'], round: ['Chiron GoRound TC', 'ChironGoRoundTC-ExtraBold', 'ChironGoRoundTCExtraLight-ExtraBold', 'sansB'],
+        pop: ['Huninn', 'Huninn-Regular', 'sansB'], kiwi: ['Huninn', 'Huninn-Regular', 'sans'],
+        klee: ['LXGW WenKai TC', 'LXGWWenKaiTC-Bold', 'serifB'], brush: ['LXGW WenKai TC', 'LXGWWenKaiTC-Bold', 'serifB'],
+        reggae: ['LXGW Marker Gothic', 'LXGWMarkerGothic-Regular', 'sansB'], rampart: ['LXGW Marker Gothic', 'LXGWMarkerGothic-Regular', 'sansB'], potta: ['LXGW Marker Gothic', 'LXGWMarkerGothic-Regular', 'sansB']
+    },
+    'zh-Hans': {
+        gothic_black: ['Noto Sans SC', 'NotoSansSC-Black', 'NotoSansSCThin-Black', 'sansB'], gothic_bold: ['Noto Sans SC', 'NotoSansSC-Bold', 'NotoSansSCThin-Bold', 'sansB'],
+        gothic_med: ['Noto Sans SC', 'NotoSansSC-Medium', 'NotoSansSCThin-Medium', 'sans'], gothic_light: ['Noto Sans SC', 'NotoSansSC-Light', 'NotoSansSCThin-Light', 'sans'],
+        zenkaku: ['Noto Sans SC', 'NotoSansSC-Black', 'NotoSansSCThin-Black', 'sansB'], sansui: ['Noto Sans SC', 'NotoSansSC-Medium', 'NotoSansSCThin-Medium', 'sans'],
+        dot: ['Noto Sans SC', 'NotoSansSC-Medium', 'NotoSansSCThin-Medium', 'sans'],
+        mincho_black: ['Noto Serif SC', 'NotoSerifSC-Black', 'NotoSerifSCExtraLight-Black', 'serifB'], mincho_bold: ['Noto Serif SC', 'NotoSerifSC-Bold', 'NotoSerifSCExtraLight-Bold', 'serifB'],
+        mincho: ['Noto Serif SC', 'NotoSerifSC-Medium', 'NotoSerifSCExtraLight-Medium', 'serif'], mincho_light: ['Noto Serif SC', 'NotoSerifSC-Light', 'NotoSerifSCExtraLight-Light', 'serif'],
+        tokumin: ['Noto Serif SC', 'NotoSerifSC-ExtraBold', 'NotoSerifSCExtraLight-ExtraBold', 'serifB'], shippori: ['Noto Serif SC', 'NotoSerifSC-ExtraBold', 'NotoSerifSCExtraLight-ExtraBold', 'serifB'],
+        dela: ['ZCOOL QingKe HuangYou', 'ZCOOLQingKeHuangYou-Regular', 'sansB'], round: ['ZCOOL KuaiLe', 'ZCOOLKuaiLe-Regular', 'sansB'],
+        pop: ['ZCOOL KuaiLe', 'ZCOOLKuaiLe-Regular', 'sansB'], kiwi: ['ZCOOL KuaiLe', 'ZCOOLKuaiLe-Regular', 'sans'],
+        klee: ['ZCOOL XiaoWei', 'ZCOOLXiaoWei-Regular', 'serif'], brush: ['Ma Shan Zheng', 'MaShanZheng-Regular', 'serifB'],
+        reggae: ['ZCOOL QingKe HuangYou', 'ZCOOLQingKeHuangYou-Regular', 'sansB'], rampart: ['ZCOOL QingKe HuangYou', 'ZCOOLQingKeHuangYou-Regular', 'sansB'], potta: ['Ma Shan Zheng', 'MaShanZheng-Regular', 'sansB']
+    },
+    ko: {
+        gothic_black: ['Noto Sans KR', 'NotoSansKR-Black', 'NotoSansKRThin-Black', 'sansB'], gothic_bold: ['Noto Sans KR', 'NotoSansKR-Bold', 'NotoSansKRThin-Bold', 'sansB'],
+        gothic_med: ['Noto Sans KR', 'NotoSansKR-Medium', 'NotoSansKRThin-Medium', 'sans'], gothic_light: ['Noto Sans KR', 'NotoSansKR-Light', 'NotoSansKRThin-Light', 'sans'],
+        zenkaku: ['Noto Sans KR', 'NotoSansKR-Black', 'NotoSansKRThin-Black', 'sansB'], sansui: ['IBM Plex Sans KR', 'IBMPlexSansKR-Medium', 'NotoSansKR-Medium', 'sans'],
+        dot: ['Noto Sans KR', 'NotoSansKR-Medium', 'NotoSansKRThin-Medium', 'sans'],
+        mincho_black: ['Noto Serif KR', 'NotoSerifKR-Black', 'NotoSerifKRExtraLight-Black', 'serifB'], mincho_bold: ['Noto Serif KR', 'NotoSerifKR-Bold', 'NotoSerifKRExtraLight-Bold', 'serifB'],
+        mincho: ['Noto Serif KR', 'NotoSerifKR-Medium', 'NotoSerifKRExtraLight-Medium', 'serif'], mincho_light: ['Noto Serif KR', 'NotoSerifKR-Light', 'NotoSerifKRExtraLight-Light', 'serif'],
+        tokumin: ['Noto Serif KR', 'NotoSerifKR-ExtraBold', 'NotoSerifKRExtraLight-ExtraBold', 'serifB'], shippori: ['Noto Serif KR', 'NotoSerifKR-ExtraBold', 'NotoSerifKRExtraLight-ExtraBold', 'serifB'],
+        dela: ['Black Han Sans', 'BlackHanSans-Regular', 'sansB'], round: ['Jua', 'Jua-Regular', 'sansB'],
+        pop: ['Do Hyeon', 'DoHyeon-Regular', 'sansB'], kiwi: ['Gowun Dodum', 'GowunDodum-Regular', 'sans'],
+        klee: ['Gowun Batang', 'GowunBatang-Bold', 'serifB'], brush: ['Nanum Brush Script', 'NanumBrush', 'NanumBrushScript-Regular', 'serifB'],
+        reggae: ['Black Han Sans', 'BlackHanSans-Regular', 'sansB'], rampart: ['Black Han Sans', 'BlackHanSans-Regular', 'sansB'], potta: ['Nanum Brush Script', 'NanumBrush', 'NanumBrushScript-Regular', 'sansB']
+    }
+};
+function jzSetLang(l) { JZ_LANG = (l && JZ_LANG_FONTS.hasOwnProperty(l)) ? l : 'ja'; }
+// the language's own candidates for a key (null = Japanese faces); JZ_FONT_MISSING gets the family name when its own face is missing
+function jzLangFont(key) {
+    var T = JZ_LANG_FONTS[JZ_LANG], e = T && T[key], i, ex, sys;
+    if (!e) return null;
+    for (i = 1; i < e.length; i++) {
+        if (JZ_LANG_SYS[JZ_LANG].hasOwnProperty(e[i])) break;
+        ex = jzFontExists(e[i]);
+        if (i === 1 && ex === false) JZ_FONT_MISSING[key] = e[0];
+        if (ex === null) { JZ_FONT_NOAPI = true; return e[1]; }     // no font API (before AE 2024): trust the first name
+        if (ex === true) return e[i];
+    }
+    sys = JZ_LANG_SYS[JZ_LANG][e[e.length - 1]] || [];
+    for (i = 0; i < sys.length; i++) if (jzFontExists(sys[i]) === true) return sys[i];
+    return null;
+}
 function jzFont(key, roles) {
     roles = roles || JZ_ROLE_DEFAULT;
     var role = JZ_ROLE_DEFAULT.hasOwnProperty(key) ? key : jzRoleOf(key);
     if (roles.__force && roles[role]) return roles[role];
+    if (JZ_LANG !== 'ja') { var lf = jzLangFont(key); if (lf) return lf; }
     var cands = JZ_FONT_CANDIDATES[key] || [];
-    for (var i = 0; i < cands.length; i++) { var ex = jzFontExists(cands[i]); if (ex === true) return cands[i]; }
+    for (var i = 0; i < cands.length; i++) {
+        var ex = jzFontExists(cands[i]);
+        if (i === 0 && ex === false) JZ_FONT_MISSING[key] = true;
+        if (ex === null) JZ_FONT_NOAPI = true;
+        if (ex === true) return cands[i];
+    }
     return roles[role] || JZ_ROLE_DEFAULT[role];
+}
+// family names of the missing typefaces (e.g. "Klee One"), for messages
+function jzMissingFonts() {
+    var out = [], seen = {}, k, fam;
+    for (k in JZ_FONT_MISSING) if (JZ_FONT_MISSING.hasOwnProperty(k)) {
+        fam = typeof JZ_FONT_MISSING[k] === 'string' ? JZ_FONT_MISSING[k] : (JZ_DATA.fonts && JZ_DATA.fonts[k] && JZ_DATA.fonts[k].family) || k;
+        if (!seen[fam]) { seen[fam] = true; out.push(fam); }
+    }
+    return out;
 }
 
 // ---- text layers
@@ -198,3 +285,121 @@ function jzAnimator(L, name, props, amountExpr) {
     catch (err2) { jzWarn('selector expr: ' + err2.toString()); }
     return anims.property(idx);
 }
+
+// ================================================================ porting helpers (shared by the expression packs ae/p_*.jsx)
+// sizes: the browser layouts work in "design px" with U = min(W, H); ctx.W / ctx.H here are the comp's real pixels,
+// so jzU(ctx) is the same quantity at comp scale (use it wherever the browser code uses U(env)).
+function jzU(ctx) { return Math.min(ctx.W, ctx.H); }
+function jzPortrait(ctx) { return ctx.H > ctx.W * 1.08; }
+function jzPal(sc) { var o = [], k = ['bg', 'fg', 'ink', 'sub', 'accent', 'accent2', 'dim']; for (var i = 0; i < k.length; i++) if (sc[k[i]]) o.push(sc[k[i]]); return o; }
+function jzLightest(sc) { var p = jzPal(sc), b = p[0]; for (var i = 1; i < p.length; i++) if (jzLum(p[i]) > jzLum(b)) b = p[i]; return b; }
+function jzDarkest(sc) { var p = jzPal(sc), b = p[0]; for (var i = 1; i < p.length; i++) if (jzLum(p[i]) < jzLum(b)) b = p[i]; return b; }
+function jzFontKeyOf(st, role, i) { var r = st.fonts[role] || st.fonts.display; return r[(i || 0) % r.length]; }
+// timing header for secondary layers inside the content comp (time 0 = cut start):
+//   DUR, IN, OS (= exit start), OD, plus easing functions (cl oe ioe oc ic iq ie ob bo) and
+//   PO = exit progress 0..1, K = 1 - ic(PO) (fade-out factor that follows the cut's exit)
+function jzTH(ctx) {
+    // outDur 0 (hard cut out): nothing fades before the cut ends (the browser's pOut stays 0)
+    var c = ctx.cut, hard = c.outDur != null && c.outDur <= 0, od = hard ? 0.05 : Math.max(0.12, c.outDur || 0.15);
+    return 'var DUR=' + jzN(c.dur) + ',IN=' + jzN(Math.max(0.02, c.inDur || 0.3)) + ',OS=' + jzN(hard ? c.dur : c.dur - od) + ',OD=' + jzN(od) + ',SD=' + (c.seed % 99991) + ';\n' + JZ_FNS +
+        'var PO=cl((time-OS)/OD),K=1-ic(PO);\n';
+}
+// opacity: fade in from `delay` over `len` s, follow the cut's exit
+function jzFade(ctx, L, delay, len) { jzSetExpr(jzXf(L, 'ADBE Opacity'), jzTH(ctx) + 'value*oc((time-' + jzN(delay || 0) + ')/' + jzN(len || 0.3) + ')*K'); }
+// scale from 0 (or along one axis: axis 'x' / 'y') with a soft overshoot, follows the cut's exit
+function jzGrow(ctx, L, delay, len, axis) {
+    var e = 'var q=cl((time-' + jzN(delay || 0) + ')/' + jzN(len || 0.35) + ');var s=q<=0?0:ob(q,1.4);s*=K;';
+    jzSetExpr(jzXf(L, 'ADBE Scale'), jzTH(ctx) + e + (axis === 'x' ? '[value[0]*s,value[1]]' : axis === 'y' ? '[value[0],value[1]*s]' : '[value[0]*s,value[1]*s]'));
+}
+// slide in from an offset (px) with an expo ease, follows the cut's exit with a fade
+function jzSlideIn(ctx, L, dx, dy, delay, len) {
+    jzSetExpr(jzXf(L, 'ADBE Position'), jzTH(ctx) + 'var e=oe((time-' + jzN(delay || 0) + ')/' + jzN(len || 0.4) + ');[value[0]+' + jzN(dx || 0) + '*(1-e),value[1]+' + jzN(dy || 0) + '*(1-e)]');
+    jzFade(ctx, L, delay, (len || 0.4) * 0.5);
+}
+// ---- one-shape layers (position = centre); o: { round, stroke, strokeW, rot, opacity, fillOpacity }
+function jzRectLayer(ctx, name, cx, cy, w, h, fill, o) {
+    o = o || {};
+    var S = jzShapeLayer(ctx, name, cx, cy), g = jzGrp(S, name);
+    jzAddRect(g, w, h, o.round || 0);
+    if (o.stroke) jzAddStroke(g, o.stroke, o.strokeW || 2);
+    if (fill) jzAddFill(g, fill, o.fillOpacity);
+    if (o.rot) jzXf(S, 'ADBE Rotate Z').setValue(o.rot);
+    if (o.opacity != null) jzXf(S, 'ADBE Opacity').setValue(o.opacity * 100);
+    return S;
+}
+function jzEllipseLayer(ctx, name, cx, cy, w, h, fill, o) {
+    o = o || {};
+    var S = jzShapeLayer(ctx, name, cx, cy), g = jzGrp(S, name);
+    jzAddEllipse(g, w, h);
+    if (o.stroke) jzAddStroke(g, o.stroke, o.strokeW || 2);
+    if (fill) jzAddFill(g, fill, o.fillOpacity);
+    if (o.opacity != null) jzXf(S, 'ADBE Opacity').setValue(o.opacity * 100);
+    return S;
+}
+// polyline / polygon in comp px (the layer sits at 0,0); o: { closed, fill, width, cap, trim: 'expr' }
+function jzPathLayer(ctx, name, pts, color, o) {
+    o = o || {};
+    var S = jzShapeLayer(ctx, name, 0, 0), g = jzGrp(S, name);
+    jzAddPath(g, pts, !!o.closed);
+    if (o.fill) jzAddFill(g, o.fill);
+    if (color) { var st = jzAddStroke(g, color, o.width || 2); if (o.cap) try { st.property('ADBE Vector Stroke Line Cap').setValue(o.cap); } catch (e) {} }
+    if (o.trim) jzAddTrimPaths(g, o.trim);
+    return S;
+}
+// ---- per-glyph arrangement inside ONE text layer (keeps the lyric editable as a single text):
+// values are given per glyph in textIndex order (1-based in expressions; line breaks are not glyphs, spaces are).
+function jzArrExpr(a) { var s = []; for (var i = 0; i < a.length; i++) s.push(a[i] instanceof Array ? '[' + jzN(a[i][0]) + ',' + jzN(a[i][1]) + ']' : jzN(a[i])); return '[' + s.join(',') + ']'; }
+function jzCharOffsets(L, offs, name) {       // offs: [[dx, dy], ...] px
+    var K = 1, i; for (i = 0; i < offs.length; i++) K = Math.max(K, Math.abs(offs[i][0]), Math.abs(offs[i][1]));
+    return jzAnimator(L, name || 'JZ Place', [['ADBE Text Position 3D', [K, K, 0]]], 'var a=' + jzArrExpr(offs) + ';var q=a[textIndex-1]||[0,0];[q[0]/' + jzN(K) + '*100,q[1]/' + jzN(K) + '*100,0]');
+}
+function jzCharRotations(L, rots, name) {    // degrees per glyph
+    var K = 1, i; for (i = 0; i < rots.length; i++) K = Math.max(K, Math.abs(rots[i]));
+    return jzAnimator(L, name || 'JZ Tilt', [['ADBE Text Rotation', K]], 'var a=' + jzArrExpr(rots) + ';var q=a[textIndex-1]||0;q/' + jzN(K) + '*100');
+}
+function jzCharScales(L, scales, name) {     // factor per glyph (1 = 100%); range 0..3
+    return jzAnimator(L, name || 'JZ Size', [['ADBE Text Scale 3D', [300, 300, 100]]], 'var a=' + jzArrExpr(scales) + ';var q=a[textIndex-1];q=q==null?1:q;(q-1)/2*100');
+}
+function jzCharColors(L, hex, flags, name) { // flags: [true/false per glyph] -> those glyphs take the colour
+    var f = []; for (var i = 0; i < flags.length; i++) f.push(flags[i] ? 1 : 0);
+    return jzAnimator(L, name || 'JZ Colour', [['ADBE Text Fill Color', jzHex(hex)]], 'var a=' + jzArrExpr(f) + ';(a[textIndex-1]||0)*100');
+}
+// glyphs of a string the way AE counts them for textIndex (line breaks removed)
+function jzGlyphs(str) { return jzChars(String(str).replace(/[\r\n]/g, '')); }
+
+// ---- equivalents of the small helpers the browser packs share (src/11p_*.js)
+function jzFontsOf(st, roles) { var o = [], i, j; for (i = 0; i < roles.length; i++) { var r = st.fonts[roles[i]] || []; for (j = 0; j < r.length; j++) o.push(r[j]); } return o.length ? o : st.fonts.display; }
+function jzSmallSize(ctx) { return jzClamp(jzU(ctx) * 0.024, 14 * ctx.u, 34 * ctx.u); }
+function jzMonoF(ctx) { return (ctx.st.fonts.mono && ctx.st.fonts.mono[0]) || 'mono'; }
+function jzBodyF(ctx) { return (ctx.st.fonts.body && ctx.st.fonts.body[0]) || 'gothic_med'; }
+function jzSerifF(ctx) { return (ctx.st.fonts.serif && ctx.st.fonts.serif[0]) || 'mincho'; }
+function jzStrip(t) { return String(t || '').replace(/[\s　]+/g, ''); }
+function jzHasLatin(t) { return /[A-Za-z]/.test(t); }
+function jzFlat(t) { return jzHasLatin(t) ? jzTrim(String(t || '')).replace(/\s+/g, ' ') : jzStrip(t); }
+function jzFmtTime(t) { t = Math.max(0, t); var m = Math.floor(t / 60), s = Math.floor(t % 60), f = Math.floor((t % 1) * 100); return jzPad(m, 2) + ':' + jzPad(s, 2) + '.' + jzPad(f, 2); }
+function jzRomajiOf(ctx) { var t = ctx.cut.text; if (jzHasLatin(t) || !t) return null; var r = jzRomaji(jzStrip(t)); return r ? r.toUpperCase() : null; }
+function jzLineNo(ctx) { return jzPad(Math.max(0, ctx.cut.line || 0) + 1, 2); }
+// secondary copy: the full line if this cut is a part of it, else the note, else romaji, else "No.xx"
+function jzAltCopy(ctx) { var c = ctx.cut; if (c.lineText && jzStrip(c.lineText) !== jzStrip(c.text)) return c.lineText; return c.note || jzRomajiOf(ctx) || 'No.' + jzLineNo(ctx); }
+// text colour that reads on a plate colour
+function jzOnCol(sc, plate) { var c = [sc.fg, sc.bg, sc.ink, '#FFFFFF', '#111111'], b = c[0], bs = 0; for (var i = 0; i < c.length; i++) { if (!c[i]) continue; var k = jzContrast(c[i], plate); if (k > bs) { bs = k; b = c[i]; } } return b; }
+// change a text layer's TextDocument in place: jzTextDoc(L, function (td) { td.applyStroke = true; ... })
+function jzTextDoc(L, fn) {
+    var src = L.property('ADBE Text Properties').property('ADBE Text Document'), td = src.value;
+    fn(td); src.setValue(td); return L;
+}
+function jzTextColor(L) { try { var c = L.property('ADBE Text Properties').property('ADBE Text Document').value.fillColor; return jzToHex(c[0] * 255, c[1] * 255, c[2] * 255); } catch (e) { return '#FFFFFF'; } }
+// rectangular layer mask in layer coordinates (for text layers use the source rect: jzRect(L))
+function jzMaskRect(L, x0, y0, x1, y1, feather) {
+    var m = L.property('ADBE Mask Parade').addProperty('ADBE Mask Atom'), sh = new Shape();
+    sh.vertices = [[x1, y0], [x1, y1], [x0, y1], [x0, y0]]; sh.closed = true;
+    m.property('ADBE Mask Shape').setValue(sh);
+    if (feather) m.property('ADBE Mask Feather').setValue([feather, feather]);
+    return m;
+}
+
+// keep a layer out of the tinted ghost copies (the browser's ghost:false — drawn on the main pass only).
+// jzBuild then feeds the ghosts from a duplicate of the content comp in which these layers are switched off
+// (they still work as parents / track mattes / expression targets there).
+function jzNoGhost(L) { try { var c = String(L.comment || ''); if (c.indexOf('JZ_NOGHOST') < 0) L.comment = (c ? c + ' ' : '') + 'JZ_NOGHOST'; } catch (e) {} return L; }
+function jzIsNoGhost(L) { try { return String(L.comment || '').indexOf('JZ_NOGHOST') >= 0; } catch (e) { return false; } }
