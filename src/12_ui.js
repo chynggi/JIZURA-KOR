@@ -467,9 +467,13 @@ function toggleLyricLineLock(index) {
   setOv(index, current.lock ? { lock: false, lockedSeed: undefined, lockedAreas: undefined, lockedComposites: undefined } : { lock: true, lockedSeed: line.seed, lockedAreas, lockedComposites });
   replan();
 }
+function emphasisFrontmostHint() {
+  return J.mediaLabel('*強調*した歌詞は常に最前表示です。解除するには歌詞の * を外してください。', 'Emphasized lyrics always appear in front. Remove the * markers to turn this off.');
+}
 function toggleLyricCutFrontmost(line, part) {
   const key = `${line}:${part}`, options = S.project.lyricCutOptions;
   const cut = S.plan.cuts.find(c => c.line === line && c.part === part);
+  if (cut?.emphasis) { toast(emphasisFrontmostHint()); return; }
   options[key] = { ...options[key], frontmost: !cut?.frontmost };
   replan();
 }
@@ -863,6 +867,8 @@ function renderLines() {
       name.addEventListener('click', () => seek(c.start + Math.min(c.dur * 0.5, c.inDur + 0.05)));
       const label = document.createElement('label'); label.className = 'lyric-frontmost';
       const input = document.createElement('input'); input.type = 'checkbox'; input.checked = !!c.frontmost;
+      input.disabled = !!c.emphasis;
+      if (c.emphasis) label.title = emphasisFrontmostHint();
       input.setAttribute('aria-label', `${i + 1}行目${c.part + 1}カット目を最前に表示`);
       input.addEventListener('change', () => toggleLyricCutFrontmost(i, c.part));
       label.append(input, document.createTextNode('最前に表示'));

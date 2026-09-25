@@ -341,7 +341,8 @@ J.plan = (project, audio) => {
       const camP = J.CAMERA[cam].plan ? J.CAMERA[cam].plan(rng, st) : {};
       // cut-to-cut transition (replaces the previous cut's exit and this cut's entrance)
       const prevCut = plan.cuts[plan.cuts.length - 1];
-      const frontmost = !!(((project.lyricCutOptions || {})[`${li}:${k}`] || {}).frontmost ?? emphasis);
+      // Emphasis is a lyric directive, including when an older cut saved OFF.
+      const frontmost = emphasis || !!((project.lyricCutOptions || {})[`${li}:${k}`] || {}).frontmost;
       let trans = null, transP = {}, transDur = 0;
       const canTrans = prevCut && ln.group == null && prevCut.group == null && !!prevCut.frontmost === frontmost && Math.abs(prevCut.end - cs) < 0.06 && prevCut.layout !== 'interlude' && dur > 0.5;
       if (canTrans) {
