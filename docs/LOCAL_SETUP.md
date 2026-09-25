@@ -81,6 +81,14 @@ python3 dev/overview.py layout out/overview   # 그룹별 한눈에 보기 이�
 
 `dev/www/`는 빌드 산출물이므로 커밋하지 않습니다.
 
+### 이 포크에서 추가한 테스트
+
+```
+python3 dev/decision_server_test.py     # 로컬 결정 서버
+node dev/media_test.js && node dev/lyric_test.js && node dev/decide_test.js
+dev/.venv/bin/python dev/absorb_ui_test.py   # 배경·전경·번들·실행 취소·AI로 고르기(브라우저)
+```
+
 ## 7. 내 저장소로 공개(GitHub Pages)
 
 README의 「자신의 저장소로 공개하기」를 참고하세요. `index.html`이 루트에 있는 상태로 push하고 **Settings → Pages**에서 `main` / `/ (root)`를 지정하면 됩니다.

@@ -458,7 +458,6 @@ FORK_BODY = {
     'Jevで作る（β）': 'Create with Jev (β)',
     '歌詞からJevで作る（β）': 'Create from lyrics with Jev (β)',
     'Jevの使い方': 'Jev guide',
-    'https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md': 'https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.en.md',
     'オリジナル版（852wa/JIZURA）': 'Original edition (852wa/JIZURA)',
     '字面 JIZURA（hirazi fork)': 'JIZURA (hirazi fork)',
     'Jevへの追加指示（任意）': 'Additional directions for Jev (optional)',
