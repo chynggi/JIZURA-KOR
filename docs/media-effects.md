@@ -12,6 +12,8 @@
 
 「ランダム順で表示」は、素材が2つ以上あれば、カット追加・削除やタップ同期の後も使えます。オンの間は素材一覧からランダムな順で割り当て、繰り返し表示します。空カットとロックしたカットは維持します。素材の個別指定はオフにすると再び使え、元の割り当てに戻ります。
 
+前景・背景の「行とカット」の上にある「歌詞に合わせて一括挿入」で、歌詞の各行の開始位置に素材カットを作り、開始フレームをリンクできます。行内のカット分割・タイトル・無表示カットは対象外です。ランダム順OFFではアップロード順、ONではランダム順で割り当てます。ループOFFでは素材数まで、ONでは素材を繰り返して各行に作成します（最大1000カット）。対象レイヤーの既存カットとそのリンクは置き換わり、1回の「元に戻す」で復元できます。前景・背景の両方で実行すると、歌詞を含めた3レイヤーの開始位置がリンクされます。
+
 旧プロジェクトで個別指定した6項目は「従来の設定」として維持します。別の手法を選ぶと新しい設定が優先されます。配置・サイズは、手動設定がなければ演出に合わせて自動選定され、シャッフルで変化します。縦横比を保ったまま、中央・左右・上下・四隅などの構図とサイズを選びます。背景の自動サイズは「全体を表示」を100％として100〜135％で選定し、拡大した範囲内で位置を変えます。手動配置とロック済みの配置は維持されます。「自動配置に戻す」で再び自動選定できます。詳細の「配置・サイズにも自動で変化を付ける」をオフにすると中央の全体表示に戻ります（手動配置・ロックを除く）。演出無しと従来の設定は従来通りの配置です。動画ループ、クロマキー、開始時刻は手法とは独立しています。つなぎは隣接する素材カットがある場合に適用されます。
 
 ## 追加バリエーション（第2弾）
@@ -38,3 +40,5 @@ Choose **No effects**, **Auto**, or a named technique on each foreground/backgro
 The second pack adds 33 techniques: 8 camera/motion variations, 10 masks/reveals, 10 panel/echo effects, and 5 color/texture treatments. Per-cut choices are grouped by category. New effects support transparent assets and live video frames; selection is deterministic for the same seed.
 
 Random order remains available after adding/removing cuts or tap sync when at least two files are uploaded. While enabled, media is assigned in a seeded shuffled cycle; blank and locked cuts are preserved. Turn it off to restore the underlying assignments and select files individually.
+
+Use **Insert cuts aligned to lyrics**, above **Lines and cuts** in the Foreground or Background source tab, to create media cuts linked to lyric line starts. Inner lyric cuts, title cards, and blank cuts are excluded. Files follow upload order or Shuffle order. With Loop cuts off, each file is used once; with it on, files repeat across all lyric lines (up to 1000 cuts). This replaces the selected layer's cuts and links; one Undo restores them. Run it for both layers to link foreground, lyrics, and background together.

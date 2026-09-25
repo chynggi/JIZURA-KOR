@@ -988,8 +988,45 @@ function syncSourceTab() {
   $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
   $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
+  $('mediaLyricInsert').hidden = !media;
+  const targets = mediaLyricTargets(layer);
+  $('btnMediaFromLyrics').disabled = !targets.length;
+  $('mediaLyricInsertHint').textContent = !S.plan.lines.length
+    ? J.mediaLabel('歌詞を入力すると使用できます。', 'Enter lyrics to use this feature.')
+    : !media || !m.items.length
+      ? J.mediaLabel('画像・動画を追加すると使用できます。', 'Add images or videos to use this feature.')
+      : J.mediaLabel(`${targets.length}カットを歌詞の行頭にリンクして作成。既存カットは置き換えます（元に戻すで復元可能）。ループOFF時は素材数まで。`, `Create ${targets.length} cuts linked to lyric line starts. Replaces existing cuts (Undo restores them). With Loop cuts off, each file is used once.`);
 }
 function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
+function mediaLyricTargets(layer) {
+  const m = layer && S.project[layer];
+  if (!m || !m.items.length) return [];
+  // Link only line starts, not inner lyric cuts, title cards, or blank cuts.
+  return S.plan.cuts.filter(cut => cut.line >= 0 && cut.part === 0).slice(0, m.loop ? 1000 : Math.min(1000, m.items.length));
+}
+function insertMediaFromLyrics() {
+  const layer = activeMediaLayer();
+  if (!layer || S.exporting || S.tap) return;
+  pause(); cancelAreaEditor();
+  clearTimeout(replanTimer); replan();
+  const targets = mediaLyricTargets(layer), m = S.project[layer];
+  if (!targets.length) return;
+  const prefix = layer === 'foreground' ? 'f:' : 'm:';
+  // Replace this layer's cuts and links as one undoable edit.
+  m.manualCuts = true;
+  m.cutCount = targets.length;
+  m.cutOverrides = {};
+  m.timing.lineTimes = {};
+  S.project.timelineLinks = S.project.timelineLinks.filter(link => !link.a.startsWith(prefix) && !link.b.startsWith(prefix));
+  targets.forEach((cut, index) => {
+    // Keep upload order as the base assignment; the planner applies random order.
+    m.cutOverrides[index] = { itemId: m.items[index % m.items.length].id };
+    m.timing.lineTimes[index] = cut.start;
+    S.project.timelineLinks.push({ a: prefix + index, b: boundaryRef('lyrics', cut) });
+  });
+  replan(); seek(targets[0].start);
+  toast(J.mediaLabel(`${targets.length}カットを歌詞に合わせて挿入しました`, `Inserted ${targets.length} cuts aligned to lyrics`));
+}
 function mediaThumb(item, cls = '') {
   if (!item) return `<span class="missing media-ln-thumb" aria-hidden="true">—</span>`;
   const asset = J.mediaAssets.get(item.id);
@@ -1636,6 +1673,7 @@ function bind() {
   $('sourceLyrics').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'lyrics'; syncSourceTab(); });
   $('sourceMedia').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'media'; renderMediaList(); renderMediaLines(); });
   $('sourceForeground').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'foreground'; renderMediaList(); renderMediaLines(); });
+  $('btnMediaFromLyrics').addEventListener('click', insertMediaFromLyrics);
   const areaOverlay = $('areaEditOverlay');
   areaOverlay.addEventListener('pointerdown', e => {
     if (!S.areaEdit) return;
