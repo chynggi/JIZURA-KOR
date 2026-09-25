@@ -121,6 +121,8 @@ class BlockStore {                    // positioned writes into a list of blocks
 }
 J.exportMP4 = async (o) => {
   const { plan, project, audio, quality = 'high', onProgress, signal, range, file = null } = o;
+  J.mediaTransitionFrame = null;
+  J.foregroundTransitionFrame = null;
   const [w, h] = J.outputSize(project);
   const fps = plan.fps, bitrate = J.videoBitrate(w, h, fps, quality);
   const attempts = await J.videoAttempts(w, h, fps, bitrate);
@@ -174,6 +176,7 @@ async function encodeMP4({ plan, project, audio, onProgress, signal, range, file
           if (signal && signal.aborted) throw new Error('취소했습니다');
           if (err) throw err;
           if (venc.state === 'closed') throw new Error('인코더가 멈췄습니다');
+          await J.prepareMediaFrame(plan, span.t0 + i / fps, signal);
           R.frame(ctx, plan, span.t0 + i / fps, { scale });
           const vf = new VideoFrame(canvas, { timestamp: Math.round(i * frameUs), duration: Math.round(frameUs) });
           try { venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0 }); } finally { vf.close(); }
@@ -268,6 +271,8 @@ class ZipWriter {
    (lyrics, their decorations, ghosts, HUD). Screen effects are applied to both, so stacking front over back matches. */
 J.exportPNGZip = async ({ plan, project, transparent, layers, onProgress, signal, every = 1, range }) => {
   const span = J.exportSpan(plan, range);
+  J.mediaTransitionFrame = null;
+  J.foregroundTransitionFrame = null;
   const [w, h] = J.outputSize(project);
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
@@ -278,6 +283,7 @@ J.exportPNGZip = async ({ plan, project, transparent, layers, onProgress, signal
   for (let i = 0; i < total; i += every) {
     if (signal && signal.aborted) throw new Error('취소했습니다');
     const name = `jizura_${String(i).padStart(5, '0')}.png`;
+    await J.prepareMediaFrame(plan, span.t0 + i / fps, signal);
     for (const layer of layers ? ['back', 'front'] : [null]) {
       R.frame(ctx, plan, span.t0 + i / fps, { scale, transparent: transparent || !!layers, layer });
       const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));

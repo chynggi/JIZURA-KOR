@@ -12,7 +12,9 @@ J.SAMPLE_LYRICS = `새벽의 색을/기억해
 J.defaultProject = () => ({
   version: 1,
   title: '', artist: '',
+  durationOverride: null,         // null = automatic; otherwise total video length in seconds
   lyrics: J.SAMPLE_LYRICS,
+  jevPrompt: '',
   style: 'noir', mood: null,
   extra: false,                   // random picks may use the parts added after the first version (追加分)
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
@@ -26,9 +28,14 @@ J.defaultProject = () => ({
   aspect: '16:9', res: 1080, fps: 24,
   fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', interCount: 'auto', interCredit: false, bgSwitch: 0.35, react: 0 },
   enabled: Object.fromEntries(J.GROUP_KEYS.map(g => [g, Object.fromEntries(J.order(g).map(k => [k, true]))])),
-  timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, lineScale: 1 },
+  timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, cutTimes: {}, lineScale: 1 },
   overrides: {},
   assets: [],                  // 소재 settings (see 10b_assets)
+  lyricCutOptions: {},
+  lyricBlankCuts: [],
+  timelineLinks: [],
+  media: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
+  foreground: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
   colors: { enabled: false },
   fonts: {},
 });
@@ -41,21 +48,25 @@ J.komaOf = fx => (fx.koma != null ? +fx.koma : (fx.onTwos === false ? 0 : 12));
 J.stepDur = (fx, fps) => { const k = J.komaOf(fx); return k > 0 ? 1 / k : 1 / (fps || 24); };
 
 /* ---------------- lyric parsing ---------------- */
+const lyricEscapes = { '\\': '\uE000', '#': '\uE001', '[': '\uE002', ']': '\uE003', '|': '\uE004', '!': '\uE005', '！': '\uE006', '*': '\uE007', '/': '\uE008' };
+const lyricUnescapes = Object.fromEntries(Object.entries(lyricEscapes).map(([literal, token]) => [token, literal]));
+const protectLyricEscapes = s => s.replace(/\\([\\#\[\]|!！*\/])/g, (_, literal) => lyricEscapes[literal]);
+const restoreLyricEscapes = s => String(s).replace(/[\uE000-\uE008]/g, token => lyricUnescapes[token]);
 J.parseLyrics = (raw) => {
   const lines = []; const meta = {};
   let pendingGap = false, pendingBreak = null, outro = null;
   const rows = String(raw || '').replace(/\r/g, '').split('\n');
   for (let ri = 0; ri < rows.length; ri++) {
-    const s0 = rows[ri].trim();
+    const s0 = protectLyricEscapes(rows[ri].trim());
     if (!s0) { if (lines.length) pendingGap = true; continue; }
     if (s0.startsWith('#')) continue;
     const mm = s0.match(/^\[(ti|ar|al|by|offset):(.*)\]$/i);
-    if (mm) { meta[mm[1].toLowerCase()] = mm[2].trim(); continue; }
+    if (mm) { meta[mm[1].toLowerCase()] = restoreLyricEscapes(mm[2].trim()); continue; }
     // [간주] / [간주 8] / [간주 8초] / [간주 8 | 문구] / [01:20.00][간주] : interlude before the next line
     // (N = extra seconds for auto timing, 문구 = small caption, timestamp = the previous line ends and the interlude starts there)
     // upstream spellings are accepted too: [間奏] [间奏] [interlude] [instrumental] [inst] [간주: 8]
     const bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[\s*(?:간주|間奏|间奏|interlude|instrumental|inst)(?:\s*[:：]?\s*(\d+(?:\.\d+)?)\s*(?:초|秒|sec|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
-    if (bm) { pendingBreak = { sec: bm[3] != null ? +bm[3] : null, at: bm[1] != null ? +bm[1] * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] || null }; continue; }
+    if (bm) { pendingBreak = { sec: bm[3] != null ? +bm[3] : null, at: bm[1] != null ? +bm[1] * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] ? restoreLyricEscapes(bm[4]) : null }; continue; }
     // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
     const om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
     if (om) { outro = { at: om[1] != null ? +om[1] * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] != null ? +om[3] : null }; continue; }
@@ -65,7 +76,7 @@ J.parseLyrics = (raw) => {
     s = s.trim();
     let note = null;
     const bar = s.indexOf('|');
-    if (bar >= 0) { note = s.slice(bar + 1).trim() || null; s = s.slice(0, bar).trim(); }
+    if (bar >= 0) { note = restoreLyricEscapes(s.slice(bar + 1).trim()) || null; s = s.slice(0, bar).trim(); }
     // extended LRC word times: <mm:ss.xx> before a word marks when it is sung (kept as \u0001 until the text is final)
     const WT = /<(\d+):(\d+(?:[.:]\d+)?)>[ \t]*/g, wt = [];
     if (note) note = note.replace(WT, '').trim() || null;
@@ -75,10 +86,10 @@ J.parseLyrics = (raw) => {
     let impact = false;
     if (/[!！]$/.test(s) && s.length > 1 && /!$/.test(s)) { impact = true; s = s.slice(0, -1).trim(); }
     const emph = [];
-    s = s.replace(/\*([^*]+)\*/g, (_, w) => { emph.push(w); return w; });
+    s = s.replace(/\*([^*]+)\*/g, (_, w) => { emph.push(restoreLyricEscapes(w)); return w; });
     let manual = null;
     if (s.includes('/')) {
-      manual = s.split('/').map(x => x.trim()).filter(Boolean);
+      manual = s.split('/').map(x => restoreLyricEscapes(x.trim())).filter(Boolean);
       const latin = manual.some(x => /[A-Za-z]/.test(x));
       s = manual.join(latin ? ' ' : '');
     }
@@ -93,13 +104,14 @@ J.parseLyrics = (raw) => {
     }
     if (!s) continue;
     outro = null; // [마무리] only counts after the last line
-    const base = { text: s, note, impact, emph, manual, gapBefore: pendingGap, breakBefore: pendingBreak, src: ri };
+    const base = { text: restoreLyricEscapes(s), note, impact, emph, manual, gapBefore: pendingGap, breakBefore: pendingBreak, src: ri };
     pendingGap = false; pendingBreak = null;
     // a repeated line ([00:10][00:40]…) reuses its word times shifted to each start
     if (times.length) times.forEach(t => lines.push(Object.assign({}, base, { lrc: t }, marks ? { marks: marks.map(k => ({ t: k.t + t - times[0], ci: k.ci })) } : {})));
     else lines.push(Object.assign({}, base, { lrc: null }));
   }
-  if (lines.some(l => l.lrc != null)) lines.sort((a, b) => (a.lrc ?? 1e9) - (b.lrc ?? 1e9));
+  // mixed LRC and plain lines keep the written order; fully timed lyrics sort by timestamp
+  if (lines.length && lines.every(l => l.lrc != null)) lines.sort((a, b) => a.lrc - b.lrc);
   return { lines, meta, outro };
 };
 
@@ -222,6 +234,13 @@ J.computeTiming = (project, parsed, audio) => {
 
 /* ---------------- planning ---------------- */
 const wkey = (obj, k, d = 1) => (obj && obj[k] != null ? obj[k] : d);
+J.lyricArea = area => {
+  if (!area || !['x', 'y', 'w', 'h'].every(k => Number.isFinite(+area[k]))) return null;
+  const w = J.clamp(+area.w, 0.04, 1), h = J.clamp(+area.h, 0.04, 1);
+  return { x: J.clamp(+area.x, 0, 1 - w), y: J.clamp(+area.y, 0, 1 - h), w, h,
+    angle: Number.isFinite(+area.angle) ? J.clamp(+area.angle, -180, 180) : 0,
+    lockAspect: area.lockAspect !== false };
+};
 
 J.plan = (project, audio) => {
   const st = J.resolveStyle(project);
@@ -236,7 +255,14 @@ J.plan = (project, audio) => {
     tm.starts = tm.starts.map(t => Math.max(0, t - LEAD));
     tm.ends = tm.ends.map((t, i) => Math.max(tm.starts[i] + 0.3, t - LEAD));
   }
-  const [W, H] = J.designSize(project.aspect);
+  const fixedDuration = Number.isFinite(+project.durationOverride) && +project.durationOverride > 0 ? +project.durationOverride : null;
+  if (fixedDuration != null) {
+    const latestLine = tm.starts.length ? Math.max(...tm.starts) : 0;
+    const latestBlank = Math.max(0, ...(project.lyricBlankCuts || []).map(b => Number.isFinite(+b.start) ? +b.start : 0));
+    tm.duration = Math.max(0.1, fixedDuration, latestLine + 0.04, latestBlank + 0.04);
+    tm.ends = tm.ends.map((end, i) => Math.max(tm.starts[i] + 0.04, Math.min(end, tm.duration)));
+  }
+  const [W, H] = J.designSize(project);
   // enabled map: anything not explicitly switched off is on (new pack entries appear enabled in old projects);
   // then the 追加分 / 和風 switches decide what random picks may use (a per-line override still works)
   const en = {};
@@ -286,6 +312,7 @@ J.plan = (project, audio) => {
   parsed.lines.forEach((ln, li) => {
     const s = tm.starts[li], e = tm.ends[li];
     const ov = (project.overrides || {})[li] || {};
+    const area = J.lyricArea(ov.area), layoutW = area ? W * area.w : W, layoutH = area ? H * area.h : H;
     const lineSeed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, li + 1, ov.seed | 0);
     const rng = J.rng(lineSeed);
     if (ln.interlude) {                                    // [間奏]: background, decorations and screen effects only
@@ -303,6 +330,8 @@ J.plan = (project, audio) => {
       return;
     }
     const n = [...ln.text.replace(/\s+/g, '')].length;
+    const cutTimes = (project.timing && project.timing.cutTimes) || {};
+    const interludeTime = cutTimes[`${li}:interlude`];
     let visEnd = Math.min(e, s + Math.max(3.6, n * 0.5 + 1.2));
     // before a marked [간주] the line only keeps its natural length, the rest of the gap becomes the interlude
     // (with a timestamp on the marker the line already ends there)
@@ -316,6 +345,8 @@ J.plan = (project, audio) => {
     // word times (<mm:ss.xx>): keep the line up until its last sung word
     const mk = ln.marks && ln.marks.length ? ln.marks : null;
     if (mk) visEnd = Math.min(e, Math.max(visEnd, mk[mk.length - 1].t + 0.4));
+    // a hand-set interlude start (timeline drag) wins
+    if (interludeTime != null && Number.isFinite(+interludeTime) && e - s > 1.81) visEnd = J.clamp(+interludeTime, s + 0.5, e - 1.31);
     const D = visEnd - s;
     plan.lines.push({ index: li, src: ln.src, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed });
     const chunks = ln.manual || (plan.lang === 'en' ? J.phraseChunks(J.chunkText(ln.text)) : J.chunkText(ln.text));
@@ -346,7 +377,10 @@ J.plan = (project, audio) => {
     // with word times each cut starts when its first word is sung
     const uci = mk ? unitCharStarts(ln.text, units) : null;
     if (uci) for (let k = 1; k < units.length; k++) bounds[k] = markTime(mk, uci[k], [...ln.text].length, visEnd);
-    for (let k = 1; k < bounds.length - 1; k++) bounds[k] = J.clamp(uci ? bounds[k] : snap(bounds[k]), bounds[k - 1] + 0.22, bounds[k + 1] - 0.22);
+    for (let k = 1; k < bounds.length - 1; k++) {
+      const manual = cutTimes[`${li}:${k}`];   // a hand-set cut boundary (timeline drag) wins
+      bounds[k] = J.clamp(manual != null && Number.isFinite(+manual) ? +manual : uci ? bounds[k] : snap(bounds[k]), bounds[k - 1] + 0.22, bounds[k + 1] - 0.22);
+    }
     // scheme per line
     if (nSchemes > 1 && li > 0 && (U ? U.sectionStart(li) && rng.chance(0.25 + fx.bgSwitch) : rng.chance(fx.bgSwitch * (ln.impact ? 1.8 : 1)))) schemeIdx = (schemeIdx + 1 + rng.int(0, nSchemes - 2)) % nSchemes;
     const emphLine = ln.impact || ln.emph.length > 0;
@@ -360,7 +394,7 @@ J.plan = (project, audio) => {
       const txt = halves ? halves[0] : u.text;
       const nn = Math.max(...(halves || [u.text]).map(t => [...t.replace(/\s+/g, '')].length));
       const emph = kime || ln.impact && (k === 0 || u.recap) || ln.emph.some(w => u.text.includes(w));
-      const Z = zoneOf(li), LW = Z ? Z.w : W, LH = Z ? Z.h : H;       // the frame this cut is laid out in
+      const Z = zoneOf(li), LW = Z ? Z.w : layoutW, LH = Z ? Z.h : layoutH;       // the frame this cut is laid out in (band / 표시 영역 / whole)
       const UU = U && !ovAny ? U : null;                              // per-line settings always win over 統一感
       let layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, LH > LW);
       if (UU) layout = UU.layout(li, layout, { nn, dur, emph, kime, rng, portrait: LH > LW, recap: u.recap });
@@ -434,7 +468,7 @@ J.plan = (project, audio) => {
         }
       }
       if (uta) { enter = 'cut'; inDur = 0.12; }                       // 우타하메: no entrance (see J.mainDraw)
-      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: cutSeed, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
+      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, part: k, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: cutSeed, area, frontmost: !!((project.lyricCutOptions || {})[`${li}:${k}`] || {}).frontmost, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
         treat, treatP, bg, bgP: bg === lineBg ? lineBgP : {}, cam, camP, trans, transP, transDur, zone: Z });
       // karaoke sync: [time since cut start, share of this cut's text already sung]
       if (uci && !u.recap) {
@@ -511,7 +545,7 @@ J.plan = (project, audio) => {
         const credit = k === 0 && fx.interCredit && title && !creditDone && bounds[1] - bounds[0] >= 2;
         if (credit) { params.variant = 'credit'; creditDone = true; }
         const sch = k && nSchemes > 1 ? (schemeIdx + k) % nSchemes : schemeIdx;
-        plan.cuts.push(makeCut({ text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, start: bounds[k], end: bounds[k + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(rk, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: sch, seed: k ? J.h(lineSeed, 405, k) : J.h(lineSeed, 405) }));
+        plan.cuts.push(makeCut({ text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, part: k ? `interlude:${k}` : 'interlude', start: bounds[k], end: bounds[k + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(rk, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: sch, seed: k ? J.h(lineSeed, 405, k) : J.h(lineSeed, 405) }));
       }
     }
   });
@@ -523,7 +557,35 @@ J.plan = (project, audio) => {
       plan.cuts.push(makeCut({ text: title || 'END', note: artist, lineText: title || 'END', line: -1, start: os, end: oe, layout: 'title', enter: rng.pick(['blur', 'type', 'wipe', 'assemble']), exit: 'blur', hold: 'still', outDur: J.clamp((oe - os) * 0.3, 0.3, 1.2), params: J.LAYOUTS.title.plan(rng, {}, st), decor: [], scheme: schemeIdx, seed: J.h(project.seed, 998, 1) }));
     }
   }
+  const blanks = (Array.isArray(project.lyricBlankCuts) ? project.lyricBlankCuts : [])
+    .filter(b => b && Number.isFinite(+b.start) && Number.isInteger(+b.beforeLine))
+    .map(b => ({ id: b.id, beforeLine: J.clamp(+b.beforeLine, 0, parsed.lines.length), start: Math.max(0, +b.start) }))
+    .sort((a, b) => a.start - b.start);
+  for (let i = 0; i < blanks.length; i++) {
+    const blank = blanks[i];
+    const nextLine = tm.starts[blank.beforeLine] ?? Infinity;
+    const nextBlank = blanks[i + 1] ? blanks[i + 1].start : Infinity;
+    const end = Math.min(nextLine, nextBlank, plan.duration);
+    if (end - blank.start < 0.04) continue;
+    for (const cut of plan.cuts) {
+      if (cut.start < blank.start && cut.end > blank.start && cut.line < blank.beforeLine) {
+        cut.end = blank.start; cut.dur = cut.end - cut.start;
+      }
+    }
+    plan.cuts = plan.cuts.filter(c => !(c.line < blank.beforeLine && c.start >= blank.start && c.start < end));
+    plan.cuts.push(makeCut({ blank: true, blankId: blank.id, beforeLine: blank.beforeLine, text: '', lineText: '', line: -2, part: 'blank', start: blank.start, end, layout: 'blank', enter: 'cut', exit: 'cut', cam: 'none' }));
+  }
   plan.cuts.sort((a, b) => a.start - b.start);
+  if (fixedDuration != null) {
+    plan.cuts = plan.cuts.filter(c => c.start < plan.duration - 1e-3);
+    for (const cut of plan.cuts) {
+      cut.end = Math.min(cut.end, plan.duration);
+      cut.dur = cut.end - cut.start;
+      cut.inDur = Math.min(cut.inDur, cut.dur * 0.45);
+      cut.outDur = Math.min(cut.outDur, cut.dur * 0.45);
+    }
+    plan.events = plan.events.filter(event => event.t < plan.duration);
+  }
   plan.cuts.forEach((c, i) => {
     c.index = i;
     if (!zones || c.zone) return;
@@ -873,7 +935,13 @@ function pickFx(rng, st, en, fx, emph, fxHist, kind) {
   return cands.length ? rng.wpick(cands) : null;
 }
 
-J.designSize = (aspect) => {
+J.designSize = (input) => {
+  const project = typeof input === 'object' && input ? input : null;
+  if (project && project.videoSize && Number.isFinite(+project.videoSize.w) && Number.isFinite(+project.videoSize.h) && +project.videoSize.w >= 16 && +project.videoSize.h >= 16) {
+    const w = +project.videoSize.w, h = +project.videoSize.h;
+    return [1920 * w / Math.max(w, h), 1920 * h / Math.max(w, h)];
+  }
+  const aspect = project ? project.aspect : input;
   if (aspect === '9:16') return [1080, 1920];
   if (aspect === '1:1') return [1440, 1440];
   if (aspect === '4:5') return [1440, 1800];
@@ -883,6 +951,7 @@ J.designSize = (aspect) => {
   return [1920, 1080];
 };
 J.outputSize = (project) => {
+  if (project.videoSize && Number.isFinite(+project.videoSize.w) && Number.isFinite(+project.videoSize.h) && +project.videoSize.w >= 16 && +project.videoSize.h >= 16) return [J.clamp(Math.round(+project.videoSize.w / 2) * 2, 16, 8192), J.clamp(Math.round(+project.videoSize.h / 2) * 2, 16, 8192)];
   const [W, H] = J.designSize(project.aspect);
   const k = (project.res || 1080) / Math.min(W, H);
   return [Math.round(W * k / 2) * 2, Math.round(H * k / 2) * 2];
