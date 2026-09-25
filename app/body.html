@@ -78,6 +78,12 @@
       </div>
 
       <div class="sec">
+        <div class="sec-h"><h2>소재</h2><span class="sec-btns"><label class="file ghost small" title="PNG(투명)·그린백 이미지·사진. 여러 장 고를 수 있습니다">소재 추가<input id="assetFile" type="file" accept="image/*" multiple></label></span></div>
+        <p class="note asset-note">투명 PNG나 그린백 이미지는 배경을 빼고 가사 앞이나 뒤에 겹칩니다. 사진은 「피사체 뒤로 문자」로 가사를 피사체 뒤로 돌릴 수 있습니다. 소재는 이 브라우저 안에만 보관됩니다.</p>
+        <ol id="assetList" class="asset-list"></ol>
+      </div>
+
+      <div class="sec">
         <div class="sec-h"><h2>행과 컷</h2><span id="linesInfo" class="muted mono"></span></div>
         <ol id="lineList"></ol>
       </div>
@@ -257,6 +263,7 @@
     <ul class="reset-list">
       <li>가사·곡명·아티스트</li>
       <li>불러온 음원(이 브라우저에 보관된 파일 포함)</li>
+      <li>소재(이미지·피사체 마스크)</li>
       <li>타이밍·행별 설정·내보낼 범위</li>
       <li>스타일·연출·배색·글꼴 등의 설정</li>
       <li>버전 기록(◀ ▶)과 가사·타이밍의 ‘되돌리기’ 기록</li>

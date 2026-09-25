@@ -365,6 +365,18 @@ dialog.cand-dlg { width: min(860px, calc(100vw - 32px)); }
 .cand-item canvas { display: block; width: 100%; height: auto; background: #000; }
 .ln .tools .uta { font-size: 13px; line-height: 1; }
 .ln .tools .uta[aria-pressed=true] { color: var(--amber); }
+.asset-note { margin: 0 0 8px; }
+.asset-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.asset { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 6px; border: 1px solid var(--line2); border-radius: var(--r); }
+.asset.is-hidden { opacity: 0.5; }
+.asset .a-thumb { width: 64px; height: 40px; background: repeating-conic-gradient(#333 0 25%, #222 0 50%) 0 0 / 10px 10px; border-radius: 2px; }
+.asset .a-name { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 4px; }
+.asset .a-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.asset .a-row select { width: auto; padding: 2px 4px; font-size: 11px; }
+.asset .a-sliders label { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); flex: 1 1 110px; }
+.asset .a-sliders input { flex: 1; min-width: 0; }
+.asset .a-tools { display: flex; flex-direction: column; gap: 4px; }
+.asset .a-hide[aria-pressed=true] { color: var(--amber); }
 
 </style>
 </head>
@@ -447,6 +459,12 @@ dialog.cand-dlg { width: min(860px, calc(100vw - 32px)); }
           <button id="tapBack" class="ghost">한 번 되돌리기</button>
           <button id="tapStop" class="ghost">종료</button>
         </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h"><h2>소재</h2><span class="sec-btns"><label class="file ghost small" title="PNG(투명)·그린백 이미지·사진. 여러 장 고를 수 있습니다">소재 추가<input id="assetFile" type="file" accept="image/*" multiple></label></span></div>
+        <p class="note asset-note">투명 PNG나 그린백 이미지는 배경을 빼고 가사 앞이나 뒤에 겹칩니다. 사진은 「피사체 뒤로 문자」로 가사를 피사체 뒤로 돌릴 수 있습니다. 소재는 이 브라우저 안에만 보관됩니다.</p>
+        <ol id="assetList" class="asset-list"></ol>
       </div>
 
       <div class="sec">
@@ -629,6 +647,7 @@ dialog.cand-dlg { width: min(860px, calc(100vw - 32px)); }
     <ul class="reset-list">
       <li>가사·곡명·아티스트</li>
       <li>불러온 음원(이 브라우저에 보관된 파일 포함)</li>
+      <li>소재(이미지·피사체 마스크)</li>
       <li>타이밍·행별 설정·내보낼 범위</li>
       <li>스타일·연출·배색·글꼴 등의 설정</li>
       <li>버전 기록(◀ ▶)과 가사·타이밍의 ‘되돌리기’ 기록</li>
@@ -3363,6 +3382,7 @@ J.defaultProject = () => ({
   enabled: Object.fromEntries(J.GROUP_KEYS.map(g => [g, Object.fromEntries(J.order(g).map(k => [k, true]))])),
   timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, lineScale: 1 },
   overrides: {},
+  assets: [],                  // 소재 settings (see 10b_assets)
   colors: { enabled: false },
   fonts: {},
 });
@@ -3589,6 +3609,7 @@ J.plan = (project, audio) => {
     keyBg: J.keyMode ? J.keyMode(project) : null,   // 'green' | 'black' | null — 合成用の背景
     centerFree: !!zones, zones,
     typeset: !!project.typeset, unify: !!project.unify,
+    assets: project.assets || [],                           // 소재 (settings only; the images are in J.ASSETS)
     lang: J.resolveLang ? J.resolveLang(project) : 'ja',   // 歌詞の言語 (auto → detected)
   };
   if (J.setLang) J.setLang(plan.lang);                     // chunking + measuring below use this language
@@ -4450,6 +4471,9 @@ class Renderer {
       ctx.restore();
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
     }
+    // 소재 behind the lyrics (not on the 합성용 key backgrounds, which are text-only by design)
+    const assetsOn = !key && J.drawAssets && plan.assets && plan.assets.length;
+    if (assetsOn && layer !== 'front') J.drawAssets(ctx, plan, 'back');
     const shx = J.rs(step, 71) * shake * 16 * u, shy = J.rs(step, 72) * shake * 11 * u;
     // ---------- content passes ----------
     const passes = [
@@ -4524,6 +4548,7 @@ class Renderer {
       const k = J.clamp(mlt / MC.morph.dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
       this.drawMorph(ctx, L, e, allowFilter);
     }
+    if (assetsOn && layer !== 'back') J.drawAssets(ctx, plan, 'front');   // 소재 over the lyrics (and a photo's subject)
     // ---------- cut-to-cut transition: composite the previous cut's resting frame with this one ----------
     if (!opt.noTrans && mainCut && mainCut.trans && J.TRANS[mainCut.trans] && mainCut.index > 0) {
       const lt = tq - mainCut.start, dur = mainCut.transDur || 0.35;
@@ -4988,6 +5013,23 @@ J.loadSong = async () => {
 J.forgetSong = async () => {
   try { const db = await IDB.open(); await new Promise(res => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete('song'); tx.oncomplete = res; tx.onerror = res; }); } catch (e) {}
 };
+/* other files kept in the same store (소재 images and their masks): { name, type, data: ArrayBuffer } */
+J.idbPut = async (key, rec) => {
+  try {
+    const db = await IDB.open();
+    await new Promise((res, rej) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put(rec, key); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    return true;
+  } catch (e) { return false; }
+};
+J.idbGet = async (key) => {
+  try {
+    const db = await IDB.open();
+    return await new Promise((res, rej) => { const tx = db.transaction('files', 'readonly'); const q = tx.objectStore('files').get(key); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); });
+  } catch (e) { return null; }
+};
+J.idbDel = async (key) => {
+  try { const db = await IDB.open(); await new Promise(res => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete(key); tx.oncomplete = res; tx.onerror = res; }); } catch (e) {}
+};
 
 /* 곡에서 초안: guess where each lyric line starts from the song alone.
    The voice band (200 Hz – 3.5 kHz) is followed at 100 fps; a phrase start is a clear rise of that level after a
@@ -5058,6 +5100,110 @@ J.beatGrid = (bpm, offset, duration) => {
   const p = 60 / bpm;
   for (let t = offset; t < duration + 0.01; t += p) if (t >= 0) out.push(+t.toFixed(4));
   return out;
+};
+})();
+
+/* ============================================================
+   JIZURA — 소재: images laid over / under the lyrics
+   project.assets holds only the settings; the image files (and a subject mask per photo) live in this browser's
+   IndexedDB ('asset:<id>', 'mask:<id>'), like the song. J.ASSETS holds the decoded, keyed canvases for drawing.
+   ============================================================ */
+(() => {
+'use strict';
+
+J.ASSETS = new Map();                 // id → { img, subj, keyed, w, h }
+const MAX_SIDE = 2560;                // big photos are scaled down once on load
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/* settings of a newly added image. kind: 'overlay' (one layer, back or front of the lyrics) or 'subject'
+   (a photo behind the lyrics whose masked subject is drawn again in front of them) */
+J.assetDefaults = (id, name) => ({ id, name, kind: 'overlay', layer: 'back', key: 'auto', fit: 'contain', scale: 1, x: 0, y: 0, opacity: 1, hidden: false });
+
+J.assetAdd = async (file) => {
+  const id = newId(), data = await file.arrayBuffer();
+  if (!(await J.idbPut('asset:' + id, { name: file.name, type: file.type, data }))) throw new Error('이 브라우저에 소재를 저장할 수 없습니다');
+  return J.assetDefaults(id, file.name);
+};
+J.assetForget = async (id) => { J.ASSETS.delete(id); await J.idbDel('asset:' + id); await J.idbDel('mask:' + id); };
+
+async function decode(rec) {
+  const bmp = await createImageBitmap(new Blob([rec.data], { type: rec.type || '' }));
+  const k = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  if (bmp.close) bmp.close();
+  return c;
+}
+/* green screen: most of the border is saturated green */
+J.looksGreen = (c) => {
+  const x = c.getContext('2d', { willReadFrequently: true }), w = c.width, h = c.height, d = x.getImageData(0, 0, w, h).data;
+  let n = 0, g = 0;
+  const at = (px, py) => { const i = (py * w + px) * 4; n++; if (d[i + 3] > 200 && d[i + 1] > 90 && d[i + 1] > d[i] * 1.4 && d[i + 1] > d[i + 2] * 1.4) g++; };
+  const sx = Math.max(1, Math.floor(w / 60)), sy = Math.max(1, Math.floor(h / 60));
+  for (let px = 0; px < w; px += sx) { at(px, 0); at(px, h - 1); }
+  for (let py = 0; py < h; py += sy) { at(0, py); at(w - 1, py); }
+  return g / Math.max(1, n) > 0.6;
+};
+const hasAlpha = (c) => {
+  const d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data;
+  for (let i = 3; i < d.length; i += 4 * 7) if (d[i] < 250) return true;
+  return false;
+};
+/* chroma key: the more a pixel is green over its red / blue, the more transparent; the green spill on the
+   remaining edges is pulled down to the other two channels */
+J.keyGreen = (c) => {
+  const x = c.getContext('2d', { willReadFrequently: true }), im = x.getImageData(0, 0, c.width, c.height), d = im.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i + 1], b = d[i + 2], m = Math.max(r, b), k = g - m;
+    if (k <= 20) continue;
+    d[i + 3] = Math.round(d[i + 3] * (1 - Math.min(1, (k - 20) / 80)));
+    d[i + 1] = m;
+  }
+  x.putImageData(im, 0, 0);
+};
+/* the subject only: the image through its mask (mask alpha = subject) */
+J.assetSubject = (img, mask) => {
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+  x.globalCompositeOperation = 'destination-in'; x.drawImage(mask, 0, 0, c.width, c.height);
+  return c;
+};
+/* load (or reload after a key / mask change) the canvases of one asset */
+J.assetPrepare = async (a) => {
+  const rec = await J.idbGet('asset:' + a.id);
+  if (!rec) { J.ASSETS.delete(a.id); return null; }
+  const img = await decode(rec);
+  let keyed = false;
+  if (a.key === 'green' || (a.key === 'auto' && !hasAlpha(img) && J.looksGreen(img))) { J.keyGreen(img); keyed = true; }
+  let subj = null, mask = null;
+  const mrec = await J.idbGet('mask:' + a.id);
+  if (mrec) { mask = await decode(mrec); if (a.kind === 'subject') subj = J.assetSubject(img, mask); }
+  const e = { img, subj, mask, keyed, w: img.width, h: img.height };
+  J.ASSETS.set(a.id, e);
+  return e;
+};
+J.assetSetMask = async (a, maskCanvas) => {
+  const blob = await new Promise(r => maskCanvas.toBlob(r, 'image/png'));
+  await J.idbPut('mask:' + a.id, { name: 'mask.png', type: 'image/png', data: await blob.arrayBuffer() });
+  return J.assetPrepare(a);
+};
+
+/* draw the assets of one side: 'back' (after the background, before the lyrics) or 'front' (over the lyrics).
+   A 'subject' photo is drawn whole at the back and its masked subject again at the front. Design coordinates. */
+J.drawAssets = (ctx, plan, which) => {
+  for (const a of plan.assets || []) {
+    if (a.hidden) continue;
+    const A = J.ASSETS.get(a.id); if (!A) continue;
+    const src = a.kind === 'subject' ? (which === 'back' ? A.img : A.subj) : (a.layer || 'back') === which ? A.img : null;
+    if (!src) continue;
+    const W = plan.W, H = plan.H, iw = src.width, ih = src.height;
+    const s = (a.fit === 'cover' ? Math.max(W / iw, H / ih) : Math.min(W / iw, H / ih)) * (a.scale ?? 1);
+    const w = iw * s, h = ih * s, cx = W / 2 + (a.x || 0) * W, cy = H / 2 + (a.y || 0) * H;
+    ctx.save();
+    ctx.globalAlpha = a.opacity ?? 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+    ctx.drawImage(src, cx - w / 2, cy - h / 2, w, h);
+    ctx.restore();
+  }
 };
 })();
 
@@ -30232,6 +30378,7 @@ function mergeProject(p) {
   o.colors = Object.assign({ enabled: false }, (p && p.colors) || {});
   o.fonts = (p && p.fonts) || {};
   o.userFonts = (p && p.userFonts) || [];
+  o.assets = ((p && p.assets) || []).map(a => Object.assign(J.assetDefaults(a.id, a.name), a));
   for (const uf of o.userFonts) if (!J.FONTS[uf.key]) J.addUserFont(uf.key, uf.label, uf.family, uf.weight || 400);
   return o;
 }
@@ -30654,6 +30801,8 @@ async function resetAll() {
   S.project = mergeProject(null); S.project.lyrics = '';
   S.audio = null; if ($('audioFile')) $('audioFile').value = '';
   if (J.forgetSong) await J.forgetSong();
+  for (const id of [...J.ASSETS.keys()]) await J.assetForget(id);
+  renderAssets();
   $('audioName').textContent = audioNameDefault;
   ED.undo = []; ED.redo = []; H.list = []; H.i = -1;
   TL.z = 1; TL.off = 0;
@@ -31098,6 +31247,70 @@ async function openCandidates(i) {
   cancelAnimationFrame(candAnim); candAnim = requestAnimationFrame(tick);
 }
 
+/* ---------------- 소재 ---------------- */
+const pct = v => Math.round(v * 100);
+function renderAssets() {
+  const ol = $('assetList'); if (!ol) return;
+  ol.innerHTML = '';
+  S.project.assets.forEach((a, i) => {
+    const li = document.createElement('li'); li.className = 'asset' + (a.hidden ? ' is-hidden' : '');
+    const A = J.ASSETS.get(a.id);
+    li.innerHTML = `<canvas class="a-thumb" width="64" height="40"></canvas>
+      <div class="a-main"><div class="a-name" title="${escapeHtml(a.name)}">${escapeHtml(a.name)}${A && A.keyed ? ' <span class="muted">(그린백 제거)</span>' : ''}</div>
+      <div class="a-row">
+        <select class="a-layer" aria-label="${i + 1}번 소재 위치"><option value="back">가사 뒤</option><option value="front">가사 앞</option></select>
+        <select class="a-key" aria-label="${i + 1}번 소재 배경 빼기" title="자동: 테두리가 초록이면 그린백으로 보고 뺍니다"><option value="auto">배경: 자동</option><option value="green">그린백 빼기</option><option value="none">그대로</option></select>
+        <select class="a-fit" aria-label="${i + 1}번 소재 맞춤"><option value="contain">전체 보이기</option><option value="cover">화면 채우기</option></select>
+      </div>
+      <div class="a-row a-sliders">
+        <label>크기<input class="a-scale" type="range" min="10" max="300" value="${pct(a.scale ?? 1)}"></label>
+        <label>가로<input class="a-x" type="range" min="-50" max="50" value="${pct(a.x || 0)}"></label>
+        <label>세로<input class="a-y" type="range" min="-50" max="50" value="${pct(a.y || 0)}"></label>
+        <label>불투명<input class="a-op" type="range" min="0" max="100" value="${pct(a.opacity ?? 1)}"></label>
+      </div></div>
+      <div class="a-tools">
+        <button class="icon ghost a-hide" title="숨기기" aria-pressed="${a.hidden ? 'true' : 'false'}" aria-label="${i + 1}번 소재 숨기기">◐</button>
+        <button class="icon ghost a-del" title="삭제" aria-label="${i + 1}번 소재 삭제">✕</button>
+      </div>`;
+    const q = s => li.querySelector(s);
+    q('.a-layer').value = a.layer || 'back'; q('.a-key').value = a.key || 'auto'; q('.a-fit').value = a.fit || 'contain';
+    if (A) { const tc = q('.a-thumb'), tx = tc.getContext('2d'), k = Math.min(tc.width / A.w, tc.height / A.h); tx.drawImage(A.img, (tc.width - A.w * k) / 2, (tc.height - A.h * k) / 2, A.w * k, A.h * k); }
+    const set = (patch, again) => { Object.assign(a, patch); flushSave(); S.need = true; if (again) J.assetPrepare(a).then(() => { renderAssets(); S.need = true; }); };
+    q('.a-layer').addEventListener('change', e => set({ layer: e.target.value }));
+    q('.a-key').addEventListener('change', e => set({ key: e.target.value }, true));
+    q('.a-fit').addEventListener('change', e => set({ fit: e.target.value }));
+    for (const [cls, k, f] of [['.a-scale', 'scale', v => v / 100], ['.a-x', 'x', v => v / 100], ['.a-y', 'y', v => v / 100], ['.a-op', 'opacity', v => v / 100]])
+      q(cls).addEventListener('input', e => set({ [k]: f(+e.target.value) }));
+    q('.a-hide').addEventListener('click', () => { set({ hidden: !a.hidden }); renderAssets(); });
+    q('.a-del').addEventListener('click', async () => {
+      if (!window.confirm(`「${a.name}」 소재를 지울까요?`)) return;
+      S.project.assets = S.project.assets.filter(x => x !== a); await J.assetForget(a.id);
+      replan(); flushSave(); renderAssets();
+    });
+    ol.appendChild(li);
+  });
+}
+async function addAssetFiles(files) {
+  for (const f of files) {
+    try { const a = await J.assetAdd(f); S.project.assets.push(a); await J.assetPrepare(a); }
+    catch (e) { toast(`「${f.name}」을(를) 불러오지 못했습니다: ${e.message || e}`); }
+  }
+  replan(); flushSave(); renderAssets();
+}
+async function prepareAssets() {
+  await Promise.all(S.project.assets.map(a => J.assetPrepare(a).catch(() => null)));
+  S.need = true; renderAssets();
+}
+
+// replace the project; 소재 files the new one does not use are dropped from this browser's storage
+async function openProject(p) {
+  const old = S.project.assets.map(a => a.id);
+  S.project = mergeProject(p); syncUI(); replan();
+  const keep = new Set(S.project.assets.map(a => a.id));
+  for (const id of old) if (!keep.has(id)) await J.assetForget(id);
+  await prepareAssets();
+}
+
 /* ---------------- 곡에서 초안 ---------------- */
 async function draftFromSong() {
   if (!S.audio) { toast('먼저 곡을 불러오세요'); return; }
@@ -31193,6 +31406,7 @@ function bind() {
   $('audioFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadAudioFile(f); });
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('btnDraft').addEventListener('click', draftFromSong);
+  $('assetFile').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) addAssetFiles(fs); });
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
   $('btnPlay').addEventListener('click', () => (S.playing ? pause() : play()));
@@ -31331,7 +31545,7 @@ function bind() {
   $('resetDlg').addEventListener('close', () => { if ($('resetDlg').returnValue === 'reset') resetAll(); });
   $('fileProject').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    try { S.project = mergeProject(JSON.parse(await f.text())); syncUI(); replan(); }
+    try { await openProject(JSON.parse(await f.text())); }
     catch (err) { showMsg('프로젝트를 불러올 수 없습니다'); setTimeout(() => showMsg(null), 2500); }
     e.target.value = '';
   });
@@ -31446,6 +31660,7 @@ function boot() {
   requestAnimationFrame(tick);
   // the song used last time (same name as the saved project's) comes back after a reload
   if (J.loadSong && S.project.audioName) J.loadSong().then(f => { if (f && f.name === S.project.audioName && !S.audio) loadAudioFile(f, true); });
+  prepareAssets();                                         // 소재 images come back from this browser's storage
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;

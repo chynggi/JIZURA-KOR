@@ -129,6 +129,9 @@ class Renderer {
       ctx.restore();
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
     }
+    // 소재 behind the lyrics (not on the 합성용 key backgrounds, which are text-only by design)
+    const assetsOn = !key && J.drawAssets && plan.assets && plan.assets.length;
+    if (assetsOn && layer !== 'front') J.drawAssets(ctx, plan, 'back');
     const shx = J.rs(step, 71) * shake * 16 * u, shy = J.rs(step, 72) * shake * 11 * u;
     // ---------- content passes ----------
     const passes = [
@@ -203,6 +206,7 @@ class Renderer {
       const k = J.clamp(mlt / MC.morph.dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
       this.drawMorph(ctx, L, e, allowFilter);
     }
+    if (assetsOn && layer !== 'back') J.drawAssets(ctx, plan, 'front');   // 소재 over the lyrics (and a photo's subject)
     // ---------- cut-to-cut transition: composite the previous cut's resting frame with this one ----------
     if (!opt.noTrans && mainCut && mainCut.trans && J.TRANS[mainCut.trans] && mainCut.index > 0) {
       const lt = tq - mainCut.start, dur = mainCut.transDur || 0.35;

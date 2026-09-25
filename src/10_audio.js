@@ -116,6 +116,23 @@ J.loadSong = async () => {
 J.forgetSong = async () => {
   try { const db = await IDB.open(); await new Promise(res => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete('song'); tx.oncomplete = res; tx.onerror = res; }); } catch (e) {}
 };
+/* other files kept in the same store (소재 images and their masks): { name, type, data: ArrayBuffer } */
+J.idbPut = async (key, rec) => {
+  try {
+    const db = await IDB.open();
+    await new Promise((res, rej) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put(rec, key); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    return true;
+  } catch (e) { return false; }
+};
+J.idbGet = async (key) => {
+  try {
+    const db = await IDB.open();
+    return await new Promise((res, rej) => { const tx = db.transaction('files', 'readonly'); const q = tx.objectStore('files').get(key); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); });
+  } catch (e) { return null; }
+};
+J.idbDel = async (key) => {
+  try { const db = await IDB.open(); await new Promise(res => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete(key); tx.oncomplete = res; tx.onerror = res; }); } catch (e) {}
+};
 
 /* 곡에서 초안: guess where each lyric line starts from the song alone.
    The voice band (200 Hz – 3.5 kHz) is followed at 100 fps; a phrase start is a clear rise of that level after a

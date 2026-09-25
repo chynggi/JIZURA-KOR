@@ -62,6 +62,7 @@ function mergeProject(p) {
   o.colors = Object.assign({ enabled: false }, (p && p.colors) || {});
   o.fonts = (p && p.fonts) || {};
   o.userFonts = (p && p.userFonts) || [];
+  o.assets = ((p && p.assets) || []).map(a => Object.assign(J.assetDefaults(a.id, a.name), a));
   for (const uf of o.userFonts) if (!J.FONTS[uf.key]) J.addUserFont(uf.key, uf.label, uf.family, uf.weight || 400);
   return o;
 }
@@ -484,6 +485,8 @@ async function resetAll() {
   S.project = mergeProject(null); S.project.lyrics = '';
   S.audio = null; if ($('audioFile')) $('audioFile').value = '';
   if (J.forgetSong) await J.forgetSong();
+  for (const id of [...J.ASSETS.keys()]) await J.assetForget(id);
+  renderAssets();
   $('audioName').textContent = audioNameDefault;
   ED.undo = []; ED.redo = []; H.list = []; H.i = -1;
   TL.z = 1; TL.off = 0;
@@ -928,6 +931,70 @@ async function openCandidates(i) {
   cancelAnimationFrame(candAnim); candAnim = requestAnimationFrame(tick);
 }
 
+/* ---------------- 소재 ---------------- */
+const pct = v => Math.round(v * 100);
+function renderAssets() {
+  const ol = $('assetList'); if (!ol) return;
+  ol.innerHTML = '';
+  S.project.assets.forEach((a, i) => {
+    const li = document.createElement('li'); li.className = 'asset' + (a.hidden ? ' is-hidden' : '');
+    const A = J.ASSETS.get(a.id);
+    li.innerHTML = `<canvas class="a-thumb" width="64" height="40"></canvas>
+      <div class="a-main"><div class="a-name" title="${escapeHtml(a.name)}">${escapeHtml(a.name)}${A && A.keyed ? ' <span class="muted">(그린백 제거)</span>' : ''}</div>
+      <div class="a-row">
+        <select class="a-layer" aria-label="${i + 1}번 소재 위치"><option value="back">가사 뒤</option><option value="front">가사 앞</option></select>
+        <select class="a-key" aria-label="${i + 1}번 소재 배경 빼기" title="자동: 테두리가 초록이면 그린백으로 보고 뺍니다"><option value="auto">배경: 자동</option><option value="green">그린백 빼기</option><option value="none">그대로</option></select>
+        <select class="a-fit" aria-label="${i + 1}번 소재 맞춤"><option value="contain">전체 보이기</option><option value="cover">화면 채우기</option></select>
+      </div>
+      <div class="a-row a-sliders">
+        <label>크기<input class="a-scale" type="range" min="10" max="300" value="${pct(a.scale ?? 1)}"></label>
+        <label>가로<input class="a-x" type="range" min="-50" max="50" value="${pct(a.x || 0)}"></label>
+        <label>세로<input class="a-y" type="range" min="-50" max="50" value="${pct(a.y || 0)}"></label>
+        <label>불투명<input class="a-op" type="range" min="0" max="100" value="${pct(a.opacity ?? 1)}"></label>
+      </div></div>
+      <div class="a-tools">
+        <button class="icon ghost a-hide" title="숨기기" aria-pressed="${a.hidden ? 'true' : 'false'}" aria-label="${i + 1}번 소재 숨기기">◐</button>
+        <button class="icon ghost a-del" title="삭제" aria-label="${i + 1}번 소재 삭제">✕</button>
+      </div>`;
+    const q = s => li.querySelector(s);
+    q('.a-layer').value = a.layer || 'back'; q('.a-key').value = a.key || 'auto'; q('.a-fit').value = a.fit || 'contain';
+    if (A) { const tc = q('.a-thumb'), tx = tc.getContext('2d'), k = Math.min(tc.width / A.w, tc.height / A.h); tx.drawImage(A.img, (tc.width - A.w * k) / 2, (tc.height - A.h * k) / 2, A.w * k, A.h * k); }
+    const set = (patch, again) => { Object.assign(a, patch); flushSave(); S.need = true; if (again) J.assetPrepare(a).then(() => { renderAssets(); S.need = true; }); };
+    q('.a-layer').addEventListener('change', e => set({ layer: e.target.value }));
+    q('.a-key').addEventListener('change', e => set({ key: e.target.value }, true));
+    q('.a-fit').addEventListener('change', e => set({ fit: e.target.value }));
+    for (const [cls, k, f] of [['.a-scale', 'scale', v => v / 100], ['.a-x', 'x', v => v / 100], ['.a-y', 'y', v => v / 100], ['.a-op', 'opacity', v => v / 100]])
+      q(cls).addEventListener('input', e => set({ [k]: f(+e.target.value) }));
+    q('.a-hide').addEventListener('click', () => { set({ hidden: !a.hidden }); renderAssets(); });
+    q('.a-del').addEventListener('click', async () => {
+      if (!window.confirm(`「${a.name}」 소재를 지울까요?`)) return;
+      S.project.assets = S.project.assets.filter(x => x !== a); await J.assetForget(a.id);
+      replan(); flushSave(); renderAssets();
+    });
+    ol.appendChild(li);
+  });
+}
+async function addAssetFiles(files) {
+  for (const f of files) {
+    try { const a = await J.assetAdd(f); S.project.assets.push(a); await J.assetPrepare(a); }
+    catch (e) { toast(`「${f.name}」을(를) 불러오지 못했습니다: ${e.message || e}`); }
+  }
+  replan(); flushSave(); renderAssets();
+}
+async function prepareAssets() {
+  await Promise.all(S.project.assets.map(a => J.assetPrepare(a).catch(() => null)));
+  S.need = true; renderAssets();
+}
+
+// replace the project; 소재 files the new one does not use are dropped from this browser's storage
+async function openProject(p) {
+  const old = S.project.assets.map(a => a.id);
+  S.project = mergeProject(p); syncUI(); replan();
+  const keep = new Set(S.project.assets.map(a => a.id));
+  for (const id of old) if (!keep.has(id)) await J.assetForget(id);
+  await prepareAssets();
+}
+
 /* ---------------- 곡에서 초안 ---------------- */
 async function draftFromSong() {
   if (!S.audio) { toast('먼저 곡을 불러오세요'); return; }
@@ -1023,6 +1090,7 @@ function bind() {
   $('audioFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadAudioFile(f); });
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('btnDraft').addEventListener('click', draftFromSong);
+  $('assetFile').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) addAssetFiles(fs); });
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
   $('btnPlay').addEventListener('click', () => (S.playing ? pause() : play()));
@@ -1161,7 +1229,7 @@ function bind() {
   $('resetDlg').addEventListener('close', () => { if ($('resetDlg').returnValue === 'reset') resetAll(); });
   $('fileProject').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    try { S.project = mergeProject(JSON.parse(await f.text())); syncUI(); replan(); }
+    try { await openProject(JSON.parse(await f.text())); }
     catch (err) { showMsg('프로젝트를 불러올 수 없습니다'); setTimeout(() => showMsg(null), 2500); }
     e.target.value = '';
   });
@@ -1276,6 +1344,7 @@ function boot() {
   requestAnimationFrame(tick);
   // the song used last time (same name as the saved project's) comes back after a reload
   if (J.loadSong && S.project.audioName) J.loadSong().then(f => { if (f && f.name === S.project.audioName && !S.audio) loadAudioFile(f, true); });
+  prepareAssets();                                         // 소재 images come back from this browser's storage
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;
