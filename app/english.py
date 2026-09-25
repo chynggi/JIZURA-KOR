@@ -1,6 +1,7 @@
 """English copy for the browser edition. The Japanese source stays authoritative."""
 
 BODY = {
+    'タイムラインのアイコン凡例': 'Timeline icon legend',
     'ファイル名': 'File name',
     '拡張子は自動で付加されます。使用できない文字は置き換えます。': 'The file extension is added automatically. Unsupported characters are replaced.',
     '<summary>プロジェクト</summary>': '<summary>Project</summary>',

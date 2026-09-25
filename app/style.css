@@ -434,3 +434,11 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .export-dialog .fields { margin-bottom: 12px; }
 .export-dialog .outbtns { margin: 16px 0; }
 .filename-field { margin-bottom: 10px; }
+
+.timeline-legend { display: flex; flex-wrap: wrap; gap: 7px 14px; margin: 12px 0 6px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.timeline-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.timeline-legend-icon { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; flex: 0 0 19px; border: 1px solid var(--line2); border-radius: 3px; color: var(--text); }
+.timeline-legend-icon svg { width: 14px; height: 14px; }
+.timeline-legend-icon.remove { color: #ff6173; border-color: #ff6173; }
+.timeline-legend-icon.link { border-radius: 50%; color: var(--cyan); border-color: var(--cyan); }
+.timeline-legend-icon.unlink { border-radius: 50%; }
