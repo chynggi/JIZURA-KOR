@@ -237,6 +237,9 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 .timeline-links .timeline-action.locked rect { fill: var(--cyan); stroke: var(--cyan); }
 .timeline-links .timeline-action.frontmost { color: #161008; }
 .timeline-links .timeline-action.frontmost rect { fill: var(--amber); stroke: var(--amber); }
+.timeline-links .timeline-action[data-action="remove"] { color: #f05a68; }
+.timeline-links .timeline-action[data-action="remove"] rect { stroke: #f05a68; }
+.timeline-links .timeline-action[data-action="remove"]:hover rect, .timeline-links .timeline-action[data-action="remove"]:focus-visible rect { fill: #481922; stroke: #ff8790; }
 .timeline-links .timeline-action svg { pointer-events: none; }
 .timeline-link-hint { margin: 1px 0 0; }
 .cutinfo { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; }

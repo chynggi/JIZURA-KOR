@@ -255,6 +255,9 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 .timeline-links .timeline-action.locked rect { fill: var(--cyan); stroke: var(--cyan); }
 .timeline-links .timeline-action.frontmost { color: #161008; }
 .timeline-links .timeline-action.frontmost rect { fill: var(--amber); stroke: var(--amber); }
+.timeline-links .timeline-action[data-action="remove"] { color: #f05a68; }
+.timeline-links .timeline-action[data-action="remove"] rect { stroke: #f05a68; }
+.timeline-links .timeline-action[data-action="remove"]:hover rect, .timeline-links .timeline-action[data-action="remove"]:focus-visible rect { fill: #481922; stroke: #ff8790; }
 .timeline-links .timeline-action svg { pointer-events: none; }
 .timeline-link-hint { margin: 1px 0 0; }
 .cutinfo { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; }
@@ -31035,6 +31038,7 @@ function performTimelineAction(control) {
     else toggleLyricLineLock(index);
   } else if (layer === 'foreground' || layer === 'media') {
     if (control.dataset.action === 'dice') rerollMediaCut(layer, index);
+    else if (control.dataset.action === 'remove') removeMediaCut(index, layer);
     else toggleMediaCutLock(layer, index);
   }
 }
@@ -31063,14 +31067,16 @@ function drawTimelineLinks() {
   const action = (layer, cut, index, locked) => {
     const canvas = $(layer === 'lyrics' ? 'timeline' : layer === 'foreground' ? 'foregroundTimeline' : 'mediaTimeline');
     const startX = canvas.offsetLeft + cut.start / Math.max(0.001, S.plan.duration) * canvas.clientWidth;
-    const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 63);
     const y = canvas.offsetTop + 11;
     const areaIcon = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/><path d="M2 6h12M5 3v10"/></svg>';
+    const removeIcon = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m4 4 8 8m0-8-8 8"/></svg>';
     const actions = [['dice', false, layer === 'lyrics' ? 'Reroll this line' : 'Reroll this cut', ICON.dice], ['lock', locked, layer === 'lyrics' ? 'Lock this line' : 'Lock this cut', ICON.lock]];
     if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? 'Edit this line display area' : 'Edit this cut position and size', areaIcon]);
+    if (layer !== 'lyrics') actions.push(['remove', false, 'Remove this cut', removeIcon]);
+    const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - (actions.length - 1) * 20 - 23);
     return actions.map(([name, active, label, icon], n) => {
       const x = left + n * 20, graphic = icon.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
-      return `<g class="timeline-action ${active ? 'locked' : ''}" data-action="${name}" data-layer="${layer}" data-index="${index}" role="button" tabindex="0" aria-label="${label}" ${name === 'lock' ? `aria-pressed="${active}"` : ''} transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
+      return `<g class="timeline-action ${active ? 'locked' : ''}" data-action="${name}" data-layer="${layer}" data-index="${index}" role="button" tabindex="0" aria-label="${label}" ${name === 'lock' ? `aria-pressed="${active}"` : ''} transform="translate(${x} ${y})"><title>${label}</title><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
     }).join('');
   };
   const lyricActions = S.plan.lines.map(line => {

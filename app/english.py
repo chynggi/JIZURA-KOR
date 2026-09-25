@@ -439,6 +439,7 @@ FORK_UI = {
     '動画をループ再生': 'Loop video', 'クロマキー合成': 'Chroma key',
     'カット目のクロマキー色': ' cut chroma key color',
     'このカットを再抽選': 'Reroll this cut', 'このカットをロック': 'Lock this cut',
+    'このカットを削除': 'Remove this cut',
     'この行の表示エリアを編集': 'Edit this line display area',
     'このカットの配置とサイズを編集': 'Edit this cut position and size',
     '曲なし（読み込むと拍を検出してカットを合わせます）': 'No audio (load a song to detect beats and align cuts)',
