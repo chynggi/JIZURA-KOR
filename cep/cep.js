@@ -48,39 +48,64 @@ function connect() {
 }
 
 // ---------------- build the comp ----------------
-let building = false;
+// The host builds in short steps (JZCEP.step): After Effects gets control back between them, so long songs
+// no longer freeze it into "not responding", the panel shows progress, and the build can be stopped.
+let building = false, cancelReq = false;
+const STEP_MS = 1200;
 async function buildInAE() {
   if (building) return;
   if (!(await connect())) { toast('After Effects에 연결할 수 없었습니다'); return; }
-  building = true; setBusy(true);
+  building = true; cancelReq = false; setBusy(true);
   try {
     UI.pause && UI.pause();
-    const plan = J.planForAE(S.plan, S.project), txt = JSON.stringify(plan);
+    const range = UI.exportRange ? UI.exportRange() : null, R = range && UI.exportRangeLines ? UI.exportRangeLines() : null;
+    const plan = J.planForAE(S.plan, S.project, range), txt = JSON.stringify(plan);
+    if (!plan.cuts.length) { status('선택한 범위에 컷이 없습니다', true); return; }
     const useAudio = aeAudio && (!$('aeAudioIn') || $('aeAudioIn').checked);
     const aid = useAudio ? (aeAudio.id | 0) : 0;
-    status(`컴포 생성 중…(${plan.cuts.length}컷)`);
-    await new Promise(r => setTimeout(r, 30));              // let the status paint before AE blocks
+    const light = [...document.querySelectorAll('.ae-light')].some(el => el.checked);
+    const what = R ? `${R.from + 1}${R.to > R.from ? '–' + (R.to + 1) : ''}행·` : '';
+    status(`컴포 생성 중…(${what}${plan.cuts.length}컷)`);
+    await new Promise(r => setTimeout(r, 30));              // let the status paint before AE starts
     let r;
     if (fs && os && pathM) {
       const p = pathM.join(os.tmpdir(), 'jizura_plan_' + Date.now() + '.json');
       fs.writeFileSync(p, txt, 'utf8');
-      r = parse(await ev('JZCEP.buildFromFile(' + JSON.stringify(p) + ',' + aid + ')'));
+      r = parse(await ev('JZCEP.startFromFile(' + JSON.stringify(p) + ',' + aid + ',' + light + ')'));
     } else {
-      r = parse(await ev('JZCEP.buildFromString(' + JSON.stringify(encodeURIComponent(txt)) + ',' + aid + ')'));
+      r = parse(await ev('JZCEP.startFromString(' + JSON.stringify(encodeURIComponent(txt)) + ',' + aid + ',' + light + ')'));
+    }
+    if (r.ok && !r.done && typeof r.total === 'number') {
+      // step until done; a short pause between steps lets After Effects redraw and answer the OS
+      const t0 = performance.now();
+      for (;;) {
+        if (cancelReq) { await ev('JZCEP.cancel()'); cancelReq = false; }
+        r = parse(await ev('JZCEP.step(' + STEP_MS + ')'));
+        if (!r.ok || r.done) break;
+        const k = r.phase === 'cuts' ? r.cuts / Math.max(1, r.total) * 0.9 : 0.9 + 0.1 * (r.eventsDone || 0) / Math.max(1, r.events || 1);
+        const el = (performance.now() - t0) / 1000, left = k > 0.03 ? el / k - el : null;
+        status(`컴포 생성 중… ${Math.round(k * 100)}%(${r.phase === 'cuts' ? `${r.cuts} / ${r.total}컷` : '효과 추가 중'}${left != null ? `·약 ${Math.max(1, Math.round(left))}초 남음` : ''})`);
+        progress(k);
+        await new Promise(res => setTimeout(res, 40));
+      }
     }
     if (r.ok) {
-      let m = `「${r.name}」을(를) 만들었습니다(${r.cuts}컷·${(+r.secs).toFixed(1)}초${r.audio ? '·곡 포함' : ''})`;
+      let m = r.cancelled ? `중지했습니다: 「${r.name}」은(는) ${r.cuts} / ${r.total}컷까지입니다` : `「${r.name}」을(를) 만들었습니다(${what}${r.cuts}컷·${(+r.secs).toFixed(1)}초${r.audio ? '·곡 포함' : ''})`;
       if (r.fallbacks > 0) m += ` / 비슷한 표현으로 교체 ${r.fallbacks}곳`;
       if (r.notesTotal > 0) m += ` / 주의 ${r.notesTotal}건`;
       if (r.missingFonts && r.missingFonts.length) m += ` / 이 PC에 없는 서체(${r.missingFonts.join('·')})는 비슷한 서체로 만들었습니다. Google Fonts에서 설치하고 AE를 다시 시작하면 같은 서체가 됩니다`;
       if (r.fontCheck === false) m += ' / 이 AE(2024 이전)에서는 서체 설치 여부를 확인할 수 없어 스크립트 버전 패널 「폰트」 탭의 서체(설정하지 않았으면 맑은 고딕·바탕)로 만들었습니다';
-      status(m); toast('After Effects에 컴포를 만들었습니다');
+      status(m); toast(r.cancelled ? '생성을 중지했습니다' : 'After Effects에 컴포를 만들었습니다');
       if (r.notes && r.notes.length) console.warn('JIZURA AE notes', r.notes);
     } else { status('만들 수 없었습니다: ' + r.error, true); toast('만들 수 없었습니다'); }
   } catch (e) { status('만들 수 없었습니다: ' + (e && e.message ? e.message : e), true); }
-  finally { building = false; setBusy(false); }
+  finally { building = false; setBusy(false); progress(null); }
 }
-function setBusy(b) { document.querySelectorAll('.ae-build').forEach(el => { el.disabled = b; }); }
+function cancelBuild() { if (building) { cancelReq = true; status('중지하는 중…(이미 만든 컷으로 마무리합니다)'); } }
+function progress(k) {
+  document.querySelectorAll('.ae-prog').forEach(el => { el.hidden = k == null; const b = el.querySelector('i'); if (b) b.style.width = Math.round((k || 0) * 100) + '%'; });
+}
+function setBusy(b) { document.querySelectorAll('.ae-build').forEach(el => { el.disabled = b; }); document.querySelectorAll('.ae-cancel').forEach(el => { el.hidden = !b; }); }
 async function diagnose() {
   if (!(await connect())) return;
   status('진단 중…(수십 초 걸릴 수 있습니다)');
@@ -143,24 +168,28 @@ function inject() {
   if (eMP4) {
     eMP4.classList.remove('primary');
     const box = document.createElement('div'); box.className = 'ae-box';
-    box.innerHTML = '<div class="outbtns"></div><label class="row ae-audio-row" hidden><input type="checkbox" class="ae-audio-in" checked><span>곡(<span class="ae-audio-name"></span>)을 컴포에 넣기</span></label><p class="note ae-status">—</p>';
-    box.querySelector('.outbtns').append(btn('eAEBuild', 'After Effects에 컴포 만들기', 'primary ae-build', buildInAE));
+    box.innerHTML = '<div class="outbtns"></div><label class="row ae-audio-row" hidden><input type="checkbox" class="ae-audio-in" checked><span>곡(<span class="ae-audio-name"></span>)을 컴포에 넣기</span></label><label class="row ae-light-row" title="색 어긋남 복제·종이 질감·글로·입자·일부 화면 효과를 생략해 After Effects에서의 재생을 가볍게 합니다(긴 곡에 추천)"><input type="checkbox" class="ae-light"><span>경량(AE에서 재생을 가볍게)</span></label><div class="ae-prog" hidden><i></i></div><p class="note ae-status">—</p>';
+    box.querySelector('.outbtns').append(btn('eAEBuild', 'After Effects에 컴포 만들기', 'primary ae-build', buildInAE), btn('eAECancel', '중지', 'small ae-cancel', cancelBuild));
     eMP4.closest('.outbtns').before(box);
   }
   // pro mode: an After Effects block at the top of the output tab
   const pane = document.querySelector('[data-pane="out"]');
   if (pane) {
     const box = document.createElement('div'); box.className = 'ae-box';
-    box.innerHTML = '<h3>After Effects</h3><div class="outbtns"></div><label class="row ae-audio-row" hidden><input id="aeAudioIn" type="checkbox" class="ae-audio-in" checked><span>곡(<span class="ae-audio-name"></span>)을 컴포에 넣기</span></label><p class="note ae-status">—</p><h3>동영상·이미지</h3>';
-    box.querySelector('.outbtns').append(btn('aeBuild', 'AE에서 컴포 생성', 'primary ae-build', buildInAE), btn('aeDiag', '진단 리포트 저장', 'small', diagnose));
+    box.innerHTML = '<h3>After Effects</h3><div class="outbtns"></div><label class="row ae-audio-row" hidden><input id="aeAudioIn" type="checkbox" class="ae-audio-in" checked><span>곡(<span class="ae-audio-name"></span>)을 컴포에 넣기</span></label><label class="row ae-light-row" title="색 어긋남 복제·종이 질감·글로·입자·일부 화면 효과를 생략해 After Effects에서의 재생을 가볍게 합니다(긴 곡에 추천)"><input type="checkbox" class="ae-light"><span>경량(AE에서 재생을 가볍게)</span></label><div class="ae-prog" hidden><i></i></div><p class="note ae-status">—</p><h3>동영상·이미지</h3>';
+    box.querySelector('.outbtns').append(btn('aeBuild', 'AE에서 컴포 생성', 'primary ae-build', buildInAE), btn('aeCancel', '중지', 'small ae-cancel', cancelBuild), btn('aeDiag', '진단 리포트 저장', 'small', diagnose));
     box.querySelector('#aeDiag').title = '마지막으로 만든 컴포를 조사해 JIZURA_report.txt를 저장합니다(잘 만들어지지 않을 때 보내 주세요)';
     pane.prepend(box);
     const m = $('btnMP4'); m && m.classList.remove('primary');
   }
   // keep the two "include the song" checkboxes in step
+  document.querySelectorAll('.ae-cancel').forEach(el => { el.hidden = true; el.title = '생성을 멈춥니다(거기까지의 컷으로 컴포를 마무리합니다)'; });
+  // keep the two 軽量 checkboxes in step (remembered in this browser)
+  let lightOn = false; try { lightOn = localStorage.getItem('jizura.aeLight') === '1'; } catch (e) {}
+  document.querySelectorAll('.ae-light').forEach(cb => { cb.checked = lightOn; cb.addEventListener('change', () => { document.querySelectorAll('.ae-light').forEach(o => { o.checked = cb.checked; }); try { localStorage.setItem('jizura.aeLight', cb.checked ? '1' : '0'); } catch (e) {} }); });
   document.querySelectorAll('.ae-audio-in').forEach(cb => cb.addEventListener('change', () => { document.querySelectorAll('.ae-audio-in').forEach(o => { o.checked = cb.checked; }); }));
   const style = document.createElement('style');
-  style.textContent = '.ae-row{margin-top:8px;gap:6px}.ae-box{margin-bottom:12px}.ae-box h3{margin:0 0 8px}.ae-status{margin-top:8px}.ae-status.bad{color:#ff8a80;border-left-color:#ff8a80}';
+  style.textContent = '.ae-row{margin-top:8px;gap:6px}.ae-box{margin-bottom:12px}.ae-box h3{margin:0 0 8px}.ae-status{margin-top:8px}.ae-status.bad{color:#ff8a80;border-left-color:#ff8a80}.ae-prog{height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin-top:8px;overflow:hidden}.ae-prog i{display:block;height:100%;width:0;background:var(--accent,#7cf);transition:width .3s}';
   document.head.appendChild(style);
 }
 
@@ -189,5 +218,5 @@ document.addEventListener('click', e => {
 // the app binds its own buttons on DOMContentLoaded — add ours after that
 const start = () => { inject(); connect(); };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(start, 0)); else setTimeout(start, 0);
-J.cep = { connect, buildInAE, useAEAudio, useAEMarkers, diagnose, ev };
+J.cep = { connect, buildInAE, cancelBuild, useAEAudio, useAEMarkers, diagnose, ev };
 })();

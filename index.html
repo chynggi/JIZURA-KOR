@@ -59,6 +59,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .lang-switch a:hover { color: var(--text); background: var(--raised2); }
 .lang-switch [aria-current=page] { color: var(--ink); background: var(--amber); }
 html[lang=en] { --ui: system-ui, -apple-system, "Segoe UI", sans-serif; --brand: Georgia, "Times New Roman", serif; }
+html[lang=zh-Hant] { --ui: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; }
+html[lang=ko] { --ui: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; --brand: "Noto Serif KR", "AppleMyungjo", "Batang", serif; }
 html[lang=en] .work { grid-template-columns: minmax(315px, 365px) minmax(0, 1fr) minmax(350px, 395px); }
 html[lang=en] .slider { grid-template-columns: 124px minmax(0, 1fr) 36px; }
 html[lang=en] .now-row { grid-template-columns: 105px minmax(0, 1fr); }
@@ -124,10 +126,10 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .ln .no { font: 500 11px var(--mono); color: var(--faint); text-align: right; }
 .ln .time { width: 100%; padding: 3px 5px; font-size: 12px; }
 .ln .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-.ln .meta { grid-column: 2 / 4; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
-.ln .tools { display: flex; gap: 4px; flex: none; }
-.ln .tools select { padding: 2px 4px; font-size: 11px; max-width: 92px; }
-.ln .cuts { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; }
+.ln .meta { grid-column: 2 / 4; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; flex-wrap: wrap; }
+.ln .tools { display: flex; gap: 4px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.ln .tools select { padding: 2px 4px; font-size: 11px; max-width: 92px; width: auto; }
+.ln .cuts { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; flex: 1 1 140px; }
 .ln .cuts span { font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--line2); color: var(--muted); cursor: pointer; }
 .ln .cuts span:hover { color: var(--text); border-color: var(--amber); }
 
@@ -142,9 +144,23 @@ button.tap { font: 700 18px/1 var(--mono); letter-spacing: 0.2em; padding: 16px;
 .key-badge i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(255,255,255,.5); }
 .overlay-msg { position: absolute; left: 12px; bottom: 12px; background: rgba(12,12,14,0.85); border: 1px solid var(--line2); padding: 6px 10px; border-radius: var(--r); font-size: 12px; }
 .transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.transport .vol { display: inline-flex; align-items: center; gap: 4px; }
+.transport .vol input[type=range] { flex: 0 0 80px; width: 80px; }
 .transport .tc { font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }
 .transport input[type=range] { flex: 1 1 160px; accent-color: var(--amber); }
 button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
+/* timeline controls, export range, line tools */
+.tl-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 0 4px; flex-wrap: wrap; }
+.tl-hint { font-size: 11px; }
+.tl-btns { display: flex; gap: 4px; margin-left: auto; }
+.rng-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; font-size: 12px; }
+.rng-row select { width: auto; max-width: 150px; }
+.rng-lab { color: var(--muted); font-size: 11px; }
+.rngInfo { font-size: 11px; }
+.ln.in-range { border-color: var(--amber); }
+.ln.is-inter .txt { color: var(--muted); font-style: italic; }
+.ln .txt-edit { width: 100%; padding: 3px 6px; font-size: 13px; }
+.ln .tools .icon[aria-pressed=true] { color: var(--amber); }
 #timeline { width: 100%; height: 76px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 .cutinfo { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; }
 .chip { font-size: 11px; padding: 2px 8px; border-radius: 2px; border: 1px solid var(--line2); color: var(--text); background: var(--raised); }
@@ -252,6 +268,10 @@ button.omakase:disabled { box-shadow: none; }
 button.linkish { background: none; border: 0; padding: 4px 0; color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; justify-self: start; }
 button.linkish:hover { color: var(--text); background: none; }
 dialog.terms { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; padding: 22px 24px 18px; background: var(--panel); color: var(--text); border: 1px solid var(--line2); border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.55); }
+dialog.terms .reset-list { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 3px; font-size: 13px; }
+button.danger { background: #c9433a; border-color: #c9433a; color: #fff; font-weight: 700; }
+button.danger:hover { background: #dd5146; }
+.sec-btns { display: inline-flex; gap: 6px; }
 dialog.terms::backdrop { background: rgba(6,6,8,0.66); }
 dialog.terms h2 { font-size: 15px; letter-spacing: 0.08em; color: var(--text); margin: 0 0 14px; }
 dialog.terms p { margin: 0 0 10px; line-height: 1.75; font-size: 13px; }
@@ -265,6 +285,19 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
 .terms-oss summary { cursor: pointer; }
 .terms-oss p { font-size: 12px !important; margin-top: 6px; }
 .terms-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+
+/* ---------- fixed workspace (wide & tall enough windows) ----------
+   The page no longer scrolls as a whole: the header and the preview + timeline stay put, and the
+   lyrics / line list (left) and settings (right) scroll inside their own columns. */
+@media (min-width: 1181px) and (min-height: 620px) {
+  html.fixed-ok body { overflow: hidden; }
+  html.fixed-ok #app { height: 100vh; height: 100dvh; min-height: 0; }
+  html.fixed-ok .work { overflow: hidden; }
+  html.fixed-ok .col-left, html.fixed-ok .col-right { overscroll-behavior: contain; }
+  html.fixed-ok .col-stage { overflow: hidden auto; }
+  html.fixed-ok .viewport { flex: 1 1 0; min-height: 180px; }
+  html.fixed-ok .viewport canvas { max-height: none; }
+}
 
 /* ---------- responsive ---------- */
 /* wide screens: the app fills the window and each side column scrolls on its own */
@@ -306,9 +339,36 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
 .stile .set-badge { margin: 0; padding: 0 4px; font-size: 10px; line-height: 15px; background: rgba(0,0,0,0.55); }
 .stile.set-off { opacity: 0.55; }
 
+/* ---------- かんたんモードの案内ツアー ---------- */
+.tour { position: fixed; inset: 0; z-index: 200; pointer-events: auto; }
+.tour-spot { position: fixed; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(8, 8, 10, 0.66); outline: 2px solid var(--amber); transition: all 0.22s ease; pointer-events: none; }
+.tour-bub { position: fixed; width: min(340px, calc(100vw - 24px)); background: var(--panel); color: var(--text); border: 1px solid var(--line2); border-radius: 10px; padding: 14px 16px 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); transition: top 0.22s ease, left 0.22s ease; }
+.tour-step { font-size: 11px; }
+.tour-title { margin: 4px 0 6px; font-size: 15px; }
+.tour-text { margin: 0 0 12px; font-size: 13px; line-height: 1.7; color: var(--muted); }
+.tour-nav { display: flex; gap: 6px; align-items: center; }
+.tour-sp { flex: 1; }
+.tour-btn { min-width: 30px; font-weight: 700; }
+button.small.primary { padding: 4px 12px; }
+
+.lang-switch select { font: 500 11px var(--mono); padding: 3px 6px; width: auto; background: transparent; color: var(--muted); border: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.unify-box { margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.center-dir { gap: 6px; margin: -2px 0 8px 26px; font-size: 12px; }
+.center-dir select { width: auto; }
+
 </style>
 </head>
 <body>
+<div id="tour" class="tour" hidden role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+  <div class="tour-spot"></div>
+  <div class="tour-bub">
+    <div class="tour-step mono muted"></div>
+    <h3 id="tourTitle" class="tour-title"></h3>
+    <p class="tour-text"></p>
+    <div class="tour-nav"><button class="tour-skip ghost small">건너뛰기</button><span class="tour-sp"></span><button class="tour-prev ghost small">이전</button><button class="tour-next primary small">다음</button></div>
+  </div>
+</div>
 <div id="app">
   <header class="bar">
     <div class="brand"><span class="mark" aria-hidden="true">字面</span><span class="word">JIZURA</span><span class="tag">lyric motion engine</span></div>
@@ -316,15 +376,17 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
       <input id="songTitle" type="text" placeholder="곡명(타이틀 카드·HUD에 표시)" aria-label="곡명">
       <input id="songArtist" type="text" placeholder="아티스트" aria-label="아티스트">
     </div>
-    <div class="modes" role="group" aria-label="표시 모드">
-      <button id="modeEasy" aria-pressed="false" title="자동 버튼 중심의 간편한 화면">간편</button>
-      <button id="modePro" aria-pressed="true" title="모든 설정 표시">자세히</button>
+    <div class="modes" role="group" aria-label="편집 모드">
+      <button id="modeEasy" aria-pressed="false" title="자동 생성 중심의 간단한 화면">간단</button>
+      <button id="modePro" aria-pressed="true" title="모든 설정 표시">고급</button>
+      <button id="btnTour" class="ghost tour-btn" title="간단 모드 사용법을 안내합니다" aria-label="사용법 안내">？</button>
     </div>
-    <nav class="lang-switch" aria-label="언어"><span aria-current="page">한국어</span><a href="en/index.html" lang="en">English</a></nav>
+    <label class="lang-switch"><span class="sr-only">언어</span><select aria-label="언어" onchange="if(this.value)location.href=this.value"><option value="index.html" lang="ko" selected>한국어</option><option value="https://852wa.github.io/JIZURA/" lang="ja">日本語</option><option value="en/index.html" lang="en">English</option><option value="zh-hant/index.html" lang="zh-Hant">繁體中文</option><option value="zh-hans/index.html" lang="zh-Hans">简体中文</option><option value="id/index.html" lang="id-ID">Bahasa Indonesia</option></select></label>
     <div class="acts">
       <label class="file" title="저장한 프로젝트(.json) 열기">열기<input id="fileProject" type="file" accept=".json,application/json"></label>
       <button id="btnSave" title="프로젝트를 .json으로 저장">저장</button>
-      <button id="btnAE" title="After Effects 패널용 구조 데이터 내보내기">AE용 내보내기</button>
+      <button id="btnAE" title="After Effects 패널용 구성 데이터 내보내기">AE용 내보내기</button>
+      <button id="btnReset" class="ghost" title="가사·음원·설정·기록을 모두 지우고 처음 상태로 되돌립니다">초기화</button>
       <button id="btnTerms" class="ghost terms-open" title="출력물의 권리와 라이선스">이용 안내</button>
     </div>
   </header>
@@ -333,9 +395,9 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="가사와 타이밍">
       <div class="sec">
-        <div class="sec-h"><h2>가사</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></div>
-        <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사(1행 = 1프레이즈)"></textarea>
-        <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option></select><span id="langNote" class="muted"></span></label>
+        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(‘되돌리기’나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
+        <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
+        <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option><option value="en">English</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
             <li>한 행이 한 프레이즈입니다. 빈 행은 약간의 간격을 둡니다</li>
@@ -369,9 +431,10 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
           <button id="btnResetTimes" class="ghost small">수동 타이밍 지우기</button>
         </div>
         <div id="tapPanel" class="tapbox" hidden>
-          <div class="hint">곡에 맞춰 각 행이 시작되는 순간 <span class="kbd">Space</span> 또는 버튼을 누르세요.</div>
+          <div class="hint">음원에 맞춰 각 행이 시작되는 순간 <span class="kbd">Space</span> 또는 버튼을 누르세요. 잘못 눌렀다면 <span class="kbd">Backspace</span> 또는 ‘한 번 되돌리기’. 중간 행부터 다시 하려면 행 목록의 ◎를 누르세요.</div>
           <div class="next">다음: <b id="tapLine">—</b></div>
           <button id="tapBtn" class="tap">TAP</button>
+          <button id="tapBack" class="ghost">한 번 되돌리기</button>
           <button id="tapStop" class="ghost">종료</button>
         </div>
       </div>
@@ -390,6 +453,7 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
         <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><span id="timeDur" class="tc muted">00:00.00</span>
         <input id="scrub" type="range" min="0" max="10000" value="0" aria-label="재생 위치">
         <button id="btnLoop" class="ghost small" aria-pressed="true">반복</button>
+        <span class="vol"><button id="btnMute" class="ghost small" aria-pressed="false" title="클릭하여 음소거/해제 (미리보기 전용이며 내보내기 음량은 바뀌지 않습니다)">음량</button><input id="vol" type="range" min="0" max="100" value="80" aria-label="미리보기 음량"></span>
         <span class="hist-btns">
           <button id="btnPrev" class="ghost small icon-txt" title="이전 안으로 돌아가기" aria-label="이전 안">◀</button>
           <button id="btnNext" class="ghost small icon-txt" title="다음 안으로 이동" aria-label="다음 안">▶</button>
@@ -397,7 +461,16 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
         <button id="btnShuffle" class="accent" title="설정은 그대로 구조만 다시 뽑기(잠긴 행 유지)">셔플</button>
         <button id="btnOmakase" class="primary" title="스타일·분위기·연출·색 배합을 통째로 무작위(키 R)">자동</button>
       </div>
-      <canvas id="timeline" aria-label="타임라인(클릭하여 이동)"></canvas>
+      <div class="tl-bar">
+        <span class="tl-hint muted">행 구분(위쪽 눈금)은 드래그로 옮길 수 있습니다. <span class="kbd">Shift</span>를 누르면 비트에 맞추지 않음</span>
+        <span class="tl-btns">
+          <button id="btnUndoEdit" class="ghost small" title="가사·타이밍 변경 되돌리기(Ctrl+Z)" disabled>되돌리기</button>
+          <button id="tlOut" class="ghost small icon-txt" title="축소" aria-label="타임라인 축소">−</button>
+          <button id="tlIn" class="ghost small icon-txt" title="확대(타임라인에서 휠로도 가능)" aria-label="타임라인 확대">＋</button>
+          <button id="tlFit" class="ghost small" title="곡 전체 보기">전체</button>
+        </span>
+      </div>
+      <canvas id="timeline" aria-label="타임라인(클릭으로 이동, 행 구분은 드래그로 조정)"></canvas>
       <div class="cutinfo" id="cutInfo"></div>
     </section>
 
@@ -413,8 +486,10 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
             <button id="btnNext2" class="ghost">다음 안 ▶</button>
           </div>
           <div class="pick-sets">
-            <label class="check"><input id="eExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>첫 공개 버전 이후 추가된 약 350개의 연출·색 배합 세트 12종·서체 6종도 자동/셔플의 후보로 넣습니다(끄면 첫 공개 버전의 연출만)</small></span></label>
-            <label class="check"><input id="eWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>등롱·엽서·쇼지·부채·가문·세이가이하·벚꽃 잎 같은 일본풍 그래픽. 끄면 자동/셔플에서 선택되지 않습니다</small></span></label>
+            <label class="check"><input id="eExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>첫 공개 이후 추가된 약 350개 연출, 12개 스타일, 6개 글꼴도 자동 생성과 셔플 후보에 포함합니다. 끄면 초기 공개판의 연출만 사용합니다.</small></span></label>
+            <label class="check"><input id="eWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>초롱, 엽서, 쇼지, 부채, 가문 문양, 세이가이하, 벚꽃잎 등의 일본풍 그래픽입니다. 끄면 자동 생성과 셔플에서 선택되지 않습니다.</small></span></label>
+            <label class="check"><input class="unify-toggle" type="checkbox"><span>통일감</span></label>
+            <label class="check"><input class="typeset-toggle" type="checkbox"><span>문자 정렬</span></label>
           </div>
         </div>
         <div class="easy-sec">
@@ -438,8 +513,11 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
             <label class="field">fps<select id="eFps"><option>24</option><option>30</option><option>60</option></select></label>
             <label class="field field-wide">배경<select id="eKey"><option value="off">일반(스타일 배경)</option><option value="green">그린 스크린(합성용)</option><option value="black">블랙 배경(합성용)</option></select></label>
           </div>
-          <div class="outbtns"><button id="eMP4" class="primary">MP4 내보내기</button></div>
-          <button class="terms-open linkish">내보낸 동영상의 권리에 대해</button>
+          <label class="check center-free"><input id="eCenter" class="center-toggle" type="checkbox"><span>가운데 비우기(캐릭터용)<small>가운데에 캐릭터 등을 겹칠 것을 전제로, 가로 화면에서는 좌우, 세로 화면에서는 위아래에 문자와 연출을 행마다 번갈아 배치합니다. 배경과 화면 효과는 화면 전체 그대로입니다(미리보기에는 비우는 범위를 점선으로 표시)</small></span></label>
+          <label class="row center-dir" hidden>세로 화면일 때<select class="centerDirSel" aria-label="세로 화면에서 나누는 방법"><option value="tb">위아래로 나누기</option><option value="lr">좌우로 나누기</option></select></label>
+          <div class="rng-row"><span class="rng-lab">내보낼 범위</span><select class="rngFrom" aria-label="내보낼 범위의 첫 행"></select><span class="muted">〜</span><select class="rngTo" aria-label="내보낼 범위의 마지막 행"></select><span class="rngInfo muted mono"></span></div>
+          <div class="outbtns"><button id="eMP4" class="primary">MP4 내보내기</button><button id="eMP4File" class="ghost mp4file" hidden title="저장할 파일을 먼저 고르고 거기에 바로 기록합니다. 긴 곡이나 1080p 이상에서 브라우저 메모리가 부족해 실패할 때 사용하세요(Chrome / Edge)">큰 동영상용(파일에 바로 저장)</button></div>
+          <button class="terms-open linkish">내보낸 동영상의 권리</button>
           <div class="exp-box" hidden>
             <div class="progress"><i class="exp-bar"></i></div>
             <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">중지</button></div>
@@ -475,6 +553,10 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
       </div>
 
       <div class="tabpane" data-pane="fx" hidden>
+        <div class="unify-box">
+          <label class="check"><input class="unify-toggle" type="checkbox"><span>통일감</span></label>
+          <label class="check"><input class="typeset-toggle" type="checkbox"><span>문자 정렬</span></label>
+        </div>
         <div id="fxSliders"></div>
         <div class="row" style="margin-top:6px">
           <label class="row" style="gap:6px"><input id="fxFlash" type="checkbox"> 플래시</label>
@@ -507,12 +589,17 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
           <label class="field">화질<select id="outQuality"><option value="standard">표준</option><option value="high">높음</option><option value="max">최고</option></select></label>
           <label class="field field-wide">배경<select id="outKey"><option value="off">일반(스타일 배경)</option><option value="green">그린 스크린(합성용)</option><option value="black">블랙 배경(합성용)</option></select></label>
         </div>
-        <p class="note key-note">그린 스크린/블랙 배경으로 하면 흰 글자와 연출만 단색 배경 위에 그립니다(배경 무늬·종이 질감·입자·주변 감광은 들어가지 않습니다). 미리보기에도 그대로 반영됩니다. 그린 스크린은 영상 편집 프로그램의 크로마 키로, 블랙 배경은 「스크린」 합성이나 휘도 키로 빼서 다른 영상 위에 겹칠 수 있습니다.</p>
-        <label class="row" style="gap:6px;margin-top:10px"><input id="outAudio" type="checkbox" checked> 곡을 영상에 포함</label>
+        <p class="note key-note">그린 스크린/블랙 배경에서는 단색 배경 위에 흰 글자와 연출만 그립니다. 배경 무늬, 종이 질감, 입자, 비네트는 제외됩니다. 미리보기에도 그대로 반영되며 그린은 크로마키, 블랙은 스크린 합성이나 루마 키로 다른 영상 위에 합성할 수 있습니다.</p>
+        <label class="check center-free"><input id="outCenter" class="center-toggle" type="checkbox"><span>가운데 비우기(캐릭터용)<small>가운데에 캐릭터 등을 겹칠 것을 전제로, 가로 화면에서는 좌우, 세로 화면에서는 위아래에 문자와 연출을 행마다 번갈아 배치합니다. 배경과 화면 효과는 화면 전체 그대로입니다(미리보기에는 비우는 범위를 점선으로 표시)</small></span></label>
+          <label class="row center-dir" hidden>세로 화면일 때<select class="centerDirSel" aria-label="세로 화면에서 나누는 방법"><option value="tb">위아래로 나누기</option><option value="lr">좌우로 나누기</option></select></label>
+        <label class="row" style="gap:6px;margin-top:10px"><input id="outAudio" type="checkbox" checked> 동영상에 음원 포함</label>
+        <div class="rng-row"><span class="rng-lab">내보낼 범위</span><select class="rngFrom" aria-label="내보낼 범위의 첫 행"></select><span class="muted">〜</span><select class="rngTo" aria-label="내보낼 범위의 마지막 행"></select><span class="rngInfo muted mono"></span></div>
         <div class="outbtns">
           <button id="btnMP4" class="primary">MP4 내보내기</button>
-          <button id="btnPNG">연속 PNG(ZIP)</button>
-          <button id="btnPNGA">투명 PNG(ZIP·배경 없음)</button>
+          <button id="btnMP4File" class="mp4file" hidden title="저장할 파일을 먼저 고르고 거기에 바로 기록합니다. 긴 곡이나 1080p 이상에서 브라우저 메모리가 부족해 실패할 때 사용하세요(Chrome / Edge)">MP4(큰 동영상용·파일에 바로 저장)</button>
+          <button id="btnPNG">PNG 시퀀스 (ZIP)</button>
+          <button id="btnPNGA">투명 PNG (ZIP·배경 없음)</button>
+          <button id="btnPNGL" title="후경(배경 그래픽과 가사 뒤 장식)과 전경(가사, 장식, 고스트)을 각각 back / front 폴더에 투명 PNG로 내보냅니다. 화면 전체 효과는 양쪽에 적용되므로 전경을 후경 위에 겹치면 일반 화면과 같은 모습이 됩니다.">투명 PNG 전경/후경 (ZIP)</button>
         </div>
         <div class="exp-box" hidden style="margin-top:12px">
           <div class="progress"><i class="exp-bar"></i></div>
@@ -525,6 +612,21 @@ dialog.terms a { color: var(--cyan); word-break: break-all; }
   </main>
 </div>
 
+<dialog id="resetDlg" class="terms" aria-labelledby="resetTitle">
+  <form method="dialog">
+    <h2 id="resetTitle">초기화</h2>
+    <p>아래 항목을 모두 지우고 처음 상태로 되돌립니다. <strong>되돌릴 수 없습니다.</strong></p>
+    <ul class="reset-list">
+      <li>가사·곡명·아티스트</li>
+      <li>불러온 음원(이 브라우저에 보관된 파일 포함)</li>
+      <li>타이밍·행별 설정·내보낼 범위</li>
+      <li>스타일·연출·배색·글꼴 등의 설정</li>
+      <li>버전 기록(◀ ▶)과 가사·타이밍의 ‘되돌리기’ 기록</li>
+    </ul>
+    <p class="terms-sub">표시 모드(간단/상세), 미리보기 음량, 화면 언어는 그대로입니다. 저장한 프로젝트 파일(.json)도 지워지지 않습니다.</p>
+    <div class="terms-foot"><span></span><span class="row"><button value="cancel" class="ghost">취소</button><button value="reset" class="danger">초기화</button></span></div>
+  </form>
+</dialog>
 <dialog id="termsDlg" class="terms" aria-labelledby="termsTitle">
   <form method="dialog">
     <h2 id="termsTitle">이용 안내</h2>
@@ -836,12 +938,18 @@ J.fontsOfPlan = (plan) => {
     if (typeof v === 'string' && J.FONTS[v]) set.add(v);
     else if (Array.isArray(v)) v.forEach(x => { if (typeof x === 'string' && J.FONTS[x]) set.add(x); });
   }
-  return [...set].filter(k => J.FONTS[k]);
+  const out = [...set].filter(k => J.FONTS[k]);
+  if ((plan.cuts || []).some(c => c.weightGrow)) out.push('@var');     // 太さ: the variable Noto Sans / Serif JP
+  return out;
 };
 /* make sure the glyphs we need are loaded (Google Fonts are unicode-range split). keys = null → every catalogue face */
 J.ensureFonts = async (text, keys) => {
   if (!document.fonts || !document.fonts.load) return;
   const uniq = [...new Set([...text])].join('') || 'あ';
+  if (keys && keys.includes('@var')) {
+    await Promise.all(['Noto+Sans+JP:wght@100..900', 'Noto+Serif+JP:wght@200..900'].map(attachFamily));
+    await Promise.all(['100 64px "Noto Sans JP"', '900 64px "Noto Sans JP"', '200 64px "Noto Serif JP"', '900 64px "Noto Serif JP"'].map(f => document.fonts.load(f, uniq).catch(() => null)));
+  }
   const list = (keys || Object.keys(J.FONTS)).filter(k => J.FONTS[k]);
   // faces in the current lyric language (+ its fallback sans / serif), each with the weight it is drawn at
   const faces = list.map(k => (J.faceOf ? J.faceOf(k) : J.FONTS[k]));
@@ -1038,8 +1146,8 @@ function clipHalf(poly, nx, ny, d0, sgn) {
 (() => {
 'use strict';
 
-J.LANGS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko'];
-J.LANG_LABEL = { auto: '자동 판정', ja: '日本語', 'zh-Hant': '繁體中文', 'zh-Hans': '简体中文', ko: '한국어' };
+J.LANGS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en'];
+J.LANG_LABEL = { auto: '자동 판정', ja: '日本語', 'zh-Hant': '繁體中文', 'zh-Hans': '简体中文', ko: '한국어', en: 'English' };
 
 /* characters that differ between Traditional and Simplified Chinese (same order in both strings) */
 const TC = '們個說這會對時來還後過國開關與為從問間見長東車門愛聽學讓話號發點無現體經電實樣聲變離氣夢給覺當歡陽戀邊頭淚誰歲遠嗎萬難寫應讀憶樂麼麗傷將總結終紅綠線顏風飛鳥謝語請認識熱燈願獨夠紀帶滿靜輕別腦臉懷謊錯顆陣場讚淺溫記憑護壞歸媽隨銀聞態虛遙';
@@ -1047,12 +1155,14 @@ const SC = '们个说这会对时来还后过国开关与为从问间见长东�
 const TCSET = new Set([...TC]), SCSET = new Set([...SC]);
 // a few of the "Simplified" forms are also Japanese shinjitai (会 対 来 …) — kana decides Japanese first, so that is harmless
 
-/* which language are these lyrics in? (kana → ja, hangul → ko, Han only → Traditional / Simplified by the distinctive forms) */
+/* which language are these lyrics in? (almost only Latin letters → en (English / romaji), kana → ja, hangul → ko,
+   Han only → Traditional / Simplified by the distinctive forms, Traditional when there are none) */
 J.detectLang = (text) => {
-  let kana = 0, hangul = 0, han = 0, tc = 0, sc = 0;
+  let kana = 0, hangul = 0, han = 0, tc = 0, sc = 0, latin = 0;
   for (const c of String(text || '')) {
     const u = c.codePointAt(0);
-    if ((u >= 0x3041 && u <= 0x30ff && u !== 0x30fb && u !== 0x30fc) || (u >= 0xff66 && u <= 0xff9d)) kana++;
+    if ((u >= 0x41 && u <= 0x5a) || (u >= 0x61 && u <= 0x7a) || (u >= 0xc0 && u <= 0x24f && u !== 0xd7 && u !== 0xf7) || (u >= 0xff21 && u <= 0xff5a && (u <= 0xff3a || u >= 0xff41))) latin++;
+    else if ((u >= 0x3041 && u <= 0x30ff && u !== 0x30fb && u !== 0x30fc) || (u >= 0xff66 && u <= 0xff9d)) kana++;
     else if ((u >= 0xac00 && u <= 0xd7a3) || (u >= 0x1100 && u <= 0x11ff) || (u >= 0x3130 && u <= 0x318f)) hangul++;
     else if ((u >= 0x4e00 && u <= 0x9fff) || (u >= 0x3400 && u <= 0x4dbf) || (u >= 0x20000 && u <= 0x2ffff)) {
       han++;
@@ -1060,9 +1170,13 @@ J.detectLang = (text) => {
       if (SCSET.has(c)) sc++;
     }
   }
+  // a CJK character carries about as much as a short word — weigh it ×3 against single Latin letters
+  const cjk = kana + hangul + han;
+  if (latin >= 6 && latin >= (latin + cjk * 3) * 0.9) return 'en';
   if (hangul >= 2 && hangul > kana) return 'ko';
   if (kana >= 2 || (kana > 0 && kana >= han * 0.03)) return 'ja';
-  if (han >= 2 && (tc || sc)) return tc >= sc ? 'zh-Hant' : 'zh-Hans';
+  // Han without kana is Chinese even when no distinctive form appears (the shared forms render fine in the TC faces)
+  if (han >= 2) return sc > tc ? 'zh-Hans' : 'zh-Hant';
   return 'ja';
 };
 /* project → the language actually used */
@@ -1126,7 +1240,7 @@ J.LANG_FACES = {
 /* the language fonts are drawn in right now (set by the planner / renderer from plan.lang) */
 J.lang = 'ja';
 J.setLang = (l) => {
-  l = J.LANG_FACES[l] ? l : 'ja';
+  l = J.LANG_FACES[l] || l === 'en' ? l : 'ja';               // en: the styles' own faces (they all have Latin glyphs)
   if (l === J.lang) return;
   J.lang = l;
   if (J.glyphs) J.glyphs.clear();
@@ -1155,7 +1269,7 @@ J.langBaseFaces = (keys) => {
   return out;
 };
 /* segmenter locale for chunking */
-J.segLocale = () => (J.lang === 'zh-Hant' ? 'zh-Hant' : J.lang === 'zh-Hans' ? 'zh-Hans' : J.lang === 'ko' ? 'ko' : 'ja');
+J.segLocale = () => (J.lang === 'zh-Hant' ? 'zh-Hant' : J.lang === 'zh-Hans' ? 'zh-Hans' : J.lang === 'ko' ? 'ko' : J.lang === 'en' ? 'en' : 'ja');
 })();
 
 /* ============================================================
@@ -1167,6 +1281,42 @@ J.segLocale = () => (J.lang === 'zh-Hant' ? 'zh-Hant' : J.lang === 'zh-Hans' ? '
 J.PID = Object.freeze({ dx: 0, dy: 0, rot: 0, s: 1, st: 1, sdir: 0, a: 1 });
 J.PT = (dx = 0, dy = 0, rot = 0, s = 1, st = 1, sdir = 0, a = 1) => ({ dx, dy, rot, s, st, sdir, a });
 
+/* ---------- 文字整列 (typeset): set per plan by the planner / renderer (J.setTypeset) ----------
+   kana set a little tighter, particles smaller and the first character larger, Latin a little larger with a
+   small gap to Japanese. Only the size / advance of each glyph changes, so every layout keeps working. */
+J.TYPESET = false;
+J.setTypeset = on => { J.TYPESET = !!on; };
+const HIRA = /[ぁ-ゟ]/, KATA = /[゠-ヿㇰ-ㇿ]/, KANJI = /[㐀-鿿豈-﫿々〆]/, LATIN = /[A-Za-z0-9]/;
+const PARTICLES = 'はがをにでとのへも';
+const cls = ch => (!ch ? '' : LATIN.test(ch) ? 'L' : KANJI.test(ch) ? 'K' : KATA.test(ch) ? 'T' : HIRA.test(ch) ? 'H' : /\s/.test(ch) ? 'S' : 'P');
+function isParticle(arr, i) {
+  const ch = arr[i], prev = arr[i - 1], next = arr[i + 1];
+  if (!prev || PARTICLES.indexOf(ch) < 0 || prev === 'っ' || prev === 'ッ' || prev === 'ー') return false;
+  if (ch === 'を') return true;
+  const cp = cls(prev), cn = cls(next);
+  const nextOK = !next || cn === 'K' || cn === 'T' || cn === 'L' || cn === 'S' || cn === 'P';
+  return nextOK && cp !== 'S' && cp !== 'P' && !(cp === 'H' && cn === 'H');
+}
+/* per character: f = size factor, gap = extra space before it (in em) */
+J.typesetLine = (arr) => {
+  const out = arr.map(() => ({ f: 1, gap: 0, adv: 1 }));
+  if (!J.TYPESET) return out;
+  const content = arr.filter(c => !/\s/.test(c)).length;
+  let first = true;
+  arr.forEach((ch, i) => {
+    const c = cls(ch), o = out[i];
+    if (c === 'S') return;
+    if (c === 'H' || c === 'T') o.adv = J.isSmallKana(ch) ? 0.86 : ch === 'ー' ? 0.94 : 0.9;       // kana: set tighter
+    if (c === 'L') o.f = 1.08;
+    if ((c === 'H' || c === 'T') && content >= 3 && isParticle(arr, i)) o.f = 0.78;
+    if (first && content >= 3 && (c === 'K' || c === 'H' || c === 'T')) o.f = 1.18;               // 頭の字を大きく
+    first = false;
+    const pc = i > 0 ? cls(arr[i - 1]) : '';
+    if (i > 0 && pc !== 'S' && ((c === 'L') !== (pc === 'L')) && pc && pc !== 'P' && c !== 'P') o.gap = 0.2;   // 英字と日本語の間
+  });
+  return out;
+};
+
 /* layout: glyph centres relative to the item origin, in unscaled item space */
 J.layoutText = (it) => {
   const text = String(it.text ?? '');
@@ -1177,37 +1327,40 @@ J.layoutText = (it) => {
   const lead = (it.lead || 1.3) * size;
   let gi = 0;
   if (!vertical) {
-    const widths = lines.map(line => {
-      let w = 0; const arr = [...line];
-      arr.forEach((ch, i) => { w += J.metrics.adv(it.font, ch) * size + (i < arr.length - 1 ? track * size : 0); });
+    const sets = lines.map(line => { const arr = [...line]; return { arr, ts: J.typesetLine(arr) }; });
+    const widths = sets.map(({ arr, ts }) => {
+      let w = 0;
+      arr.forEach((ch, i) => { w += (J.metrics.adv(it.font, ch) * ts[i].adv * ts[i].f + ts[i].gap) * size + (i < arr.length - 1 ? track * size : 0); });
       return w;
     });
     const maxW = Math.max(1, ...widths);
-    lines.forEach((line, li) => {
-      const arr = [...line];
+    sets.forEach(({ arr, ts }, li) => {
       let x = it.align === 'left' ? 0 : it.align === 'right' ? -widths[li] : -widths[li] / 2;
       const y = (li - (lines.length - 1) / 2) * lead;
       arr.forEach((ch, ci) => {
-        const a = J.metrics.adv(it.font, ch) * size;
-        out.push({ ch, i: gi++, li, ci, n: arr.length, x: x + a / 2, y, w: a, h: size, r90: false, vx: 0, vy: 0 });
+        const t = ts[ci], a = J.metrics.adv(it.font, ch) * size * t.adv * t.f;
+        x += t.gap * size;
+        // smaller / larger glyphs keep the line's baseline
+        out.push({ ch, i: gi++, li, ci, n: arr.length, x: x + a / 2, y: y + (1 - t.f) * size * 0.36, w: a, h: size * t.f, r90: false, vx: 0, vy: 0, fs: t.f });
         x += a + track * size;
       });
     });
     out.W = maxW; out.H = lines.length * lead - (lead - size);
   } else {
-    const heights = lines.map(line => [...line].reduce((h, ch) => h + vAdv(it.font, ch, size) + track * size, 0) - track * size);
+    const sets = lines.map(line => { const arr = [...line]; return { arr, ts: J.typesetLine(arr) }; });
+    const heights = sets.map(({ arr, ts }) => arr.reduce((h, ch, i) => h + (vAdv(it.font, ch, size) * ts[i].adv * ts[i].f + ts[i].gap * size) + track * size, 0) - track * size);
     const maxH = Math.max(1, ...heights);
-    lines.forEach((line, li) => {
-      const arr = [...line];
+    sets.forEach(({ arr, ts }, li) => {
       let y = it.align === 'left' ? 0 : -heights[li] / 2;         // 'left' == top-aligned for vertical
       const x = -(li - (lines.length - 1) / 2) * lead;
       arr.forEach((ch, ci) => {
-        const a = vAdv(it.font, ch, size);
+        const t = ts[ci], a = vAdv(it.font, ch, size) * t.adv * t.f;
+        y += t.gap * size;
         const r90 = J.VERT_ROTATE.includes(ch) || /[A-Za-z0-9]/.test(ch);
         let vx = 0, vy = 0;
         if (J.isSmallKana(ch)) { vx = 0.11 * size; vy = -0.11 * size; }
         if ('、。，．'.includes(ch)) { vx = 0.3 * size; vy = -0.3 * size; }
-        out.push({ ch, i: gi++, li, ci, n: arr.length, x, y: y + a / 2, w: size, h: a, r90, vx, vy });
+        out.push({ ch, i: gi++, li, ci, n: arr.length, x, y: y + a / 2, w: size * t.f, h: a, r90, vx, vy, fs: t.f });
         y += a + track * size;
       });
     });
@@ -1272,7 +1425,7 @@ J.drawItem = (env, it) => {
   const ghostPass = env.pass !== 'main';
   if (ghostPass && it.ghost === false) return null;
   if (!it.text || it.size <= 0.5) return null;
-  if (!env.inLayer && env.allowFilter && !it.pieceFn && ((it.blur || 0) > 0.4 || (it.shadow && !ghostPass && (it.shadow.blur || 0) * (env.scale || 1) > 6))) {
+  if (!env.inLayer && !env.glyphLog && !env.hideText && env.allowFilter && !it.pieceFn && ((it.blur || 0) > 0.4 || (it.shadow && !ghostPass && (it.shadow.blur || 0) * (env.scale || 1) > 6))) {
     const r = drawItemLayered(env, it);
     if (r !== undefined) return r;
   }
@@ -1289,7 +1442,9 @@ J.drawItem = (env, it) => {
   if (it.skew) ctx.transform(1, 0, Math.tan(it.skew * J.DEG), 1, 0, 0);
   if (it.blend) ctx.globalCompositeOperation = it.blend;
   if (it.blur > 0.4 && env.allowFilter) ctx.filter = `blur(${(it.blur * env.scale).toFixed(1)}px)`;
-  ctx.font = J.fontCSS(it.font, size);
+  // 太さ (統一感): the lyric grows from a hairline to heavy on a variable face (Noto Sans / Serif JP)
+  const wg = env.cut && env.cut.weightGrow && !it.noWeight ? J.weightNow(env) : 0;
+  ctx.font = wg ? J.varFontCSS(it.font, size, wg) : J.fontCSS(it.font, size);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   let grad = null;
   if (!ghostPass && it.gradient && fill) {
@@ -1317,13 +1472,21 @@ J.drawItem = (env, it) => {
     const a = baseAlpha * (c && c.a != null ? c.a : 1);
     if (a <= 0.002) continue;
     const ch = (c && c.ch) || g.ch;
-    const cs = c && c.s != null ? c.s : 1;
+    const cs = (c && c.s != null ? c.s : 1) * (g.fs || 1);
     const gx = g.x * sx + g.vx * sx + (c ? c.dx || 0 : 0);
     const gy = g.y * sy + g.vy * sy + (c ? c.dy || 0 : 0);
     const crot = (c ? c.rot || 0 : 0) + (g.r90 ? 90 : 0);
     const csx = sx * cs * (c && c.sx ? c.sx : 1), csy = sy * cs * (c && c.sy ? c.sy : 1);
     const gcol = (!ghostPass && c && c.color) || col;
-    boxes.push({ x: gx, y: gy, w: g.w * sx * cs, h: g.h * sy * cs });
+    boxes.push({ x: gx, y: gy, w: g.w * sx * cs / (g.fs || 1), h: g.h * sy * cs / (g.fs || 1) });
+    // モーフ: record where each glyph ends up (device space) / leave the glyphs out while the morph draws them
+    if (env.glyphLog && !ghostPass) {
+      ctx.save(); ctx.translate(gx, gy); if (crot) ctx.rotate(crot * J.DEG); if (csx !== 1 || csy !== 1) ctx.scale(csx, csy);
+      const T = ctx.getTransform(); ctx.restore();
+      env.glyphLog.push({ ch, m: [T.a, T.b, T.c, T.d, T.e, T.f], font: ctx.font, px: size, color: typeof gcol === 'string' ? gcol : (it.color || '#fff'), a: a * (fill ? fillA : 1),
+        stroke: it.stroke > 0 ? it.stroke : 0, strokeColor: typeof sCol === 'string' ? sCol : null, fill: fill && !(c && c.outline) });
+    }
+    if (env.hideText) continue;
     // ---- piece mode ----
     if (it.pieceFn && fill && !(c && c.ch) && !it.gradient && dash == null && !(c && (c.clipY || c.clipX || c.outline))) {
       if (drawPieces(env, it, g, ch, gx, gy, crot, csx, csy, gcol, a, pxScale * cs)) continue;
@@ -1366,6 +1529,18 @@ J.drawItem = (env, it) => {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   for (const b of boxes) { x0 = Math.min(x0, b.x - b.w / 2); x1 = Math.max(x1, b.x + b.w / 2); y0 = Math.min(y0, b.y - b.h / 2); y1 = Math.max(y1, b.y + b.h / 2); }
   return { x0: it.x + x0, y0: it.y + y0, x1: it.x + x1, y1: it.y + y1, boxes, cx: it.x, cy: it.y };
+};
+
+/* 太さ: growth 0..1 of the current cut (never exactly 0, so it also means "on"); eased, over the first half of the cut */
+J.weightNow = (env) => {
+  const span = Math.max(0.5, Math.min(1.4, env.cut.dur * 0.5));
+  const k = J.clamp(((env.ltb ?? env.lt) || 0) / span);
+  return 1e-3 + (1 - Math.pow(1 - k, 3)) * (1 - 1e-3);
+};
+J.varFontCSS = (key, px, e) => {
+  const f = J.FONTS[key] || {}, serif = f.kind === 'mincho';
+  const w = Math.round(serif ? 200 + e * 700 : 100 + e * 800);
+  return `${w} ${px.toFixed(2)}px ${serif ? '"Noto Serif JP"' : '"Noto Sans JP"'},${f.fb || 'sans-serif'}`;
 };
 
 /* returns true if pieces were drawn (i.e. not at rest) */
@@ -2785,6 +2960,13 @@ J.LAYOUTS = {
     render(env) {
       const { W, H, sc } = env, P = env.cut.params, lb = env.ltb;
       const fs = J.clamp(H * 0.022, 12, 22);
+      if (P.variant === 'quiet') {                        // [간주] (upstream): nothing but the song title on long interludes
+        if (P.showTitle && P.titleText) {
+          const a = J.clamp(env.lt / 0.8) * J.clamp((env.cut.dur - env.lt) / 0.8);
+          env.draw({ text: P.titleText, font: env.st.fonts.body[0], size: fs * 1.1, x: W / 2, y: H * 0.88, track: 0.3, color: sc.sub, alpha: a, ghost: false });
+        }
+        return { x0: W * 0.3, x1: W * 0.7, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2, boxes: [] };
+      }
       // 첫 간주에 크레딧: song title large + artist, over the rings
       if (P.variant === 'credit') {
         for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.26 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k)), null, sc.sub, 1.2, 0.35, false);
@@ -3122,6 +3304,10 @@ J.defaultProject = () => ({
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
   lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' — picks the faces each font key is drawn with
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
+  unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
+  typeset: false,                 // 文字整列: kana tracking, small particles / big first character, Latin sizing, 0.2 s lead, restraint
+  centerDir: 'tb',                // 中央を空ける on tall frames: 'tb' = top / bottom, 'lr' = left / right
+  centerFree: false,              // 中央を空ける: lay the cuts out in side bands (left / right or top / bottom) around a character
   seed: 20260922,
   aspect: '16:9', res: 1080, fps: 24,
   fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', interCount: 'auto', interCredit: false, bgSwitch: 0.35, react: 0 },
@@ -3143,15 +3329,17 @@ J.stepDur = (fx, fps) => { const k = J.komaOf(fx); return k > 0 ? 1 / k : 1 / (f
 J.parseLyrics = (raw) => {
   const lines = []; const meta = {};
   let pendingGap = false, pendingBreak = null, outro = null;
-  for (let src of String(raw || '').replace(/\r/g, '').split('\n')) {
-    const s0 = src.trim();
+  const rows = String(raw || '').replace(/\r/g, '').split('\n');
+  for (let ri = 0; ri < rows.length; ri++) {
+    const s0 = rows[ri].trim();
     if (!s0) { if (lines.length) pendingGap = true; continue; }
     if (s0.startsWith('#')) continue;
     const mm = s0.match(/^\[(ti|ar|al|by|offset):(.*)\]$/i);
     if (mm) { meta[mm[1].toLowerCase()] = mm[2].trim(); continue; }
     // [간주] / [간주 8] / [간주 8초] / [간주 8 | 문구] / [01:20.00][간주] : interlude before the next line
     // (N = extra seconds for auto timing, 문구 = small caption, timestamp = the previous line ends and the interlude starts there)
-    const bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:간주|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
+    // upstream spellings are accepted too: [間奏] [间奏] [interlude] [instrumental] [inst] [간주: 8]
+    const bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[\s*(?:간주|間奏|间奏|interlude|instrumental|inst)(?:\s*[:：]?\s*(\d+(?:\.\d+)?)\s*(?:초|秒|sec|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
     if (bm) { pendingBreak = { sec: bm[3] != null ? +bm[3] : null, at: bm[1] != null ? +bm[1] * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] || null }; continue; }
     // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
     const om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
@@ -3190,7 +3378,7 @@ J.parseLyrics = (raw) => {
     }
     if (!s) continue;
     outro = null; // [마무리] only counts after the last line
-    const base = { text: s, note, impact, emph, manual, gapBefore: pendingGap, breakBefore: pendingBreak };
+    const base = { text: s, note, impact, emph, manual, gapBefore: pendingGap, breakBefore: pendingBreak, src: ri };
     pendingGap = false; pendingBreak = null;
     // a repeated line ([00:10][00:40]…) reuses its word times shifted to each start
     if (times.length) times.forEach(t => lines.push(Object.assign({}, base, { lrc: t }, marks ? { marks: marks.map(k => ({ t: k.t + t - times[0], ci: k.ci })) } : {})));
@@ -3262,6 +3450,21 @@ J.chunkText = (text) => {
   return out.length ? out : [text];
 };
 
+/* English lyrics: cut by short phrases, not word by word (a Japanese chunk holds about as much as 2–3 English words) */
+J.phraseChunks = (words) => {
+  const out = []; let cur = [], letters = 0;
+  const flush = () => { if (cur.length) out.push(cur.join(' ')); cur = []; letters = 0; };
+  for (const w of words) {
+    const n = (w.match(/[A-Za-z\u00c0-\u024f0-9]/g) || []).length;
+    cur.push(w); letters += n;
+    if (letters >= 9 || cur.length >= 3 || /[,.;:!?]$/.test(w)) flush();
+  }
+  flush();
+  // a lone short word at the end joins the previous phrase
+  if (out.length >= 2 && out[out.length - 1].replace(/[^A-Za-z]/g, '').length <= 4) { const last = out.pop(); out[out.length - 1] += ' ' + last; }
+  return out.length ? out : words;
+};
+
 /* ---------------- timing ---------------- */
 J.computeTiming = (project, parsed, audio) => {
   const T = project.timing || {};
@@ -3273,8 +3476,8 @@ J.computeTiming = (project, parsed, audio) => {
   lines.forEach((l, i) => {
     const man = T.lineTimes && T.lineTimes[i] != null ? +T.lineTimes[i] : null;
     let s;
-    if (allLrc) s = l.lrc;
-    else if (man != null && isFinite(man)) s = man;
+    if (man != null && isFinite(man)) s = man;          // a hand-set time (typed, tapped, dragged) wins over the LRC tag
+    else if (allLrc) s = l.lrc;
     else {
       if (i > 0) {
         const n = [...lines[i - 1].text].length;
@@ -3312,20 +3515,35 @@ J.plan = (project, audio) => {
   const title = project.title || parsed.meta.ti || '';
   const artist = project.artist || parsed.meta.ar || '';
   const tm = J.computeTiming(project, parsed, audio);
+  // 文字整列: the lyrics appear 0.2 s before the voice (reading ahead feels in time)
+  if (project.typeset) {
+    const LEAD = 0.2;
+    tm.starts = tm.starts.map(t => Math.max(0, t - LEAD));
+    tm.ends = tm.ends.map((t, i) => Math.max(tm.starts[i] + 0.3, t - LEAD));
+  }
   const [W, H] = J.designSize(project.aspect);
   // enabled map: anything not explicitly switched off is on (new pack entries appear enabled in old projects);
   // then the 追加分 / 和風 switches decide what random picks may use (a per-line override still works)
   const en = {};
   for (const g of J.GROUP_KEYS) { en[g] = {}; const src = (project.enabled || {})[g] || {}; for (const k of J.order(g)) en[g][k] = src[k] !== false && (!J.randomOk || J.randomOk(project, g, k)); }
+  // 中央を空ける (キャラクター用): every cut is laid out in a side band — left / right on wide frames, top / bottom on tall
+  // ones — alternating line by line; the centre keeps only the full-frame background and screen effects
+  const zones = project.centerFree ? J.sideZones(W, H, project.centerDir) : null;
+  // the lyric of every cut is split in two: the first half in band 0 (left / top), the second in band 1 (right / bottom)
+  const zoneOf = () => (zones ? Object.assign({}, zones[0]) : null);
+  if (zones && en.bg) en.bg.bigChar = false;               // the one background that draws the lyric itself (big, centred)
   const plan = {
     version: 1, generator: 'JIZURA', title, artist, W, H, fps: project.fps || 24,
     duration: tm.duration, styleKey: project.style, style: st, fx, seed: project.seed,
     lines: [], cuts: [], events: [], beats: audio && audio.beats ? audio.beats.slice() : [],
     hud: fx.hud === 'on' ? true : fx.hud === 'off' ? false : !!st.hud,
     keyBg: J.keyMode ? J.keyMode(project) : null,   // 'green' | 'black' | null — 合成用の背景
+    centerFree: !!zones, zones,
+    typeset: !!project.typeset, unify: !!project.unify,
     lang: J.resolveLang ? J.resolveLang(project) : 'ja',   // 歌詞の言語 (auto → detected)
   };
   if (J.setLang) J.setLang(plan.lang);                     // chunking + measuring below use this language
+  if (J.setTypeset) J.setTypeset(plan.typeset);
   const beats = plan.beats;
   const snap = (t) => {
     if (!beats.length || !(project.timing && project.timing.snap)) return t;
@@ -3347,11 +3565,27 @@ J.plan = (project, audio) => {
     plan.cuts.push(makeCut({ text: title, note: artist, lineText: title, line: -1, start: 0.1, end: firstStart - 0.04, layout: 'title', enter: rng.pick(['blur', 'type', 'wipe', 'assemble']), exit: rng.pick(['blur', 'drift', 'wipe']), hold: 'still', params: J.LAYOUTS.title.plan(rng, {}, st), decor: [], scheme: 0, seed: J.h(project.seed, 999, 1) }));
   }
 
+  // 統一感: sections, repeated lines, キメ lines and the per-section palettes (see makeUnify below)
+  const U = plan.unify ? makeUnify(parsed.lines, { st, en, fx, history, lang: plan.lang, seed: project.seed }) : null;
   parsed.lines.forEach((ln, li) => {
     const s = tm.starts[li], e = tm.ends[li];
     const ov = (project.overrides || {})[li] || {};
     const lineSeed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, li + 1, ov.seed | 0);
     const rng = J.rng(lineSeed);
+    if (ln.interlude) {                                    // [間奏]: background, decorations and screen effects only
+      plan.lines.push({ index: li, src: ln.src, text: '', interlude: true, secs: ln.secs, start: s, end: e, visEnd: e, note: null, impact: false, emph: [], chunks: [], seed: lineSeed });
+      const bg = ov.bg && J.BG[ov.bg] ? ov.bg : pickBg(rng, st, en, fx, bgHistory); bgHistory.push(bg);
+      const dur = e - s, showTitle = dur >= 6 && !!(title || artist);
+      plan.cuts.push(makeCut({ text: '', lineText: '', line: li, start: s, end: e, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.4, outDur: 0.4,
+        params: { variant: 'quiet', showTitle, titleText: showTitle ? [title, artist].filter(Boolean).join('  /  ') : '' }, decor: Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, Object.assign({}, fx, { decor: Math.max(0.6, fx.decor) }), 'interlude', history),
+        scheme: schemeIdx, seed: J.h(lineSeed, 405), bg, bgP: J.BG[bg] && J.BG[bg].plan ? J.BG[bg].plan(rng, st) : {}, cam: 'push', camP: {} }));
+      if (en.fx == null || en.fx.chroma !== false) addEvent(s, 'chroma', 1 + fx.chroma, 0.25);
+      for (let t = s + 1.2; t < e - 0.8; t += J.clamp(dur / 4, 1.6, 3.2)) {          // a few effect accents so a long interlude keeps moving
+        const pick = pickFx(rng, st, en, fx, false, fxHistory, 'mid');
+        if (pick) { const D2 = J.FXE[pick]; addEvent(t, pick, (D2.amp || 1) * 0.6, (D2.dur || 3) / 24); fxHistory.push(pick); }
+      }
+      return;
+    }
     const n = [...ln.text.replace(/\s+/g, '')].length;
     let visEnd = Math.min(e, s + Math.max(3.6, n * 0.5 + 1.2));
     // before a marked [간주] the line only keeps its natural length, the rest of the gap becomes the interlude
@@ -3367,20 +3601,27 @@ J.plan = (project, audio) => {
     const mk = ln.marks && ln.marks.length ? ln.marks : null;
     if (mk) visEnd = Math.min(e, Math.max(visEnd, mk[mk.length - 1].t + 0.4));
     const D = visEnd - s;
-    plan.lines.push({ index: li, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed });
-    const chunks = ln.manual || J.chunkText(ln.text);
+    plan.lines.push({ index: li, src: ln.src, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed });
+    const chunks = ln.manual || (plan.lang === 'en' ? J.phraseChunks(J.chunkText(ln.text)) : J.chunkText(ln.text));
     plan.lines[li].chunks = chunks;
     const L = J.lerp(1.3, 0.5, fx.density);
     let nC = Math.round(D / L);
     const maxC = chunks.length + (chunks.length >= 2 && D > 2.0 ? 1 : 0);
     nC = J.clamp(nC, 1, Math.max(1, maxC));
-    if (ov.single) nC = 1;
+    const ovAny = Object.keys(ov).some(k2 => !['lock', 'lockedSeed', 'seed'].includes(k2));
+    const kime = !!(U && U.kime.has(li) && !ov.cuts);
+    if (ov.single || kime) nC = 1;
+    if (zones) nC = Math.max(1, Math.min(nC, Math.floor(chunks.length / 2)));   // 中央を空ける: each cut is split in two, so keep ≥ 2 words per cut
+    // カット数の指定 (per line): exactly that many cuts — chunks are split further when the line has fewer
+    const fixedN = ov.cuts > 0 ? Math.min(12, ov.cuts | 0) : 0;
+    let chunks2 = chunks;
+    if (fixedN) { nC = fixedN; chunks2 = splitToCount(chunks, fixedN); }
     // groups of chunks
     let groups;
-    const nG = Math.min(nC, chunks.length);
+    const nG = Math.min(nC, chunks2.length);
     if (nG <= 1) groups = [ln.text];
-    else groups = partition(chunks, nG).map(g => g.join(/[A-Za-z]/.test(g.join('')) ? ' ' : ''));
-    const recap = !mk && nC > groups.length && groups.length >= 2;
+    else groups = partition(chunks2, nG).map(g => g.join(/[A-Za-z]/.test(g.join('')) ? ' ' : ''));
+    const recap = !mk && !fixedN && nC > groups.length && groups.length >= 2;
     const units = groups.map(g => ({ text: g, w: [...g].length + 1.6 }));
     if (recap) units.push({ text: ln.text, w: (units.reduce((a, u) => a + u.w, 0) / units.length) * 1.25, recap: true });
     const tot = units.reduce((a, u) => a + u.w, 0);
@@ -3391,7 +3632,7 @@ J.plan = (project, audio) => {
     if (uci) for (let k = 1; k < units.length; k++) bounds[k] = markTime(mk, uci[k], [...ln.text].length, visEnd);
     for (let k = 1; k < bounds.length - 1; k++) bounds[k] = J.clamp(uci ? bounds[k] : snap(bounds[k]), bounds[k - 1] + 0.22, bounds[k + 1] - 0.22);
     // scheme per line
-    if (nSchemes > 1 && li > 0 && rng.chance(fx.bgSwitch * (ln.impact ? 1.8 : 1))) schemeIdx = (schemeIdx + 1 + rng.int(0, nSchemes - 2)) % nSchemes;
+    if (nSchemes > 1 && li > 0 && (U ? U.sectionStart(li) && rng.chance(0.25 + fx.bgSwitch) : rng.chance(fx.bgSwitch * (ln.impact ? 1.8 : 1)))) schemeIdx = (schemeIdx + 1 + rng.int(0, nSchemes - 2)) % nSchemes;
     const emphLine = ln.impact || ln.emph.length > 0;
     // background graphic: chosen per line, occasionally re-rolled per cut
     let lineBg = ov.bg && J.BG[ov.bg] ? ov.bg : pickBg(rng, st, en, fx, bgHistory);
@@ -3399,39 +3640,71 @@ J.plan = (project, audio) => {
     let lineBgP = J.BG[lineBg] && J.BG[lineBg].plan ? J.BG[lineBg].plan(rng, st) : {};
     units.forEach((u, k) => {
       const cs = bounds[k], ce = bounds[k + 1], dur = ce - cs;
-      const txt = u.text;
-      const nn = [...txt.replace(/\s+/g, '')].length;
-      const emph = ln.impact && (k === 0 || u.recap) || ln.emph.some(w => txt.includes(w));
-      const layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, H > W);
+      const halves = zones ? splitHalf(u.text, plan.lang) : null;               // 中央を空ける: 「花が」｜「咲いた」
+      const txt = halves ? halves[0] : u.text;
+      const nn = Math.max(...(halves || [u.text]).map(t => [...t.replace(/\s+/g, '')].length));
+      const emph = kime || ln.impact && (k === 0 || u.recap) || ln.emph.some(w => u.text.includes(w));
+      const Z = zoneOf(li), LW = Z ? Z.w : W, LH = Z ? Z.h : H;       // the frame this cut is laid out in
+      const UU = U && !ovAny ? U : null;                              // per-line settings always win over 統一感
+      let layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, LH > LW);
+      if (UU) layout = UU.layout(li, layout, { nn, dur, emph, kime, rng, portrait: LH > LW, recap: u.recap });
       let enter = ov.enter && J.ENTER[ov.enter] ? ov.enter : pickEnter(rng, st, en, layout, dur, history, emph, nn);
       let exit = ov.exit && J.EXIT[ov.exit] ? ov.exit : pickExit(rng, st, en, layout, dur, k === units.length - 1, history);
-      const hold = ov.hold && J.HOLD[ov.hold] ? ov.hold : pickHold(rng, en, fx, history);
-      let inDur = J.clamp(dur * 0.36, 0.12, 0.6);
-      if (enter === 'type') inDur = J.clamp(nn * 0.055 + 0.1, 0.15, dur * 0.65);
-      if (enter === 'assemble') inDur = J.clamp(dur * 0.45, 0.22, 0.75);
-      if (J.ENTER[enter] && J.ENTER[enter].inDur) inDur = J.ENTER[enter].inDur(dur, nn);
-      if (enter === 'cut') inDur = 0.12;
-      let outDur = exit === 'cut' ? 0 : J.clamp(dur * 0.3, 0.14, 0.55);
-      if (['explode', 'fall', 'drift'].includes(exit)) outDur = J.clamp(dur * 0.38, 0.25, 0.7);
-      if (J.EXIT[exit] && J.EXIT[exit].outDur) outDur = J.EXIT[exit].outDur(dur, nn);
-      if (inDur + outDur > dur * 0.92) { const f = dur * 0.92 / (inDur + outDur); inDur *= f; outDur *= f; }
+      let hold = ov.hold && J.HOLD[ov.hold] ? ov.hold : pickHold(rng, en, fx, history);
+      let weightGrow = false;
+      if (UU) {
+        enter = UU.enter(li, enter, { layout, dur, emph, kime, rng, nn });
+        exit = UU.exit(li, exit, { layout, dur, kime, rng });
+        hold = UU.hold(li, hold, { kime, rng });
+        weightGrow = UU.weightGrow({ kime, nn, rng, dur });
+        if (weightGrow) enter = UU.softEnter(enter, rng);
+      }
+      const durs = (en2, ex2) => {
+        let a = J.clamp(dur * 0.36, 0.12, 0.6);
+        if (en2 === 'type') a = J.clamp(nn * 0.055 + 0.1, 0.15, dur * 0.65);
+        if (en2 === 'assemble') a = J.clamp(dur * 0.45, 0.22, 0.75);
+        if (J.ENTER[en2] && J.ENTER[en2].inDur) a = J.ENTER[en2].inDur(dur, nn);
+        if (en2 === 'cut') a = 0.12;
+        let b = ex2 === 'cut' ? 0 : J.clamp(dur * 0.3, 0.14, 0.55);
+        if (['explode', 'fall', 'drift'].includes(ex2)) b = J.clamp(dur * 0.38, 0.25, 0.7);
+        if (J.EXIT[ex2] && J.EXIT[ex2].outDur) b = J.EXIT[ex2].outDur(dur, nn);
+        if (a + b > dur * 0.92) { const f = dur * 0.92 / (a + b); a *= f; b *= f; }
+        return [a, b];
+      };
+      let [inDur, outDur] = durs(enter, exit);
       let sch = schemeIdx;
-      if (nSchemes > 1 && k > 0 && rng.chance(0.12 * fx.bgSwitch)) sch = (schemeIdx + 1) % nSchemes;
-      const LD = J.LAYOUTS[layout];
-      const params = LD.plan(rng, { text: txt, n: nn, W, H, dur }, st);
-      const decor = Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, fx, layout, history);
-      const treat = ov.treat && J.TREAT[ov.treat] ? ov.treat : pickTreat(rng, st, en, fx, LD, emph, history, !!mk);
-      const treatP = J.TREAT[treat].plan ? J.TREAT[treat].plan(rng, st) : {};
-      if (!ov.bg && k > 0 && rng.chance(0.18 * fx.bgSwitch + 0.04)) { lineBg = pickBg(rng, st, en, fx, bgHistory); lineBgP = J.BG[lineBg].plan ? J.BG[lineBg].plan(rng, st) : {}; }
-      const bg = LD.busy && !(J.BG[lineBg] && J.BG[lineBg].subtle) ? 'none' : lineBg;
-      const cam = ov.cam && J.CAMERA[ov.cam] ? ov.cam : pickCam(rng, st, en, fx, LD, emph, history);
-      const camP = J.CAMERA[cam].plan ? J.CAMERA[cam].plan(rng, st) : {};
+      if (!U && nSchemes > 1 && k > 0 && rng.chance(0.12 * fx.bgSwitch)) sch = (schemeIdx + 1) % nSchemes;
+      let LD = J.LAYOUTS[layout];
+      let params = LD.plan(rng, { text: txt, n: nn, W: LW, H: LH, dur }, st);
+      let decor = Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, fx, layout, history);
+      let treat = ov.treat && J.TREAT[ov.treat] ? ov.treat : pickTreat(rng, st, en, fx, LD, emph, history, !!mk);
+      if (UU) { decor = UU.decor(li, decor, { layout, kime, rng }); treat = UU.treat(li, treat, { kime, rng, LD }); }
+      let treatP = J.TREAT[treat].plan ? J.TREAT[treat].plan(rng, st) : {};
+      if (!ov.bg && k > 0 && !U && rng.chance(0.18 * fx.bgSwitch + 0.04)) { lineBg = pickBg(rng, st, en, fx, bgHistory); lineBgP = J.BG[lineBg].plan ? J.BG[lineBg].plan(rng, st) : {}; }
+      let bg = LD.busy && !(J.BG[lineBg] && J.BG[lineBg].subtle) ? 'none' : lineBg;
+      let cam = ov.cam && J.CAMERA[ov.cam] ? ov.cam : pickCam(rng, st, en, fx, LD, emph, history);
+      if (UU) cam = UU.cam(li, cam, { kime, emph, rng });
+      let camP = J.CAMERA[cam].plan ? J.CAMERA[cam].plan(rng, st) : {};
+      let cutSeed = J.h(lineSeed, k, 17);
+      // 統一感: a line that comes back (サビ etc.) is shown exactly as the first time
+      const again = UU ? UU.again(li, k, txt) : null;
+      if (again) {
+        ({ layout, enter, exit, hold, params, decor, treat, treatP, cam, camP, weightGrow } = again);
+        sch = again.scheme; cutSeed = again.seed; LD = J.LAYOUTS[layout];
+        if (again.bg && again.bg !== 'none') { bg = again.bg; lineBgP = again.bgP; lineBg = bg; }
+        [inDur, outDur] = durs(enter, exit);
+      }
       // cut-to-cut transition (replaces the previous cut's exit and this cut's entrance)
       const prevCut = plan.cuts[plan.cuts.length - 1];
-      let trans = null, transP = {}, transDur = 0;
+      let trans = null, transP = {}, transDur = 0, morph = null;
       const canTrans = prevCut && Math.abs(prevCut.end - cs) < 0.06 && prevCut.layout !== 'interlude' && dur > 0.5;
-      if (canTrans) {
+      // 統一感: モーフ — the next part of the same line grows out of this one (shared characters glide, the rest melts)
+      if (canTrans && UU && k > 0 && !kime && (again ? again.morph : rng.chance(u.recap ? 0.85 : 0.4))) {
+        morph = { dur: J.clamp(dur * 0.45, 0.28, 0.6) };
+        enter = 'cut'; inDur = 0.12; prevCut.exit = 'cut'; prevCut.outDur = 0;
+      } else if (canTrans) {
         trans = ov.trans && J.TRANS[ov.trans] ? ov.trans : pickTrans(rng, st, en, fx, emph, history);
+        if (trans && UU) trans = UU.trans(li, trans, { rng });
         if (trans) {
           const TD = J.TRANS[trans];
           transDur = J.clamp(TD.dur || 0.35, 0.12, Math.min(0.6, dur * 0.45));
@@ -3440,14 +3713,22 @@ J.plan = (project, audio) => {
           prevCut.exit = 'cut'; prevCut.outDur = 0;
         }
       }
-      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: J.h(lineSeed, k, 17), emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
-        treat, treatP, bg, bgP: bg === lineBg ? lineBgP : {}, cam, camP, trans, transP, transDur });
+      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: cutSeed, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
+        treat, treatP, bg, bgP: bg === lineBg ? lineBgP : {}, cam, camP, trans, transP, transDur, zone: Z });
       // karaoke sync: [time since cut start, share of this cut's text already sung]
       if (uci && !u.recap) {
         const N = [...ln.text].length, c0 = uci[k], c1 = k + 1 < units.length ? uci[k + 1] : N, span = Math.max(1, c1 - c0);
         cut.sync = [[markTime(mk, c0, N, visEnd) - cs, 0]].concat(mk.filter(q => q.ci > c0 && q.ci < c1).map(q => [q.t - cs, (q.ci - c0) / span]), [[markTime(mk, c1, N, visEnd) - cs, 1]]);
       }
+      if (kime) cut.kime = true;
+      if (weightGrow) cut.weightGrow = true;
+      if (morph) cut.morph = morph;
+      if (UU) UU.remember(li, k, txt, cut);
+      if (zones) splitCut(cut, halves, zones, st, dur);
+      // 文字整列: effects don't pile up — one decoration, no text treatment on top of it
+      if (plan.typeset) { cut.decor = cut.decor.slice(0, 1); if (cut.decor.length && cut.treat !== 'none') { cut.treat = 'none'; cut.treatP = {}; } }
       plan.cuts.push(cut);
+      const evMark = plan.events.length;
       history.push({ layout, enter, exit, hold, treat, cam, trans, decor: decor.map(d => d.id) });
       // events at cut start
       // events at cut start — durations are on a 24fps timebase so every output rate looks the same
@@ -3458,7 +3739,11 @@ J.plan = (project, audio) => {
       if (fxOn('slice') && rng.chance(g * 0.5 + (emph ? 0.3 : 0))) addEvent(cs, 'slice', 0.6 + rng.range(0, 0.8) * g + (emph ? 0.5 : 0), rng.pick([2, 3, 4]) * F);
       if (fxOn('block') && rng.chance(g * 0.22)) addEvent(cs + rng.range(0, 0.05), 'block', 0.5 + g, rng.pick([2, 4]) * F);
       if (fxOn('shake') && (emph || rng.chance(fx.motion * 0.18))) addEvent(cs, 'shake', (emph ? 1 : 0.5) * fx.motion, 0.3);
-      if (fxOn('flash') && fx.flash && (ln.impact && k === 0)) addEvent(cs, 'flash', 1, 3 * F);
+      if (fxOn('flash') && fx.flash && (ln.impact && k === 0 || kime)) addEvent(cs, 'flash', 1, 3 * F);
+      if (kime) {                                  // キメ: a hard accent where the line lands
+        if (fxOn('zoom')) addEvent(cs, 'zoom', 1.1, 0.25);
+        if (fxOn('shake')) addEvent(cs + 0.04, 'shake', 1.1 * Math.max(0.5, fx.motion), 0.35);
+      }
       if (fxOn('invert') && rng.chance(0.035 * g)) addEvent(cs, 'invert', 1, 2 * F);
       if (fxOn('zoom') && (emph && rng.chance(0.6) || rng.chance(0.06 * fx.motion))) addEvent(cs, 'zoom', 0.7 + 0.5 * fx.motion, 0.22);
       if (fxOn('mosaic') && rng.chance(0.04 * g)) addEvent(cs, 'mosaic', 1, 3 * F);
@@ -3469,6 +3754,12 @@ J.plan = (project, audio) => {
         if (pick) { const D2 = J.FXE[pick]; const d = (D2.dur || 4) * F; addEvent(cs - (D2.pre ? D2.pre * F : 0), pick, (D2.amp || 1) * (0.7 + 0.5 * g + (emph ? 0.3 : 0)), d); fxHistory.push(pick); }
       }
       if (dur > 1.1) { const pick = pickFx(rng, st, en, fx, emph, fxHistory, 'mid'); if (pick) { const D2 = J.FXE[pick]; addEvent(cs + rng.range(0.4, 0.75) * dur, pick, (D2.amp || 1) * (0.5 + 0.4 * g), (D2.dur || 3) * F); } }
+      // 文字整列: at most one screen effect per cut besides the colour split (the キメ line keeps its accents)
+      if (plan.typeset && !cut.kime) {
+        const mine = plan.events.splice(evMark);
+        let extra = 0;
+        for (const e of mine) if (e.type === 'chroma' || e.type === 'shake' && emph || extra++ < 1) plan.events.push(e);
+      }
     });
     // interlude in long gaps, or wherever the lyrics mark one with [간주]
     const nextStart = li < parsed.lines.length - 1 ? tm.starts[li + 1] : null;
@@ -3511,17 +3802,192 @@ J.plan = (project, audio) => {
     }
   }
   plan.cuts.sort((a, b) => a.start - b.start);
-  plan.cuts.forEach((c, i) => { c.index = i; });
+  plan.cuts.forEach((c, i) => {
+    c.index = i;
+    if (!zones || c.zone) return;
+    if (c.layout === 'interlude') { c.params = Object.assign({}, c.params, { showTitle: false }); return; }   // no lyric: the whole frame
+    c.zone = zoneOf(c.line);
+  });
   plan.events.sort((a, b) => a.t - b.t);
   plan.energy = audio && audio.energy ? audio.energy : null;
   plan.energyRate = audio && audio.energyRate ? audio.energyRate : 0;
   return plan;
 };
 
+/* ---------- 統一感 (unify): the conventions of a hand-made lyric video ----------
+   · each part (a block between blank lines) keeps a small palette of layouts / motions / camera / decorations,
+     so the part reads as one idea; a new part may bring a new palette and colour scheme
+   · a line that comes back (サビ) is shown exactly as it was the first time
+   · directional moves alternate (left ↔ right, up ↔ down), strong moves are kept for the lines that matter
+   · キメ: lines ending in ! — or, when none is marked, the first line of a part that repeats — get one big cut
+   · モーフ between the parts of a line, and 太さ (thin → bold) now and then */
+const DIR_PAIRS = { enter: [['slideL', 'slideR'], ['riseMask', 'dropMask'], ['trackIn', 'trackOut'], ['flipX', 'flipY']],
+  exit: [['slideOutL', 'slideOutR'], ['sinkMask', 'riseOut'], ['flipOutX', 'flipOutY']],
+  cam: [['panL', 'panR'], ['tiltUp', 'tiltDown'], ['dollyIn', 'pullOut']] };
+const STRONG = { enter: ['bounceBig', 'whip', 'spin', 'slingshot', 'crumple', 'stamp', 'zoom', 'glitchIn', 'scramble', 'spiralIn', 'rollIn', 'shuffle', 'windBlown', 'matrixRain', 'stopMotion', 'splitFlap'],
+  cam: ['earthquake', 'shakeHard', 'crashZoom', 'barrelRoll', 'whipIn', 'snapPan', 'vertigo', 'roll', 'spiralIn', 'jelly', 'bounce', 'beatPunch', 'stepZoom'] };
+const KIME = { layout: ['huge', 'huge', 'huge', 'columnsBig', 'columnsBig', 'halftoneBig', 'center'], enter: ['stamp', 'zoom', 'bounceBig', 'overexpose', 'slingshot', 'blur'],
+  exit: ['zoomThrough', 'blur', 'shrink', 'zoomFar'], hold: ['still', 'pulse', 'heartbeat'], cam: ['beatPunch', 'crashZoom', 'dollyIn', 'push'] };
+const SOFT_ENTER = ['blur', 'fadeStagger', 'trackIn', 'blurStagger', 'cut'];
+function makeUnify(lines, C) {
+  const { st, en, fx, history } = C;
+  const norm = t => String(t || '').replace(/[\s、。，．,.!！?？…・「」『』（）()"'“”‘’~〜ー―-]/g, '');
+  // sections
+  const sec = [], starts = new Set([0]);
+  let si = 0;
+  lines.forEach((ln, i) => { if (i > 0 && (ln.gapBefore || ln.interlude || lines[i - 1].interlude)) { si++; starts.add(i); } sec.push(si); });
+  // repeats
+  const first = new Map(), repeatOf = [], count = new Map();
+  lines.forEach((ln, i) => { const k = norm(ln.text); if (ln.interlude || k.length < 2) { repeatOf.push(null); return; } count.set(k, (count.get(k) || 0) + 1); if (first.has(k)) repeatOf.push(first.get(k)); else { first.set(k, i); repeatOf.push(null); } });
+  // キメ
+  const kime = new Set();
+  lines.forEach((ln, i) => { if (ln.impact && !ln.interlude) kime.add(i); });
+  if (!kime.size) lines.forEach((ln, i) => { if (starts.has(i) && !ln.interlude && (count.get(norm(ln.text)) || 0) >= 2) kime.add(i); });
+  const ok = (g, k) => !!(k && en[g] && en[g][k] !== false && (g === 'layout' ? J.LAYOUTS[k] : g === 'enter' ? J.ENTER[k] : g === 'exit' ? J.EXIT[k] : g === 'hold' ? J.HOLD[k] : g === 'cam' ? J.CAMERA[k] : g === 'treat' ? J.TREAT[k] : g === 'trans' ? J.TRANS[k] : null));
+  const pals = new Map(), last = new Map();
+  const pal = i => { const s2 = sec[i]; if (!pals.has(s2)) pals.set(s2, { layout: [], enter: [], exit: [], hold: [], cam: [], decor: [], treat: [], trans: [] }); return pals.get(s2); };
+  // keep up to max distinct picks per part; once full, mostly reuse them
+  const sticky = (i, g, v, max, rng, fits = () => true, reuse = 0.85) => {
+    const P = pal(i)[g];
+    if (P.length >= max && rng.chance(reuse)) { const pool = P.filter(k => ok(g, k) && fits(k)); if (pool.length) return rng.pick(pool); }
+    if (!P.includes(v) && P.length < max) P.push(v);
+    return v;
+  };
+  // alternate directions within a part
+  const alternate = (i, g, v) => {
+    const key = sec[i] + ':' + g, prev = last.get(key);
+    for (const pr of DIR_PAIRS[g] || []) {
+      const j = pr.indexOf(v);
+      if (j >= 0 && prev && pr.includes(prev)) { const w = pr[1 - pr.indexOf(prev)]; if (ok(g, w)) v = w; }
+    }
+    last.set(key, v);
+    return v;
+  };
+  const strongRun = new Map();                 // was the previous cut of this part strong?
+  const calm = (i, g, v, emph, repick, rng) => {
+    const key = sec[i] + ':' + g;
+    if (!emph && STRONG[g] && STRONG[g].includes(v) && (strongRun.get(key) || rng.chance(0.55))) {
+      for (let t = 0; t < 4; t++) { const w = repick(); if (!STRONG[g].includes(w)) { v = w; break; } }
+    }
+    strongRun.set(key, !!(STRONG[g] && STRONG[g].includes(v)));
+    return v;
+  };
+  const kimePick = (g, v, rng, fits = () => true) => { const pool = KIME[g].filter(k => ok(g, k) && fits(k)); return pool.length ? rng.pick(pool) : v; };
+  const specs = new Map();
+  return {
+    kime,
+    sectionStart: i => starts.has(i),
+    layout(i, v, o) {
+      const fits = k => J.LAYOUTS[k] && J.LAYOUTS[k].fits(o.nn) && (!o.portrait || J.LAYOUTS[k].portrait !== 0);
+      if (o.kime) return kimePick('layout', v, o.rng, k => J.LAYOUTS[k].fits(o.nn));
+      return sticky(i, 'layout', v, 3, o.rng, fits, 0.9);
+    },
+    enter(i, v, o) {
+      if (o.kime) return kimePick('enter', v, o.rng);
+      v = sticky(i, 'enter', v, 2, o.rng);
+      v = calm(i, 'enter', v, o.emph, () => pickEnter(o.rng, st, en, o.layout, o.dur, history, false, o.nn), o.rng);
+      return alternate(i, 'enter', v);
+    },
+    exit(i, v, o) { if (o.kime) return kimePick('exit', v, o.rng); return alternate(i, 'exit', sticky(i, 'exit', v, 2, o.rng)); },
+    hold(i, v, o) { if (o.kime) return kimePick('hold', v, o.rng); return sticky(i, 'hold', v, 1, o.rng); },
+    cam(i, v, o) {
+      if (o.kime) return kimePick('cam', v, o.rng);
+      v = sticky(i, 'cam', v, 2, o.rng);
+      v = calm(i, 'cam', v, o.emph, () => pickCam(o.rng, st, en, fx, J.LAYOUTS.center, false, history), o.rng);
+      return alternate(i, 'cam', v);
+    },
+    decor(i, list, o) {
+      if (o.kime) return [];
+      const P = pal(i).decor;
+      if (P.length >= 2 && o.rng.chance(0.8)) { const id = o.rng.pick(P); return J.DECOR[id] ? [decorParams(o.rng, id)] : list; }
+      for (const d of list) if (!P.includes(d.id) && P.length < 2) P.push(d.id);
+      return list;
+    },
+    treat(i, v, o) { if (o.kime) return 'none'; return sticky(i, 'treat', v, 1, o.rng, () => true, 0.75); },
+    trans(i, v, o) { return sticky(i, 'trans', v, 2, o.rng); },
+    weightGrow(o) { if (!/^(ja|en)$/.test(C.lang || 'ja') || o.nn > 16 || o.dur < 0.7) return false; return o.rng.chance(o.kime ? 0.45 : 0.14); },
+    softEnter(v, rng) { const pool = SOFT_ENTER.filter(k => ok('enter', k)); return pool.length ? rng.pick(pool) : v; },
+    again(i, k, txt) { const f = repeatOf[i]; if (f == null) return null; const sp = (specs.get(f) || [])[k]; return sp && sp.text === txt ? sp : null; },
+    remember(i, k, txt, cut) {
+      if (!specs.has(i)) specs.set(i, []);
+      specs.get(i)[k] = { text: txt, layout: cut.layout, enter: cut.enter, exit: cut.exit, hold: cut.hold, params: cut.params, decor: cut.decor, treat: cut.treat, treatP: cut.treatP,
+        cam: cut.cam, camP: cut.camP, scheme: cut.scheme, seed: cut.seed, bg: cut.bg, bgP: cut.bgP, weightGrow: !!cut.weightGrow, morph: !!cut.morph };
+    },
+  };
+}
+
+/* 中央を空ける: one scene, the lyric split in two — 「花が」 in the left (top) band, 「咲いた」 in the right (bottom) one.
+   Both halves use the same layout, motion, decorations and camera (the same random draws), so it reads as one picture
+   with the centre left for the character; the second half follows a beat later. */
+function splitHalf(text, lang) {
+  const t = String(text || '').trim();
+  const n = [...t.replace(/\s+/g, '')].length;
+  // between words, as near the middle as possible (「花が」｜「咲いた」, "Good night," | "see you tomorrow")
+  const words = (lang === 'en' ? J.phraseChunks(J.chunkText(t)) : J.chunkText(t)).map(w => String(w));
+  if (words.length >= 2) {
+    const L = w => [...w.replace(/\s+/g, '')].length, total = words.reduce((a2, w) => a2 + L(w), 0);
+    let acc = 0, best = 1, bd = 1e9;
+    for (let k = 1; k < words.length; k++) { acc += L(words[k - 1]); const d = Math.abs(acc - total / 2); if (d < bd) { bd = d; best = k; } }
+    const sep = /[A-Za-z]/.test(t) ? ' ' : '';
+    return [words.slice(0, best).join(sep).trim(), words.slice(best).join(sep).trim()];
+  }
+  // one word: short ones (and single English words) stand on both sides; longer ones split near the middle
+  if (n <= 3 || /^[A-Za-z0-9'’-]+$/.test(t)) return [t, t];
+  const two = splitToCount([t], 2);
+  if (two.length < 2) return [t, t];
+  let a = two[0].trim(), b = two.slice(1).join('').trim();
+  // a half never starts with a particle, punctuation or a small kana: 「夜明けの色を」｜「覚えてる」, not 「…色」｜「を…」
+  for (let g = 0; g < 3 && b.length > 1 && HEAD_BAD.test(b[0]); g++) { a += b[0]; b = b.slice(1); }
+  return [a, b];
+}
+const HEAD_BAD = /[、。，．,.!?！？…・ーっッゃゅょャュョぁぃぅぇぉァィゥェォをがはにでとのへもやよね」』）)]/;
+function splitCut(cut, halves, zones, st, dur) {
+  const LD = J.LAYOUTS[cut.layout], seed = J.h(cut.seed, 23);
+  const planFor = (text, z) => LD.plan(J.rng(seed), { text, n: [...text.replace(/\s+/g, '')].length, W: z.w, H: z.h, dur }, st);
+  cut.text = halves[0]; cut.lineText = halves[0]; cut.words = J.chunkText(halves[0]); cut.zone = Object.assign({}, zones[0]);
+  cut.params = planFor(halves[0], zones[0]);
+  const delay = Math.min(0.12, dur * 0.08);
+  const twin = Object.assign({}, cut, { text: halves[1], lineText: halves[1], words: J.chunkText(halves[1]), zone: Object.assign({}, zones[1]), params: planFor(halves[1], zones[1]),
+    start: cut.start + delay, bg: 'none', bgP: {}, companion: true, trans: null, transP: {}, transDur: 0, morph: cut.morph });
+  twin.dur = twin.end - twin.start;
+  delete twin.companion_; cut.companion = twin;
+}
+
+/* side bands for 中央を空ける: [a, b] in design pixels. Wide frames: left / right thirds (a little narrower on 21:9);
+   tall frames: top / bottom; square-ish frames count as wide. */
+J.sideZones = (W, H, dir) => {
+  if (H > W * 1.1 && dir === 'lr') { const w = Math.round(W * 0.34); return [{ x: 0, y: 0, w, h: H, side: 'left' }, { x: W - w, y: 0, w, h: H, side: 'right' }]; }   // 縦長で左右に分ける
+  if (H > W * 1.1) { const h = Math.round(H * 0.33); return [{ x: 0, y: 0, w: W, h, side: 'top' }, { x: 0, y: H - h, w: W, h, side: 'bottom' }]; }
+  const w = Math.round(W * (W / H > 2 ? 0.3 : 0.36));
+  return [{ x: 0, y: 0, w, h: H, side: 'left' }, { x: W - w, y: 0, w, h: H, side: 'right' }];
+};
+
 function makeCut(o) {
   const c = Object.assign({ hold: 'still', inDur: 0.3, outDur: 0.25, stagger: 0.04, decor: [], params: {}, scheme: 0, emph: false, words: [], note: null, treat: 'none', treatP: {}, bg: 'none', bgP: {}, cam: 'push', camP: {} }, o);
   c.dur = c.end - c.start;
   return c;
+}
+/* split chunks until there are at least n pieces (longest first: words for Latin text, characters otherwise) */
+function splitToCount(chunks, n) {
+  const out = chunks.slice();
+  let guard = 0;
+  while (out.length < n && guard++ < 64) {
+    let bi = -1, bl = 1;
+    out.forEach((c, i) => { const l = /\s/.test(c.trim()) ? c.trim().split(/\s+/).length : [...c].length; if (l > bl) { bl = l; bi = i; } });
+    if (bi < 0) break;
+    const c = out[bi].trim();
+    let a, b;
+    if (/\s/.test(c)) { const w = c.split(/\s+/), h = Math.ceil(w.length / 2); a = w.slice(0, h).join(' '); b = w.slice(h).join(' '); }
+    else {
+      // at a word boundary nearest the middle when there is one (夜明け|の), else between characters
+      const ch = [...c], segs = J.segments ? J.segments(c) : [];
+      let cut = Math.ceil(ch.length / 2);
+      if (segs.length > 1) { let acc = 0, best = -1, bd = 1e9; for (let k = 0; k < segs.length - 1; k++) { acc += [...segs[k]].length; const d = Math.abs(acc - ch.length / 2); if (d < bd) { bd = d; best = acc; } } if (best > 0) cut = best; }
+      a = ch.slice(0, cut).join(''); b = ch.slice(cut).join('');
+    }
+    out.splice(bi, 1, a, b);
+  }
+  return out;
 }
 function partition(chunks, k) {
   const lens = chunks.map(c => [...c].length + 1);
@@ -3866,6 +4332,7 @@ class Renderer {
     const sc = st.schemes[mainCut ? mainCut.scheme % st.schemes.length : 0] || st.schemes[0];
     const allowFilter = this.filterOK && !opt.fast;
     if (J.setLang) J.setLang(plan.lang || 'ja');           // faces follow the plan's lyric language
+    if (J.setTypeset) J.setTypeset(plan.typeset);          // 文字整列
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.filter = 'none';
@@ -3918,7 +4385,9 @@ class Renderer {
     const step = Math.floor(tq / clock + 1e-6);
     const beatInfo = plan.beats && plan.beats.length ? beatAt(plan.beats, tq) : null;
     // ---------- background graphic (per line) ----------
-    if (!opt.transparent && !key && mainCut && mainCut.bg && mainCut.bg !== 'none' && J.BG[mainCut.bg]) {
+    // 透過PNG 前景／後景 (opt.layer): 'back' = background graphic + the decorations behind the lyrics, 'front' = the rest
+    const layer = opt.transparent ? opt.layer || null : null;
+    if ((!opt.transparent || layer === 'back') && !key && mainCut && mainCut.bg && mainCut.bg !== 'none' && J.BG[mainCut.bg]) {
       const env = this.makeEnv(ctx, plan, mainCut, sc, { pass: 'main', t: tq, lt: tq - mainCut.start, ltb: tq - mainCut.start, step, scale, allowFilter, energy, beat: beatInfo, bgOnly: true });
       ctx.save();
       try { J.BG[mainCut.bg].draw(env, mainCut.bgP || {}); } catch (e) { console.warn('bg', mainCut.bg, e); }
@@ -3933,6 +4402,10 @@ class Renderer {
       { pass: 'main', lag: 0, off: [0, 0] },
     ];
     const ghostOn = (fx.chroma ?? 0.7) > 0.02 && (st.ghost ?? 1) > 0.02 && !opt.noGhost;
+    // モーフ (統一感): during the first moments of a morph cut its lyric is drawn by drawMorph (glyphs glide / melt)
+    const MC = !opt.noTrans && !opt.glyphLog && mainCut && mainCut.morph && mainCut.index > 0 ? mainCut : null;
+    const mPrev = MC ? plan.cuts[MC.index - 1] : null, mlt = MC ? tq - MC.start : 0;
+    const morphOn = !!(MC && mPrev && mlt < MC.morph.dur && Math.abs(mPrev.end - MC.start) < 0.06);
     let mainBB = null, mainEnv = null;
     // camera blur (focus pulls etc.) is applied ONCE to the whole content layer — a blur filter on every
     // individual draw call is extremely slow when a layout draws many text rows
@@ -3952,16 +4425,24 @@ class Renderer {
     for (const P of passes) {
       if (P.pass !== 'main' && !ghostOn) continue;
       const tp = Math.max(0, tq - P.lag);
-      const cut = P.lag ? J.cutAt(plan, tp) : mainCut;
-      if (!cut) continue;
+      const cut0 = P.lag ? J.cutAt(plan, tp) : mainCut;
+      if (!cut0) continue;
+      if (morphOn && cut0 !== mainCut) continue;
+      // 中央を空ける: the cut in its band, and its companion (echo / whole line / decorations) in the other band
+      for (const cut of plan.centerFree && cut0.companion ? [cut0, cut0.companion] : [cut0]) {
       const csc = st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
       const lt = tp - cut.start;
       const X = LX || ctx;
+      const Z = plan.centerFree && cut.zone ? cut.zone : null;
       const env = this.makeEnv(X, plan, cut, csc, {
         pass: P.pass, passColor: P.pass === 'A' ? csc.ghostA : P.pass === 'B' ? csc.ghostB : null,
-        t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo,
+        t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo, layer, zone: Z,
+        hideText: morphOn, glyphLog: P.pass === 'main' ? opt.glyphLog || null : null,
       });
       X.save();
+      // 中央を空ける: the cut (text, decorations, its camera) is drawn in its band and clipped to it
+      if (Z) { X.beginPath(); X.rect(Z.x, Z.y, Z.w, Z.h); X.clip(); X.translate(Z.x, Z.y); }
+      const W = env.W, H = env.H;
       // camera move for this cut (default: slow push-in)
       let cam = null;
       const CD = J.CAMERA[cut.cam] || J.CAMERA.push;
@@ -3975,11 +4456,17 @@ class Renderer {
       if (P.pass !== 'main') X.globalCompositeOperation = J.lum(csc.bg) > 0.55 ? 'multiply' : 'source-over';
       this.drawCut(env);
       X.restore();
-      if (P.pass === 'main') { mainEnv = env; }
+      if (P.pass === 'main' && cut === cut0) { mainEnv = env; }
+      }
     }
     if (LX) {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       ctx.filter = `blur(${(layerBlur * scale).toFixed(1)}px)`; ctx.drawImage(LX.canvas, 0, 0); ctx.restore();
+    }
+    if (morphOn && layer !== 'back') {
+      const L = this.morphLogs(plan, mPrev, MC, cw, ch, scale, opt);
+      const k = J.clamp(mlt / MC.morph.dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      this.drawMorph(ctx, L, e, allowFilter);
     }
     // ---------- cut-to-cut transition: composite the previous cut's resting frame with this one ----------
     if (!opt.noTrans && mainCut && mainCut.trans && J.TRANS[mainCut.trans] && mainCut.index > 0) {
@@ -3997,7 +4484,7 @@ class Renderer {
       }
     }
     // ---------- HUD ----------
-    if (plan.hud && !opt.noHud) {
+    if (plan.hud && !opt.noHud && layer !== 'back') {
       const env = this.makeEnv(ctx, plan, mainCut, sc, { pass: 'main', t: tq, lt: 0, ltb: 0, step, scale, allowFilter, energy, beat: beatInfo });
       J.drawHUD(env, plan);
     }
@@ -4033,8 +4520,63 @@ class Renderer {
     ctx.restore();
   }
 
+  /* モーフ: where every glyph of the previous cut rests at its end, and where this cut's glyphs land (cached) */
+  morphLogs(plan, A, B, cw, ch, scale, opt) {
+    if (!this.morphCache || this.morphCache.plan !== plan) this.morphCache = { plan, map: new Map() };
+    const key = A.index + ':' + B.index + ':' + cw + 'x' + ch + ':' + scale.toFixed(4), M = this.morphCache.map;
+    if (M.has(key)) return M.get(key);
+    const cv = this.ensure(this.morphCv || (this.morphCv = mk(2, 2)), cw, ch), x = cv.getContext('2d');
+    const o2 = { scale, noPost: true, noHud: true, noTrans: true, noGhost: true, transparent: opt.transparent, fast: true };
+    const la = [], lb = [];
+    this.frame(x, plan, Math.max(A.start, A.end - 1e-3), Object.assign({}, o2, { glyphLog: la }));
+    this.frame(x, plan, B.start + B.morph.dur + 1e-3, Object.assign({}, o2, { glyphLog: lb }));
+    const r = { A: la, B: lb };
+    M.set(key, r); if (M.size > 24) M.delete(M.keys().next().value);
+    return r;
+  }
+  drawMorph(ctx, L, e, allowFilter) {
+    const used = new Array(L.A.length).fill(false), pairs = [];
+    for (const g of L.B) {
+      let j = -1;
+      for (let q = 0; q < L.A.length; q++) if (!used[q] && L.A[q].ch === g.ch) { j = q; break; }
+      if (j >= 0) used[j] = true;
+      pairs.push([j >= 0 ? L.A[j] : null, g]);
+    }
+    const det = m => Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2])) || 1;
+    const put = (g, col, alpha, blur) => {
+      if (alpha <= 0.01) return;
+      ctx.globalAlpha = Math.min(1, alpha);
+      ctx.filter = allowFilter && blur > 0.4 ? `blur(${blur.toFixed(1)}px)` : 'none';
+      ctx.font = g.font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (g.fill) { ctx.fillStyle = col; ctx.fillText(g.ch, 0, 0); }
+      if (g.stroke > 0) { ctx.lineJoin = 'round'; ctx.lineWidth = g.stroke; ctx.strokeStyle = g.strokeColor || col; ctx.strokeText(g.ch, 0, 0); }
+    };
+    ctx.save();
+    // the rest of the old line melts away (drips, swells, blurs)…
+    L.A.forEach((a, q) => {
+      if (used[q]) return;
+      ctx.setTransform(a.m[0], a.m[1], a.m[2], a.m[3], a.m[4], a.m[5]);
+      ctx.translate(0, e * a.px * 0.45); ctx.scale(1 + e * 0.12, 1 + e * 0.6);
+      put(a, a.color, a.a * Math.pow(1 - e, 1.4), e * a.px * 0.14 * det(a.m));
+    });
+    // …shared characters glide to their new place, new ones condense out of a blur
+    for (const [a, b] of pairs) {
+      if (a) {
+        const m = a.m.map((v, i) => v + (b.m[i] - v) * e);
+        ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        const k = (a.px / b.px) + (1 - a.px / b.px) * e; ctx.scale(k, k);
+        put(b, /^#[0-9a-f]{3,8}$/i.test(a.color) && /^#[0-9a-f]{3,8}$/i.test(b.color) ? J.mix(a.color, b.color, e) : (e < 0.5 ? a.color : b.color), a.a + (b.a - a.a) * e, 0);
+      } else {
+        const k = 1 - e;
+        ctx.setTransform(b.m[0], b.m[1], b.m[2], b.m[3], b.m[4], b.m[5]);
+        ctx.translate(0, -k * b.px * 0.3); ctx.scale(1 + k * 0.1, 1 + k * 0.4);
+        put(b, b.color, b.a * e, k * b.px * 0.14 * det(b.m));
+      }
+    }
+    ctx.restore();
+  }
   makeEnv(ctx, plan, cut, sc, o) {
-    const W = plan.W, H = plan.H;
+    const W = o.zone ? o.zone.w : plan.W, H = o.zone ? o.zone.h : plan.H;   // 中央を空ける: a cut lives in its side band
     const env = Object.assign({ ctx, W, H, sc, st: plan.style, fx: plan.fx, fps: plan.fps, cut, plan }, o);
     if (cut) {
       env.pIn = J.clamp(o.lt / Math.max(0.01, cut.inDur));
@@ -4103,11 +4645,55 @@ class Renderer {
   drawCut(env) {
     const cut = env.cut, L = J.LAYOUTS[cut.layout] || J.LAYOUTS.center;
     const decor = cut.decor || [];
-    for (const d of decor) { const D = J.DECOR[d.id]; if (D && D.layer === 'back') try { D.draw(env, null, d); } catch (e) { console.warn(e); } }
+    if (env.layer !== 'front') for (const d of decor) { const D = J.DECOR[d.id]; if (D && D.layer === 'back') try { D.draw(env, null, d); } catch (e) { console.warn(e); } }
+    if (env.layer === 'back') return null;                // 後景だけ: the lyrics and the front decorations go to the other layer
     let bb = null;
     try { bb = L.render(env); } catch (e) { console.warn('layout', cut.layout, e); }
     for (const d of decor) { const D = J.DECOR[d.id]; if (D && D.layer === 'front') try { D.draw(env, bb, d); } catch (e) { console.warn(e); } }
     return bb;
+  }
+
+  /* 透過PNG: screen effects are written for an opaque frame (they paint the background colour, wash the whole frame,
+     or redraw a shifted copy over it). In transparent mode each effect is fenced:
+       - a full-frame opaque fill (background colour, black/white frame…) clears instead — it hid everything anyway
+       - afterwards, alpha is limited to where content was (before the effect) plus where the effect drew the
+         content again (shifted / scaled / mirrored copies of the scratch copy), so washes, flashes and strobes
+         tint the lyrics and the graphics but never turn the empty background opaque                            */
+  alphaGuard(ctx, S, sc) {
+    const cw = ctx.canvas.width, ch = ctx.canvas.height, R = this;
+    const P = this.ensure(this.guardP || (this.guardP = mk(2, 2)), cw, ch), px = P.getContext('2d');
+    const M = this.ensure(this.guardM || (this.guardM = mk(2, 2)), cw, ch), mx = M.getContext('2d');
+    let cleared = false, bgN = null;
+    const content = img => img === S;                  // the scratch copy of the frame (temp canvases may carry an opaque background)
+    const own = ['fillRect', 'drawImage'];
+    return {
+      begin() {
+        cleared = false;
+        const fs0 = ctx.fillStyle; ctx.fillStyle = sc.bg; bgN = ctx.fillStyle; ctx.fillStyle = fs0;   // the background colour, normalised
+        px.setTransform(1, 0, 0, 1, 0, 0); px.globalAlpha = 1; px.globalCompositeOperation = 'copy'; px.filter = 'none'; px.drawImage(ctx.canvas, 0, 0);
+        mx.setTransform(1, 0, 0, 1, 0, 0); mx.globalAlpha = 1; mx.globalCompositeOperation = 'source-over'; mx.filter = 'none'; mx.clearRect(0, 0, cw, ch);
+        const proto = Object.getPrototypeOf(ctx);
+        ctx.fillRect = function (x, y, w, h) {
+          const T = this.getTransform(), full = this.globalCompositeOperation === 'source-over' && this.globalAlpha >= 0.999 && typeof this.fillStyle === 'string' &&
+            /^#[0-9a-f]{6}$/i.test(this.fillStyle) && T.b === 0 && T.c === 0 && T.e + x * T.a <= 1 && T.f + y * T.d <= 1 && T.e + (x + w) * T.a >= cw - 1 && T.f + (y + h) * T.d >= ch - 1;
+          if (full) { cleared = true; mx.clearRect(0, 0, cw, ch); return proto.clearRect.call(this, x, y, w, h); }
+          if (this.globalCompositeOperation === 'source-over' && typeof this.fillStyle === 'string' && /^#[0-9a-f]{6}$/i.test(this.fillStyle) && this.globalAlpha >= 0.999 && this.fillStyle === bgN) return proto.clearRect.call(this, x, y, w, h);
+          return proto.fillRect.call(this, x, y, w, h);
+        };
+        ctx.drawImage = function (img, ...a) {
+          if (content(img)) { mx.setTransform(this.getTransform()); mx.globalAlpha = this.globalAlpha; proto.drawImage.call(mx, img, ...a); }
+          return proto.drawImage.call(this, img, ...a);
+        };
+      },
+      end() {
+        for (const k of own) delete ctx[k];
+        mx.setTransform(1, 0, 0, 1, 0, 0); mx.globalAlpha = 1;
+        if (!cleared) { mx.globalCompositeOperation = 'source-over'; mx.drawImage(P, 0, 0); }
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none';
+        ctx.globalCompositeOperation = 'destination-in'; ctx.drawImage(M, 0, 0);
+        ctx.restore();
+      },
+    };
   }
 
   post(ctx, plan, t, tq, step, sc, scale, opt, allowFilter) {
@@ -4119,16 +4705,20 @@ class Renderer {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const copy = () => { const sx = S.getContext('2d'); sx.globalCompositeOperation = 'copy'; sx.drawImage(ctx.canvas, 0, 0); sx.globalCompositeOperation = 'source-over'; };
     const clock24 = Math.floor(t * 24);           // glitch randomness changes at most 24 times a second at any output fps
+    const guard = opt.transparent ? this.alphaGuard(ctx, S, sc) : null;   // 透過: effects must not fill the empty background
     for (const ev of active) {
-      const k = (t - ev.t) / Math.max(ev.dur, 1e-3);
+      // progress clamped to 0..1 (an event shorter than one output frame is still shown for that frame — k would pass 1)
+      const k0 = (t - ev.t) / Math.max(ev.dur, 1e-3), k = Number.isFinite(k0) ? J.clamp(k0, 0, 1) : 0;
       const st2 = clock24;
       const D = J.FXE[ev.type];
+      if (guard) guard.begin();
       if (D && D.draw) {
         if (D.scratch) copy();
         try {
-          D.draw(ctx, ev, k, { cw, ch, S, sc, st: plan.style, step: st2, t, scale, renderer: this, allowFilter, opt, tmp: (w, h) => this.ensure(this.tiny, w, h), tmp2: (w, h) => this.ensure(this.small2 || (this.small2 = mk(2, 2)), w, h) });
+          D.draw(ctx, ev, k, { cw, ch, S, sc, st: plan.style, step: st2, t, scale, renderer: this, allowFilter, opt, transparent: !!opt.transparent, tmp: (w, h) => this.ensure(this.tiny, w, h), tmp2: (w, h) => this.ensure(this.small2 || (this.small2 = mk(2, 2)), w, h) });
         } catch (e) { console.warn('fx', ev.type, e); }
         ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.imageSmoothingEnabled = true;
+        if (guard) guard.end();
         continue;
       }
       if (ev.type === 'slice') {
@@ -4168,6 +4758,8 @@ class Renderer {
         tx.imageSmoothingEnabled = true; tx.drawImage(S, 0, 0, T.width, T.height);
         ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 0.85 * (1 - k); ctx.drawImage(T, 0, 0, cw, ch); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = true;
       }
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      if (guard) guard.end();
     }
     // bloom
     const glow = (st.glow || 0.6) * 0.5 * (fx.texture ?? 0.6);
@@ -4295,6 +4887,52 @@ J.analyzeAudio = async (file) => {
   };
 };
 
+/* 16-bit PCM WAV of an AudioBuffer, cut / padded to `duration` seconds (the soundtrack next to an MP4 whose
+   audio track some players cannot play, or when the browser has no audio encoder) */
+J.audioWav = (buffer, duration, offset = 0) => {
+  const sr = buffer.sampleRate, chn = Math.min(2, buffer.numberOfChannels);
+  const n = Math.max(1, Math.round((duration > 0 ? duration : buffer.duration) * sr));
+  const bytes = n * chn * 2, ab = new ArrayBuffer(44 + bytes), v = new DataView(ab);
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); v.setUint32(4, 36 + bytes, true); str(8, 'WAVE'); str(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, chn, true); v.setUint32(24, sr, true);
+  v.setUint32(28, sr * chn * 2, true); v.setUint16(32, chn * 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, bytes, true);
+  const ch = []; for (let c = 0; c < chn; c++) ch.push(buffer.getChannelData(c));
+  const L = buffer.length, i0 = Math.max(0, Math.round(offset * sr)); let o = 44;
+  for (let i = 0; i < n; i++) for (let c = 0; c < chn; c++) {
+    const j = i + i0, x = j < L ? Math.max(-1, Math.min(1, ch[c][j])) : 0;
+    v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7fff, true); o += 2;
+  }
+  return new Blob([ab], { type: 'audio/wav' });
+};
+
+/* the last song, kept in this browser (IndexedDB) so a reload does not silently drop the audio from exports */
+const IDB = { db: null };
+IDB.open = () => IDB.db || (IDB.db = new Promise((res, rej) => {
+  if (typeof indexedDB === 'undefined') return rej(new Error('no IndexedDB'));
+  const r = indexedDB.open('jizura', 1);
+  r.onupgradeneeded = () => { r.result.createObjectStore('files'); };
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+}));
+J.saveSong = async (file) => {
+  try {
+    const db = await IDB.open(), data = await file.arrayBuffer();
+    await new Promise((res, rej) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put({ name: file.name, type: file.type, data }, 'song'); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    return true;
+  } catch (e) { return false; }
+};
+J.loadSong = async () => {
+  try {
+    const db = await IDB.open();
+    const rec = await new Promise((res, rej) => { const tx = db.transaction('files', 'readonly'); const q = tx.objectStore('files').get('song'); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    if (!rec || !rec.data) return null;
+    return new File([rec.data], rec.name || 'song', { type: rec.type || '' });
+  } catch (e) { return null; }
+};
+J.forgetSong = async () => {
+  try { const db = await IDB.open(); await new Promise(res => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete('song'); tx.oncomplete = res; tx.onerror = res; }); } catch (e) {}
+};
+
 /* rebuild a beat grid from a user BPM + first-beat offset */
 J.beatGrid = (bpm, offset, duration) => {
   const out = []; if (!(bpm > 0)) return out;
@@ -4331,21 +4969,50 @@ J.saveFile = async (filename, data) => {
 };
 
 /* ---------- codec negotiation ---------- */
+const VIDEO_CANDS = [
+  { codec: 'avc1.640034', mux: 'avc', label: 'H.264 High' },
+  { codec: 'avc1.640033', mux: 'avc', label: 'H.264 High' },
+  { codec: 'avc1.4d0033', mux: 'avc', label: 'H.264 Main' },
+  { codec: 'avc1.42003e', mux: 'avc', label: 'H.264 Baseline' },
+  { codec: 'vp09.00.51.08', mux: 'vp9', label: 'VP9' },
+  { codec: 'av01.0.12M.08', mux: 'av1', label: 'AV1' },
+];
+// hardware encoders often refuse very high bitrates (52 Mbps+ for 1080p60 at 最高) — keep them in a range they accept
+J.videoBitrate = (w, h, fps, quality) => {
+  const want = w * h * fps * (quality === 'max' ? 0.42 : quality === 'high' ? 0.28 : 0.16);
+  const px = w * h, cap = px <= 2.2e6 ? 40e6 : px <= 3.8e6 ? 60e6 : 90e6;
+  return Math.round(Math.min(want, cap));
+};
+const vcfg = (c, w, h, fps, bitrate, hw) => {
+  const cfg = { codec: c.codec, width: w, height: h, bitrate, framerate: fps };
+  if (hw) cfg.hardwareAcceleration = hw;
+  if (c.mux === 'avc') cfg.avc = { format: 'avc' };
+  return cfg;
+};
+async function supported(cfg) { try { const s = await VideoEncoder.isConfigSupported(cfg); return !!(s && s.supported); } catch (e) { return false; } }
 J.pickVideoCodec = async (w, h, fps, bitrate) => {
   if (typeof VideoEncoder === 'undefined') return null;
-  const cands = [
-    { codec: 'avc1.640033', mux: 'avc', label: 'H.264 High' },
-    { codec: 'avc1.4d0033', mux: 'avc', label: 'H.264 Main' },
-    { codec: 'avc1.42003e', mux: 'avc', label: 'H.264 Baseline' },
-    { codec: 'vp09.00.51.08', mux: 'vp9', label: 'VP9' },
-    { codec: 'av01.0.12M.08', mux: 'av1', label: 'AV1' },
-  ];
-  for (const c of cands) {
-    const cfg = { codec: c.codec, width: w, height: h, bitrate, framerate: fps };
-    if (c.mux === 'avc') cfg.avc = { format: 'avc' };
-    try { const s = await VideoEncoder.isConfigSupported(cfg); if (s.supported) return Object.assign({}, c, { cfg }); } catch (e) {}
-  }
+  for (const c of VIDEO_CANDS) { const cfg = vcfg(c, w, h, fps, bitrate); if (await supported(cfg)) return Object.assign({}, c, { cfg }); }
   return null;
+};
+/* the encoders to try, best first: the browser's choice, then the same codec in software (GPU encoders are the usual
+   reason an export fails every time on one PC), then a simpler profile / lower bitrate in software, then VP9 */
+J.videoAttempts = async (w, h, fps, bitrate) => {
+  if (typeof VideoEncoder === 'undefined') return [];
+  const out = [], seen = new Set();
+  const add = async (c, hw, br) => {
+    const key = c.codec + '|' + (hw || '') + '|' + br;
+    if (seen.has(key) || out.length >= 5) return;
+    const cfg = vcfg(c, w, h, fps, br, hw);
+    if (await supported(cfg)) { seen.add(key); out.push(Object.assign({}, c, { cfg, hw: hw || 'auto' })); }
+  };
+  let first = null;
+  for (const c of VIDEO_CANDS) { const cfg = vcfg(c, w, h, fps, bitrate); if (await supported(cfg)) { first = c; break; } }
+  if (first) { await add(first, null, bitrate); await add(first, 'prefer-software', bitrate); }
+  const avc = VIDEO_CANDS.filter(c => c.mux === 'avc' && c !== first);
+  for (const c of avc) { await add(c, 'prefer-software', Math.round(bitrate * 0.7)); if (out.length >= 3) break; }
+  for (const c of VIDEO_CANDS.filter(c => c.mux !== 'avc')) await add(c, 'prefer-software', Math.round(bitrate * 0.7));
+  return out;
 };
 J.pickAudioCodec = async (sr, chn) => {
   if (typeof AudioEncoder === 'undefined') return null;
@@ -4355,13 +5022,18 @@ J.pickAudioCodec = async (sr, chn) => {
   return null;
 };
 
-async function resample(buffer, sr, duration) {
+async function resample(buffer, sr, duration, offset = 0) {
   const chn = Math.min(2, buffer.numberOfChannels);
   const len = Math.ceil(duration * sr);
   const oc = new OfflineAudioContext(chn, len, sr);
-  const src = oc.createBufferSource(); src.buffer = buffer; src.connect(oc.destination); src.start(0);
+  const src = oc.createBufferSource(); src.buffer = buffer; src.connect(oc.destination); src.start(0, Math.max(0, offset));
   return oc.startRendering();
 }
+/* part of the song to export: range = { t0, t1 } in seconds (選んだ行だけ), default the whole plan */
+J.exportSpan = (plan, range) => {
+  const t0 = range ? Math.max(0, range.t0) : 0, t1 = range ? Math.min(plan.duration, range.t1) : plan.duration;
+  return { t0, dur: Math.max(1 / plan.fps, t1 - t0) };
+};
 
 /* ---------- MP4 ---------- */
 // Background tabs throttle setTimeout (up to once a minute), which leaves the
@@ -4372,93 +5044,142 @@ const waitDequeue = (enc) => new Promise(r => { enc.addEventListener('dequeue', 
 const isReclaim = (e) => e && e.name === 'QuotaExceededError';
 const MAX_RECLAIMS = 5;
 
-J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signal }) => {
+/* The MP4 is written as it is encoded (mp4-muxer, moov at the end) instead of being assembled in one huge
+   ArrayBuffer: into many small memory blocks (file: null), or straight into a file the user picked
+   (file: a FileSystemWritableFileStream, the "large video" button). A long 1080p / 1440p song used to need one contiguous
+   buffer of several hundred MB, doubled on finalize, which is what made those exports fail. */
+class BlockStore {                    // positioned writes into a list of blocks → Blob (no single giant buffer)
+  constructor() { this.blocks = []; this.end = 0; }
+  write(data, pos) {
+    let u = data instanceof Uint8Array ? data : new Uint8Array(data);
+    if (pos > this.end) { this.blocks.push({ pos: this.end, u: new Uint8Array(pos - this.end) }); this.end = pos; }
+    // overwrite what already exists (mp4-muxer patches the mdat size at finalize)
+    for (const b of this.blocks) {
+      if (pos >= this.end || !u.length) break;
+      const s0 = Math.max(pos, b.pos), s1 = Math.min(pos + u.length, b.pos + b.u.length);
+      if (s1 > s0) b.u.set(u.subarray(s0 - pos, s1 - pos), s0 - b.pos);
+    }
+    if (pos + u.length > this.end) { const from = Math.max(0, this.end - pos); this.blocks.push({ pos: this.end, u: u.slice(from) }); this.end = pos + u.length; }
+  }
+  blob(type) { return new Blob(this.blocks.map(b => b.u), { type }); }
+}
+J.exportMP4 = async (o) => {
+  const { plan, project, audio, quality = 'high', onProgress, signal, range, file = null } = o;
   const [w, h] = J.outputSize(project);
+  const fps = plan.fps, bitrate = J.videoBitrate(w, h, fps, quality);
+  const attempts = await J.videoAttempts(w, h, fps, bitrate);
+  if (!attempts.length) throw new Error('이 브라우저는 동영상 인코딩(WebCodecs)을 지원하지 않습니다. 최신 Chrome 또는 Edge로 열어 주세요.');
+  const tried = [];
+  for (let k = 0; k < attempts.length; k++) {
+    const vc = attempts[k];
+    try {
+      if (file && k > 0) { await file.seek(0); await file.truncate(0); }
+      const r = await encodeMP4(Object.assign({}, o, { w, h, vc, note: k > 0 ? `(${vc.label}·소프트웨어로 재시도 ${k})` : '' }));
+      r.tried = tried; return r;
+    } catch (e) {
+      if (signal && signal.aborted) throw new Error('취소했습니다');
+      if (e && e.jzFatal) throw e;
+      tried.push(`${vc.label}/${vc.hw}: ${e && e.message ? e.message : e}`);
+      console.warn('MP4 export attempt failed', vc.codec, vc.hw, e);
+    }
+  }
+  const err = new Error('MP4를 내보낼 수 없습니다. ' + (file ? '' : '「큰 동영상용(파일에 바로 저장)」을 쓰거나, ') + '해상도·fps·화질을 낮춰 보세요. 자세히: ' + tried.join(' / '));
+  err.detail = tried; throw err;
+};
+async function encodeMP4({ plan, project, audio, onProgress, signal, range, file, w, h, vc, note }) {
+  const span = J.exportSpan(plan, range);
   const fps = plan.fps;
-  const px = w * h * fps;
-  const bitrate = Math.round(px * (quality === 'max' ? 0.42 : quality === 'high' ? 0.28 : 0.16));
-  const vc = await J.pickVideoCodec(w, h, fps, bitrate);
-  if (!vc) throw new Error('이 브라우저는 영상 인코딩(WebCodecs)을 지원하지 않습니다. 최신 버전의 Chrome 또는 Edge에서 여세요.');
   let ac = null;
   if (audio && audio.buffer && project.includeAudio !== false) ac = await J.pickAudioCodec(48000, Math.min(2, audio.buffer.numberOfChannels));
-  const target = new Mp4Muxer.ArrayBufferTarget();
-  const muxOpts = { target, video: { codec: vc.mux, width: w, height: h, frameRate: fps }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' };
+  const store = file ? null : new BlockStore();
+  const target = file ? new Mp4Muxer.FileSystemWritableFileStreamTarget(file, { chunkSize: 8 * 1048576 })
+    : new Mp4Muxer.StreamTarget({ onData: (data, pos) => store.write(data, pos), chunked: true, chunkSize: 8 * 1048576 });
+  const muxOpts = { target, video: { codec: vc.mux, width: w, height: h, frameRate: fps }, fastStart: false, firstTimestampBehavior: 'offset' };
   if (ac) muxOpts.audio = { codec: ac.mux, numberOfChannels: Math.min(2, audio.buffer.numberOfChannels), sampleRate: ac.sr };
   const muxer = new Mp4Muxer.Muxer(muxOpts);
-  let err = null, venc = null, lastOut = -1;
+  let err = null, outFrames = 0, venc = null, lastOut = -1;
   const frameUs = 1e6 / fps;
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d', { alpha: false });
   const R = new J.Renderer();
-  const total = Math.max(1, Math.round(plan.duration * fps));
+  const total = Math.max(1, Math.round(span.dur * fps));
   const scale = w / plan.W;
   const prevRes = J.glyphs.maxRes; J.glyphs.maxRes = h >= 1000 ? 768 : 512;
+  const closeEnc = () => { try { if (venc && venc.state !== 'closed') venc.close(); } catch (e) {} };
   try {
-  // If the encoder is reclaimed, frames it had queued are lost: start a fresh
-  // encoder on a keyframe right after the last chunk the muxer received.
-  for (let next = 0, attempt = 0; ; attempt++) {
-    err = null;
-    venc = new VideoEncoder({ output: (chunk, meta) => { muxer.addVideoChunk(chunk, meta); lastOut = Math.round(chunk.timestamp / frameUs); }, error: e => { err = e; } });
-    venc.configure(Object.assign({}, vc.cfg, { latencyMode: 'quality' }));
-    try {
-      for (let i = next; i < total; i++) {
-        if (signal && signal.aborted) throw new Error('취소했습니다');
+    // If the encoder is reclaimed, frames it had queued are lost: start a fresh
+    // encoder on a keyframe right after the last chunk the muxer received.
+    for (let next = 0, attempt = 0; ; attempt++) {
+      err = null;
+      venc = new VideoEncoder({ output: (chunk, meta) => { outFrames++; lastOut = Math.round(chunk.timestamp / frameUs); try { muxer.addVideoChunk(chunk, meta); } catch (e) { err = e; } }, error: e => { err = e; } });
+      venc.configure(Object.assign({}, vc.cfg, { latencyMode: 'quality' }));
+      try {
+        for (let i = next; i < total; i++) {
+          if (signal && signal.aborted) throw new Error('취소했습니다');
+          if (err) throw err;
+          if (venc.state === 'closed') throw new Error('인코더가 멈췄습니다');
+          R.frame(ctx, plan, span.t0 + i / fps, { scale });
+          const vf = new VideoFrame(canvas, { timestamp: Math.round(i * frameUs), duration: Math.round(frameUs) });
+          try { venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0 }); } finally { vf.close(); }
+          const deadline = Date.now() + 30000;
+          while (venc.encodeQueueSize > 4 && !err) { await waitDequeue(venc); if (Date.now() > deadline) throw new Error('인코더가 응답하지 않습니다'); }
+          // an encoder that accepts frames but never returns any has failed silently (seen with some GPU drivers)
+          if (i === Math.min(total - 1, fps * 3) && outFrames === 0) { await venc.flush(); if (!outFrames) throw new Error('인코더가 출력을 반환하지 않습니다'); }
+          if (i % 3 === 0) { onProgress && onProgress(i / total, `프레임 ${i + 1}/${total}${note || ''}`); await yieldTask(); }
+        }
+        await venc.flush();
         if (err) throw err;
-        R.frame(ctx, plan, i / fps, { scale });
-        const vf = new VideoFrame(canvas, { timestamp: Math.round(i * frameUs), duration: Math.round(frameUs) });
-        venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0 });
-        vf.close();
-        while (venc.encodeQueueSize > 4 && !err) await waitDequeue(venc);
-        if (i % 3 === 0) { onProgress && onProgress(i / total, `프레임 ${i + 1}/${total}`); await yieldTask(); }
+        break;
+      } catch (e) {
+        const cause = err || e;
+        closeEnc();
+        if (!isReclaim(cause) || attempt >= MAX_RECLAIMS) throw cause;
+        next = lastOut + 1;
       }
-      await venc.flush();
-      if (err) throw err;
-      break;
-    } catch (e) {
-      const cause = err || e;
-      if (!isReclaim(cause) || attempt >= MAX_RECLAIMS) throw cause;
-      next = lastOut + 1;
     }
-  }
-  } finally { J.glyphs.maxRes = prevRes; if (venc && venc.state !== 'closed') venc.close(); }
+  } catch (e) { closeEnc(); throw e; }
+  finally { J.glyphs.maxRes = prevRes; }
+  closeEnc();
+  if (outFrames < total * 0.98) throw new Error(`프레임이 부족합니다(${outFrames}/${total})`);
   if (ac) {
     onProgress && onProgress(0.99, '오디오 인코딩 중');
-    const rs = await resample(audio.buffer, ac.sr, plan.duration);
+    const rs = await resample(audio.buffer, ac.sr, span.dur, span.t0);
     const chn = rs.numberOfChannels;
     const frames = rs.length, block = 4800;
+    const fatal = m => { const e = new Error(m); e.jzFatal = true; return e; };    // audio problems: another video encoder won't help
     // Audio is quick to encode, so on reclaim just redo it; chunks are held
     // back until a pass completes so the muxer never sees duplicates.
     for (let attempt = 0; ; attempt++) {
       const chunks = [];
-      err = null;
-      const aenc = new AudioEncoder({ output: (chunk, meta) => chunks.push([chunk, meta]), error: e => { err = e; } });
+      let aEnd = 0, aErr = null;
+      const aenc = new AudioEncoder({ output: (chunk, meta) => { aEnd = Math.max(aEnd, chunk.timestamp + (chunk.duration || 0)); chunks.push([chunk, meta]); }, error: e => { aErr = e; } });
       aenc.configure({ codec: ac.codec, sampleRate: ac.sr, numberOfChannels: chn, bitrate: 192000 });
-      try {
-        for (let off = 0; off < frames; off += block) {
-          if (err) throw err;
-          const n = Math.min(block, frames - off);
-          const data = new Float32Array(n * chn);
-          for (let c = 0; c < chn; c++) data.set(rs.getChannelData(c).subarray(off, off + n), c * n);
-          const ad = new AudioData({ format: 'f32-planar', sampleRate: ac.sr, numberOfFrames: n, numberOfChannels: chn, timestamp: Math.round(off * 1e6 / ac.sr), data });
-          aenc.encode(ad); ad.close();
-          while (aenc.encodeQueueSize > 16 && !err) await waitDequeue(aenc);
-        }
-        await aenc.flush();
-        if (err) throw err;
-        aenc.close();
-        for (const [chunk, meta] of chunks) muxer.addAudioChunk(chunk, meta);
-        break;
-      } catch (e) {
-        if (aenc.state !== 'closed') aenc.close();
-        const cause = err || e;
-        if (!isReclaim(cause) || attempt >= MAX_RECLAIMS) throw cause;
+      for (let off = 0; off < frames; off += block) {
+        if (aErr) break;
+        const n = Math.min(block, frames - off);
+        const data = new Float32Array(n * chn);
+        for (let c = 0; c < chn; c++) data.set(rs.getChannelData(c).subarray(off, off + n), c * n);
+        const ad = new AudioData({ format: 'f32-planar', sampleRate: ac.sr, numberOfFrames: n, numberOfChannels: chn, timestamp: Math.round(off * 1e6 / ac.sr), data });
+        aenc.encode(ad); ad.close();
+        while (aenc.encodeQueueSize > 16 && !aErr) await waitDequeue(aenc);
       }
+      if (!aErr) { try { await aenc.flush(); } catch (e) { aErr = aErr || e; } }
+      if (aenc.state !== 'closed') aenc.close();
+      if (aErr && isReclaim(aErr) && attempt < MAX_RECLAIMS) continue;
+      if (aErr) throw fatal('오디오 인코딩 실패: ' + (aErr.message || aErr));
+      // the encoder must have produced the whole soundtrack — otherwise report it instead of writing a silent file
+      if (!chunks.length || aEnd < (Math.min(span.dur, audio.buffer.duration - span.t0) - 0.5) * 1e6) throw fatal('오디오 인코딩이 도중에 멈췄습니다(' + chunks.length + '). 다시 내보내 주세요');
+      for (const [chunk, meta] of chunks) muxer.addAudioChunk(chunk, meta);
+      break;
     }
   }
+  onProgress && onProgress(0.995, '파일을 마무리하는 중');
   muxer.finalize();
+  if (file) await file.close();
   onProgress && onProgress(1, '완료');
-  return { blob: new Blob([target.buffer], { type: 'video/mp4' }), codec: vc.label, audio: ac ? ac.mux : null, width: w, height: h };
-};
+  const size = file ? null : store.end;
+  return { blob: file ? null : store.blob('video/mp4'), size, codec: vc.label + (vc.hw === 'prefer-software' ? '(소프트웨어)' : ''), audio: ac ? ac.mux : null, audioWanted: !!(audio && audio.buffer && project.includeAudio !== false), width: w, height: h, toFile: !!file };
+}
 
 /* ---------- PNG sequence as ZIP (store, no compression) ---------- */
 const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -4487,19 +5208,25 @@ class ZipWriter {
     return new Blob([...this.parts, ...this.central, end.buffer], { type: 'application/zip' });
   }
 }
-J.exportPNGZip = async ({ plan, project, transparent, onProgress, signal, every = 1 }) => {
+/* layers: transparent PNGs in two folders — back/ (background graphic + decorations behind the lyrics) and front/
+   (lyrics, their decorations, ghosts, HUD). Screen effects are applied to both, so stacking front over back matches. */
+J.exportPNGZip = async ({ plan, project, transparent, layers, onProgress, signal, every = 1, range }) => {
+  const span = J.exportSpan(plan, range);
   const [w, h] = J.outputSize(project);
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
   const R = new J.Renderer();
-  const fps = plan.fps, total = Math.max(1, Math.round(plan.duration * fps));
+  const fps = plan.fps, total = Math.max(1, Math.round(span.dur * fps));
   const zip = new ZipWriter();
   const scale = w / plan.W;
   for (let i = 0; i < total; i += every) {
     if (signal && signal.aborted) throw new Error('취소했습니다');
-    R.frame(ctx, plan, i / fps, { scale, transparent });
-    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-    zip.add(`jizura_${String(i).padStart(5, '0')}.png`, new Uint8Array(await blob.arrayBuffer()));
+    const name = `jizura_${String(i).padStart(5, '0')}.png`;
+    for (const layer of layers ? ['back', 'front'] : [null]) {
+      R.frame(ctx, plan, span.t0 + i / fps, { scale, transparent: transparent || !!layers, layer });
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      zip.add((layer ? layer + '/' : '') + name, new Uint8Array(await blob.arrayBuffer()));
+    }
     onProgress && onProgress(i / total, `PNG ${i + 1}/${total}`);
   }
   onProgress && onProgress(1, '완료');
@@ -4520,7 +5247,7 @@ J.AE_MAP = {
 };
 // The plan goes to the After Effects panel as-is (version 2): the panel builds every key it implements and
 // picks the closest counterpart itself (from the exported metadata / J.AE_MAP) for anything it lacks.
-J.planForAE = (plan, project) => {
+J.planForAE = (plan, project, range) => {
   const clean = JSON.parse(JSON.stringify(plan, (k, v) => (k === 'energy' || k === 'buffer' || k === 'peaks' ? undefined : v)));
   clean.version = 2;
   clean.width = J.outputSize(project)[0]; clean.height = J.outputSize(project)[1];
@@ -4533,6 +5260,18 @@ J.planForAE = (plan, project) => {
   if (J.setLang && J.faceOf && clean.lang !== 'ja') {
     J.setLang(clean.lang);
     for (const k of Object.keys(clean.fontTable)) { const f = J.faceOf(k); clean.fontTable[k].langFamily = f.family.replace(/"/g, ''); clean.fontTable[k].langWeight = f.weight; }
+  }
+  // モーフ has no After Effects counterpart yet: build it as the closest transition (an ink-blob dissolve)
+  for (const c of clean.cuts || []) if (c.morph && !c.trans) { c.trans = 'inkBlob'; c.transDur = c.morph.dur; c.transP = {}; c.webMorph = true; }
+  // 行の範囲だけ: keep the cuts / events inside [t0, t1] and move them to start at 0.
+  // audioOffset tells the AE panel to slide the song layer left by t0 so it stays in sync.
+  if (range) {
+    const sp = J.exportSpan(plan, range), t0 = sp.t0, t1 = t0 + sp.dur, eps = 1e-3;
+    const sh = o => { o.start -= t0; o.end -= t0; return o; };
+    clean.cuts = clean.cuts.filter(c => c.end > t0 + eps && c.start < t1 - eps).map(c => { if (c.companion) sh(c.companion); return sh(c); });
+    clean.events = (clean.events || []).filter(e => e.t >= t0 - 1 && e.t < t1).map(e => Object.assign(e, { t: e.t - t0 }));
+    for (const l of clean.lines || []) { sh(l); if (l.visEnd != null) l.visEnd -= t0; }   // all lines stay (cut.line indexes them)
+    clean.duration = sp.dur; clean.audioOffset = t0; clean.range = { t0, t1 };
   }
   return clean;
 };
@@ -27450,7 +28189,9 @@ fxReg('posterize', { name: '포스터라이즈', tags: ['glitch', 'pop', 'graphi
 fxReg('hueShift', { name: '색상 시프트', tags: ['glitch', 'pop', 'emotional'], w: 0.7, dur: 3, amp: 1, mid: true, scratch: true,
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
-    const s = evS(ev), a = Math.pow(1 - k, 0.8) * Math.min(1, ampOf(ev)), deg = Math.round(90 + 180 * J.r(s, 3)), dk = isDark(sc.bg);
+    const kk = Number.isFinite(k) ? clamp(k, 0, 1) : 1;                 // progress past the end (short event at low fps) → NaN alpha before
+    const s = evS(ev), a = Math.pow(1 - kk, 0.8) * Math.min(1, ampOf(ev)), deg = Math.round(90 + 180 * J.r(s, 3)), dk = isDark(sc.bg);
+    if (!(a > 0.002)) return;
     if (I.allowFilter) { ctx.globalAlpha = a; ctx.filter = `hue-rotate(${deg}deg) saturate(1.6)`; ctx.drawImage(S, 0, 0); ctx.filter = 'none'; }
     ctx.globalAlpha = 0.5 * a; ctx.globalCompositeOperation = dk ? 'multiply' : 'screen';
     ctx.fillStyle = J.r(s, 4) < 0.5 ? sc.ghostA : sc.ghostB; ctx.fillRect(0, 0, cw, ch);
@@ -29315,28 +30056,47 @@ J.randomOk = (project, g, k) => {
 if (!document.getElementById('app')) return;          // engine-only pages (tests)
 const $ = id => document.getElementById(id);
 const LS_KEY = 'jizura.project.v1';
-const HUD_CHARS = '0123456789:./-_()【】・No.LYRICRECUNTITLEDXYlinebpminterlude—─／ ';
+const HUD_CHARS = '0123456789:./-_()【】 · No.LYRICRECUNTITLEDXYlinebpminterlude—─／ ';
 const ICON = {
   dice: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor"/><circle cx="10.5" cy="10.5" r="1" fill="currentColor"/><circle cx="10.5" cy="5.5" r="1" fill="currentColor"/><circle cx="5.5" cy="10.5" r="1" fill="currentColor"/></svg>',
   lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>',
+  pen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 13l1-3.5L11 2.5l2.5 2.5L6.5 12z"/><path d="M9.5 4l2.5 2.5"/></svg>',
+  tap: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2" fill="currentColor"/><circle cx="8" cy="8" r="5.5"/></svg>',
+  range: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3v10M13 3v10"/><path d="M5.5 8h5M8.5 5.5L11 8l-2.5 2.5"/></svg>',
 };
 
 const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: true, need: true, exporting: null, tap: null, slow: false, lineEls: [], curLine: -2 };
 
 /* WebAudio player (works inside sandboxed pages where blob media may be blocked) */
 const AP = {
-  ctx: null, src: null, startAt: 0,
+  ctx: null, src: null, startAt: 0, gain: null, vol: 0.8, muted: false,
   play(buffer, offset) {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (this.ctx.state === 'suspended') this.ctx.resume();
     this.stop();
-    const s = this.ctx.createBufferSource(); s.buffer = buffer; s.connect(this.ctx.destination);
+    if (!this.gain) { this.gain = this.ctx.createGain(); this.gain.connect(this.ctx.destination); this.applyVol(); }
+    const s = this.ctx.createBufferSource(); s.buffer = buffer; s.connect(this.gain);
     const off = Math.max(0, Math.min(offset, buffer.duration - 0.01));
     s.start(0, off); this.src = s; this.startAt = this.ctx.currentTime - off;
   },
   stop() { if (this.src) { try { this.src.stop(); } catch (e) {} try { this.src.disconnect(); } catch (e) {} this.src = null; } },
   time() { return this.ctx ? this.ctx.currentTime - this.startAt : 0; },
+  /* preview volume only (exports keep the original level) */
+  setVol(v, muted) { if (v != null) this.vol = Math.max(0, Math.min(1, v)); if (muted != null) this.muted = !!muted; this.applyVol(); },
+  applyVol() { if (!this.gain) return; const v = this.muted ? 0 : this.vol * this.vol; try { this.gain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.015); } catch (e) { this.gain.gain.value = v; } },
 };
+/* プレビュー音量: remembered per browser */
+function initVolume() {
+  const el = $('vol'), mb = $('btnMute'); if (!el || !mb) return;
+  let v = 0.8, m = false;
+  try { const o = JSON.parse(localStorage.getItem('jizura.previewVolume') || 'null'); if (o) { v = +o.v; m = !!o.m; } } catch (e) {}
+  if (!(v >= 0 && v <= 1)) v = 0.8;
+  const show = () => { el.value = Math.round(AP.vol * 100); mb.textContent = AP.muted || AP.vol === 0 ? '음소거' : '음량'; mb.setAttribute('aria-pressed', String(AP.muted)); el.title = '음량 ' + Math.round(AP.vol * 100) + '%'; };
+  const save = () => { try { localStorage.setItem('jizura.previewVolume', JSON.stringify({ v: AP.vol, m: AP.muted })); } catch (e) {} };
+  AP.setVol(v, m); show();
+  el.addEventListener('input', () => { AP.setVol(el.value / 100, false); show(); save(); });
+  mb.addEventListener('click', () => { AP.setVol(null, !AP.muted); show(); save(); });
+}
 
 /* ---------------- project persistence ---------------- */
 function mergeProject(p) {
@@ -29419,7 +30179,7 @@ let thumbFonts = null;
 async function ensureFonts() {
   const txt = S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS;
   const keys = J.fontsOfPlan(S.plan);                       // only the faces this plan draws with
-  const key = txt + '|' + keys.join(',') + '|' + Object.keys(J.FONTS).length;
+  const key = txt + '|' + keys.join(',') + '|' + Object.keys(J.FONTS).length + '|' + J.lang;   // the lyric language changes the faces
   if (key === fontKey) return;
   fontKey = key;
   showMsg('글꼴 불러오는 중…');
@@ -29429,16 +30189,21 @@ async function ensureFonts() {
 // style thumbnails need two glyphs of every style's display face — fetched only once the style grid is actually shown
 function loadThumbFonts() {
   if (thumbFonts || !$('styleGrid').offsetParent) return;
-  thumbFonts = J.ensureFonts('字面', [...new Set(J.STYLE_ORDER.map(k => J.STYLES[k].fonts.display[0]))]).then(() => drawStyleGrid()).catch(() => {});
+  thumbFonts = J.ensureFonts('JIZURA', [...new Set(J.STYLE_ORDER.map(k => J.STYLES[k].fonts.display[0]))]).then(() => drawStyleGrid()).catch(() => {});
 }
 function showMsg(m) { const el = $('viewMsg'); if (!m) { el.hidden = true; return; } el.textContent = m; el.hidden = false; }
 
 /* ---------------- viewport & drawing ---------------- */
+// 固定表示: on wide & tall windows the page itself doesn't scroll (see style.css html.fixed-ok)
+const FIXED_MQ = window.matchMedia ? window.matchMedia('(min-width: 1181px) and (min-height: 620px)') : null;
+document.documentElement.classList.add('fixed-ok');
+function fixedLayout() { return !!(FIXED_MQ && FIXED_MQ.matches) && document.documentElement.classList.contains('fixed-ok'); }
 function sizeViewport() {
   const vp = $('viewport'), c = $('view');
   const ar = S.plan.W / S.plan.H;
   let cssW = vp.clientWidth || 800, cssH = cssW / ar;
-  const maxH = Math.max(220, window.innerHeight * 0.68);
+  // fixed workspace: the viewport gets whatever height is left under the header / above the transport and timeline
+  const maxH = fixedLayout() ? Math.max(160, vp.clientHeight - 2) : Math.max(220, window.innerHeight * 0.68);
   if (cssH > maxH) { cssH = maxH; cssW = cssH * ar; }
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const pw = Math.round(Math.min(S.plan.W, cssW * dpr)), ph = Math.round(pw / ar);
@@ -29446,10 +30211,20 @@ function sizeViewport() {
   c.style.width = cssW + 'px'; c.style.height = cssH + 'px';
   S.need = true;
 }
+// preview only: dotted outline of the centre that 中央を空ける keeps free (never in exports)
+function drawCenterGuide(ctx, k) {
+  const P = S.plan, z = P.zones; if (!z) return;
+  const r = z[0].side === 'left' ? [z[0].w, 0, P.W - z[0].w - z[1].w, P.H] : [0, z[0].h, P.W, P.H - z[0].h - z[1].h];
+  ctx.save(); ctx.setTransform(k, 0, 0, k, 0, 0);
+  ctx.setLineDash([14, 10]); ctx.lineWidth = 2 / k * 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.strokeRect(r[0] + 4, r[1] + 4, r[2] - 8, r[3] - 8);
+  ctx.setLineDash([]); ctx.restore();
+}
 function draw() {
   const c = $('view'), ctx = c.getContext('2d');
   const t0 = performance.now();
   S.renderer.frame(ctx, S.plan, S.t, { scale: c.width / S.plan.W, fast: S.playing && S.slow });
+  if (S.plan.centerFree) drawCenterGuide(ctx, c.width / S.plan.W);
   const dt = performance.now() - t0;
   S.slow = S.playing ? (dt > 30 ? true : dt < 14 ? false : S.slow) : false;
   updateTimeUI(); drawTimeline(); updateCutInfo();
@@ -29490,45 +30265,113 @@ function seek(t) {
 }
 
 /* ---------------- timeline ---------------- */
+// zoomable view: [TL.off, TL.off + D / TL.z] seconds; line starts are draggable handles in the top band
 const layoutHue = k => (J.LAYOUT_ORDER.indexOf(k) * 37 + 30) % 360;
+const TL = { z: 1, off: 0, hover: -1, drag: -1 };
+function tlView() {
+  const D = Math.max(0.001, S.plan.duration), vd = D / TL.z;
+  TL.off = J.clamp(TL.off, 0, Math.max(0, D - vd));
+  return { D, vd, off: TL.off };
+}
+function tlZoom(f, tc) {
+  const { D, vd } = tlView();
+  const z = J.clamp(TL.z * f, 1, Math.max(1, D / 2));
+  const c = tc == null ? S.t : tc, frac = (c - TL.off) / vd;
+  TL.z = z; TL.off = c - frac * (D / z); tlView(); drawTimeline();
+}
 function drawTimeline() {
   const c = $('timeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = Math.max(10, Math.round(c.clientWidth * dpr)), h = Math.max(10, Math.round(c.clientHeight * dpr));
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
-  const x = c.getContext('2d'), D = Math.max(0.001, S.plan.duration), X = t => t / D * w;
+  let { D, vd, off } = tlView();
+  // follow the playhead while playing (zoomed in)
+  if (TL.z > 1 && S.playing && TL.drag < 0 && (S.t < off || S.t > off + vd * 0.92)) { TL.off = S.t - vd * 0.1; ({ D, vd, off } = tlView()); }
+  const x = c.getContext('2d'), X = t => (t - off) / vd * w, T = px => off + px / w * vd;
   x.fillStyle = '#131316'; x.fillRect(0, 0, w, h);
   if (S.audio && S.audio.peaks) {
     const pk = S.audio.peaks, n = pk.length, sd = S.audio.duration;
     x.fillStyle = '#2b2b33';
-    for (let i = 0; i < w; i += 2) { const t = i / w * D; if (t > sd) break; const v = pk[Math.min(n - 1, Math.floor(t / sd * n))]; const hh = v * h * 0.8; x.fillRect(i, h * 0.6 - hh / 2, 1.5, hh); }
+    for (let i = 0; i < w; i += 2) { const t = T(i); if (t > sd) break; if (t < 0) continue; const v = pk[Math.min(n - 1, Math.floor(t / sd * n))]; const hh = v * h * 0.8; x.fillRect(i, h * 0.6 - hh / 2, 1.5, hh); }
   }
   const beats = S.plan.beats || [];
   x.fillStyle = '#3a3a44';
-  for (const b of beats) { if (b > D) break; x.fillRect(Math.round(X(b)), h - 6 * dpr, 1, 6 * dpr); }
+  for (const b of beats) { if (b < off) continue; if (b > off + vd) break; x.fillRect(Math.round(X(b)), h - 6 * dpr, 1, 6 * dpr); }
   const top = h * 0.3, bot = h - 8 * dpr;
+  const R = exportRange();
+  if (R) { x.fillStyle = 'rgba(245,165,12,0.10)'; x.fillRect(X(R.t0), 0, X(R.t1) - X(R.t0), h); }
   for (const cut of S.plan.cuts) {
     const x0 = X(cut.start), x1 = X(cut.end);
+    if (x1 < 0 || x0 > w) continue;
     const hue = layoutHue(cut.layout);
     x.fillStyle = `hsla(${hue},70%,58%,0.28)`; x.fillRect(x0, top, Math.max(1, x1 - x0 - 1), bot - top);
     x.fillStyle = `hsla(${hue},80%,62%,0.95)`; x.fillRect(x0, top, Math.max(1, 2 * dpr), bot - top);
     if (x1 - x0 > 34 * dpr) {
       x.fillStyle = 'rgba(236,231,225,0.85)'; x.font = `${10 * dpr}px ${getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace'}`;
       x.save(); x.beginPath(); x.rect(x0, top, x1 - x0 - 3, bot - top); x.clip();
-      x.fillText((J.LAYOUTS[cut.layout] || {}).name || cut.layout, x0 + 5 * dpr, top + 13 * dpr); x.restore();
+      x.fillText(TL.z > 3 && cut.text ? cut.text : ((J.LAYOUTS[cut.layout] || {}).name || cut.layout), x0 + 5 * dpr, top + 13 * dpr); x.restore();
     }
   }
   x.font = `${10 * dpr}px monospace`;
+  const LT = S.project.timing.lineTimes || {};
   for (const ln of S.plan.lines) {
     const lx = X(ln.start);
-    x.fillStyle = '#5d5a63'; x.fillRect(lx, 0, 1, top);
-    x.fillStyle = '#8e8a94'; x.fillText(String(ln.index + 1).padStart(2, '0'), lx + 3 * dpr, 12 * dpr);
+    if (lx < -20 * dpr || lx > w + 2) continue;
+    const on = ln.index === TL.drag || ln.index === TL.hover, man = LT[ln.index] != null;
+    x.fillStyle = on ? '#f5a50c' : man ? '#6fb7c8' : '#5d5a63'; x.fillRect(lx - (on ? dpr : 0), 0, on ? 2 * dpr : 1, top);
+    // handle
+    x.beginPath(); x.moveTo(lx - 5 * dpr, 0); x.lineTo(lx + 5 * dpr, 0); x.lineTo(lx, 7 * dpr); x.closePath(); x.fill();
+    x.fillStyle = on ? '#f5a50c' : '#8e8a94'; x.fillText(String(ln.index + 1).padStart(2, '0') + (ln.interlude ? ' 간주' : ''), lx + 4 * dpr, 17 * dpr);
+  }
+  if (TL.z > 1) {                                          // where the view sits in the whole song
+    x.fillStyle = 'rgba(255,255,255,0.18)'; x.fillRect(0, h - 2 * dpr, w, 2 * dpr);
+    x.fillStyle = '#f5a50c'; x.fillRect(off / D * w, h - 2 * dpr, Math.max(4, vd / D * w), 2 * dpr);
   }
   const px = X(S.t);
   x.fillStyle = '#f5a50c'; x.fillRect(Math.round(px) - dpr, 0, 2 * dpr, h);
 }
-function timelineSeek(ev) {
-  const r = $('timeline').getBoundingClientRect();
-  seek((ev.clientX - r.left) / r.width * S.plan.duration);
+function tlTime(ev) {
+  const r = $('timeline').getBoundingClientRect(), { vd, off } = tlView();
+  return off + J.clamp((ev.clientX - r.left) / r.width, 0, 1) * vd;
+}
+function timelineSeek(ev) { seek(tlTime(ev)); }
+/* the line whose start handle is under the pointer (top band, ±7px) */
+function tlHandleAt(ev) {
+  const c = $('timeline'), r = c.getBoundingClientRect(), { vd, off } = tlView();
+  if (ev.clientY - r.top > r.height * 0.45) return -1;
+  let best = -1, bd = 8;
+  for (const ln of S.plan.lines) { const d = Math.abs((ln.start - off) / vd * r.width - (ev.clientX - r.left)); if (d < bd) { bd = d; best = ln.index; } }
+  return best;
+}
+function tlDragTo(i, ev) {
+  let t = tlTime(ev);
+  if (!ev.shiftKey && S.plan.beats && S.plan.beats.length) {       // snap to the nearest beat (Shift: free)
+    let bt = null, bd = 0.12; for (const b of S.plan.beats) { const d = Math.abs(b - t); if (d < bd) { bd = d; bt = b; } if (b > t + 0.2) break; }
+    if (bt != null) t = bt;
+  }
+  const L = S.plan.lines, lo = i > 0 ? L[i - 1].start + 0.2 : 0, hi = i < L.length - 1 ? L[i + 1].start - 0.2 : S.plan.duration - 0.2;
+  t = +J.clamp(t, lo, Math.max(lo, hi)).toFixed(3);
+  if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
+  // pin the neighbours too, so moving one boundary never shifts the lines after it
+  L.forEach(ln => { if (S.project.timing.lineTimes[ln.index] == null) S.project.timing.lineTimes[ln.index] = +ln.start.toFixed(3); });
+  S.project.timing.lineTimes[i] = t;
+  replan(); seek(t + 0.001);
+}
+
+/* ---------------- keep the playing line in view (the list scrolls inside its column) ---------------- */
+let listTouched = 0;
+function followLine(li) {
+  if (!S.playing || li < 0 || !fixedLayout()) return;
+  if (performance.now() - listTouched < 2500) return;                       // the user is scrolling the list
+  const el = S.lineEls[li], col = el && el.closest('.col-left');
+  if (!el || !col || col.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  const r = el.getBoundingClientRect(), c = col.getBoundingClientRect();
+  if (r.top >= c.top + 8 && r.bottom <= c.bottom - 8) return;
+  col.scrollTo({ top: col.scrollTop + (r.top - c.top) - c.height * 0.3, behavior: 'smooth' });
+}
+function bindFollow() {
+  const col = document.querySelector('.col-left'); if (!col) return;
+  const touch = () => { listTouched = performance.now(); };
+  col.addEventListener('wheel', touch, { passive: true }); col.addEventListener('touchmove', touch, { passive: true }); col.addEventListener('pointerdown', touch);
 }
 
 /* ---------------- cut info ---------------- */
@@ -29537,7 +30380,7 @@ function updateCutInfo() {
   const cut = J.cutAt(S.plan, S.t);
   const idx = cut ? cut.index : -1;
   const li = cut ? cut.line : -1;
-  if (li !== S.curLine) { S.lineEls.forEach((el, i) => el.classList.toggle('cur', i === li)); S.curLine = li; }
+  if (li !== S.curLine) { S.lineEls.forEach((el, i) => el.classList.toggle('cur', i === li)); S.curLine = li; followLine(li); }
   if (idx === lastCutIdx) return;
   lastCutIdx = idx;
   const el = $('cutInfo');
@@ -29558,38 +30401,52 @@ function updateCutInfo() {
 /* ---------------- line list ---------------- */
 function renderLines() {
   const ol = $('lineList'); ol.innerHTML = ''; S.lineEls = []; S.curLine = -2;
-  const ov = S.project.overrides;
+  const ov = S.project.overrides, R = exportRangeLines();
   const layoutOpts = '<option value="">자동</option>' + J.LAYOUT_ORDER.map(k => `<option value="${k}">${J.LAYOUTS[k].name}</option>`).join('');
+  const cutOpts = '<option value="">컷: 자동</option>' + [1, 2, 3, 4, 5, 6].map(n => `<option value="${n}">컷: ${n}</option>`).join('');
   S.plan.lines.forEach((ln, i) => {
     const o = ov[i] || {};
-    const li = document.createElement('li'); li.className = 'ln';
+    const li = document.createElement('li'); li.className = 'ln' + (ln.interlude ? ' is-inter' : '') + (R && i >= R.from && i <= R.to ? ' in-range' : '');
     const manual = S.project.timing.lineTimes && S.project.timing.lineTimes[i] != null;
+    const label = ln.interlude ? `[간주${ln.secs ? ' ' + ln.secs + '초' : ''}]` : ln.text;
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span>
       <input class="time mono" type="number" step="0.01" min="0" value="${ln.start.toFixed(2)}" title="시작(초)${manual ? ' · 수동' : ' · 자동'}" aria-label="${i + 1}행 시작(초)" style="${manual ? 'border-color:var(--cyan)' : ''}">
-      <span class="txt" title="${escapeHtml(ln.text)}">${escapeHtml(ln.text)}</span>
+      <span class="txt" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
       <div class="meta"><span class="cuts"></span>
       <span class="tools">
-        <select aria-label="레이아웃 지정">${layoutOpts}</select>
-        <button class="icon ghost dice" title="이 행 다시 뽑기">${ICON.dice}</button>
-        <button class="icon ghost lock" title="이 행 구조 잠금" aria-pressed="${o.lock ? 'true' : 'false'}">${ICON.lock}</button>
+        <button class="icon ghost edit" title="이 행의 가사 고치기" aria-label="${i + 1}행 가사 고치기">${ICON.pen}</button>
+        ${ln.interlude ? '' : `<select class="ncut" aria-label="${i + 1}행 컷 수">${cutOpts}</select>`}
+        ${ln.interlude ? '' : `<select class="lay pro-only" aria-label="레이아웃 선택">${layoutOpts}</select>`}
+        <button class="icon ghost tapfrom" title="이 행부터 탭으로 동기화 다시 하기" aria-label="${i + 1}행부터 탭">${ICON.tap}</button>
+        <button class="icon ghost rng" title="내보낼 범위로 지정(Shift+클릭으로 범위 확장)" aria-pressed="${R && i >= R.from && i <= R.to ? 'true' : 'false'}" aria-label="${i + 1}행을 내보낼 범위로">${ICON.range}</button>
+        ${ln.interlude ? '' : `<button class="icon ghost dice" title="이 행 다시 뽑기">${ICON.dice}</button>`}
+        ${ln.interlude ? '' : `<button class="icon ghost lock" title="이 행의 구성 잠금" aria-pressed="${o.lock ? 'true' : 'false'}">${ICON.lock}</button>`}
       </span></div>`;
-    li.querySelector('select').value = o.layout || '';
-    li.querySelector('.time').addEventListener('change', e => {
+    const q = sel => li.querySelector(sel);
+    if (q('.lay')) q('.lay').value = o.layout || '';
+    if (q('.ncut')) q('.ncut').value = o.cuts ? String(o.cuts) : '';
+    q('.time').addEventListener('change', e => {
       const v = parseFloat(e.target.value);
+      pushEdit();
       if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
       if (isFinite(v)) S.project.timing.lineTimes[i] = Math.max(0, v); else delete S.project.timing.lineTimes[i];
       replan();
     });
-    li.querySelector('.txt').addEventListener('click', () => seek(ln.start + 0.001));
-    li.querySelector('select').addEventListener('change', e => { setOv(i, { layout: e.target.value || undefined }); replan(); });
-    li.querySelector('.dice').addEventListener('click', () => { const cur = ov[i] || {}; setOv(i, { seed: (cur.seed | 0) + 1, lock: false }); replan(); seek(ln.start + 0.001); });
-    li.querySelector('.lock').addEventListener('click', () => {
+    q('.txt').addEventListener('click', () => seek(ln.start + 0.001));
+    q('.txt').addEventListener('dblclick', () => editLine(li, ln));
+    q('.edit').addEventListener('click', () => editLine(li, ln));
+    if (q('.lay')) q('.lay').addEventListener('change', e => { setOv(i, { layout: e.target.value || undefined }); replan(); });
+    if (q('.ncut')) q('.ncut').addEventListener('change', e => { remember(); setOv(i, { cuts: +e.target.value || undefined, single: undefined }); replan(); commit(); seek(ln.start + 0.001); });
+    q('.tapfrom').addEventListener('click', () => startTap(i));
+    q('.rng').addEventListener('click', e => setExportRange(i, e.shiftKey));
+    if (q('.dice')) q('.dice').addEventListener('click', () => { const cur = ov[i] || {}; setOv(i, { seed: (cur.seed | 0) + 1, lock: false }); replan(); seek(ln.start + 0.001); });
+    if (q('.lock')) q('.lock').addEventListener('click', () => {
       const cur = ov[i] || {};
       if (cur.lock) setOv(i, { lock: false, lockedSeed: undefined });
       else setOv(i, { lock: true, lockedSeed: ln.seed });
       replan();
     });
-    const cutsEl = li.querySelector('.cuts');
+    const cutsEl = q('.cuts');
     S.plan.cuts.filter(c => c.line === i && J.LAYOUTS[c.layout] && !J.LAYOUTS[c.layout].special).forEach(c => {
       const sp = document.createElement('span'); sp.textContent = J.LAYOUTS[c.layout].name; sp.title = `${c.text}｜${J.ENTER[c.enter].name} → ${J.EXIT[c.exit].name}`;
       sp.style.borderColor = `hsla(${layoutHue(c.layout)},70%,58%,0.7)`;
@@ -29599,6 +30456,124 @@ function renderLines() {
     ol.appendChild(li); S.lineEls.push(li);
   });
   $('linesInfo').textContent = `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
+  syncRangeUI();
+}
+
+/* ---------------- 行から歌詞を直す ---------------- */
+// the lyrics text is the source: a plan line knows the row it came from (ln.src); LRC time tags on that row are kept
+const LRC_PREFIX = /^\s*(?:\[\d+:\d+(?:[.:]\d+)?\])*/;
+function editLine(li, ln) {
+  if (ln.src == null || li.querySelector('.txt-edit')) return;
+  const rows = S.project.lyrics.replace(/\r/g, '').split('\n'), row = rows[ln.src] || '';
+  const pre = (row.match(LRC_PREFIX) || [''])[0], body = row.slice(pre.length).trim();
+  const txt = li.querySelector('.txt'), inp = document.createElement('input');
+  inp.type = 'text'; inp.className = 'txt-edit'; inp.value = body; inp.setAttribute('aria-label', `${ln.index + 1}행 가사`);
+  inp.title = '문법(/ 구분, *강조*, 행 끝의 !, | 메모, [간주 8])도 그대로 쓸 수 있습니다. Enter로 확정, Esc로 취소';
+  txt.replaceWith(inp); inp.focus(); inp.select();
+  let done = false;
+  const finish = ok => {
+    if (done) return; done = true;
+    const v = inp.value.trim();
+    if (ok && v && v !== body) {
+      pushEdit();
+      rows[ln.src] = pre + v;
+      S.project.lyrics = rows.join('\n'); $('lyrics').value = S.project.lyrics;
+      replan(); flushSave(); toast(`${ln.index + 1}행 가사를 고쳤습니다`);
+    } else renderLines();
+  };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); finish(true); } else if (e.key === 'Escape') { e.preventDefault(); finish(false); } });
+  inp.addEventListener('blur', () => finish(true));
+}
+
+/* ---------------- 歌詞・タイミングの取り消し（Ctrl+Z） ---------------- */
+// separate from the ◀ ▶ history of looks: lyric edits, dragged / typed / tapped line times
+const ED = { undo: [], redo: [] };
+const edSnap = () => JSON.stringify({ lyrics: S.project.lyrics, lineTimes: S.project.timing.lineTimes || {} });
+function pushEdit() { const s = edSnap(); if (ED.undo[ED.undo.length - 1] !== s) ED.undo.push(s); if (ED.undo.length > 60) ED.undo.shift(); ED.redo = []; updateEditBtns(); }
+function edGo(d) {
+  const from = d < 0 ? ED.undo : ED.redo, to = d < 0 ? ED.redo : ED.undo;
+  if (!from.length) return;
+  const o = JSON.parse(from.pop()), cur = JSON.parse(edSnap());
+  if ('ov' in o) { cur.ov = S.project.overrides; cur.range = S.project.exportRange || null; }   // clearLyrics() also cleared these
+  to.push(JSON.stringify(cur));
+  S.project.lyrics = o.lyrics; S.project.timing.lineTimes = o.lineTimes; $('lyrics').value = o.lyrics;
+  if ('ov' in o) { S.project.overrides = o.ov || {}; S.project.exportRange = o.range || null; }
+  replan(); flushSave(); updateEditBtns();
+  toast(d < 0 ? '되돌렸습니다' : '다시 실행했습니다');
+}
+// 歌詞を消す: lyrics + everything tied to line numbers (times, per-line settings, export range); undoable
+function clearLyrics() {
+  if (S.tap || S.exporting) return;
+  const P = S.project;
+  if (!P.lyrics.trim() && !Object.keys(P.timing.lineTimes || {}).length) { $('lyrics').focus(); return; }
+  const snap = JSON.parse(edSnap()); snap.ov = P.overrides || {}; snap.range = P.exportRange || null;
+  ED.undo.push(JSON.stringify(snap)); if (ED.undo.length > 60) ED.undo.shift(); ED.redo = [];
+  pause();
+  P.lyrics = ''; P.timing.lineTimes = {}; P.overrides = {}; P.exportRange = null; $('lyrics').value = '';
+  replan(); flushSave(); updateEditBtns(); seek(0);
+  toast('가사를 지웠습니다(‘되돌리기’나 Ctrl+Z로 복구 가능)');
+}
+// 初期化: back to a blank project — song (also the copy kept in this browser), settings and both histories go
+let audioNameDefault = '';
+async function resetAll() {
+  if (S.exporting) return;
+  if (S.tap) stopTap();
+  pause();
+  S.project = mergeProject(null); S.project.lyrics = '';
+  S.audio = null; if ($('audioFile')) $('audioFile').value = '';
+  if (J.forgetSong) await J.forgetSong();
+  $('audioName').textContent = audioNameDefault;
+  ED.undo = []; ED.redo = []; H.list = []; H.i = -1;
+  TL.z = 1; TL.off = 0;
+  $('lyrics').value = ''; fontKey = '';
+  syncUI(); replan(); commit(); updateEditBtns(); flushSave(); seek(0);
+  toast('초기화했습니다');
+}
+function updateEditBtns() { const u = $('btnUndoEdit'); if (u) u.disabled = !ED.undo.length; }
+
+/* ---------------- 書き出す範囲（選んだ行だけ） ---------------- */
+function exportRangeLines() {
+  const r = S.project.exportRange, n = S.plan ? S.plan.lines.length : 0;
+  if (!r || !n || !(r.from >= 0)) return null;
+  const from = Math.min(n - 1, r.from | 0), to = Math.min(n - 1, Math.max(from, r.to | 0));
+  return { from, to };
+}
+function exportRange() {
+  const R = exportRangeLines(); if (!R) return null;
+  const L = S.plan.lines, a = L[R.from], b = L[R.to], last = R.to === L.length - 1;
+  const t0 = Math.max(0, a.start - 0.25);
+  const t1 = last ? S.plan.duration : Math.min(L[R.to + 1].start, (b.interlude ? b.end : b.visEnd) + 0.35);
+  return { t0, t1 };
+}
+function rangeSuffix() { const R = exportRangeLines(); if (!R) return ''; const f = n => String(n + 1).padStart(2, '0'); return '_L' + f(R.from) + (R.to > R.from ? '-' + f(R.to) : ''); }
+function setExportRange(i, extend) {
+  const R = exportRangeLines();
+  if (extend && R) S.project.exportRange = { from: Math.min(R.from, i), to: Math.max(R.to, i) };
+  else if (R && R.from === i && R.to === i) S.project.exportRange = null;          // click again: back to the whole song
+  else S.project.exportRange = { from: i, to: i };
+  flushSave(); renderLines();
+  const R2 = exportRangeLines();
+  toast(R2 ? `내보낼 범위: ${R2.from + 1}${R2.to > R2.from ? '~' + (R2.to + 1) : ''}행` : '내보낼 범위: 전체');
+}
+function syncRangeUI() {
+  const R = exportRangeLines(), n = S.plan.lines.length;
+  const opts = (sel, first) => `<option value="-1">${first}</option>` + S.plan.lines.map((ln, i) => `<option value="${i}">${String(i + 1).padStart(2, '0')} ${escapeHtml((ln.interlude ? '[간주]' : ln.text).slice(0, 14))}</option>`).join('');
+  document.querySelectorAll('.rngFrom').forEach(el => { el.innerHTML = opts(el, '전체'); el.value = R ? String(R.from) : '-1'; });
+  document.querySelectorAll('.rngTo').forEach(el => { el.innerHTML = opts(el, '—'); el.value = R ? String(R.to) : '-1'; el.disabled = !R; });
+  const r = exportRange();
+  document.querySelectorAll('.rngInfo').forEach(el => { el.textContent = r ? `${J.fmtTime(r.t0)} ~ ${J.fmtTime(r.t1)} (${(r.t1 - r.t0).toFixed(1)}초)` : `전체 (${S.plan.duration.toFixed(1)}초)`; });
+}
+function bindRangeUI() {
+  document.querySelectorAll('.rngFrom').forEach(el => el.addEventListener('change', () => {
+    const v = +el.value, R = exportRangeLines();
+    S.project.exportRange = v < 0 ? null : { from: v, to: R ? Math.max(v, R.to) : v };
+    flushSave(); renderLines();
+  }));
+  document.querySelectorAll('.rngTo').forEach(el => el.addEventListener('change', () => {
+    const v = +el.value, R = exportRangeLines(); if (!R) return;
+    S.project.exportRange = v < 0 ? { from: R.from, to: R.from } : { from: Math.min(R.from, v), to: Math.max(R.from, v) };
+    flushSave(); renderLines();
+  }));
 }
 function setOv(i, patch) {
   const cur = Object.assign({}, S.project.overrides[i] || {}, patch);
@@ -29629,9 +30604,9 @@ function drawStyleGrid() {
     st.schemes.slice(1, 4).forEach((s2, i) => { x.fillStyle = s2.bg; x.fillRect(192 - 14 * (i + 1), 0, 14, 10); });
     const f = st.fonts.display[0];
     x.font = J.fontCSS(f, 46); x.textAlign = 'center'; x.textBaseline = 'middle';
-    x.fillStyle = sc.ghostB; x.fillText('字面', 96 - 3, 54 - 1);
-    x.fillStyle = sc.ghostA; x.fillText('字面', 96 + 3, 54 + 2);
-    x.fillStyle = sc.fg; x.fillText('字面', 96, 54);
+    x.fillStyle = sc.ghostB; x.fillText('JIZURA', 96 - 3, 54 - 1);
+    x.fillStyle = sc.ghostA; x.fillText('JIZURA', 96 + 3, 54 + 2);
+    x.fillStyle = sc.fg; x.fillText('JIZURA', 96, 54);
     x.fillStyle = sc.accent; x.fillRect(12, 90, 30, 4);
     x.font = J.fontCSS('mono', 9); x.textAlign = 'left'; x.fillStyle = sc.sub; x.fillText(k.toUpperCase(), 48, 93);
   });
@@ -29869,6 +30844,10 @@ function syncOut() {
   $('outQuality').value = S.project.quality || 'high'; $('outAudio').checked = S.project.includeAudio !== false;
   const k = J.keyMode(S.project) || 'off';
   $('outKey').value = k; $('eKey').value = k;
+  $('outCenter').checked = $('eCenter').checked = !!S.project.centerFree;
+  const tall = J.designSize(S.project.aspect)[1] > J.designSize(S.project.aspect)[0] * 1.1;
+  document.querySelectorAll('.center-dir').forEach(el => { el.hidden = !(S.project.centerFree && tall); });
+  document.querySelectorAll('.centerDirSel').forEach(el => { el.value = S.project.centerDir === 'lr' ? 'lr' : 'tb'; });
   const kb = $('keyBadge');
   kb.hidden = k === 'off';
   if (k !== 'off') kb.innerHTML = `<i style="background:${J.KEY_BG[k]}"></i>${k === 'green' ? '그린 스크린' : '블랙 배경'}`;
@@ -29878,15 +30857,25 @@ async function codecNote() {
   const vc = await J.pickVideoCodec(w, h, S.project.fps, 12e6);
   $('codecNote').textContent = vc ? `이 브라우저에서는 ${vc.label}(으)로 내보냅니다(${w}×${h} / ${S.project.fps}fps). 내보내는 동안 탭을 열어 두세요.` : '이 브라우저는 영상 인코딩(WebCodecs)을 지원하지 않습니다. Chrome / Edge 최신 버전으로 열거나 연속 PNG를 사용하세요.';
   $('btnMP4').disabled = !vc; $('eMP4').disabled = !vc;
-  if (!vc) $('eMP4').title = '이 브라우저는 MP4 내보내기를 지원하지 않습니다(Chrome / Edge 권장)';
+  ['btnMP4File', 'eMP4File'].forEach(id => { $(id).hidden = !vc || !canPickFile(); });
+  if (!vc) $('eMP4').title = '이 브라우저에서는 MP4 내보내기를 사용할 수 없습니다 (Chrome / Edge 권장)';
 }
-const EXP_BTNS = ['btnMP4', 'btnPNG', 'btnPNGA', 'eMP4'];
+const EXP_BTNS = ['btnMP4', 'btnPNG', 'btnPNGA', 'btnPNGL', 'eMP4', 'btnMP4File', 'eMP4File'];
 function baseName() {
   const k = J.keyMode(S.project);
   return ((S.project.title || 'jizura').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'jizura') + (k ? (k === 'green' ? '_greenback' : '_blackback') : '');
 }
+const canPickFile = () => typeof window.showSaveFilePicker === 'function' && !document.documentElement.classList.contains('cep') && typeof VideoEncoder !== 'undefined';
 async function runExport(kind) {
   if (S.exporting) return;
+  // 大きな動画用: the save dialog must open straight from the click (before anything is awaited)
+  let file = null, fileName = '';
+  if (kind === 'mp4file') {
+    try {
+      const hnd = await window.showSaveFilePicker({ suggestedName: baseName() + rangeSuffix() + '.mp4', types: [{ description: 'MP4', accept: { 'video/mp4': ['.mp4'] } }] });
+      file = await hnd.createWritable(); fileName = hnd.name;
+    } catch (e) { if (e && e.name === 'AbortError') return; toast('저장 위치를 열 수 없습니다: ' + (e && e.message ? e.message : e)); return; }
+  }
   pause();
   const ac = new AbortController(); S.exporting = ac;
   const boxes = [...document.querySelectorAll('.exp-box')];
@@ -29899,19 +30888,30 @@ async function runExport(kind) {
   const t0 = performance.now();
   try {
     await J.ensureFonts(S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS, J.fontsOfPlan(S.plan));
-    if (kind === 'mp4') {
-      const r = await J.exportMP4({ plan: S.plan, project: S.project, audio: S.project.includeAudio !== false ? S.audio : null, quality: S.project.quality || 'high', onProgress, signal: ac.signal });
-      txt.textContent = `완료 ${(r.blob.size / 1048576).toFixed(1)}MB · ${r.codec}${r.audio ? ' + ' + r.audio.toUpperCase() : ''} · ${((performance.now() - t0) / 1000).toFixed(0)}초`;
-      const res = await J.saveFile(baseName() + '.mp4', r.blob);
-      if (res === 'declined') txt.textContent += ' (저장이 취소됨)';
+    if (kind === 'mp4' || kind === 'mp4file') {
+      const plan = S.plan, range = exportRange(), span = J.exportSpan(plan, range);
+      const r = await J.exportMP4({ plan, project: S.project, audio: S.project.includeAudio !== false ? S.audio : null, quality: S.project.quality || 'high', onProgress, signal: ac.signal, range, file });
+      file = null;
+      txt.textContent = `완료 ${r.blob ? (r.blob.size / 1048576).toFixed(1) + 'MB · ' : ''}${r.codec}${r.audio ? ' + ' + r.audio.toUpperCase() : ''} · ${((performance.now() - t0) / 1000).toFixed(0)}초`;
+      if (r.blob) {
+        const res = await J.saveFile(baseName() + rangeSuffix() + '.mp4', r.blob);
+        if (res === 'declined') txt.textContent += ' (저장이 취소됨)';
+      } else txt.textContent += `·「${fileName}」에 저장했습니다`;
+      if (r.tried && r.tried.length) txt.textContent += '(처음 방법이 실패해서 다른 인코더로 내보냈습니다)';
+      // audio that some players cannot play (Opus), or none at all: save the soundtrack as WAV next to it
+      if (r.audioWanted && r.audio !== 'aac') {
+        await J.saveFile(baseName() + rangeSuffix() + '_audio.wav', J.audioWav(S.audio.buffer, span.dur, span.t0));
+        txt.textContent += r.audio ? '. 이 브라우저에서는 오디오가 Opus가 되어 iPhone·QuickTime 등에서 소리가 나지 않을 수 있으므로 오디오를 WAV로도 저장했습니다' : '. 이 브라우저는 오디오를 내보낼 수 없어 오디오를 WAV로 따로 저장했습니다(동영상 편집 프로그램에서 겹쳐 주세요)';
+      } else if (S.project.includeAudio !== false && !S.audio && S.project.audioName) txt.textContent += '. 음원을 불러오지 않아 소리가 없습니다(‘음원 불러오기’로 다시 불러오세요)';
     } else {
-      const blob = await J.exportPNGZip({ plan: S.plan, project: S.project, transparent: kind === 'pnga', onProgress, signal: ac.signal });
+      const blob = await J.exportPNGZip({ plan: S.plan, project: S.project, transparent: kind === 'pnga', layers: kind === 'pngl', onProgress, signal: ac.signal, range: exportRange() });
       txt.textContent = `완료 ${(blob.size / 1048576).toFixed(1)}MB`;
-      await J.saveFile(baseName() + (kind === 'pnga' ? '_alpha' : '') + '_png.zip', blob);
+      await J.saveFile(baseName() + rangeSuffix() + (kind === 'pnga' ? '_alpha' : kind === 'pngl' ? '_layers' : '') + '_png.zip', blob);
     }
   } catch (e) {
     txt.textContent = '오류: ' + (e && e.message ? e.message : e);
     console.error(e);
+    if (file) { try { await file.abort(); } catch (e2) {} }
   } finally {
     S.exporting = null; S.need = true;
     EXP_BTNS.forEach(id => { $(id).disabled = false; });
@@ -29920,23 +30920,44 @@ async function runExport(kind) {
 }
 
 /* ---------------- tap sync ---------------- */
-function startTap() {
+// start from any line: playback begins a little before that line, earlier lines keep their times
+function startTap(from = 0) {
   if (!S.plan.lines.length) return;
-  S.tap = { i: 0 };
+  from = J.clamp(from | 0, 0, S.plan.lines.length - 1);
+  pushEdit();
+  S.tap = { i: from, from, done: [] };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
   $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
-  seek(0); play(); updateTap();
+  const prev = from > 0 ? S.plan.lines[from - 1] : null, cur = S.plan.lines[from];
+  const t0 = from === 0 ? 0 : Math.max(0, prev.start + 0.01, cur.start - 2.5);      // a little before the line, never before the previous one
+  seek(t0); play(); updateTap();
   $('tapBtn').focus();
+  if (from > 0) toast(`${from + 1}행부터 탭으로 동기화합니다(${J.fmtTime(t0)}부터 재생)`);
 }
 function tapNow() {
   if (!S.tap) return;
-  S.project.timing.lineTimes[S.tap.i] = +S.t.toFixed(3);
+  const LT = S.project.timing.lineTimes, i = S.tap.i, t = +S.t.toFixed(3);
+  S.tap.done.push({ i, had: LT[i] });
+  LT[i] = t;
+  // later lines tapped earlier (a previous pass) must not come before this one
+  for (const k of Object.keys(LT)) if (+k > i && LT[k] <= t + 0.2) delete LT[k];
   S.tap.i++;
   replan();
   if (S.tap.i >= S.plan.lines.length) stopTap(); else updateTap();
 }
-function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); }
-function updateTap() { const ln = S.plan.lines[S.tap.i]; $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${ln.text}` : '—'; }
+function tapBack() {                    // 1つ戻る: undo the last tap and jump back a little
+  if (!S.tap || !S.tap.done.length) return;
+  const d = S.tap.done.pop(), LT = S.project.timing.lineTimes;
+  if (d.had != null) LT[d.i] = d.had; else delete LT[d.i];
+  S.tap.i = d.i; replan(); updateTap();
+  seek(Math.max(0, S.t - 3)); if (!S.playing) play();
+}
+function stopTap() { S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); flushSave(); }
+function updateTap() {
+  const ln = S.plan.lines[S.tap.i];
+  $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${ln.interlude ? '[간주]' : ln.text}` : '—';
+  const bb = $('tapBack'); if (bb) bb.disabled = !S.tap.done.length;
+}
 
 /* ---------------- sync all inputs from project ---------------- */
 function syncUI() {
@@ -29949,6 +30970,8 @@ function syncUI() {
   $('snap').checked = !!S.project.timing.snap;
   document.querySelectorAll('.wa-toggle').forEach(el => { el.checked = S.project.wa !== false; });
   document.querySelectorAll('.extra-toggle').forEach(el => { el.checked = S.project.extra === true; });
+  document.querySelectorAll('.unify-toggle').forEach(el => { el.checked = S.project.unify === true; });
+  document.querySelectorAll('.typeset-toggle').forEach(el => { el.checked = S.project.typeset === true; });
   $('lyricLang').value = J.LANG_LABEL[S.project.lang] ? S.project.lang : 'auto'; langNote();
   renderFontRoles(); renderColors(); renderFx(); renderTech(); syncOut(); drawStyleGrid();
 }
@@ -29981,10 +31004,33 @@ function bind() {
   sc.addEventListener('input', () => { S.scrubbing = true; seek(sc.value / 10000 * S.plan.duration); });
   sc.addEventListener('change', () => { S.scrubbing = false; });
   const tl = $('timeline');
-  let drag = false;
-  tl.addEventListener('pointerdown', e => { drag = true; tl.setPointerCapture(e.pointerId); timelineSeek(e); });
-  tl.addEventListener('pointermove', e => { if (drag) timelineSeek(e); });
-  tl.addEventListener('pointerup', () => { drag = false; });
+  let drag = false, raf = 0;
+  tl.addEventListener('pointerdown', e => {
+    tl.setPointerCapture(e.pointerId);
+    const h = S.tap || S.exporting ? -1 : tlHandleAt(e);
+    if (h >= 0) { pushEdit(); TL.drag = h; pause(); tl.style.cursor = 'ew-resize'; return; }
+    drag = true; timelineSeek(e);
+  });
+  tl.addEventListener('pointermove', e => {
+    if (TL.drag >= 0) { const ev = { clientX: e.clientX, clientY: e.clientY, shiftKey: e.shiftKey }; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => tlDragTo(TL.drag, ev)); return; }
+    if (drag) { timelineSeek(e); return; }
+    const hv = tlHandleAt(e); if (hv !== TL.hover) { TL.hover = hv; tl.style.cursor = hv >= 0 ? 'ew-resize' : 'pointer'; drawTimeline(); }
+  });
+  const endDrag = () => { if (TL.drag >= 0) { TL.drag = -1; flushSave(); renderLines(); drawTimeline(); } drag = false; };
+  tl.addEventListener('pointerup', endDrag); tl.addEventListener('pointercancel', endDrag);
+  tl.addEventListener('pointerleave', () => { if (TL.hover >= 0 && TL.drag < 0) { TL.hover = -1; drawTimeline(); } });
+  tl.addEventListener('wheel', e => {
+    e.preventDefault();
+    const { vd } = tlView();
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) { TL.off += (e.shiftKey ? e.deltaY : e.deltaX) / tl.clientWidth * vd; tlView(); drawTimeline(); }
+    else tlZoom(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025)), tlTime(e));
+  }, { passive: false });
+  $('tlIn').addEventListener('click', () => tlZoom(1.6));
+  $('tlOut').addEventListener('click', () => tlZoom(1 / 1.6));
+  $('tlFit').addEventListener('click', () => { TL.z = 1; TL.off = 0; drawTimeline(); });
+  $('btnUndoEdit').addEventListener('click', () => edGo(-1));
+  $('tapBack').addEventListener('click', tapBack);
+  bindRangeUI();
   document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
     document.querySelectorAll('.tabpane').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; });
@@ -30000,8 +31046,10 @@ function bind() {
     renderTech(); drawStyleGrid(); replan(); commit(); flushSave();
     toast(e.target.checked ? msgOn : msgOff);
   }));
-  setSwitch('extra-toggle', 'extra', true, '추가 연출: 사용', '추가 연출: 사용 안 함(첫 공개 버전의 연출만)');
-  setSwitch('wa-toggle', 'wa', true, '일본풍 연출: 사용', '일본풍 연출: 사용 안 함(자동·셔플에서 선택되지 않음)');
+  setSwitch('extra-toggle', 'extra', true, '추가 연출: 사용', '추가 연출: 사용 안 함 (초기 공개판 연출만)');
+  setSwitch('wa-toggle', 'wa', true, '일본풍 연출: 사용', '일본풍 연출: 사용 안 함 (자동 생성·셔플에서 제외)');
+  setSwitch('unify-toggle', 'unify', true, '통일감: 켬(파트별로 맞추고 킬링 파트·모프·굵기도 사용)', '통일감: 끔');
+  setSwitch('typeset-toggle', 'typeset', true, '문자 정렬: 켬(자간·조사·영문·0.2초 먼저·효과 절제)', '문자 정렬: 끔');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
   $('fxInterCount').addEventListener('change', e => { S.project.fx.interCount = e.target.value; replan(); });
@@ -30041,9 +31089,20 @@ function bind() {
     toast(k ? `배경: ${k === 'green' ? '그린 스크린' : '블랙 배경'}(흰 글자와 연출만)` : '배경: 일반(스타일 색 배합)');
   }));
   $('outAudio').addEventListener('change', e => { S.project.includeAudio = e.target.checked; autosave(); });
+  document.querySelectorAll('.centerDirSel').forEach(el => el.addEventListener('change', e => {
+    S.project.centerDir = e.target.value; syncOut(); replan(); flushSave();
+    toast(e.target.value === 'lr' ? '세로 화면: 좌우로 나눕니다' : '세로 화면: 위아래로 나눕니다');
+  }));
+  ['outCenter', 'eCenter'].forEach(id => $(id).addEventListener('change', e => {
+    S.project.centerFree = e.target.checked; syncOut(); replan(); flushSave();
+    const tall = S.plan.H > S.plan.W * 1.1 && S.project.centerDir !== 'lr';
+    toast(e.target.checked ? `가운데를 비웠습니다: 문자와 연출을 ${tall ? '위아래' : '좌우'}에 배치합니다` : '가운데 비우기를 해제했습니다');
+  }));
   $('btnMP4').addEventListener('click', () => runExport('mp4'));
+  ['btnMP4File', 'eMP4File'].forEach(id => $(id).addEventListener('click', () => runExport('mp4file')));
   $('btnPNG').addEventListener('click', () => runExport('png'));
   $('btnPNGA').addEventListener('click', () => runExport('pnga'));
+  $('btnPNGL').addEventListener('click', () => runExport('pngl'));
   document.querySelectorAll('.exp-cancel').forEach(b => b.addEventListener('click', () => { if (S.exporting) S.exporting.abort(); }));
   $('eMP4').addEventListener('click', () => runExport('mp4'));
   // かんたんモード
@@ -30063,7 +31122,15 @@ function bind() {
   document.querySelectorAll('.terms-open').forEach(b => b.addEventListener('click', openTerms));
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });   // click on the backdrop
   $('btnSave').addEventListener('click', () => J.saveFile(baseName() + '.jizura.json', JSON.stringify(S.project, null, 1)));
-  $('btnAE').addEventListener('click', () => J.saveFile(baseName() + '_ae.json', JSON.stringify(J.planForAE(S.plan, S.project), null, 1)));
+  $('btnAE').addEventListener('click', () => J.saveFile(baseName() + rangeSuffix() + '_ae.json', JSON.stringify(J.planForAE(S.plan, S.project, exportRange()), null, 1)));
+  audioNameDefault = $('audioName').textContent;
+  $('btnClearLyrics').addEventListener('click', clearLyrics);
+  $('btnReset').addEventListener('click', () => {
+    const dlg = $('resetDlg');
+    if (!dlg || typeof dlg.showModal !== 'function') { if (window.confirm('가사·음원·설정·기록을 모두 지우고 처음 상태로 되돌릴까요? 되돌릴 수 없습니다.')) resetAll(); return; }
+    dlg.returnValue = ''; dlg.showModal();
+  });
+  $('resetDlg').addEventListener('close', () => { if ($('resetDlg').returnValue === 'reset') resetAll(); });
   $('fileProject').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     try { S.project = mergeProject(JSON.parse(await f.text())); syncUI(); replan(); }
@@ -30075,7 +31142,10 @@ function bind() {
     const typing = /INPUT|TEXTAREA|SELECT/.test(tag) && e.target.type !== 'range' && e.target.type !== 'checkbox';
     if (S.tap && (e.code === 'Space' || e.code === 'Enter') && !typing) { e.preventDefault(); tapNow(); return; }
     if (S.tap && e.code === 'Escape') { pause(); stopTap(); return; }
-    if (typing || $('termsDlg').open) return;
+    if (S.tap && e.code === 'Backspace' && !typing) { e.preventDefault(); tapBack(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !typing && !S.tap) { e.preventDefault(); edGo(e.shiftKey ? 1 : -1); return; }
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyY' && !typing && !S.tap) { e.preventDefault(); edGo(1); return; }
+    if (typing || $('termsDlg').open || $('resetDlg').open) return;
     if (e.code === 'Space') { e.preventDefault(); S.playing ? pause() : play(); }
     else if (e.code === 'ArrowRight') seek(S.t + (e.shiftKey ? 1 : 1 / S.plan.fps));
     else if (e.code === 'ArrowLeft') seek(S.t - (e.shiftKey ? 1 : 1 / S.plan.fps));
@@ -30083,36 +31153,106 @@ function bind() {
   });
   window.addEventListener('resize', () => { sizeViewport(); drawTimeline(); });
   if (window.ResizeObserver) new ResizeObserver(() => { sizeViewport(); drawTimeline(); }).observe($('viewport'));
+  bindFollow();
 }
 
 /* song file -> beat analysis (file input, or a host such as the After Effects panel) */
-async function loadAudioFile(f) {
+async function loadAudioFile(f, restored) {
   $('audioName').textContent = '분석 중…';
   try {
     pause();
     S.audio = await J.analyzeAudio(f);
-    $('audioName').textContent = `${f.name} (${J.fmtTime(S.audio.duration)} · 약 ${S.audio.bpm}BPM)`;
+    $('audioName').textContent = `${f.name} (${J.fmtTime(S.audio.duration)} · 약 ${S.audio.bpm}BPM)` + (restored ? ' · 지난번 음원' : '');
+    S.project.audioName = f.name;
+    if (!restored && J.saveSong) J.saveSong(f);             // kept in this browser: a reload does not drop the song from exports
     S.project.timing.snap = true;
     syncUI(); replan();
     return true;
   } catch (err) { $('audioName').textContent = '불러올 수 없습니다: ' + err.message; S.audio = null; return false; }
 }
 
+/* ---------------- かんたんモードの案内ツアー ---------------- */
+const TOUR = [
+  { t: () => $('lyrics'), title: '1. 가사 넣기', text: '한 행이 한 프레이즈가 됩니다. 빈 행은 약간 간격을 두고, [간주 8]이라고 쓰면 8초 간주(배경과 장식만)가 됩니다.' },
+  { t: () => $('audioFile').closest('label') || $('audioFile'), title: '2. 곡 불러오기', text: 'mp3 등을 불러오면 박자를 감지해 컷 전환을 맞춥니다. 곡이 없어도 만들 수 있습니다. 「탭으로 동기화」로 행의 시작을 맞출 수도 있습니다.' },
+  { t: () => $('btnOmakaseBig'), title: '3. 자동으로 만들기', text: '스타일·분위기·동작·배색·구성을 통째로 정합니다. 누를 때마다 다른 안이 되고, 「◀ 이전 안」으로 돌아갈 수 있습니다.' },
+  { t: () => $('btnPlay'), title: '4. 재생해서 확인하기', text: '재생해 보세요. 아래 타임라인에서는 행 구분을 드래그해 옮길 수 있습니다(＋−로 확대).' },
+  { t: () => $('lineList'), title: '5. 마음에 걸리는 행만 고치기', text: '행마다 가사 고치기(✎), 컷 수 정하기, 이 행부터 다시 탭하기(◎), 이 행만 다시 만들기(주사위)를 할 수 있습니다.' },
+  { t: () => $('eMP4').closest('.easy-sec') || $('eMP4'), title: '6. 내보내기', text: '화면 비율(세로 9:16 등)과 해상도를 골라 MP4로 내보냅니다. 「내보낼 범위」로 고른 행만 내보낼 수도 있습니다.' },
+];
+const TR = { i: -1 };
+function tourShow(i) {
+  const el = $('tour'), n = TOUR.length;
+  if (i < 0 || i >= n) return tourEnd();
+  TR.i = i;
+  const st = TOUR[i], tg = st.t();
+  el.hidden = false;
+  el.querySelector('.tour-step').textContent = `${i + 1} / ${n}`;
+  el.querySelector('.tour-title').textContent = st.title;
+  el.querySelector('.tour-text').textContent = st.text;
+  el.querySelector('.tour-prev').disabled = i === 0;
+  el.querySelector('.tour-next').textContent = i === n - 1 ? '시작하기' : '다음';
+  if (tg && tg.scrollIntoView) tg.scrollIntoView({ block: 'center', behavior: 'auto' });
+  requestAnimationFrame(() => tourPlace(tg));
+  el.querySelector('.tour-next').focus();
+}
+function tourPlace(tg) {
+  const el = $('tour'), spot = el.querySelector('.tour-spot'), bub = el.querySelector('.tour-bub');
+  const vw = window.innerWidth, vh = window.innerHeight, pad = 6;
+  const r = tg ? tg.getBoundingClientRect() : { left: vw / 2, top: vh / 2, width: 0, height: 0, right: vw / 2, bottom: vh / 2 };
+  const x0 = Math.max(4, r.left - pad), y0 = Math.max(4, r.top - pad), x1 = Math.min(vw - 4, r.right + pad), y1 = Math.min(vh - 4, r.bottom + pad);
+  Object.assign(spot.style, { left: x0 + 'px', top: y0 + 'px', width: Math.max(0, x1 - x0) + 'px', height: Math.max(0, y1 - y0) + 'px' });
+  const bw = bub.offsetWidth, bh = bub.offsetHeight, gap = 12;
+  let top = y1 + gap <= vh - bh - 8 ? y1 + gap : y0 - gap - bh >= 8 ? y0 - gap - bh : Math.max(8, vh - bh - 8);
+  let left = J.clamp(x0 + (x1 - x0) / 2 - bw / 2, 8, vw - bw - 8);
+  Object.assign(bub.style, { top: top + 'px', left: left + 'px' });
+}
+function tourStart() {
+  if (S.exporting || S.tap) return;
+  if (S.mode !== 'easy') setMode('easy');
+  pause(); tourShow(0);
+}
+function tourEnd() {
+  $('tour').hidden = true; TR.i = -1;
+  try { localStorage.setItem('jizura.tourDone', '1'); } catch (e) {}
+}
+function bindTour() {
+  const el = $('tour');
+  el.querySelector('.tour-next').addEventListener('click', () => tourShow(TR.i + 1));
+  el.querySelector('.tour-prev').addEventListener('click', () => tourShow(TR.i - 1));
+  el.querySelector('.tour-skip').addEventListener('click', tourEnd);
+  $('btnTour').addEventListener('click', tourStart);
+  document.addEventListener('keydown', e => {
+    if (TR.i < 0) return;
+    if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); tourShow(TR.i + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopImmediatePropagation(); tourShow(TR.i - 1); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); tourEnd(); }
+    else if (e.key !== 'Tab') { e.stopImmediatePropagation(); }
+  }, true);
+  window.addEventListener('resize', () => { if (TR.i >= 0) tourPlace(TOUR[TR.i].t()); });
+  window.addEventListener('scroll', () => { if (TR.i >= 0) tourPlace(TOUR[TR.i].t()); }, true);
+}
+
 /* ---------------- boot ---------------- */
 function boot() {
   S.project = loadLocal();
-  bind(); syncUI(); replan();
+  bind(); initVolume(); syncUI(); replan();
   let mode = 'easy'; try { mode = localStorage.getItem('jizura.mode') || 'easy'; } catch (e) {}
   setMode(mode); commit();
+  bindTour();
+  let seen = false; try { seen = localStorage.getItem('jizura.tourDone') === '1'; } catch (e) {}
+  if (!seen && S.mode === 'easy' && !window.__adobe_cep__) setTimeout(tourStart, 600);   // first visit: show the tour once
   // open on a representative frame (end of the first cut's entrance)
   const c0 = S.plan.cuts.find(c => c.line >= 0);
   if (c0) seek(c0.start + Math.min(c0.dur * 0.6, c0.inDur + 0.25));
   requestAnimationFrame(tick);
+  // the song used last time (same name as the saved project's) comes back after a reload
+  if (J.loadSong && S.project.audioName) J.loadSong().then(f => { if (f && f.name === S.project.audioName && !S.audio) loadAudioFile(f, true); });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;
 // hooks for hosts that embed the app (the After Effects CEP panel)
-J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview };
+J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines };
 })();
 
 </script>

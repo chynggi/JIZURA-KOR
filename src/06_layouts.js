@@ -633,6 +633,13 @@ J.LAYOUTS = {
     render(env) {
       const { W, H, sc } = env, P = env.cut.params, lb = env.ltb;
       const fs = J.clamp(H * 0.022, 12, 22);
+      if (P.variant === 'quiet') {                        // [간주] (upstream): nothing but the song title on long interludes
+        if (P.showTitle && P.titleText) {
+          const a = J.clamp(env.lt / 0.8) * J.clamp((env.cut.dur - env.lt) / 0.8);
+          env.draw({ text: P.titleText, font: env.st.fonts.body[0], size: fs * 1.1, x: W / 2, y: H * 0.88, track: 0.3, color: sc.sub, alpha: a, ghost: false });
+        }
+        return { x0: W * 0.3, x1: W * 0.7, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2, boxes: [] };
+      }
       // 첫 간주에 크레딧: song title large + artist, over the rings
       if (P.variant === 'credit') {
         for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.26 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k)), null, sc.sub, 1.2, 0.35, false);

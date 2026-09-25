@@ -1,6 +1,6 @@
 """Build the Korean single-file browser edition from src/, app/ and vendor/.
-This fork's sources are Korean, so the English edition (app/english.py translates the Japanese source) is not rebuilt here;
-en/index.html is kept as shipped upstream.
+This fork's sources are Korean, so the other editions (app/english.py and app/i18n*.py translate the Japanese source)
+are not rebuilt here; en/, zh-hant/, zh-hans/, id/ and ko/ index.html are kept as shipped upstream.
 usage: python3 build.py            -> index.html (GitHub Pages)
        python3 build.py --dev      -> also dev/www/jizura.js + dev/www/test.html for the test tools"""
 import glob, os, sys
@@ -16,7 +16,11 @@ def build(lang):
     title = 'JIZURA — Lyric Motion Video Maker' if english else 'JIZURA 字面 — 문자 PV 자동 구성 도구'
     description = ('Turn lyrics into animated lyric videos in your browser and export MP4.' if english else '가사를 넣으면 문자 PV(리릭 모션)를 자동으로 구성해 MP4로 내보내는 브라우저 앱')
     canonical = 'https://852wa.github.io/JIZURA/en/' if english else 'https://852wa.github.io/JIZURA/'
-    language_nav = ('<nav class="lang-switch" aria-label="Language"><a href="../index.html" lang="ja">日本語</a><span aria-current="page">English</span></nav>' if english else '<nav class="lang-switch" aria-label="언어"><span aria-current="page">한국어</span><a href="en/index.html" lang="en">English</a></nav>')
+    # language menu: this Korean edition, the upstream Japanese original, and the other editions kept as shipped upstream
+    editions = [('index.html', 'ko', '한국어'), ('https://852wa.github.io/JIZURA/', 'ja', '日本語'), ('en/index.html', 'en', 'English'),
+                ('zh-hant/index.html', 'zh-Hant', '繁體中文'), ('zh-hans/index.html', 'zh-Hans', '简体中文'), ('id/index.html', 'id-ID', 'Bahasa Indonesia')]
+    language_nav = ('<label class="lang-switch"><span class="sr-only">언어</span><select aria-label="언어" onchange="if(this.value)location.href=this.value">'
+                    + ''.join(f'<option value="{href}" lang="{hl}"{" selected" if hl == "ko" else ""}>{name}</option>' for href, hl, name in editions) + '</select></label>')
     body = read('app/body.html').replace('    <div class="acts">', '    ' + language_nav + '\n    <div class="acts">', 1)
     if english: body = localize_body(body)
     script = '\n'.join(localize_js(read(f), f) for f in sources) if english else js

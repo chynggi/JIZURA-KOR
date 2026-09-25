@@ -91,7 +91,8 @@ function jzParseLyrics(raw) {
         if (mm) { meta[mm[1].toLowerCase()] = jzTrim(mm[2]); continue; }
         // [\uAC04\uC8FC] / [\uAC04\uC8FC 8] / [\uAC04\uC8FC 8\uCD08] / [\uAC04\uC8FC 8 | \uBB38\uAD6C] / [01:20.00][\uAC04\uC8FC] : interlude before the next line
         // (N = extra seconds for auto timing, \uBB38\uAD6C = small caption, timestamp = the previous line ends and the interlude starts there)
-        var bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:\uAC04\uC8FC|interlude)(?:\s+(\d+(?:\.\d+)?)\s*(?:\uCD08|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
+        // upstream spellings are accepted too: [\u9593\u594F] [\u95F4\u594F] [interlude] [instrumental] [inst] [\uAC04\uC8FC: 8]
+        var bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[\s*(?:\uAC04\uC8FC|\u9593\u594F|\u95F4\u594F|interlude|instrumental|inst)(?:\s*[:\uFF1A]?\s*(\d+(?:\.\d+)?)\s*(?:\uCD08|\u79D2|sec|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
         if (bm) { brk = { sec: bm[3] ? parseFloat(bm[3]) : null, at: bm[1] ? parseInt(bm[1], 10) * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] || null }; continue; }
         // [\uB9C8\uBB34\uB9AC] / [End 8] / [03:45.00][\uB9C8\uBB34\uB9AC] : end card after the last line (at = start time, N = length when there is no song)
         var om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:\uB9C8\uBB34\uB9AC|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:\uCD08|s)?)?\]$/i);
@@ -802,6 +803,43 @@ function jzPickTreat(rng, st, en, fx, layout, emph, hist) {
     }
     return c.length ? rng.wpick(c) : 'none';
 }
+// side bands (same as the browser's J.sideZones): wide frames left / right, tall frames top / bottom
+function jzSideZones(W, H, dir) {
+    if (H > W * 1.1 && dir === 'lr') { var w0 = Math.round(W * 0.34); return [{ x: 0, y: 0, w: w0, h: H, side: 'left' }, { x: W - w0, y: 0, w: w0, h: H, side: 'right' }]; }
+    if (H > W * 1.1) { var h = Math.round(H * 0.33); return [{ x: 0, y: 0, w: W, h: h, side: 'top' }, { x: 0, y: H - h, w: W, h: h, side: 'bottom' }]; }
+    var w = Math.round(W * (W / H > 2 ? 0.3 : 0.36));
+    return [{ x: 0, y: 0, w: w, h: H, side: 'left' }, { x: W - w, y: 0, w: w, h: H, side: 'right' }];
+}
+function jzZoneOf(zones, li) { var z = zones[Math.max(0, li || 0) % 2]; return { x: z.x, y: z.y, w: z.w, h: z.h, side: z.side }; }
+// \u4E2D\u592E\u3092\u7A7A\u3051\u308B: the lyric split in two (same as the browser's splitCut): first half left / top, second half right / bottom,
+// same layout, motion, decorations and camera
+function jzSplitHalf(t, lang) {
+    t = jzTrim(String(t || ''));
+    var n = jzChars(t.replace(/\s+/g, '')).length, k;
+    var words = lang === 'en' ? jzPhraseChunks(jzChunk(t)) : jzChunk(t);
+    if (words.length >= 2) {
+        var total = 0, acc = 0, best = 1, bd = 1e9, sep = /[A-Za-z]/.test(t) ? ' ' : '';
+        for (k = 0; k < words.length; k++) total += jzChars(String(words[k]).replace(/\s+/g, '')).length;
+        for (k = 1; k < words.length; k++) { acc += jzChars(String(words[k - 1]).replace(/\s+/g, '')).length; var d = Math.abs(acc - total / 2); if (d < bd) { bd = d; best = k; } }
+        return [jzTrim(words.slice(0, best).join(sep)), jzTrim(words.slice(best).join(sep))];
+    }
+    if (n <= 3 || /^[A-Za-z0-9'\u2019-]+$/.test(t)) return [t, t];
+    var all = jzChars(t), cut = Math.ceil(all.length / 2);
+    // a half never starts with a particle, punctuation or a small kana
+    for (var g = 0; g < 3 && cut < all.length - 1 && /[\u3001\u3002\uFF0C\uFF0E,.!?\uFF01\uFF1F\u2026\u30FB\u30FC\u3063\u30C3\u3083\u3085\u3087\u30E3\u30E5\u30E7\u3041\u3043\u3045\u3047\u3049\u30A1\u30A3\u30A5\u30A7\u30A9\u3092\u304C\u306F\u306B\u3067\u3068\u306E\u3078\u3082\u3084\u3088\u306D\u300D\u300F\uFF09)]/.test(all[cut]); g++) cut++;
+    return [all.slice(0, cut).join(''), all.slice(cut).join('')];
+}
+function jzSplitCut(cut, zones, st, dur, lang) {
+    var hv = jzSplitHalf(cut.text, lang), seed = jzHash(cut.seed, 23);
+    function planFor(text, z) { return jzPlanOf('layout', cut.layout, new JzRng(seed), st, { text: text, n: jzChars(text.replace(/\s+/g, '')).length, W: z.w, H: z.h, dur: dur }); }
+    cut.text = hv[0]; cut.lineText = hv[0]; cut.words = jzChunk(hv[0]); cut.zone = jzZoneOf(zones, 0); cut.params = planFor(hv[0], zones[0]);
+    var tw = {}, k2;
+    for (k2 in cut) if (cut.hasOwnProperty(k2)) tw[k2] = cut[k2];
+    var delay = Math.min(0.12, dur * 0.08);
+    tw.text = hv[1]; tw.lineText = hv[1]; tw.words = jzChunk(hv[1]); tw.zone = jzZoneOf(zones, 1); tw.params = planFor(hv[1], zones[1]);
+    tw.start = cut.start + delay; tw.dur = cut.end - tw.start; tw.bg = 'none'; tw.bgP = {}; tw.trans = null; tw.transP = {}; tw.transDur = 0; tw.companion = true;
+    cut.companion = tw;
+}
 function jzPickBg(rng, st, en, fx, bgHist) {
     if (!rng.chance(0.2 + 0.35 * fx.decor + 0.2 * fx.bgSwitch)) return 'none';
     var c = [], order = jzOrder('bg'), last = bgHist.slice(Math.max(0, bgHist.length - 3));
@@ -847,22 +885,37 @@ function jzPickFx(rng, st, en, fx, emph, fxHist, kind) {
 }
 function jzPlanOf(g, k, rng, st, extra) { var D = JZ_REG[g][k]; if (!D || !D.plan) return {}; try { return (g === 'layout' ? D.plan(rng, extra || {}, st) : D.plan(rng, st)) || {}; } catch (e) { jzWarn(g + ' ' + k + ' plan: ' + e.toString()); return {}; } }
 
-// ---- lyric language (same rule as the browser, src/02b_lang.js): kana \u2192 ja, hangul \u2192 ko, Han only \u2192 Traditional / Simplified
+// ---- lyric language (same rule as the browser, src/02b_lang.js): Latin only \u2192 en, kana \u2192 ja, hangul \u2192 ko, Han only \u2192 Traditional / Simplified
 var JZ_TC = '\u5011\u500B\u8AAA\u9019\u6703\u5C0D\u6642\u4F86\u9084\u5F8C\u904E\u570B\u958B\u95DC\u8207\u70BA\u5F9E\u554F\u9593\u898B\u9577\u6771\u8ECA\u9580\u611B\u807D\u5B78\u8B93\u8A71\u865F\u767C\u9EDE\u7121\u73FE\u9AD4\u7D93\u96FB\u5BE6\u6A23\u8072\u8B8A\u96E2\u6C23\u5922\u7D66\u89BA\u7576\u6B61\u967D\u6200\u908A\u982D\u6DDA\u8AB0\u6B72\u9060\u55CE\u842C\u96E3\u5BEB\u61C9\u8B80\u61B6\u6A02\u9EBC\u9E97\u50B7\u5C07\u7E3D\u7D50\u7D42\u7D05\u7DA0\u7DDA\u984F\u98A8\u98DB\u9CE5\u8B1D\u8A9E\u8ACB\u8A8D\u8B58\u71B1\u71C8\u9858\u7368\u5920\u7D00\u5E36\u6EFF\u975C\u8F15\u5225\u8166\u81C9\u61F7\u8B0A\u932F\u9846\u9663\u5834\u8B9A\u6DFA\u6EAB\u8A18\u6191\u8B77\u58DE\u6B78\u5ABD\u96A8\u9280\u805E\u614B\u865B\u9059';
 var JZ_SC = '\u4EEC\u4E2A\u8BF4\u8FD9\u4F1A\u5BF9\u65F6\u6765\u8FD8\u540E\u8FC7\u56FD\u5F00\u5173\u4E0E\u4E3A\u4ECE\u95EE\u95F4\u89C1\u957F\u4E1C\u8F66\u95E8\u7231\u542C\u5B66\u8BA9\u8BDD\u53F7\u53D1\u70B9\u65E0\u73B0\u4F53\u7ECF\u7535\u5B9E\u6837\u58F0\u53D8\u79BB\u6C14\u68A6\u7ED9\u89C9\u5F53\u6B22\u9633\u604B\u8FB9\u5934\u6CEA\u8C01\u5C81\u8FDC\u5417\u4E07\u96BE\u5199\u5E94\u8BFB\u5FC6\u4E50\u4E48\u4E3D\u4F24\u5C06\u603B\u7ED3\u7EC8\u7EA2\u7EFF\u7EBF\u989C\u98CE\u98DE\u9E1F\u8C22\u8BED\u8BF7\u8BA4\u8BC6\u70ED\u706F\u613F\u72EC\u591F\u7EAA\u5E26\u6EE1\u9759\u8F7B\u522B\u8111\u8138\u6000\u8C0E\u9519\u9897\u9635\u573A\u8D5E\u6D45\u6E29\u8BB0\u51ED\u62A4\u574F\u5F52\u5988\u968F\u94F6\u95FB\u6001\u865A\u9065';
 function jzDetectLangText(text) {
-    var kana = 0, hangul = 0, han = 0, tc = 0, sc = 0, i, u, c;
+    var kana = 0, hangul = 0, han = 0, tc = 0, sc = 0, latin = 0, i, u, c;
     text = String(text || '');
     for (i = 0; i < text.length; i++) {
         u = text.charCodeAt(i); c = text.charAt(i);
-        if ((u >= 0x3041 && u <= 0x30ff && u !== 0x30fb && u !== 0x30fc) || (u >= 0xff66 && u <= 0xff9d)) kana++;
+        if ((u >= 0x41 && u <= 0x5a) || (u >= 0x61 && u <= 0x7a) || (u >= 0xc0 && u <= 0x24f && u !== 0xd7 && u !== 0xf7) || (u >= 0xff21 && u <= 0xff3a) || (u >= 0xff41 && u <= 0xff5a)) latin++;
+        else if ((u >= 0x3041 && u <= 0x30ff && u !== 0x30fb && u !== 0x30fc) || (u >= 0xff66 && u <= 0xff9d)) kana++;
         else if ((u >= 0xac00 && u <= 0xd7a3) || (u >= 0x1100 && u <= 0x11ff) || (u >= 0x3130 && u <= 0x318f)) hangul++;
         else if ((u >= 0x4e00 && u <= 0x9fff) || (u >= 0x3400 && u <= 0x4dbf)) { han++; if (JZ_TC.indexOf(c) >= 0) tc++; if (JZ_SC.indexOf(c) >= 0) sc++; }
     }
+    if (latin >= 6 && latin >= (latin + (kana + hangul + han) * 3) * 0.9) return 'en';   // almost only Latin letters (English / romaji)
     if (hangul >= 2 && hangul > kana) return 'ko';
     if (kana >= 2 || (kana > 0 && kana >= han * 0.03)) return 'ja';
     if (han >= 2 && (tc || sc)) return tc >= sc ? 'zh-Hant' : 'zh-Hans';
     return 'ja';
+}
+// English lyrics: cut by short phrases (2\u20133 words), not word by word \u2014 same as the browser (J.phraseChunks)
+function jzPhraseChunks(words) {
+    var out = [], cur = [], letters = 0, i, w, m;
+    function flush() { if (cur.length) out.push(cur.join(' ')); cur = []; letters = 0; }
+    for (i = 0; i < words.length; i++) {
+        w = words[i]; m = String(w).match(/[A-Za-z\u00c0-\u024f0-9]/g);
+        cur.push(w); letters += m ? m.length : 0;
+        if (letters >= 9 || cur.length >= 3 || /[,.;:!?]$/.test(w)) flush();
+    }
+    flush();
+    if (out.length >= 2 && out[out.length - 1].replace(/[^A-Za-z]/g, '').length <= 4) { var last = out.pop(); out[out.length - 1] += ' ' + last; }
+    return out.length ? out : words;
 }
 // a plan without .lang (older JSON): detect from its lines
 function jzDetectLang(plan) {
@@ -908,8 +961,11 @@ function jzMakePlan(o) {
     }
     var duration = o.duration || ((ends.length ? ends[ends.length - 1] : 3) + (outro ? (outro.sec != null ? outro.sec : 4) : 0.9));
     var W = o.width, H = o.height, portrait = H > W;
+    // \u4E2D\u592E\u3092\u7A7A\u3051\u308B: cuts laid out in side bands (left / right, or top / bottom on tall frames), alternating per line
+    var zones = o.centerFree ? jzSideZones(W, H, o.centerDir) : null;
+    if (zones && en.bg) en.bg.bigChar = false;
     var plan = { version: 2, generator: 'JIZURA-AE', title: title, artist: artist, W: W, H: H, width: W, height: H, fps: o.fps, duration: duration, style: st, styleKey: o.style, fx: fx, lines: [], cuts: [], events: [], hud: fx.hud,
-        lang: (o.lang && o.lang !== 'auto') ? o.lang : jzDetectLangText(o.lyrics + ' ' + title) };
+        lang: (o.lang && o.lang !== 'auto') ? o.lang : jzDetectLangText(o.lyrics + ' ' + title), centerFree: !!zones, zones: zones };
     jzSetLang(plan.lang);
     var hist = [], bgHist = [], fxHist = [], schemeIdx = 0, nS = st.schemes.length, creditDone = false;
     function ev(t, type, amp, dur) { plan.events.push({ t: t, type: type, amp: amp, dur: dur }); }
@@ -934,8 +990,9 @@ function jzMakePlan(o) {
         if (mk) visEnd = Math.min(e0, Math.max(visEnd, mk[mk.length - 1].t + 0.4));
         var D = visEnd - s0;
         plan.lines.push({ index: li, text: ln.text, start: s0, end: e0, visEnd: visEnd, note: ln.note, impact: ln.impact });
-        var chunks = ln.manual || jzChunk(ln.text), L = jzLerp(1.3, 0.5, fx.density), nC = Math.round(D / L);
+        var chunks = ln.manual || (plan.lang === 'en' ? jzPhraseChunks(jzChunk(ln.text)) : jzChunk(ln.text)), L = jzLerp(1.3, 0.5, fx.density), nC = Math.round(D / L);
         var maxC = chunks.length + (chunks.length >= 2 && D > 2 ? 1 : 0); nC = jzClamp(nC, 1, Math.max(1, maxC));
+        if (zones) nC = Math.max(1, Math.min(nC, Math.floor(chunks.length / 2)));   // \u4E2D\u592E\u3092\u7A7A\u3051\u308B: \u2265 2 words per cut (each cut is split in two)
         var nG = Math.min(nC, chunks.length), groups = [];
         if (nG <= 1) groups = [ln.text];
         else { var pg = jzPartition(chunks, nG); for (i = 0; i < pg.length; i++) groups.push(pg[i].join(/[A-Za-z]/.test(pg[i].join('')) ? ' ' : '')); }
@@ -957,7 +1014,8 @@ function jzMakePlan(o) {
             var u = units[k], cs = bounds[k], ce = bounds[k + 1], dur = ce - cs, nn = jzCount(u.text);
             var emph = (ln.impact && (k === 0 || u.recap));
             for (var q = 0; q < ln.emph.length; q++) if (u.text.indexOf(ln.emph[q]) >= 0) emph = true;
-            var layout = jzPickLayout(rng, st, en, nn, dur, hist, emph, u.recap, portrait);
+            var Z = zones ? jzZoneOf(zones, li) : null, LW = Z ? Z.w : W, LH = Z ? Z.h : H;
+            var layout = jzPickLayout(rng, st, en, nn, dur, hist, emph, u.recap, Z ? LH > LW : portrait);
             var enter = jzPickEnter(rng, st, en, layout, dur, hist, emph, nn);
             var exit = jzPickExit(rng, st, en, layout, dur, k === units.length - 1, hist);
             var hold = jzPickHold(rng, en, fx, hist);
@@ -971,7 +1029,7 @@ function jzMakePlan(o) {
             var mOut = jzTab(jzMeta('exit', exit).outDur, dur, nn); if (mOut != null) outDur = mOut;
             if (inDur + outDur > dur * 0.92) { var f = dur * 0.92 / (inDur + outDur); inDur *= f; outDur *= f; }
             var sch = schemeIdx; if (nS > 1 && k > 0 && rng.chance(0.12 * fx.bgSwitch)) sch = (schemeIdx + 1) % nS;
-            var params = jzPlanOf('layout', layout, rng, st, { text: u.text, n: nn, W: W, H: H, dur: dur });
+            var params = jzPlanOf('layout', layout, rng, st, { text: u.text, n: nn, W: LW, H: LH, dur: dur });
             var decor = jzPickDecor(rng, st, en, fx, layout, hist);
             var treat = jzPickTreat(rng, st, en, fx, layout, emph, hist), treatP = treat !== 'none' ? jzPlanOf('treat', treat, rng, st) : {};
             if (k > 0 && rng.chance(0.18 * fx.bgSwitch + 0.04)) { lineBg = jzPickBg(rng, st, en, fx, bgHist); lineBgP = lineBg !== 'none' ? jzPlanOf('bg', lineBg, rng, st) : {}; }
@@ -991,6 +1049,7 @@ function jzMakePlan(o) {
                 params: params, decor: decor, scheme: sch, seed: jzHash(o.seed, li, k) % 1000000, emph: emph, recap: !!u.recap, words: jzChunk(u.text), stagger: rng.range(0.025, 0.06),
                 treat: treat, treatP: treatP, bg: bg, bgP: bg === lineBg ? lineBgP : {}, cam: cam, camP: camP, trans: trans, transP: transP, transDur: transDur });
             hist.push({ layout: layout, enter: enter, exit: exit, hold: hold, treat: treat, cam: cam, trans: trans, decor: dids });
+            if (zones) jzSplitCut(plan.cuts[plan.cuts.length - 1], zones, st, dur, plan.lang);
             var g = fx.glitch * (st.glitchBoost || 1);
             if (en.fx.chroma !== false) ev(cs, 'chroma', 1.4 + rng.range(0, 2) * fx.chroma + (emph ? 2.5 : 0), 0.25);
             if (en.fx.slice !== false && rng.chance(g * 0.5 + (emph ? 0.3 : 0))) ev(cs, 'slice', 0.6 + rng.range(0, 0.8) * g + (emph ? 0.5 : 0), rng.pick([2, 3, 4]) * F);
@@ -1031,7 +1090,12 @@ function jzMakePlan(o) {
         plan.cuts.push({ index: plan.cuts.length, text: title || 'END', note: artist, lineText: title || 'END', line: -1, start: os, end: oe, layout: 'title', enter: orr.pick(['blur', 'type', 'wipe', 'assemble']), exit: 'blur', hold: 'still', inDur: 0.3, outDur: jzClamp((oe - os) * 0.3, 0.3, 1.2), params: { font: orr.pick(st.fonts.display) }, decor: [], scheme: schemeIdx, seed: jzHash(o.seed, 998, 1) % 1000000, treat: 'none', bg: 'none', cam: 'push' });
     }
     plan.cuts.sort(function (a, b) { return a.start - b.start; });
-    for (i = 0; i < plan.cuts.length; i++) plan.cuts[i].index = i;
+    for (i = 0; i < plan.cuts.length; i++) {
+        var pc0 = plan.cuts[i]; pc0.index = i;
+        if (!zones || pc0.zone) continue;
+        if (pc0.layout === 'interlude') { pc0.params.showTitle = false; continue; }     // no lyric: the whole frame
+        pc0.zone = jzZoneOf(zones, 0);
+    }
     plan.events.sort(function (a, b) { return a.t - b.t; });
     return plan;
 }
@@ -1821,6 +1885,10 @@ JZ_LAYOUTS.title = function (ctx) {
 
 JZ_LAYOUTS.interlude = function (ctx) {
     var W = ctx.W, H = ctx.H, sc = ctx.sc, c = ctx.cut;
+    if (jzP(ctx, 'variant', 'counter') === 'quiet') {       // [\uAC04\uC8FC] (upstream): background and decorations only (+ the title on long ones)
+        if (jzP(ctx, 'showTitle', false) && jzP(ctx, 'titleText', '')) jzNoGhost(jzSmall(ctx, jzP(ctx, 'titleText', ''), { size: Math.max(12, H * 0.024), color: sc.sub, x: W / 2, y: H * 0.88, track: 0.3 }));
+        return { x0: W * 0.3, x1: W * 0.7, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2 };
+    }
     // \uCCAB \uAC04\uC8FC\uC5D0 \uD06C\uB808\uB527: song title large + artist (same composition as the title card)
     if (jzP(ctx, 'variant', 'counter') === 'credit') {
         var L = jzMain(ctx, c.text, { font: jzFontOf(ctx, '_', 'display'), size: 200, color: sc.fg, x: W / 2, y: H / 2, track: 0.08, maxW: W * 0.7, maxH: H * 0.18, maxSize: H * 0.14 });
@@ -15442,6 +15510,17 @@ function fx1_strip(f, ev, name, S, P, op) {
 function fx1_layer(comp, name) { for (var i = 1; i <= comp.numLayers; i++) if (comp.layer(i).name === name) return comp.layer(i); return null; }
 function fx1_wraps(f, t0, t1) {
     var out = [], C = f.comp;
+    // the builder keeps an index of the cut wrappers (f.wraps): no scan of the whole main comp per event, which made
+    // long songs slower and slower (every event walked hundreds of layers, and the copies it added made it worse)
+    if (f.wraps) {
+        for (var w = 0; w < f.wraps.length; w++) {
+            var W0 = f.wraps[w];
+            if (W0.cut.start > t1 + 1 || W0.cut.end < t0 - 1 || !W0.content) continue;
+            if (W0.layer.inPoint > t1 || W0.layer.outPoint <= t0) continue;
+            out.push({ L: W0.layer, comp: W0.stage || W0.comp, content: W0.content });
+        }
+        return out;
+    }
     for (var i = 1; i <= C.numLayers; i++) {
         var L = C.layer(i), src = null;
         try { src = L.source; } catch (e) { src = null; }
@@ -16016,7 +16095,9 @@ function fx2_isWrap(L) {
 // A matted wrapper takes a copy of its matte along (kept directly above the copy). fn(layer, isMatte) is applied to each.
 function fx2_copies(f, ev, tag, fn) {
     var C = f.comp, t0 = ev.t, t1 = fx2_t1(ev), src = [], out = [], i, L, D, M, M0;
-    for (i = C.numLayers; i >= 1; i--) { L = C.layer(i); if (fx2_isWrap(L) && L.inPoint < t1 - 0.0001 && L.outPoint > t0 + 0.0001) src.push(L); }
+    if (f.wraps) {                      // indexed by the builder (see fx1_wraps)
+        for (i = f.wraps.length - 1; i >= 0; i--) { var W0 = f.wraps[i]; if (W0.cut.start > t1 + 1 || W0.cut.end < t0 - 1) continue; L = W0.layer; if (L.inPoint < t1 - 0.0001 && L.outPoint > t0 + 0.0001) src.push(L); }
+    } else for (i = C.numLayers; i >= 1; i--) { L = C.layer(i); if (fx2_isWrap(L) && L.inPoint < t1 - 0.0001 && L.outPoint > t0 + 0.0001) src.push(L); }
     for (i = 0; i < src.length; i++) {
         L = src[i]; M0 = null;
         try { if (L.trackMatteType !== TrackMatteType.NO_TRACK_MATTE && L.index > 1) M0 = C.layer(L.index - 1); } catch (e0) {}
@@ -30314,7 +30395,11 @@ function jzEventsArr(plan, type, t0, t1) {
 //   wrapper    \u2500\u2500 scheme background + radial lift \u2500 paper \u2500 background graphic \u2500 ghost B \u2500 ghost A \u2500 content \u2500 "JZ Camera" null
 //   content    \u2500\u2500 the layout's text / shape layers + decor (built by the registry entries)
 // Cut-to-cut transitions work on neighbouring wrapper layers in the main comp.
-function jzBuild(plan, opt) {
+// jzBuildStart returns a job that builds the comp step by step: job.step(ms) works for about ms milliseconds and returns,
+// so the CEP panel / ScriptUI can hand control back to After Effects between steps (long songs: no "not responding").
+// job.phase: 'cuts' -> 'trans' -> 'events' -> 'done'; job.done / job.total = cuts built; job.cancelled = true skips the rest and finishes what exists.
+function jzBuild(plan, opt) { var job = jzBuildStart(plan, opt); while (!job.finished) job.step(null); return job.comp; }
+function jzBuildStart(plan, opt) {
     opt = opt || {};
     JZLOG = []; JZ_FALLBACKS = 0; JZ_FALLBACK_KEYS = []; JZ_FONT_MISSING = {}; JZ_FONT_NOAPI = false;
     jzSetLang(plan.lang || (typeof jzDetectLang === 'function' ? jzDetectLang(plan) : 'ja'));   // \u6B4C\u8A5E\u306E\u8A00\u8A9E \u2192 faces
@@ -30331,6 +30416,9 @@ function jzBuild(plan, opt) {
     var FXV = { motion: fx.motion == null ? 0.7 : fx.motion, glitch: fx.glitch == null ? 0.5 : fx.glitch, decor: fx.decor == null ? 0.5 : fx.decor, texture: fx.texture == null ? 0.6 : fx.texture, chroma: fx.chroma == null ? 0.7 : fx.chroma };
     function schemeOf(c) { return schemes[(c.scheme || 0) % schemes.length] || schemes[0]; }
     var paperAmt = (st.texture && st.texture.paper) || 0;
+    // \u8EFD\u91CF (opt.light): no colour-shift ghosts, no paper noise, no bloom / grain / slice warp / zoom blur, and no screen
+    // effects that duplicate the picture \u2014 plays back several times faster in After Effects
+    var LIGHT = !!opt.light;
     // \u5408\u6210\u7528\u306E\u80CC\u666F: the plan's style is already white-on-black; no lift / paper / background graphic / vignette,
     // the finished comp is made monochrome (Tint) and \u2014 for green \u2014 screened onto #00FF00
     var KEY = (plan.keyBg === 'green' || plan.keyBg === 'black') ? plan.keyBg : null;
@@ -30342,40 +30430,20 @@ function jzBuild(plan, opt) {
 
     // ---------- cuts
     var lagA = 0.8 / 24, lagB = 1.6 / 24, wraps = [];
-    for (var ci = 0; ci < cuts.length; ci++) {
-        var cut = cuts[ci];
-        if (!(cut.end > cut.start)) continue;
-        cut.dur = cut.end - cut.start;
-        var sc = schemeOf(cut), label = jzPad(ci + 1, 3) + ' ' + String(cut.text || cut.layout).substr(0, 16);
-        var cdur = Math.max(cut.dur, 1 / fps) + 1.0;
-        // content
-        var pc = app.project.items.addComp(label + ' text', W, H, 1, cdur, fps);
+    // the lyric (or its companion) of one cut: content comp + ghosts + camera null, in comp T (the wrapper, or a
+    // band-sized "stage" comp for \u4E2D\u592E\u3092\u7A7A\u3051\u308B \u2014 its bounds clip it, like the browser's clip)
+    function buildContent(c, T, CW, CH, cu, sc, label, cdur, ci) {
+        var pc = app.project.items.addComp(label + ' text', CW, CH, 1, cdur, fps);
         pc.parentFolder = folder;
-        var ctx = { comp: pc, W: W, H: H, u: u, sc: sc, st: st, fx: FXV, cut: cut, P: cut.params || {}, roles: roles, plan: plan };
-        var bb = null, lk = jzFallback('layout', cut.layout, 'center');
-        if (lk !== cut.layout) { ctx.P = JZ_REG.layout[lk].plan ? JZ_REG.layout[lk].plan(new JzRng(jzHash(cut.seed, 31)), { text: cut.text, n: jzCount(cut.text), W: W, H: H, dur: cut.dur }, st) : {}; }
+        var ctx = { comp: pc, W: CW, H: CH, u: cu, sc: sc, st: st, fx: FXV, cut: c, P: c.params || {}, roles: roles, plan: plan };
+        var bb = null, lk = jzFallback('layout', c.layout, 'center');
+        if (lk !== c.layout) { ctx.P = JZ_REG.layout[lk].plan ? JZ_REG.layout[lk].plan(new JzRng(jzHash(c.seed, 31)), { text: c.text, n: jzCount(c.text), W: CW, H: CH, dur: c.dur }, st) : {}; }
         try { bb = JZ_REG.layout[lk].build(ctx); }
         catch (e) { jzWarn('cut ' + (ci + 1) + ' ' + lk + ': ' + e.toString() + (e.line ? ' (line ' + e.line + ')' : '')); }
         try { jzDecorate(ctx, bb); } catch (e2) { jzWarn('decor: ' + e2.toString()); }
-        // wrapper
-        var wc = app.project.items.addComp(label, W, H, 1, cdur, fps);
-        wc.parentFolder = folder;
-        var bgL = wc.layers.addSolid(jzHex(sc.bg), 'JZ BG', W, H, 1, cdur);
-        if (!KEY) jzBgLift(bgL, sc, W, H);
-        if (paperAmt > 0.05 && FXV.texture > 0.05) {
-            var pp = wc.layers.addSolid([0.5, 0.5, 0.5], 'JZ Paper', W, H, 1, cdur);
-            var pn = jzEffect(pp, 'ADBE Fractal Noise', 'JZ Paper Noise'); jzEP(pn, 4, 60);
-            // the browser's paper is a faint fibre texture: keep the overlay light, fainter still on dark schemes
-            pp.blendingMode = BlendingMode.OVERLAY; jzXf(pp, 'ADBE Opacity').setValue((jzLum(sc.bg) < 0.4 ? 6 : 12) * paperAmt);
-        }
-        var bk = !KEY && cut.bg && cut.bg !== 'none' ? jzFallback('bg', cut.bg, null) : null;
-        if (bk) {
-            var bctx = { comp: wc, W: W, H: H, u: u, sc: sc, st: st, fx: FXV, cut: cut, plan: plan, P: cut.bgP || {} };
-            try { JZ_REG.bg[bk].build(bctx, bctx.P); } catch (e3) { jzWarn('bg ' + bk + ': ' + e3.toString() + (e3.line ? ' (line ' + e3.line + ')' : '')); }
-        }
-        var CL = wc.layers.add(pc); CL.name = 'content'; CL.startTime = 0;
+        var CL = T.layers.add(pc); CL.name = 'content'; CL.startTime = 0;
         var content = [CL];
-        if (ghostAmt > 0.02 && opt.ghosts !== false) {
+        if (ghostAmt > 0.02 && opt.ghosts !== false && !LIGHT) {
             // layers marked with jzNoGhost() stay out of the ghosts: feed them from a copy of the content comp with those layers off
             var gsrc = null, li;
             for (li = 1; li <= pc.numLayers; li++) if (jzIsNoGhost(pc.layer(li))) { gsrc = pc; break; }
@@ -30387,7 +30455,7 @@ function jzBuild(plan, opt) {
             }
             var ghosts = [['B', lagB, [-3.4, -1.3], sc.ghostB], ['A', lagA, [3.2, 1.9], sc.ghostA]];
             for (var g = 0; g < ghosts.length; g++) {
-                var G = gsrc ? wc.layers.add(gsrc) : CL.duplicate();
+                var G = gsrc ? T.layers.add(gsrc) : CL.duplicate();
                 G.name = 'ghost ' + ghosts[g][0];
                 G.startTime = ghosts[g][1]; G.inPoint = 0; G.outPoint = cdur;
                 G.moveAfter(CL);
@@ -30395,90 +30463,146 @@ function jzBuild(plan, opt) {
                 jzEP(tint, 1, jzHex(ghosts[g][3])); jzEP(tint, 2, jzHex(ghosts[g][3])); jzEP(tint, 3, 100);
                 if (jzLum(sc.bg) > 0.55) G.blendingMode = BlendingMode.MULTIPLY;
                 var off = ghosts[g][2];
-                jzSetExpr(jzXf(G, 'ADBE Position'), 'var T0=' + jzN(cut.start) + ',ev=' + jzEventsArr(plan, 'chroma', cut.start, cut.end) + ';var s=1;for(var i=0;i<ev.length;i++){var dt=(time+T0-ev[i][0])*24;if(dt>=0&&dt<14)s+=ev[i][1]*Math.pow(0.55,dt);}' +
+                jzSetExpr(jzXf(G, 'ADBE Position'), 'var T0=' + jzN(c.start) + ',ev=' + jzEventsArr(plan, 'chroma', c.start, c.end) + ';var s=1;for(var i=0;i<ev.length;i++){var dt=(time+T0-ev[i][0])*24;if(dt>=0&&dt<14)s+=ev[i][1]*Math.pow(0.55,dt);}' +
                     'var k=' + jzN(ghostAmt * u) + '*s;[value[0]+' + off[0] + '*k,value[1]+' + off[1] + '*k]');
                 content.push(G);
             }
         }
         // camera: a null at the comp centre (identity transform) that carries the content and its ghosts
-        var nul = wc.layers.addNull(cdur); nul.name = 'JZ Camera';
-        jzXf(nul, 'ADBE Anchor Point').setValue([W / 2, H / 2]); jzXf(nul, 'ADBE Position').setValue([W / 2, H / 2]);
+        var nul = T.layers.addNull(cdur); nul.name = 'JZ Camera';
+        jzXf(nul, 'ADBE Anchor Point').setValue([CW / 2, CH / 2]); jzXf(nul, 'ADBE Position').setValue([CW / 2, CH / 2]);
         for (var q = 0; q < content.length; q++) content[q].parent = nul;
-        var ck = jzFallback('cam', cut.cam || 'push', 'push');
-        try { JZ_REG.cam[ck].apply({ ctx: ctx, comp: wc, nul: nul, content: content, P: cut.camP || {}, W: W, H: H, u: u, cut: cut, fx: FXV, sc: sc }, cut.camP || {}); }
+        var ck = jzFallback('cam', c.cam || 'push', 'push');
+        try { JZ_REG.cam[ck].apply({ ctx: ctx, comp: T, nul: nul, content: content, P: c.camP || {}, W: CW, H: CH, u: cu, cut: c, fx: FXV, sc: sc }, c.camP || {}); }
         catch (e4) { jzWarn('cam ' + ck + ': ' + e4.toString() + (e4.line ? ' (line ' + e4.line + ')' : '')); }
+        return CL;
+    }
+    function buildCut(ci) {
+        var cut = cuts[ci];
+        if (!(cut.end > cut.start)) return;
+        cut.dur = cut.end - cut.start;
+        var sc = schemeOf(cut), label = jzPad(ci + 1, 3) + ' ' + String(cut.text || cut.layout).substr(0, 16);
+        var cdur = Math.max(cut.dur, 1 / fps) + 1.0;
+        // wrapper: the full-frame background of the cut
+        var wc = app.project.items.addComp(label, W, H, 1, cdur, fps);
+        wc.parentFolder = folder;
+        var bgL = wc.layers.addSolid(jzHex(sc.bg), 'JZ BG', W, H, 1, cdur);
+        if (!KEY) jzBgLift(bgL, sc, W, H);
+        if (paperAmt > 0.05 && FXV.texture > 0.05 && !LIGHT) {
+            var pp = wc.layers.addSolid([0.5, 0.5, 0.5], 'JZ Paper', W, H, 1, cdur);
+            var pn = jzEffect(pp, 'ADBE Fractal Noise', 'JZ Paper Noise'); jzEP(pn, 4, 60);
+            // the browser's paper is a faint fibre texture: keep the overlay light, fainter still on dark schemes
+            pp.blendingMode = BlendingMode.OVERLAY; jzXf(pp, 'ADBE Opacity').setValue((jzLum(sc.bg) < 0.4 ? 6 : 12) * paperAmt);
+        }
+        var bk = !KEY && cut.bg && cut.bg !== 'none' ? jzFallback('bg', cut.bg, null) : null;
+        if (bk) {
+            var bctx = { comp: wc, W: W, H: H, u: u, sc: sc, st: st, fx: FXV, cut: cut, plan: plan, P: cut.bgP || {} };
+            try { JZ_REG.bg[bk].build(bctx, bctx.P); } catch (e3) { jzWarn('bg ' + bk + ': ' + e3.toString() + (e3.line ? ' (line ' + e3.line + ')' : '')); }
+        }
+        // \u4E2D\u592E\u3092\u7A7A\u3051\u308B: the cut lives in its side band, its companion (the other side) in the other band
+        var parts = [[cut, plan.centerFree && cut.zone ? cut.zone : null]];
+        if (plan.centerFree && cut.companion && cut.companion.zone) parts.push([cut.companion, cut.companion.zone]);
+        var mainStage = null, mainContent = null;
+        for (var pi = 0; pi < parts.length; pi++) {
+            var c = parts[pi][0], Z = parts[pi][1];
+            c.dur = c.end - c.start;
+            var CW = Z ? Z.w : W, CH = Z ? Z.h : H, cu = Z ? CH / 1080 : u, T = wc;
+            if (Z) { T = app.project.items.addComp(label + (pi ? ' side' : ' stage'), CW, CH, 1, cdur, fps); T.parentFolder = folder; }
+            var CL = buildContent(c, T, CW, CH, cu, sc, label + (pi ? ' side' : ''), cdur, ci);
+            if (Z) { var SL = wc.layers.add(T); SL.name = (pi ? 'side (' : 'stage (') + (Z.side || 'side') + ')'; SL.startTime = Math.max(0, c.start - cut.start); jzXf(SL, 'ADBE Position').setValue([Z.x + CW / 2, Z.y + CH / 2]); }
+            if (!pi) { mainStage = Z ? T : null; mainContent = CL; }
+        }
         // into the main comp
         var WL = comp.layers.add(wc);
         WL.startTime = cut.start; WL.inPoint = cut.start; WL.outPoint = cut.end;
         WL.name = (jzPad(ci + 1, 3) + ' ' + (cut.text || '')).substr(0, 24);
-        wraps.push({ cut: cut, layer: WL, comp: wc, sc: sc });
+        wraps.push({ cut: cut, layer: WL, comp: wc, sc: sc, stage: mainStage, content: mainContent });
     }
+    function finishTrans() {
+        // ---------- cut-to-cut transitions (the previous wrapper holds its last state under the new one)
+        for (var wi = 1; wi < wraps.length; wi++) {
+            var B = wraps[wi], A = wraps[wi - 1], tk = B.cut.trans ? jzFallback('trans', B.cut.trans, null) : null;
+            if (!tk || Math.abs(A.cut.end - B.cut.start) > 0.06) continue;
+            var td = jzClamp(B.cut.transDur || jzMeta('trans', tk).dur || 0.35, 0.08, Math.max(0.1, B.cut.dur * 0.6));
+            A.layer.outPoint = B.cut.start + td;
+            var tctx = { comp: comp, W: W, H: H, u: u, A: A.layer, B: B.layer, t0: B.cut.start, dur: td, P: B.cut.transP || {}, sc: B.sc, scPrev: A.sc, st: st, fx: FXV, cut: B.cut, prev: A.cut, fps: fps };
+            try { JZ_REG.trans[tk].build(tctx); } catch (e5) { jzWarn('trans ' + tk + ': ' + e5.toString() + (e5.line ? ' (line ' + e5.line + ')' : '')); }
+        }
 
-    // ---------- cut-to-cut transitions (the previous wrapper holds its last state under the new one)
-    for (var wi = 1; wi < wraps.length; wi++) {
-        var B = wraps[wi], A = wraps[wi - 1], tk = B.cut.trans ? jzFallback('trans', B.cut.trans, null) : null;
-        if (!tk || Math.abs(A.cut.end - B.cut.start) > 0.06) continue;
-        var td = jzClamp(B.cut.transDur || jzMeta('trans', tk).dur || 0.35, 0.08, Math.max(0.1, B.cut.dur * 0.6));
-        A.layer.outPoint = B.cut.start + td;
-        var tctx = { comp: comp, W: W, H: H, u: u, A: A.layer, B: B.layer, t0: B.cut.start, dur: td, P: B.cut.transP || {}, sc: B.sc, scPrev: A.sc, st: st, fx: FXV, cut: B.cut, prev: A.cut, fps: fps };
-        try { JZ_REG.trans[tk].build(tctx); } catch (e5) { jzWarn('trans ' + tk + ': ' + e5.toString() + (e5.line ? ' (line ' + e5.line + ')' : '')); }
+        // ---------- HUD
+        if (plan.hud && opt.hud !== false) jzHUD(comp, plan, schemes[0], roles);
+
+        // ---------- global FX (top adjustment layer)
+        var fxL = comp.layers.addSolid([1, 1, 1], 'JZ FX', W, H, 1, D); fxL.adjustmentLayer = true;
+        if (fx.onTwos !== false && (fx.koma == null || fx.koma > 0)) { var pt = jzEffect(fxL, 'ADBE Posterize Time', 'JZ Koma'); jzEP(pt, 1, fx.koma > 0 ? fx.koma : 12); }
+        var tr = jzEffect(fxL, 'ADBE Geometry2', 'JZ Shake');
+        jzEX(tr, 2, 'var ev=' + jzEventsArr(plan, 'shake') + ';var s=0;for(var i=0;i<ev.length;i++){var dt=(time-ev[i][0])*24;if(dt>=0&&dt<14)s+=ev[i][1]*Math.pow(0.62,dt);}seedRandom(Math.floor(time*12),true);[value[0]+random(-1,1)*s*16*' + jzN(u) + ',value[1]+random(-1,1)*s*11*' + jzN(u) + ']');
+        if (!LIGHT) {
+        var ww = jzEffect(fxL, 'ADBE Wave Warp', 'JZ Slice Glitch');
+        jzEP(ww, 1, 2); jzEP(ww, 4, 0); jzEP(ww, 5, 0); jzEP(ww, 6, 1);
+        jzEX(ww, 2, 'var ev=' + jzEventsArr(plan, 'slice') + ';var h=0;for(var i=0;i<ev.length;i++){var dt=time-ev[i][0];if(dt>=0&&dt<ev[i][2])h=Math.max(h,ev[i][1]);}posterizeTime(24);seedRandom(Math.floor(time*24),true);h>0?h*thisComp.width*0.05*random(0.4,1):0');
+        jzEX(ww, 3, 'posterizeTime(24);seedRandom(Math.floor(time*24)+7,true);random(thisComp.height*0.02,thisComp.height*0.12)');
+        jzEX(ww, 7, 'posterizeTime(24);seedRandom(Math.floor(time*24)+11,true);random(0,360)');
+        }
+        var rb = LIGHT ? null : jzEffect(fxL, 'CC Radial Blur', 'JZ Zoom Hit');
+        jzEX(rb, 2, 'var ev=' + jzEventsArr(plan, 'zoom') + ';var a=0;for(var i=0;i<ev.length;i++){var dt=time-ev[i][0];if(dt>=0&&dt<ev[i][2])a=Math.max(a,ev[i][1]*(1-dt/ev[i][2]));}a*30');
+        var iv = jzEffect(fxL, 'ADBE Invert', 'JZ Invert Hit');
+        jzEX(iv, 2, 'var ev=' + jzEventsArr(plan, 'invert') + ';var on=false;for(var i=0;i<ev.length;i++){var dt=time-ev[i][0];if(dt>=0&&dt<ev[i][2])on=true;}on?0:100');
+        var glowAmt = (st.glow || 0.6) * FXV.texture;
+        if (glowAmt > 0.05 && !LIGHT) { var gl = jzEffect(fxL, 'ADBE Glo2', 'JZ Bloom'); jzEP(gl, 2, 70); jzEP(gl, 3, 60 * u); jzEP(gl, 4, 0.35 * glowAmt); }
+        var gr = (st.texture && st.texture.grain || 0) * FXV.texture;
+        if (gr > 0.02 && !LIGHT) { var nz = jzEffect(fxL, 'ADBE Noise', 'JZ Grain'); jzEP(nz, 1, 5 * gr); jzEP(nz, 2, 0); }
+
     }
-
-    // ---------- HUD
-    if (plan.hud && opt.hud !== false) jzHUD(comp, plan, schemes[0], roles);
-
-    // ---------- global FX (top adjustment layer)
-    var fxL = comp.layers.addSolid([1, 1, 1], 'JZ FX', W, H, 1, D); fxL.adjustmentLayer = true;
-    if (fx.onTwos !== false && (fx.koma == null || fx.koma > 0)) { var pt = jzEffect(fxL, 'ADBE Posterize Time', 'JZ Koma'); jzEP(pt, 1, fx.koma > 0 ? fx.koma : 12); }
-    var tr = jzEffect(fxL, 'ADBE Geometry2', 'JZ Shake');
-    jzEX(tr, 2, 'var ev=' + jzEventsArr(plan, 'shake') + ';var s=0;for(var i=0;i<ev.length;i++){var dt=(time-ev[i][0])*24;if(dt>=0&&dt<14)s+=ev[i][1]*Math.pow(0.62,dt);}seedRandom(Math.floor(time*12),true);[value[0]+random(-1,1)*s*16*' + jzN(u) + ',value[1]+random(-1,1)*s*11*' + jzN(u) + ']');
-    var ww = jzEffect(fxL, 'ADBE Wave Warp', 'JZ Slice Glitch');
-    jzEP(ww, 1, 2); jzEP(ww, 4, 0); jzEP(ww, 5, 0); jzEP(ww, 6, 1);
-    jzEX(ww, 2, 'var ev=' + jzEventsArr(plan, 'slice') + ';var h=0;for(var i=0;i<ev.length;i++){var dt=time-ev[i][0];if(dt>=0&&dt<ev[i][2])h=Math.max(h,ev[i][1]);}posterizeTime(24);seedRandom(Math.floor(time*24),true);h>0?h*thisComp.width*0.05*random(0.4,1):0');
-    jzEX(ww, 3, 'posterizeTime(24);seedRandom(Math.floor(time*24)+7,true);random(thisComp.height*0.02,thisComp.height*0.12)');
-    jzEX(ww, 7, 'posterizeTime(24);seedRandom(Math.floor(time*24)+11,true);random(0,360)');
-    var rb = jzEffect(fxL, 'CC Radial Blur', 'JZ Zoom Hit');
-    jzEX(rb, 2, 'var ev=' + jzEventsArr(plan, 'zoom') + ';var a=0;for(var i=0;i<ev.length;i++){var dt=time-ev[i][0];if(dt>=0&&dt<ev[i][2])a=Math.max(a,ev[i][1]*(1-dt/ev[i][2]));}a*30');
-    var iv = jzEffect(fxL, 'ADBE Invert', 'JZ Invert Hit');
-    jzEX(iv, 2, 'var ev=' + jzEventsArr(plan, 'invert') + ';var on=false;for(var i=0;i<ev.length;i++){var dt=time-ev[i][0];if(dt>=0&&dt<ev[i][2])on=true;}on?0:100');
-    var glowAmt = (st.glow || 0.6) * FXV.texture;
-    if (glowAmt > 0.05) { var gl = jzEffect(fxL, 'ADBE Glo2', 'JZ Bloom'); jzEP(gl, 2, 70); jzEP(gl, 3, 60 * u); jzEP(gl, 4, 0.35 * glowAmt); }
-    var gr = (st.texture && st.texture.grain || 0) * FXV.texture;
-    if (gr > 0.02) { var nz = jzEffect(fxL, 'ADBE Noise', 'JZ Grain'); jzEP(nz, 1, 5 * gr); jzEP(nz, 2, 0); }
-
-    // ---------- effect events that have their own layers (above the koma / shake layer: they run at full frame rate, like the browser's post effects)
-    var evs = plan.events || [], fctx = { comp: comp, W: W, H: H, u: u, st: st, fx: FXV, plan: plan, fps: fps };
-    for (var ei = 0; ei < evs.length; ei++) {
+    var evs = plan.events || [], fctx = { comp: comp, W: W, H: H, u: u, st: st, fx: FXV, plan: plan, fps: fps, wraps: wraps };
+    var HEAVY_FX = { strobe: 1, rgbSplit: 1, radialChroma: 1, echoFrames: 1, kaleido: 1, perspectiveTilt: 1 };
+    function buildEvent(ei) {
         var ev = evs[ei], fk = jzFallback('fx', ev.type, null);
-        if (!fk || JZ_REG.fx[fk].builtin) continue;
+        if (!fk || JZ_REG.fx[fk].builtin || (LIGHT && HEAVY_FX[fk])) return;
         var e1 = { t: ev.t, type: fk, amp: ev.amp || 1, dur: Math.max(ev.dur || 0, 1 / 24), seed: jzHash(ev.t, ev.type) % 100000, sc: schemeOf(jzCutAtTime(cuts, ev.t) || cuts[0] || { scheme: 0 }) };
         try { JZ_REG.fx[fk].build(fctx, e1); } catch (e6) { jzWarn('fx ' + fk + ': ' + e6.toString() + (e6.line ? ' (line ' + e6.line + ')' : '')); }
     }
+    function finish() {
+        // ---------- flash + vignette
+        var fl = comp.layers.addSolid(jzHex(jzLum(schemes[0].bg) < 0.5 ? schemes[0].fg : '#ffffff'), 'JZ Flash', W, H, 1, D);
+        jzSetExpr(jzXf(fl, 'ADBE Opacity'), 'var ev=' + jzEventsArr(plan, 'flash') + ';var o=0;for(var i=0;i<ev.length;i++){var dt=time-ev[i][0];if(dt>=0&&dt<ev[i][2])o=Math.max(o,Math.pow(1-dt/ev[i][2],1.5)*92);}o');
+        var vg = KEY ? null : comp.layers.addSolid([0, 0, 0], 'JZ Vignette', W, H, 1, D);
+        if (vg) try {
+            var m = vg.property('ADBE Mask Parade').addProperty('ADBE Mask Atom');
+            m.property('ADBE Mask Shape').setValue(jzCircleShape(W / 2, H / 2, Math.max(W, H) * 0.62));
+            m.inverted = true; m.property('ADBE Mask Feather').setValue([H * 0.5, H * 0.5]);
+            jzXf(vg, 'ADBE Scale').setValue([100, 100 * H / W * 1.6]);
+        } catch (e7) { jzWarn('vignette: ' + e7.toString()); }
+        if (vg) jzXf(vg, 'ADBE Opacity').setValue(32 * FXV.texture);
+        if (KEY) {
+            var km = comp.layers.addSolid([1, 1, 1], 'JZ Key Mono', W, H, 1, D); km.adjustmentLayer = true;
+            jzEffect(km, 'ADBE Tint', 'JZ Key Mono');
+            if (KEY === 'green') { var kg = comp.layers.addSolid([0, 1, 0], 'JZ Key Green', W, H, 1, D); kg.blendingMode = BlendingMode.SCREEN; }
+        }
 
-    // ---------- flash + vignette
-    var fl = comp.layers.addSolid(jzHex(jzLum(schemes[0].bg) < 0.5 ? schemes[0].fg : '#ffffff'), 'JZ Flash', W, H, 1, D);
-    jzSetExpr(jzXf(fl, 'ADBE Opacity'), 'var ev=' + jzEventsArr(plan, 'flash') + ';var o=0;for(var i=0;i<ev.length;i++){var dt=time-ev[i][0];if(dt>=0&&dt<ev[i][2])o=Math.max(o,Math.pow(1-dt/ev[i][2],1.5)*92);}o');
-    var vg = KEY ? null : comp.layers.addSolid([0, 0, 0], 'JZ Vignette', W, H, 1, D);
-    if (vg) try {
-        var m = vg.property('ADBE Mask Parade').addProperty('ADBE Mask Atom');
-        m.property('ADBE Mask Shape').setValue(jzCircleShape(W / 2, H / 2, Math.max(W, H) * 0.62));
-        m.inverted = true; m.property('ADBE Mask Feather').setValue([H * 0.5, H * 0.5]);
-        jzXf(vg, 'ADBE Scale').setValue([100, 100 * H / W * 1.6]);
-    } catch (e7) { jzWarn('vignette: ' + e7.toString()); }
-    if (vg) jzXf(vg, 'ADBE Opacity').setValue(32 * FXV.texture);
-    if (KEY) {
-        var km = comp.layers.addSolid([1, 1, 1], 'JZ Key Mono', W, H, 1, D); km.adjustmentLayer = true;
-        jzEffect(km, 'ADBE Tint', 'JZ Key Mono');
-        if (KEY === 'green') { var kg = comp.layers.addSolid([0, 1, 0], 'JZ Key Green', W, H, 1, D); kg.blendingMode = BlendingMode.SCREEN; }
+        // no hidden leftovers anywhere in what was built (track mattes stay: After Effects keeps a matte's own video off)
+        try { jzTidyTree(comp); } catch (et) { jzWarn('tidy: ' + et.toString()); }
+
+        // audio layer (optional)
+        if (opt.audioItem) { try { var au = comp.layers.add(opt.audioItem); au.startTime = opt.audioStart || 0; au.moveToEnd(); } catch (e8) { jzWarn('audio: ' + e8.toString()); } }
+        comp.openInViewer();
     }
-
-    // no hidden leftovers anywhere in what was built (track mattes stay: After Effects keeps a matte's own video off)
-    try { jzTidyTree(comp); } catch (et) { jzWarn('tidy: ' + et.toString()); }
-
-    // audio layer (optional)
-    if (opt.audioItem) { try { var au = comp.layers.add(opt.audioItem); au.startTime = opt.audioStart || 0; au.moveToEnd(); } catch (e8) { jzWarn('audio: ' + e8.toString()); } }
-    comp.openInViewer();
-    return comp;
+    var job = { comp: comp, total: cuts.length, done: 0, events: evs.length, eventsDone: 0, phase: 'cuts', cancelled: false, finished: false };
+    job.step = function (ms) {
+        var t0 = new Date().getTime();
+        function more() { return ms == null || new Date().getTime() - t0 < ms; }
+        if (job.phase === 'cuts') {
+            while (job.done < cuts.length && !job.cancelled) { buildCut(job.done); job.done++; if (!more()) return job; }
+            job.phase = 'trans';
+        }
+        if (job.phase === 'trans') { finishTrans(); job.phase = 'events'; if (!more()) return job; }
+        if (job.phase === 'events') {
+            while (job.eventsDone < evs.length && !job.cancelled) { buildEvent(job.eventsDone); job.eventsDone++; if (!more()) return job; }
+            finish(); job.phase = 'done'; job.finished = true;
+        }
+        return job;
+    };
+    return job;
 }
 function jzCutAtTime(cuts, t) { for (var i = cuts.length - 1; i >= 0; i--) if (t >= cuts[i].start - 1e-6 && t < cuts[i].end) return cuts[i]; return null; }
 // scheme background: radial "lift" like the browser (Gradient Ramp on the solid)
@@ -30673,8 +30797,8 @@ function jzUI(thisObj) {
     var cWa = gSw.add('checkbox', undefined, '\uC77C\uBCF8\uD48D \uC5F0\uCD9C\uB3C4 \uC0AC\uC6A9'); cWa.value = jzGet('wa', '1') === '1';
     cWa.helpTip = '\uCD08\uB871\u00B7\uC5FD\uC11C\u00B7\uC7A5\uC9C0\uBB38\u00B7\uBD80\uCC44\u00B7\uAC00\uBB38(\u5BB6\u7D0B)\u00B7\uC138\uC774\uAC00\uC774\uD558 \uBB3C\uACB0\u00B7\uBC9A\uAF43\uC78E \uB4F1\uC758 \uC77C\uBCF8\uD48D \uADF8\uB798\uD53D\uACFC \uC77C\uBCF8\uD48D \uC2A4\uD0C0\uC77C. \uB044\uBA74 \uC790\uB3D9\uC73C\uB85C \uC120\uD0DD\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4(\uCD94\uAC00\uBD84 \uD310\uC815 \uC774\uD6C4\uC5D0 \uC801\uC6A9)';
     var gLang = gSw.add('group'); gLang.spacing = 4; gLang.add('statictext', undefined, '\uAC00\uC0AC \uC5B8\uC5B4');
-    var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko'];
-    var ddLang = gLang.add('dropdownlist', undefined, ['\uC790\uB3D9 \uD310\uC815', '\u65E5\u672C\u8A9E', '\u7E41\u9AD4\u4E2D\u6587', '\u7B80\u4F53\u4E2D\u6587', '\uD55C\uAD6D\uC5B4']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
+    var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en'];
+    var ddLang = gLang.add('dropdownlist', undefined, ['\uC790\uB3D9 \uD310\uC815', '\u65E5\u672C\u8A9E', '\u7E41\u9AD4\u4E2D\u6587', '\u7B80\u4F53\u4E2D\u6587', '\uD55C\uAD6D\uC5B4', 'English']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
     ddLang.helpTip = '\uC911\uAD6D\uC5B4(\uBC88\uCCB4\u00B7\uAC04\uCCB4)\uB098 \uD55C\uAD6D\uC5B4 \uAC00\uC0AC\uB294 \uADF8 \uBB38\uC790\uB97C \uAC00\uC9C4 \uC11C\uCCB4\uB85C \uC870\uD310\uD569\uB2C8\uB2E4(\uAC01 \uC2A4\uD0C0\uC77C \uC11C\uCCB4\uC758 \uBD84\uC704\uAE30\uC5D0 \uAC00\uAE4C\uC6B4 \uAC83\uC73C\uB85C \uB300\uCCB4). \uC790\uB3D9 \uD310\uC815\uC740 \uAC00\uB098\u00B7\uD55C\uAE00\u00B7\uBC88\uCCB4/\uAC04\uCCB4 \uACE0\uC720 \uAE00\uC790\uB85C \uD310\uB2E8\uD569\uB2C8\uB2E4';
     function switches() { return { extra: cExtra.value, wa: cWa.value, lang: JZ_LANG_KEYS[ddLang.selection ? ddLang.selection.index : 0] }; }
     var gS = t1.add('group'); gS.add('statictext', undefined, '\uC2A4\uD0C0\uC77C');
@@ -30688,6 +30812,11 @@ function jzUI(thisObj) {
     var gK = t1.add('group'); gK.add('statictext', undefined, '\uBC30\uACBD');
     var ddKey = gK.add('dropdownlist', undefined, ['\uC77C\uBC18(\uC2A4\uD0C0\uC77C \uBC30\uACBD)', '\uADF8\uB9B0 \uC2A4\uD06C\uB9B0(\uD569\uC131\uC6A9)', '\uBE14\uB799 \uBC30\uACBD(\uD569\uC131\uC6A9)']); ddKey.selection = parseInt(jzGet('key', '0'), 10) || 0;
     ddKey.helpTip = '\uADF8\uB9B0 \uC2A4\uD06C\uB9B0/\uBE14\uB799 \uBC30\uACBD: \uD770 \uAE00\uC790\uC640 \uC5F0\uCD9C\uB9CC \uB2E8\uC0C9 \uBC30\uACBD \uC704\uC5D0 \uB9CC\uB4ED\uB2C8\uB2E4(\uBC30\uACBD \uBB34\uB2AC\u00B7\uC885\uC774\u00B7\uC785\uC790\u00B7\uC8FC\uBCC0 \uAC10\uAD11 \uC5C6\uC74C). \uADF8\uB9B0\uC740 \uD0A4\uC789, \uBE14\uB799\uC740 \uC2A4\uD06C\uB9B0 \uD569\uC131\uC73C\uB85C \uBE84 \uC218 \uC788\uC2B5\uB2C8\uB2E4';
+    var cCenter = t1.add('checkbox', undefined, '\uAC00\uC6B4\uB370 \uBE44\uC6B0\uAE30(\uCE90\uB9AD\uD130\uC6A9: \uAC00\uB85C \uD654\uBA74\uC740 \uC88C\uC6B0\u00B7\uC138\uB85C \uD654\uBA74\uC740 \uC704\uC544\uB798\uC5D0 \uBC30\uCE58)'); cCenter.value = jzGet('center', '0') === '1';
+    cCenter.helpTip = '\uAC00\uC6B4\uB370\uC5D0 \uCE90\uB9AD\uD130 \uB4F1\uC744 \uACB9\uCE60 \uAC83\uC744 \uC804\uC81C\uB85C, \uBB38\uC790\uC640 \uC5F0\uCD9C\uC744 \uCEF7\uB9C8\uB2E4 \uB760(\uAC00\uB85C \uD654\uBA74\uC740 \uC88C\uC6B0, \uC138\uB85C \uD654\uBA74\uC740 \uC704\uC544\uB798, \uD589\uB9C8\uB2E4 \uBC88\uAC08\uC544)\uC5D0 \uBC30\uCE58\uD569\uB2C8\uB2E4. \uBC30\uACBD\uACFC \uD654\uBA74 \uD6A8\uACFC\uB294 \uD654\uBA74 \uC804\uCCB4 \uADF8\uB300\uB85C\uC785\uB2C8\uB2E4';
+    var gCD = t1.add('group'); gCD.add('statictext', undefined, '\u3000\uC138\uB85C \uD654\uBA74\uC77C \uB54C'); var ddCDir = gCD.add('dropdownlist', undefined, ['\uC704\uC544\uB798\uB85C \uB098\uB204\uAE30', '\uC88C\uC6B0\uB85C \uB098\uB204\uAE30']); ddCDir.selection = parseInt(jzGet('centerDir', '0'), 10) || 0;
+    var cLight = t1.add('checkbox', undefined, '\uACBD\uB7C9(AE\uC5D0\uC11C \uC7AC\uC0DD\uC744 \uAC00\uBCCD\uAC8C)'); cLight.value = jzGet('light', '0') === '1';
+    cLight.helpTip = '\uC0C9 \uC5B4\uAE0B\uB0A8 \uBCF5\uC81C\u00B7\uC885\uC774 \uC9C8\uAC10\u00B7\uAE00\uB85C\u00B7\uC785\uC790\u00B7\uC77C\uBD80 \uD654\uBA74 \uD6A8\uACFC\uB97C \uC0DD\uB7B5\uD574 After Effects\uC5D0\uC11C\uC758 \uC7AC\uC0DD\uC744 \uAC00\uBCCD\uAC8C \uD569\uB2C8\uB2E4(\uAE34 \uACE1\uC5D0 \uCD94\uCC9C)';
 
     var pT = t1.add('panel', undefined, '\uD0C0\uC774\uBC0D'); pT.alignChildren = ['left', 'top']; pT.margins = 10;
     var rAuto = pT.add('radiobutton', undefined, '\uC790\uB3D9(\uAE00\uC790 \uC218\u00B7BPM \uAE30\uC900) / LRC \uC2DC\uAC01');
@@ -30781,7 +30910,49 @@ function jzUI(thisObj) {
     t3.add('statictext', undefined, 'Noto Sans JP / Noto Serif JP / Dela Gothic One \uB4F1\uC774 \uC788\uC73C\uBA74 \uC790\uB3D9\uC73C\uB85C \uC0AC\uC6A9\uD569\uB2C8\uB2E4(AE 2024 \uC774\uD6C4).', undefined, { multiline: true });
 
     var status = win.add('statictext', undefined, '\uC900\uBE44 \uC644\uB8CC', { truncate: 'end' });
+    var gRun = win.add('group'); gRun.alignChildren = ['fill', 'center'];
+    var pbar = gRun.add('progressbar', undefined, 0, 100); pbar.alignment = ['fill', 'center']; pbar.preferredSize.height = 6;
+    var bStop = gRun.add('button', undefined, '\uC911\uC9C0'); bStop.enabled = false; bStop.helpTip = '\uC0DD\uC131\uC744 \uBA48\uCDA5\uB2C8\uB2E4(\uAC70\uAE30\uAE4C\uC9C0\uC758 \uCEF7\uC73C\uB85C \uCEF4\uD3EC\uB97C \uB9C8\uBB34\uB9AC\uD569\uB2C8\uB2E4)';
     tp.selection = t1;
+
+    // ---- build in short steps: After Effects gets control back between steps (app.scheduleTask), so long songs
+    //      don't freeze it into "not responding"; the bar shows progress and \u4E2D\u6B62 finishes with the cuts built so far
+    var RUN = null;
+    function setRunning(on) { bBuild.enabled = bOmk.enabled = bJson.enabled = !on; bStop.enabled = on; if (!on) pbar.value = 0; }
+    function runBuild(plan, bo, undoName, done) {
+        if (RUN) { alert('JIZURA: \uC9C0\uAE08 \uC0DD\uC131 \uC911\uC785\uB2C8\uB2E4. \uB05D\uB0A0 \uB54C\uAE4C\uC9C0 \uAE30\uB2E4\uB9AC\uAC70\uB098 \u300C\uC911\uC9C0\u300D\uB97C \uB204\uB974\uC138\uC694'); return; }
+        var job = null;
+        app.beginUndoGroup(undoName);
+        try { job = jzBuildStart(plan, bo); }
+        catch (e) { alert('\uC0DD\uC131 \uC911 \uC624\uB958: ' + e.toString() + (e.line ? ' (line ' + e.line + ')' : '')); }
+        finally { app.endUndoGroup(); }
+        if (!job) { done(null); return; }
+        RUN = { job: job, done: done, name: undoName, t0: new Date().getTime() };
+        setRunning(true);
+        $.global.__JZ_TICK = tick;
+        if (!schedule()) { while (RUN) tick(true); }          // no scheduleTask: plain loop (the old behaviour)
+    }
+    function schedule() { try { app.scheduleTask('if ($.global.__JZ_TICK) $.global.__JZ_TICK();', 20, false); return true; } catch (e) { return false; } }
+    function tick(sync) {
+        var R = RUN; if (!R) return;
+        var err = null, job = R.job;
+        app.beginUndoGroup(R.name);
+        try { job.step(sync ? 1e9 : 900); }
+        catch (e) { err = e.toString() + (e.line ? ' (line ' + e.line + ')' : ''); }
+        finally { app.endUndoGroup(); }
+        if (err || job.finished) {
+            RUN = null; $.global.__JZ_TICK = null; setRunning(false);
+            if (err) alert('\uC0DD\uC131 \uC911 \uC624\uB958: ' + err);
+            R.done(err ? null : job.comp, job);
+            return;
+        }
+        var k = job.phase === 'cuts' ? job.done / Math.max(1, job.total) * 0.9 : 0.9 + 0.1 * job.eventsDone / Math.max(1, job.events);
+        pbar.value = Math.round(k * 100);
+        status.text = '\uC0DD\uC131 \uC911\u2026 ' + Math.round(k * 100) + '%(' + (job.phase === 'cuts' ? job.done + ' / ' + job.total + '\uCEF7' : '\uD6A8\uACFC \uCD94\uAC00 \uC911') + ')';
+        try { if (win.update) win.update(); } catch (eu) {}
+        if (!sync && !schedule()) { while (RUN) tick(true); }
+    }
+    bStop.onClick = function () { if (RUN) { RUN.job.cancelled = true; status.text = '\uC911\uC9C0\uD558\uB294 \uC911\u2026(\uC774\uBBF8 \uB9CC\uB4E0 \uCEF7\uC73C\uB85C \uB9C8\uBB34\uB9AC\uD569\uB2C8\uB2E4)'; } };
 
     function roles() {
         jzPut('font_display', fDisplay.text); jzPut('font_serif', fSerif.text); jzPut('font_body', fBody.text); jzPut('font_mono', fMono.text); jzPut('forceFonts', cForce.value ? '1' : '0');
@@ -30823,7 +30994,7 @@ function jzUI(thisObj) {
         jzPut('size', ddSize.selection.index); jzPut('fps', ddFps.selection.index); jzPut('timing', rLayer.value ? 'layer' : rComp.value ? 'comp' : 'auto');
         jzPut('bpm', eBpm.text); jzPut('lineScale', eScale.text); jzPut('audio', cAudio.value ? '1' : '0'); jzPut('seed', eSeed.text);
         jzPut('twos', cTwos.value ? '1' : '0'); jzPut('flash', cFlash.value ? '1' : '0'); jzPut('hud', ddHud.selection.index); jzPut('interCount', ddInter.selection.index); jzPut('interCredit', cCredit.value ? '1' : '0');
-        jzPut('extra', cExtra.value ? '1' : '0'); jzPut('wa', cWa.value ? '1' : '0'); jzPut('key', ddKey.selection.index); jzPut('lang', ddLang.selection ? ddLang.selection.index : 0);
+        jzPut('extra', cExtra.value ? '1' : '0'); jzPut('wa', cWa.value ? '1' : '0'); jzPut('key', ddKey.selection.index); jzPut('center', cCenter.value ? '1' : '0'); jzPut('centerDir', ddCDir.selection ? ddCDir.selection.index : 0); jzPut('light', cLight.value ? '1' : '0'); jzPut('lang', ddLang.selection ? ddLang.selection.index : 0);
         var sl = [sMotion, sGlitch, sChroma, sDecor, sDensity, sTexture, sBg]; for (var k = 0; k < sl.length; k++) jzPut(sl[k].key, sl[k].value);
         var active = app.project.activeItem, W = 1920, H = 1080, fps = [24, 30, 60][ddFps.selection.index], dur = null;
         var sz = ddSize.selection.index;
@@ -30846,7 +31017,7 @@ function jzUI(thisObj) {
             lyrics: lyr.text, title: eTitle.text, artist: eArtist.text, style: JZ_DATA.styleOrder[ddStyle.selection.index], seed: parseInt(eSeed.text, 10) || 1,
             fx: { motion: sMotion.value / 100, glitch: sGlitch.value / 100, chroma: sChroma.value / 100, decor: sDecor.value / 100, density: sDensity.value / 100, texture: sTexture.value / 100, bgSwitch: sBg.value / 100, onTwos: cTwos.value, flash: cFlash.value, hud: false, interCount: ['auto', 'on', 'off'][ddInter.selection.index], interCredit: cCredit.value },
             width: W, height: H, fps: fps, bpm: parseFloat(eBpm.text) || 0, starts: starts, enabled: en, offset: 0.4, lineScale: parseFloat(eScale.text) || 1, duration: dur,
-            extra: sw.extra, wa: sw.wa, lang: sw.lang
+            extra: sw.extra, wa: sw.wa, lang: sw.lang, centerFree: cCenter.value, centerDir: ddCDir.selection && ddCDir.selection.index === 1 ? 'lr' : 'tb'
         };
         var st = JZ_DATA.styles[o.style];
         o.fx.hud = ddHud.selection.index === 1 ? true : ddHud.selection.index === 2 ? false : !!st.hud;
@@ -30862,14 +31033,12 @@ function jzUI(thisObj) {
         var keyI = ddKey.selection ? ddKey.selection.index : 0;
         if (keyI > 0) { plan.keyBg = keyI === 1 ? 'green' : 'black'; plan.style = jzKeyStyle(plan.style); }
         status.text = '\uC0DD\uC131 \uC911\u2026 (' + plan.cuts.length + ' cuts)';
-        app.beginUndoGroup('JIZURA build');
-        var comp = null;
-        try { comp = jzBuild(plan, { roles: roles(), audioItem: au ? au.item : null, audioStart: au ? au.start : 0 }); }
-        catch (e2) { alert('\uC0DD\uC131 \uC911 \uC624\uB958: ' + e2.toString() + (e2.line ? ' (line ' + e2.line + ')' : '')); }
-        finally { app.endUndoGroup(); }
-        if (comp) { lastComp = comp; lastPlan = plan; }
-        report(comp, t0, label);
+        runBuild(plan, { roles: roles(), audioItem: au ? au.item : null, audioStart: au ? au.start : 0, light: cLight.value }, 'JIZURA build', function (comp, job) {
+            if (comp) { lastComp = comp; lastPlan = plan; }
+            report(comp, t0, jobLabel(label, job));
+        });
     }
+    function jobLabel(label, job) { return job && job.cancelled ? '\uC911\uC9C0(' + job.done + ' / ' + job.total + '\uCEF7)' + (label ? ' ' + label : '') : label; }
     bBuild.onClick = function () { doBuild(''); };
 
     // \u304A\u307E\u304B\u305B: roll every setting on the panel, show it, then build a fresh comp
@@ -30895,19 +31064,18 @@ function jzUI(thisObj) {
         if (plan.version !== 2 && !note) note = '';
         var au = audioSel(cAudio2.value);
         status.text = '\uC0DD\uC131 \uC911\u2026 (' + plan.cuts.length + ' cuts)';
-        app.beginUndoGroup('JIZURA build from JSON');
-        var comp = null;
-        try { comp = jzBuild(plan, { roles: roles(), audioItem: au ? au.item : null, audioStart: au ? au.start : 0 }); }
-        catch (e2) { alert('\uC0DD\uC131 \uC911 \uC624\uB958: ' + e2.toString() + (e2.line ? ' (line ' + e2.line + ')' : '')); }
-        finally { app.endUndoGroup(); }
-        if (comp) { lastComp = comp; lastPlan = plan; }
-        if (JZ_FALLBACKS > 0) {
-            note = (note ? note + ' / ' : '') + '\uC774 \uD328\uB110\uC5D0 \uC5C6\uB294 \uD45C\uD604 ' + JZ_FALLBACKS + '\uACF3\uC744 \uBE44\uC2B7\uD55C \uD45C\uD604\uC73C\uB85C \uB9CC\uB4E4\uC5C8\uC2B5\uB2C8\uB2E4';
-            alert('JIZURA: \uC774 JSON\uC5D0\uB294 \uC774 \uD328\uB110\uC774 \uB9CC\uB4E4 \uC218 \uC5C6\uB294 \uD45C\uD604\uC774 ' + JZ_FALLBACKS + '\uACF3 \uC788\uC5B4 \uBE44\uC2B7\uD55C \uD45C\uD604\uC73C\uB85C \uBC14\uAFE8\uC2B5\uB2C8\uB2E4.\n\n' + JZ_FALLBACK_KEYS.slice(0, 12).join(', ') +
-                '\n\n\uBE0C\uB77C\uC6B0\uC800 \uBC84\uC804\uBCF4\uB2E4 \uC624\uB798\uB41C \uD328\uB110\uC744 \uC4F0\uACE0 \uC788\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uCD5C\uC2E0 JIZURA_AE.jsx(v' + JZ_PANEL_VERSION + '\u00B7707\uAC1C \uBD80\uD488)\uB85C \uAD50\uCCB4\uD55C \uB4A4 After Effects\uB97C \uB2E4\uC2DC \uC2DC\uC791\uD574 \uC8FC\uC138\uC694.');
-        }
-        report(comp, t0, note ? '\uAD50\uCCB4 \uC788\uC74C' : '');
-        if (note) status.helpTip = note;
+        // a line-range JSON starts part-way into the song: slide the song layer left by the same amount
+        var off = +plan.audioOffset || 0;
+        runBuild(plan, { roles: roles(), audioItem: au ? au.item : null, audioStart: au ? au.start - off : 0, light: cLight.value }, 'JIZURA build from JSON', function (comp, job) {
+            if (comp) { lastComp = comp; lastPlan = plan; }
+            if (JZ_FALLBACKS > 0) {
+                note = (note ? note + ' / ' : '') + '\uC774 \uD328\uB110\uC5D0 \uC5C6\uB294 \uD45C\uD604 ' + JZ_FALLBACKS + '\uACF3\uC744 \uBE44\uC2B7\uD55C \uD45C\uD604\uC73C\uB85C \uB9CC\uB4E4\uC5C8\uC2B5\uB2C8\uB2E4';
+                alert('JIZURA: \uC774 JSON\uC5D0\uB294 \uC774 \uD328\uB110\uC774 \uB9CC\uB4E4 \uC218 \uC5C6\uB294 \uD45C\uD604\uC774 ' + JZ_FALLBACKS + '\uACF3 \uC788\uC5B4 \uBE44\uC2B7\uD55C \uD45C\uD604\uC73C\uB85C \uBC14\uAFE8\uC2B5\uB2C8\uB2E4.\n\n' + JZ_FALLBACK_KEYS.slice(0, 12).join(', ') +
+                    '\n\n\uBE0C\uB77C\uC6B0\uC800 \uBC84\uC804\uBCF4\uB2E4 \uC624\uB798\uB41C \uD328\uB110\uC744 \uC4F0\uACE0 \uC788\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uCD5C\uC2E0 JIZURA_AE.jsx(v' + JZ_PANEL_VERSION + '\u00B7707\uAC1C \uBD80\uD488)\uB85C \uAD50\uCCB4\uD55C \uB4A4 After Effects\uB97C \uB2E4\uC2DC \uC2DC\uC791\uD574 \uC8FC\uC138\uC694.');
+            }
+            report(comp, t0, jobLabel(note ? '\uAD50\uCCB4 \uC788\uC74C' : '', job));
+            if (note) status.helpTip = note;
+        });
     };
     bDiag.onClick = function () {
         if (!lastComp) { alert('\uBA3C\uC800 \uCEF4\uD3EC\uB97C \uB9CC\uB4E4\uC5B4 \uC8FC\uC138\uC694(\uC774 \uD328\uB110\uC5D0\uC11C \uB9C8\uC9C0\uB9C9\uC73C\uB85C \uB9CC\uB4E0 \uCEF4\uD3EC\uB97C \uC870\uC0AC\uD569\uB2C8\uB2E4)'); return; }

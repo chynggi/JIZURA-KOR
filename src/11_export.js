@@ -25,21 +25,50 @@ J.saveFile = async (filename, data) => {
 };
 
 /* ---------- codec negotiation ---------- */
+const VIDEO_CANDS = [
+  { codec: 'avc1.640034', mux: 'avc', label: 'H.264 High' },
+  { codec: 'avc1.640033', mux: 'avc', label: 'H.264 High' },
+  { codec: 'avc1.4d0033', mux: 'avc', label: 'H.264 Main' },
+  { codec: 'avc1.42003e', mux: 'avc', label: 'H.264 Baseline' },
+  { codec: 'vp09.00.51.08', mux: 'vp9', label: 'VP9' },
+  { codec: 'av01.0.12M.08', mux: 'av1', label: 'AV1' },
+];
+// hardware encoders often refuse very high bitrates (52 Mbps+ for 1080p60 at 最高) — keep them in a range they accept
+J.videoBitrate = (w, h, fps, quality) => {
+  const want = w * h * fps * (quality === 'max' ? 0.42 : quality === 'high' ? 0.28 : 0.16);
+  const px = w * h, cap = px <= 2.2e6 ? 40e6 : px <= 3.8e6 ? 60e6 : 90e6;
+  return Math.round(Math.min(want, cap));
+};
+const vcfg = (c, w, h, fps, bitrate, hw) => {
+  const cfg = { codec: c.codec, width: w, height: h, bitrate, framerate: fps };
+  if (hw) cfg.hardwareAcceleration = hw;
+  if (c.mux === 'avc') cfg.avc = { format: 'avc' };
+  return cfg;
+};
+async function supported(cfg) { try { const s = await VideoEncoder.isConfigSupported(cfg); return !!(s && s.supported); } catch (e) { return false; } }
 J.pickVideoCodec = async (w, h, fps, bitrate) => {
   if (typeof VideoEncoder === 'undefined') return null;
-  const cands = [
-    { codec: 'avc1.640033', mux: 'avc', label: 'H.264 High' },
-    { codec: 'avc1.4d0033', mux: 'avc', label: 'H.264 Main' },
-    { codec: 'avc1.42003e', mux: 'avc', label: 'H.264 Baseline' },
-    { codec: 'vp09.00.51.08', mux: 'vp9', label: 'VP9' },
-    { codec: 'av01.0.12M.08', mux: 'av1', label: 'AV1' },
-  ];
-  for (const c of cands) {
-    const cfg = { codec: c.codec, width: w, height: h, bitrate, framerate: fps };
-    if (c.mux === 'avc') cfg.avc = { format: 'avc' };
-    try { const s = await VideoEncoder.isConfigSupported(cfg); if (s.supported) return Object.assign({}, c, { cfg }); } catch (e) {}
-  }
+  for (const c of VIDEO_CANDS) { const cfg = vcfg(c, w, h, fps, bitrate); if (await supported(cfg)) return Object.assign({}, c, { cfg }); }
   return null;
+};
+/* the encoders to try, best first: the browser's choice, then the same codec in software (GPU encoders are the usual
+   reason an export fails every time on one PC), then a simpler profile / lower bitrate in software, then VP9 */
+J.videoAttempts = async (w, h, fps, bitrate) => {
+  if (typeof VideoEncoder === 'undefined') return [];
+  const out = [], seen = new Set();
+  const add = async (c, hw, br) => {
+    const key = c.codec + '|' + (hw || '') + '|' + br;
+    if (seen.has(key) || out.length >= 5) return;
+    const cfg = vcfg(c, w, h, fps, br, hw);
+    if (await supported(cfg)) { seen.add(key); out.push(Object.assign({}, c, { cfg, hw: hw || 'auto' })); }
+  };
+  let first = null;
+  for (const c of VIDEO_CANDS) { const cfg = vcfg(c, w, h, fps, bitrate); if (await supported(cfg)) { first = c; break; } }
+  if (first) { await add(first, null, bitrate); await add(first, 'prefer-software', bitrate); }
+  const avc = VIDEO_CANDS.filter(c => c.mux === 'avc' && c !== first);
+  for (const c of avc) { await add(c, 'prefer-software', Math.round(bitrate * 0.7)); if (out.length >= 3) break; }
+  for (const c of VIDEO_CANDS.filter(c => c.mux !== 'avc')) await add(c, 'prefer-software', Math.round(bitrate * 0.7));
+  return out;
 };
 J.pickAudioCodec = async (sr, chn) => {
   if (typeof AudioEncoder === 'undefined') return null;
@@ -49,13 +78,18 @@ J.pickAudioCodec = async (sr, chn) => {
   return null;
 };
 
-async function resample(buffer, sr, duration) {
+async function resample(buffer, sr, duration, offset = 0) {
   const chn = Math.min(2, buffer.numberOfChannels);
   const len = Math.ceil(duration * sr);
   const oc = new OfflineAudioContext(chn, len, sr);
-  const src = oc.createBufferSource(); src.buffer = buffer; src.connect(oc.destination); src.start(0);
+  const src = oc.createBufferSource(); src.buffer = buffer; src.connect(oc.destination); src.start(0, Math.max(0, offset));
   return oc.startRendering();
 }
+/* part of the song to export: range = { t0, t1 } in seconds (選んだ行だけ), default the whole plan */
+J.exportSpan = (plan, range) => {
+  const t0 = range ? Math.max(0, range.t0) : 0, t1 = range ? Math.min(plan.duration, range.t1) : plan.duration;
+  return { t0, dur: Math.max(1 / plan.fps, t1 - t0) };
+};
 
 /* ---------- MP4 ---------- */
 // Background tabs throttle setTimeout (up to once a minute), which leaves the
@@ -66,93 +100,142 @@ const waitDequeue = (enc) => new Promise(r => { enc.addEventListener('dequeue', 
 const isReclaim = (e) => e && e.name === 'QuotaExceededError';
 const MAX_RECLAIMS = 5;
 
-J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signal }) => {
+/* The MP4 is written as it is encoded (mp4-muxer, moov at the end) instead of being assembled in one huge
+   ArrayBuffer: into many small memory blocks (file: null), or straight into a file the user picked
+   (file: a FileSystemWritableFileStream, the "large video" button). A long 1080p / 1440p song used to need one contiguous
+   buffer of several hundred MB, doubled on finalize, which is what made those exports fail. */
+class BlockStore {                    // positioned writes into a list of blocks → Blob (no single giant buffer)
+  constructor() { this.blocks = []; this.end = 0; }
+  write(data, pos) {
+    let u = data instanceof Uint8Array ? data : new Uint8Array(data);
+    if (pos > this.end) { this.blocks.push({ pos: this.end, u: new Uint8Array(pos - this.end) }); this.end = pos; }
+    // overwrite what already exists (mp4-muxer patches the mdat size at finalize)
+    for (const b of this.blocks) {
+      if (pos >= this.end || !u.length) break;
+      const s0 = Math.max(pos, b.pos), s1 = Math.min(pos + u.length, b.pos + b.u.length);
+      if (s1 > s0) b.u.set(u.subarray(s0 - pos, s1 - pos), s0 - b.pos);
+    }
+    if (pos + u.length > this.end) { const from = Math.max(0, this.end - pos); this.blocks.push({ pos: this.end, u: u.slice(from) }); this.end = pos + u.length; }
+  }
+  blob(type) { return new Blob(this.blocks.map(b => b.u), { type }); }
+}
+J.exportMP4 = async (o) => {
+  const { plan, project, audio, quality = 'high', onProgress, signal, range, file = null } = o;
   const [w, h] = J.outputSize(project);
+  const fps = plan.fps, bitrate = J.videoBitrate(w, h, fps, quality);
+  const attempts = await J.videoAttempts(w, h, fps, bitrate);
+  if (!attempts.length) throw new Error('이 브라우저는 동영상 인코딩(WebCodecs)을 지원하지 않습니다. 최신 Chrome 또는 Edge로 열어 주세요.');
+  const tried = [];
+  for (let k = 0; k < attempts.length; k++) {
+    const vc = attempts[k];
+    try {
+      if (file && k > 0) { await file.seek(0); await file.truncate(0); }
+      const r = await encodeMP4(Object.assign({}, o, { w, h, vc, note: k > 0 ? `(${vc.label}·소프트웨어로 재시도 ${k})` : '' }));
+      r.tried = tried; return r;
+    } catch (e) {
+      if (signal && signal.aborted) throw new Error('취소했습니다');
+      if (e && e.jzFatal) throw e;
+      tried.push(`${vc.label}/${vc.hw}: ${e && e.message ? e.message : e}`);
+      console.warn('MP4 export attempt failed', vc.codec, vc.hw, e);
+    }
+  }
+  const err = new Error('MP4를 내보낼 수 없습니다. ' + (file ? '' : '「큰 동영상용(파일에 바로 저장)」을 쓰거나, ') + '해상도·fps·화질을 낮춰 보세요. 자세히: ' + tried.join(' / '));
+  err.detail = tried; throw err;
+};
+async function encodeMP4({ plan, project, audio, onProgress, signal, range, file, w, h, vc, note }) {
+  const span = J.exportSpan(plan, range);
   const fps = plan.fps;
-  const px = w * h * fps;
-  const bitrate = Math.round(px * (quality === 'max' ? 0.42 : quality === 'high' ? 0.28 : 0.16));
-  const vc = await J.pickVideoCodec(w, h, fps, bitrate);
-  if (!vc) throw new Error('이 브라우저는 영상 인코딩(WebCodecs)을 지원하지 않습니다. 최신 버전의 Chrome 또는 Edge에서 여세요.');
   let ac = null;
   if (audio && audio.buffer && project.includeAudio !== false) ac = await J.pickAudioCodec(48000, Math.min(2, audio.buffer.numberOfChannels));
-  const target = new Mp4Muxer.ArrayBufferTarget();
-  const muxOpts = { target, video: { codec: vc.mux, width: w, height: h, frameRate: fps }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' };
+  const store = file ? null : new BlockStore();
+  const target = file ? new Mp4Muxer.FileSystemWritableFileStreamTarget(file, { chunkSize: 8 * 1048576 })
+    : new Mp4Muxer.StreamTarget({ onData: (data, pos) => store.write(data, pos), chunked: true, chunkSize: 8 * 1048576 });
+  const muxOpts = { target, video: { codec: vc.mux, width: w, height: h, frameRate: fps }, fastStart: false, firstTimestampBehavior: 'offset' };
   if (ac) muxOpts.audio = { codec: ac.mux, numberOfChannels: Math.min(2, audio.buffer.numberOfChannels), sampleRate: ac.sr };
   const muxer = new Mp4Muxer.Muxer(muxOpts);
-  let err = null, venc = null, lastOut = -1;
+  let err = null, outFrames = 0, venc = null, lastOut = -1;
   const frameUs = 1e6 / fps;
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d', { alpha: false });
   const R = new J.Renderer();
-  const total = Math.max(1, Math.round(plan.duration * fps));
+  const total = Math.max(1, Math.round(span.dur * fps));
   const scale = w / plan.W;
   const prevRes = J.glyphs.maxRes; J.glyphs.maxRes = h >= 1000 ? 768 : 512;
+  const closeEnc = () => { try { if (venc && venc.state !== 'closed') venc.close(); } catch (e) {} };
   try {
-  // If the encoder is reclaimed, frames it had queued are lost: start a fresh
-  // encoder on a keyframe right after the last chunk the muxer received.
-  for (let next = 0, attempt = 0; ; attempt++) {
-    err = null;
-    venc = new VideoEncoder({ output: (chunk, meta) => { muxer.addVideoChunk(chunk, meta); lastOut = Math.round(chunk.timestamp / frameUs); }, error: e => { err = e; } });
-    venc.configure(Object.assign({}, vc.cfg, { latencyMode: 'quality' }));
-    try {
-      for (let i = next; i < total; i++) {
-        if (signal && signal.aborted) throw new Error('취소했습니다');
+    // If the encoder is reclaimed, frames it had queued are lost: start a fresh
+    // encoder on a keyframe right after the last chunk the muxer received.
+    for (let next = 0, attempt = 0; ; attempt++) {
+      err = null;
+      venc = new VideoEncoder({ output: (chunk, meta) => { outFrames++; lastOut = Math.round(chunk.timestamp / frameUs); try { muxer.addVideoChunk(chunk, meta); } catch (e) { err = e; } }, error: e => { err = e; } });
+      venc.configure(Object.assign({}, vc.cfg, { latencyMode: 'quality' }));
+      try {
+        for (let i = next; i < total; i++) {
+          if (signal && signal.aborted) throw new Error('취소했습니다');
+          if (err) throw err;
+          if (venc.state === 'closed') throw new Error('인코더가 멈췄습니다');
+          R.frame(ctx, plan, span.t0 + i / fps, { scale });
+          const vf = new VideoFrame(canvas, { timestamp: Math.round(i * frameUs), duration: Math.round(frameUs) });
+          try { venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0 }); } finally { vf.close(); }
+          const deadline = Date.now() + 30000;
+          while (venc.encodeQueueSize > 4 && !err) { await waitDequeue(venc); if (Date.now() > deadline) throw new Error('인코더가 응답하지 않습니다'); }
+          // an encoder that accepts frames but never returns any has failed silently (seen with some GPU drivers)
+          if (i === Math.min(total - 1, fps * 3) && outFrames === 0) { await venc.flush(); if (!outFrames) throw new Error('인코더가 출력을 반환하지 않습니다'); }
+          if (i % 3 === 0) { onProgress && onProgress(i / total, `프레임 ${i + 1}/${total}${note || ''}`); await yieldTask(); }
+        }
+        await venc.flush();
         if (err) throw err;
-        R.frame(ctx, plan, i / fps, { scale });
-        const vf = new VideoFrame(canvas, { timestamp: Math.round(i * frameUs), duration: Math.round(frameUs) });
-        venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0 });
-        vf.close();
-        while (venc.encodeQueueSize > 4 && !err) await waitDequeue(venc);
-        if (i % 3 === 0) { onProgress && onProgress(i / total, `프레임 ${i + 1}/${total}`); await yieldTask(); }
+        break;
+      } catch (e) {
+        const cause = err || e;
+        closeEnc();
+        if (!isReclaim(cause) || attempt >= MAX_RECLAIMS) throw cause;
+        next = lastOut + 1;
       }
-      await venc.flush();
-      if (err) throw err;
-      break;
-    } catch (e) {
-      const cause = err || e;
-      if (!isReclaim(cause) || attempt >= MAX_RECLAIMS) throw cause;
-      next = lastOut + 1;
     }
-  }
-  } finally { J.glyphs.maxRes = prevRes; if (venc && venc.state !== 'closed') venc.close(); }
+  } catch (e) { closeEnc(); throw e; }
+  finally { J.glyphs.maxRes = prevRes; }
+  closeEnc();
+  if (outFrames < total * 0.98) throw new Error(`프레임이 부족합니다(${outFrames}/${total})`);
   if (ac) {
     onProgress && onProgress(0.99, '오디오 인코딩 중');
-    const rs = await resample(audio.buffer, ac.sr, plan.duration);
+    const rs = await resample(audio.buffer, ac.sr, span.dur, span.t0);
     const chn = rs.numberOfChannels;
     const frames = rs.length, block = 4800;
+    const fatal = m => { const e = new Error(m); e.jzFatal = true; return e; };    // audio problems: another video encoder won't help
     // Audio is quick to encode, so on reclaim just redo it; chunks are held
     // back until a pass completes so the muxer never sees duplicates.
     for (let attempt = 0; ; attempt++) {
       const chunks = [];
-      err = null;
-      const aenc = new AudioEncoder({ output: (chunk, meta) => chunks.push([chunk, meta]), error: e => { err = e; } });
+      let aEnd = 0, aErr = null;
+      const aenc = new AudioEncoder({ output: (chunk, meta) => { aEnd = Math.max(aEnd, chunk.timestamp + (chunk.duration || 0)); chunks.push([chunk, meta]); }, error: e => { aErr = e; } });
       aenc.configure({ codec: ac.codec, sampleRate: ac.sr, numberOfChannels: chn, bitrate: 192000 });
-      try {
-        for (let off = 0; off < frames; off += block) {
-          if (err) throw err;
-          const n = Math.min(block, frames - off);
-          const data = new Float32Array(n * chn);
-          for (let c = 0; c < chn; c++) data.set(rs.getChannelData(c).subarray(off, off + n), c * n);
-          const ad = new AudioData({ format: 'f32-planar', sampleRate: ac.sr, numberOfFrames: n, numberOfChannels: chn, timestamp: Math.round(off * 1e6 / ac.sr), data });
-          aenc.encode(ad); ad.close();
-          while (aenc.encodeQueueSize > 16 && !err) await waitDequeue(aenc);
-        }
-        await aenc.flush();
-        if (err) throw err;
-        aenc.close();
-        for (const [chunk, meta] of chunks) muxer.addAudioChunk(chunk, meta);
-        break;
-      } catch (e) {
-        if (aenc.state !== 'closed') aenc.close();
-        const cause = err || e;
-        if (!isReclaim(cause) || attempt >= MAX_RECLAIMS) throw cause;
+      for (let off = 0; off < frames; off += block) {
+        if (aErr) break;
+        const n = Math.min(block, frames - off);
+        const data = new Float32Array(n * chn);
+        for (let c = 0; c < chn; c++) data.set(rs.getChannelData(c).subarray(off, off + n), c * n);
+        const ad = new AudioData({ format: 'f32-planar', sampleRate: ac.sr, numberOfFrames: n, numberOfChannels: chn, timestamp: Math.round(off * 1e6 / ac.sr), data });
+        aenc.encode(ad); ad.close();
+        while (aenc.encodeQueueSize > 16 && !aErr) await waitDequeue(aenc);
       }
+      if (!aErr) { try { await aenc.flush(); } catch (e) { aErr = aErr || e; } }
+      if (aenc.state !== 'closed') aenc.close();
+      if (aErr && isReclaim(aErr) && attempt < MAX_RECLAIMS) continue;
+      if (aErr) throw fatal('오디오 인코딩 실패: ' + (aErr.message || aErr));
+      // the encoder must have produced the whole soundtrack — otherwise report it instead of writing a silent file
+      if (!chunks.length || aEnd < (Math.min(span.dur, audio.buffer.duration - span.t0) - 0.5) * 1e6) throw fatal('오디오 인코딩이 도중에 멈췄습니다(' + chunks.length + '). 다시 내보내 주세요');
+      for (const [chunk, meta] of chunks) muxer.addAudioChunk(chunk, meta);
+      break;
     }
   }
+  onProgress && onProgress(0.995, '파일을 마무리하는 중');
   muxer.finalize();
+  if (file) await file.close();
   onProgress && onProgress(1, '완료');
-  return { blob: new Blob([target.buffer], { type: 'video/mp4' }), codec: vc.label, audio: ac ? ac.mux : null, width: w, height: h };
-};
+  const size = file ? null : store.end;
+  return { blob: file ? null : store.blob('video/mp4'), size, codec: vc.label + (vc.hw === 'prefer-software' ? '(소프트웨어)' : ''), audio: ac ? ac.mux : null, audioWanted: !!(audio && audio.buffer && project.includeAudio !== false), width: w, height: h, toFile: !!file };
+}
 
 /* ---------- PNG sequence as ZIP (store, no compression) ---------- */
 const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -181,19 +264,25 @@ class ZipWriter {
     return new Blob([...this.parts, ...this.central, end.buffer], { type: 'application/zip' });
   }
 }
-J.exportPNGZip = async ({ plan, project, transparent, onProgress, signal, every = 1 }) => {
+/* layers: transparent PNGs in two folders — back/ (background graphic + decorations behind the lyrics) and front/
+   (lyrics, their decorations, ghosts, HUD). Screen effects are applied to both, so stacking front over back matches. */
+J.exportPNGZip = async ({ plan, project, transparent, layers, onProgress, signal, every = 1, range }) => {
+  const span = J.exportSpan(plan, range);
   const [w, h] = J.outputSize(project);
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
   const R = new J.Renderer();
-  const fps = plan.fps, total = Math.max(1, Math.round(plan.duration * fps));
+  const fps = plan.fps, total = Math.max(1, Math.round(span.dur * fps));
   const zip = new ZipWriter();
   const scale = w / plan.W;
   for (let i = 0; i < total; i += every) {
     if (signal && signal.aborted) throw new Error('취소했습니다');
-    R.frame(ctx, plan, i / fps, { scale, transparent });
-    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-    zip.add(`jizura_${String(i).padStart(5, '0')}.png`, new Uint8Array(await blob.arrayBuffer()));
+    const name = `jizura_${String(i).padStart(5, '0')}.png`;
+    for (const layer of layers ? ['back', 'front'] : [null]) {
+      R.frame(ctx, plan, span.t0 + i / fps, { scale, transparent: transparent || !!layers, layer });
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      zip.add((layer ? layer + '/' : '') + name, new Uint8Array(await blob.arrayBuffer()));
+    }
     onProgress && onProgress(i / total, `PNG ${i + 1}/${total}`);
   }
   onProgress && onProgress(1, '완료');
@@ -214,7 +303,7 @@ J.AE_MAP = {
 };
 // The plan goes to the After Effects panel as-is (version 2): the panel builds every key it implements and
 // picks the closest counterpart itself (from the exported metadata / J.AE_MAP) for anything it lacks.
-J.planForAE = (plan, project) => {
+J.planForAE = (plan, project, range) => {
   const clean = JSON.parse(JSON.stringify(plan, (k, v) => (k === 'energy' || k === 'buffer' || k === 'peaks' ? undefined : v)));
   clean.version = 2;
   clean.width = J.outputSize(project)[0]; clean.height = J.outputSize(project)[1];
@@ -227,6 +316,18 @@ J.planForAE = (plan, project) => {
   if (J.setLang && J.faceOf && clean.lang !== 'ja') {
     J.setLang(clean.lang);
     for (const k of Object.keys(clean.fontTable)) { const f = J.faceOf(k); clean.fontTable[k].langFamily = f.family.replace(/"/g, ''); clean.fontTable[k].langWeight = f.weight; }
+  }
+  // モーフ has no After Effects counterpart yet: build it as the closest transition (an ink-blob dissolve)
+  for (const c of clean.cuts || []) if (c.morph && !c.trans) { c.trans = 'inkBlob'; c.transDur = c.morph.dur; c.transP = {}; c.webMorph = true; }
+  // 行の範囲だけ: keep the cuts / events inside [t0, t1] and move them to start at 0.
+  // audioOffset tells the AE panel to slide the song layer left by t0 so it stays in sync.
+  if (range) {
+    const sp = J.exportSpan(plan, range), t0 = sp.t0, t1 = t0 + sp.dur, eps = 1e-3;
+    const sh = o => { o.start -= t0; o.end -= t0; return o; };
+    clean.cuts = clean.cuts.filter(c => c.end > t0 + eps && c.start < t1 - eps).map(c => { if (c.companion) sh(c.companion); return sh(c); });
+    clean.events = (clean.events || []).filter(e => e.t >= t0 - 1 && e.t < t1).map(e => Object.assign(e, { t: e.t - t0 }));
+    for (const l of clean.lines || []) { sh(l); if (l.visEnd != null) l.visEnd -= t0; }   // all lines stay (cut.line indexes them)
+    clean.duration = sp.dur; clean.audioOffset = t0; clean.range = { t0, t1 };
   }
   return clean;
 };

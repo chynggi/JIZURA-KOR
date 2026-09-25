@@ -442,6 +442,10 @@ JZ_LAYOUTS.title = function (ctx) {
 
 JZ_LAYOUTS.interlude = function (ctx) {
     var W = ctx.W, H = ctx.H, sc = ctx.sc, c = ctx.cut;
+    if (jzP(ctx, 'variant', 'counter') === 'quiet') {       // [간주] (upstream): background and decorations only (+ the title on long ones)
+        if (jzP(ctx, 'showTitle', false) && jzP(ctx, 'titleText', '')) jzNoGhost(jzSmall(ctx, jzP(ctx, 'titleText', ''), { size: Math.max(12, H * 0.024), color: sc.sub, x: W / 2, y: H * 0.88, track: 0.3 }));
+        return { x0: W * 0.3, x1: W * 0.7, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2 };
+    }
     // 첫 간주에 크레딧: song title large + artist (same composition as the title card)
     if (jzP(ctx, 'variant', 'counter') === 'credit') {
         var L = jzMain(ctx, c.text, { font: jzFontOf(ctx, '_', 'display'), size: 200, color: sc.fg, x: W / 2, y: H / 2, track: 0.08, maxW: W * 0.7, maxH: H * 0.18, maxSize: H * 0.14 });
