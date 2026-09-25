@@ -58,6 +58,14 @@ async function resample(buffer, sr, duration) {
 }
 
 /* ---------- MP4 ---------- */
+// Background tabs throttle setTimeout (up to once a minute), which leaves the
+// encoder idle long enough for Chrome to reclaim it ("Codec reclaimed due to
+// inactivity", QuotaExceededError). MessageChannel tasks are not throttled.
+const yieldTask = () => new Promise(r => { const ch = new MessageChannel(); ch.port1.onmessage = () => { ch.port1.close(); r(); }; ch.port2.postMessage(0); });
+const waitDequeue = (enc) => new Promise(r => { enc.addEventListener('dequeue', r, { once: true }); setTimeout(r, 50); });
+const isReclaim = (e) => e && e.name === 'QuotaExceededError';
+const MAX_RECLAIMS = 5;
+
 J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signal }) => {
   const [w, h] = J.outputSize(project);
   const fps = plan.fps;
@@ -71,9 +79,8 @@ J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signa
   const muxOpts = { target, video: { codec: vc.mux, width: w, height: h, frameRate: fps }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' };
   if (ac) muxOpts.audio = { codec: ac.mux, numberOfChannels: Math.min(2, audio.buffer.numberOfChannels), sampleRate: ac.sr };
   const muxer = new Mp4Muxer.Muxer(muxOpts);
-  let err = null;
-  const venc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: e => { err = e; } });
-  venc.configure(Object.assign({}, vc.cfg, { latencyMode: 'quality' }));
+  let err = null, venc = null, lastOut = -1;
+  const frameUs = 1e6 / fps;
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d', { alpha: false });
   const R = new J.Renderer();
@@ -81,35 +88,66 @@ J.exportMP4 = async ({ plan, project, audio, quality = 'high', onProgress, signa
   const scale = w / plan.W;
   const prevRes = J.glyphs.maxRes; J.glyphs.maxRes = h >= 1000 ? 768 : 512;
   try {
-  for (let i = 0; i < total; i++) {
-    if (signal && signal.aborted) { try { venc.close(); } catch (e) {} throw new Error('취소했습니다'); }
-    if (err) throw err;
-    R.frame(ctx, plan, i / fps, { scale });
-    const vf = new VideoFrame(canvas, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
-    venc.encode(vf, { keyFrame: i % (fps * 2) === 0 });
-    vf.close();
-    while (venc.encodeQueueSize > 4) await new Promise(r => setTimeout(r, 2));
-    if (i % 3 === 0) { onProgress && onProgress(i / total, `프레임 ${i + 1}/${total}`); await new Promise(r => setTimeout(r, 0)); }
+  // If the encoder is reclaimed, frames it had queued are lost: start a fresh
+  // encoder on a keyframe right after the last chunk the muxer received.
+  for (let next = 0, attempt = 0; ; attempt++) {
+    err = null;
+    venc = new VideoEncoder({ output: (chunk, meta) => { muxer.addVideoChunk(chunk, meta); lastOut = Math.round(chunk.timestamp / frameUs); }, error: e => { err = e; } });
+    venc.configure(Object.assign({}, vc.cfg, { latencyMode: 'quality' }));
+    try {
+      for (let i = next; i < total; i++) {
+        if (signal && signal.aborted) throw new Error('취소했습니다');
+        if (err) throw err;
+        R.frame(ctx, plan, i / fps, { scale });
+        const vf = new VideoFrame(canvas, { timestamp: Math.round(i * frameUs), duration: Math.round(frameUs) });
+        venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0 });
+        vf.close();
+        while (venc.encodeQueueSize > 4 && !err) await waitDequeue(venc);
+        if (i % 3 === 0) { onProgress && onProgress(i / total, `프레임 ${i + 1}/${total}`); await yieldTask(); }
+      }
+      await venc.flush();
+      if (err) throw err;
+      break;
+    } catch (e) {
+      const cause = err || e;
+      if (!isReclaim(cause) || attempt >= MAX_RECLAIMS) throw cause;
+      next = lastOut + 1;
+    }
   }
-  } finally { J.glyphs.maxRes = prevRes; }
-  await venc.flush(); venc.close();
+  } finally { J.glyphs.maxRes = prevRes; if (venc && venc.state !== 'closed') venc.close(); }
   if (ac) {
     onProgress && onProgress(0.99, '오디오 인코딩 중');
     const rs = await resample(audio.buffer, ac.sr, plan.duration);
     const chn = rs.numberOfChannels;
-    const aenc = new AudioEncoder({ output: (chunk, meta) => muxer.addAudioChunk(chunk, meta), error: e => { err = e; } });
-    aenc.configure({ codec: ac.codec, sampleRate: ac.sr, numberOfChannels: chn, bitrate: 192000 });
     const frames = rs.length, block = 4800;
-    for (let off = 0; off < frames; off += block) {
-      const n = Math.min(block, frames - off);
-      const data = new Float32Array(n * chn);
-      for (let c = 0; c < chn; c++) data.set(rs.getChannelData(c).subarray(off, off + n), c * n);
-      const ad = new AudioData({ format: 'f32-planar', sampleRate: ac.sr, numberOfFrames: n, numberOfChannels: chn, timestamp: Math.round(off * 1e6 / ac.sr), data });
-      aenc.encode(ad); ad.close();
-      if (aenc.encodeQueueSize > 16) await new Promise(r => setTimeout(r, 1));
+    // Audio is quick to encode, so on reclaim just redo it; chunks are held
+    // back until a pass completes so the muxer never sees duplicates.
+    for (let attempt = 0; ; attempt++) {
+      const chunks = [];
+      err = null;
+      const aenc = new AudioEncoder({ output: (chunk, meta) => chunks.push([chunk, meta]), error: e => { err = e; } });
+      aenc.configure({ codec: ac.codec, sampleRate: ac.sr, numberOfChannels: chn, bitrate: 192000 });
+      try {
+        for (let off = 0; off < frames; off += block) {
+          if (err) throw err;
+          const n = Math.min(block, frames - off);
+          const data = new Float32Array(n * chn);
+          for (let c = 0; c < chn; c++) data.set(rs.getChannelData(c).subarray(off, off + n), c * n);
+          const ad = new AudioData({ format: 'f32-planar', sampleRate: ac.sr, numberOfFrames: n, numberOfChannels: chn, timestamp: Math.round(off * 1e6 / ac.sr), data });
+          aenc.encode(ad); ad.close();
+          while (aenc.encodeQueueSize > 16 && !err) await waitDequeue(aenc);
+        }
+        await aenc.flush();
+        if (err) throw err;
+        aenc.close();
+        for (const [chunk, meta] of chunks) muxer.addAudioChunk(chunk, meta);
+        break;
+      } catch (e) {
+        if (aenc.state !== 'closed') aenc.close();
+        const cause = err || e;
+        if (!isReclaim(cause) || attempt >= MAX_RECLAIMS) throw cause;
+      }
     }
-    await aenc.flush(); aenc.close();
-    if (err) throw err;
   }
   muxer.finalize();
   onProgress && onProgress(1, '완료');
