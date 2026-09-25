@@ -30723,6 +30723,22 @@ const presets = {
   dreamy: { category:'taste', name:L('幻想的','Dreamy'), moods:['calm','emotional'], styles:['hud','noir','magenta'], media:['drift','orbit','rackFocus','beatBreathe'], phases:['enter_blur','iris','enter_fade'], motion:[.3,.7], duration:[.65,1.3], flash:false },
   retro: { category:'taste', name:L('レトロ','Retro'), moods:['editorial','graphic'], styles:['paper','caution','transit'], media:['panorama','pullOut','filmstrip','stipplePrint','beatSway'], phases:['blinds','wipe','enter_fade'], motion:[.35,.7], duration:[.35,.7], flash:false },
 };
+// Curated additions from the rhythmic media pack; keep gentle themes restrained.
+const rhythmByTheme = {
+  pop: ['beatSideHop','beatZoomSteps','beatSpring','beatSquash','beatTwistHop','beatSwayZoom'],
+  ballad: ['beatPendulum','beatWaltz'],
+  rock: ['beatSpring','beatStretch','beatTwistHop','beatZoomSteps'],
+  dance: ['beatBox','beatDiamond','beatZoomSteps','beatSquash','beatStretch','beatSpiral','beatSwayZoom'],
+  hiphop: ['beatSideHop','beatBox','beatZoomSteps','beatSquash','beatSwayZoom'],
+  jazz: ['beatPendulum','beatWaltz','beatSwayZoom'],
+  acoustic: ['beatPendulum','beatWaltz'],
+  cool: ['beatBox','beatDiamond','beatZoomSteps'],
+  cute: ['beatSideHop','beatSpring','beatSquash','beatTwistHop','beatWaltz'],
+  elegant: ['beatPendulum','beatWaltz'],
+  dreamy: ['beatPendulum','beatSpiral','beatSwayZoom'],
+  retro: ['beatSideHop','beatPendulum','beatWaltz'],
+};
+for (const [key, motions] of Object.entries(rhythmByTheme)) presets[key].media.push(...motions);
 const descriptions = {
   pop:L('明るい配色・弾む動き','Bright colors and bouncy motion'), ballad:L('落ち着いた配色・ゆっくりした余韻','Quiet colors and lingering motion'),
   rock:L('強いコントラスト・激しい動き','Strong contrast and energetic motion'), dance:L('鮮やかな配色・ビート同期','Vivid colors and beat-driven motion'),
