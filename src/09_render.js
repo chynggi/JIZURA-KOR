@@ -79,7 +79,7 @@ class Renderer {
       ctx.drawImage(layer, 0, 0); ctx.restore();
       if (frontmost) {
         const top = this.ensure(this.frontmostLayer || (this.frontmostLayer = mk(2, 2)), cw, ch);
-        this.frame(top.getContext('2d'), plan, t, Object.assign({}, opt, { noForeground: true, noMedia: true, transparent: true, noHud: true, noPost: true }));
+        this.frame(top.getContext('2d'), plan, t, Object.assign({}, opt, { noForeground: true, noMedia: true, noAssets: true, transparent: true, noHud: true, noPost: true }));
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = plan.media ? plan.media.opacity / 100 : 1;
         ctx.globalCompositeOperation = plan.media ? ({ normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.media.blend] || 'source-over') : 'source-over';
@@ -176,7 +176,7 @@ class Renderer {
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
     }
     // 소재 behind the lyrics (not on the 합성용 key backgrounds, which are text-only by design)
-    const assetsOn = !key && J.drawAssets && plan.assets && plan.assets.length;
+    const assetsOn = !key && !opt.noAssets && J.drawAssets && plan.assets && plan.assets.length;
     if (assetsOn && layer !== 'front') J.drawAssets(ctx, plan, 'back');
     const shx = J.rs(step, 71) * shake * 16 * u, shy = J.rs(step, 72) * shake * 11 * u;
     // ---------- content passes ----------
@@ -255,7 +255,7 @@ class Renderer {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       ctx.filter = `blur(${(layerBlur * scale).toFixed(1)}px)`; ctx.drawImage(LX.canvas, 0, 0); ctx.restore();
     }
-    if (morphOn && layer !== 'back') {
+    if (morphOn && !opt.noLyrics && layer !== 'back') {
       const L = this.morphLogs(plan, mPrev, MC, cw, ch, scale, opt);
       const k = J.clamp(mlt / MC.morph.dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
       this.drawMorph(ctx, L, e, allowFilter);

@@ -355,28 +355,31 @@ function tlView() {
   const D = Math.max(0.001, S.plan.duration);
   return { D, vd: D, off: 0 };
 }
-function tlZoom(f) { setTimelineZoom(S.timelineZoom * f); }
+// up to 8x, or further on a long song: down to about a 2 s window
+const timelineZoomMax = () => Math.max(8, (S.plan ? S.plan.duration : 0) / 2);
 function sizeTimelineStack() {
-  const scroll = $('timelineScroll'), stack = $('timelineStack');
+  const scroll = $('timelineScroll'), stack = $('timelineStack'), max = timelineZoomMax();
+  S.timelineZoom = J.clamp(S.timelineZoom, 1, max);                     // the song may have become shorter
   const width = Math.max(10, Math.round(scroll.clientWidth * S.timelineZoom));
   if (stack.style.width !== `${width}px`) stack.style.width = `${width}px`;
-}
-function setTimelineZoom(zoom) {
-  const scroll = $('timelineScroll'), stack = $('timelineStack');
-  const center = scroll.scrollLeft + scroll.clientWidth / 2;
-  const fraction = center / Math.max(1, stack.clientWidth);
-  S.timelineZoom = J.clamp(zoom, 1, 8);
-  sizeTimelineStack();
-  scroll.scrollLeft = Math.max(0, fraction * stack.clientWidth - scroll.clientWidth / 2);
   $('timelineZoomValue').textContent = `${Math.round(S.timelineZoom * 100)}%`;
   $('timelineZoomOut').disabled = S.timelineZoom <= 1;
-  $('timelineZoomIn').disabled = S.timelineZoom >= 8;
+  $('timelineZoomIn').disabled = S.timelineZoom >= max - 1e-6;
+}
+// anchorX (client px): the point that stays put while zooming (the wheel pointer); default: the middle of the view
+function setTimelineZoom(zoom, anchorX) {
+  const scroll = $('timelineScroll'), stack = $('timelineStack');
+  const a = anchorX == null ? scroll.clientWidth / 2 : J.clamp(anchorX - scroll.getBoundingClientRect().left, 0, scroll.clientWidth);
+  const fraction = (scroll.scrollLeft + a) / Math.max(1, stack.clientWidth);
+  S.timelineZoom = J.clamp(zoom, 1, timelineZoomMax());
+  sizeTimelineStack();
+  scroll.scrollLeft = Math.max(0, fraction * stack.clientWidth - a);
   drawTimeline(); drawTimelineLinks();
 }
 function drawTimeline() {
   sizeTimelineStack();
   const c = $('timeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
-  const w = Math.max(10, Math.round(c.clientWidth * dpr)), h = Math.max(10, Math.round(c.clientHeight * dpr));
+  const w = J.clamp(Math.round(c.clientWidth * dpr), 10, 32000), h = Math.max(10, Math.round(c.clientHeight * dpr));   // deep zoom: stay under the canvas size limit
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
   const { D, vd, off } = tlView();
   // follow the playhead while playing (zoomed in): scroll the stack
@@ -437,7 +440,7 @@ function extendTapPreview(t) {
 }
 function drawMediaTimeline(layer = 'media') {
   const c = $(layer === 'media' ? 'mediaTimeline' : 'foregroundTimeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
-  const w = Math.max(10, Math.round(c.clientWidth * dpr)), h = Math.max(10, Math.round(c.clientHeight * dpr));
+  const w = J.clamp(Math.round(c.clientWidth * dpr), 10, 32000), h = Math.max(10, Math.round(c.clientHeight * dpr));   // deep zoom: stay under the canvas size limit
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
   const x = c.getContext('2d'), D = Math.max(0.001, S.plan.duration), X = t => t / D * w;
   x.fillStyle = '#131316'; x.fillRect(0, 0, w, h);
@@ -2361,11 +2364,8 @@ function bind() {
   // wheel over the lyric timeline zooms (Shift / sideways: the stack scrolls natively)
   $('timeline').addEventListener('wheel', e => {
     if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-    e.preventDefault(); tlZoom(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025)));
+    e.preventDefault(); setTimelineZoom(S.timelineZoom * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025)), e.clientX);
   }, { passive: false });
-  $('tlIn').addEventListener('click', () => tlZoom(1.6));
-  $('tlOut').addEventListener('click', () => tlZoom(1 / 1.6));
-  $('tlFit').addEventListener('click', () => setTimelineZoom(1));
   $('btnUndoEdit').addEventListener('click', () => edGo(-1));
   $('tapBack').addEventListener('click', tapBack);
   bindRangeUI();
