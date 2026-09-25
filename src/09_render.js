@@ -61,9 +61,8 @@ class Renderer {
     const foregroundCut = plan.foreground && J.mediaAt(plan, t, 'foreground');
     if (!opt.noForeground && foregroundCut && J.mediaAssets.has(foregroundCut.itemId)) {
       const step = J.stepDur(plan.fx, plan.fps);
-      const lyricCut = J.cutAt(plan, Math.floor(t / step + 1e-6) * step);
-      const frontmost = !!(lyricCut && lyricCut.frontmost);
-      this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true, noLyrics: frontmost }));
+      const frontmost = !opt.noLyrics && J.lyricCutsAt(plan, Math.floor(t / step + 1e-6) * step).some(c => c.frontmost);
+      this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true, lyricLayer: 'below' }));
       const layer = this.ensure(this.foregroundLayer || (this.foregroundLayer = document.createElement('canvas')), cw, ch);
       const lx = layer.getContext('2d'); lx.setTransform(1, 0, 0, 1, 0, 0); lx.globalAlpha = 1; lx.globalCompositeOperation = 'source-over'; lx.filter = 'none'; lx.clearRect(0, 0, cw, ch);
       J.drawMedia(lx, plan, t, this, 'foreground', !!opt.previewEdit);
@@ -79,7 +78,7 @@ class Renderer {
       ctx.drawImage(layer, 0, 0); ctx.restore();
       if (frontmost) {
         const top = this.ensure(this.frontmostLayer || (this.frontmostLayer = mk(2, 2)), cw, ch);
-        this.frame(top.getContext('2d'), plan, t, Object.assign({}, opt, { noForeground: true, noMedia: true, transparent: true, noHud: true, noPost: true }));
+        this.frame(top.getContext('2d'), plan, t, Object.assign({}, opt, { noForeground: true, noMedia: true, transparent: true, noHud: true, noPost: true, lyricLayer: 'above' }));
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = plan.media ? plan.media.opacity / 100 : 1;
         ctx.globalCompositeOperation = plan.media ? ({ normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.media.blend] || 'source-over') : 'source-over';
@@ -105,6 +104,9 @@ class Renderer {
     const clock = J.komaOf(fx) > 0 ? stepDur : 1 / 24;
     const tq = Math.floor(t / stepDur + 1e-6) * stepDur;
     const mainCut = J.cutAt(plan, tq);
+    const visible = cut => !opt.noLyrics && (opt.lyricLayer === 'above' ? cut.frontmost : opt.lyricLayer === 'below' ? !cut.frontmost : true);
+    const activeCuts = at => J.lyricCutsAt(plan, at).filter(visible)
+      .sort((a, b) => Number(!!a.frontmost) - Number(!!b.frontmost) || a.index - b.index).map(J.lyricRenderCut);
     const sc = st.schemes[mainCut ? mainCut.scheme % st.schemes.length : 0] || st.schemes[0];
     const allowFilter = this.filterOK && !opt.fast;
     if (J.setLang) J.setLang(plan.lang || 'ja');           // faces follow the plan's lyric language
@@ -131,7 +133,7 @@ class Renderer {
         ctx.filter = 'none'; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
     }
-    if (mainCut && mainCut.blank) {
+    if (mainCut && mainCut.blank && !activeCuts(tq).length) {
       ctx.restore();
       if (key && !opt.noPost) this.keyFinish(ctx, key, opt);
       return;
@@ -170,64 +172,55 @@ class Renderer {
       { pass: 'main', lag: 0, off: [0, 0] },
     ];
     const ghostOn = (fx.chroma ?? 0.7) > 0.02 && (st.ghost ?? 1) > 0.02 && !opt.noGhost;
-    let mainBB = null, mainEnv = null;
-    // camera blur (focus pulls etc.) is applied ONCE to the whole content layer — a blur filter on every
-    // individual draw call is extremely slow when a layout draws many text rows
-    let layerBlur = 0, LX = null;
-    if (!opt.noLyrics && allowFilter && mainCut && J.CAMERA[mainCut.cam] && mainCut.cam !== 'push') {
-      try {
-        const e0 = this.makeEnv(ctx, plan, mainCut, sc, { pass: 'main', t: tq, lt: tq - mainCut.start, ltb: tq - mainCut.start, step, scale, allowFilter, energy, beat: beatInfo });
-        const c0 = J.CAMERA[mainCut.cam].get(e0, mainCut.camP || {});
-        if (c0 && c0.blur > 0.4) layerBlur = c0.blur;
-      } catch (e) {}
-      if (layerBlur) {
-        const L = this.ensure(this.camLayer || (this.camLayer = mk(2, 2)), cw, ch);
-        LX = L.getContext('2d'); LX.setTransform(1, 0, 0, 1, 0, 0); LX.globalAlpha = 1; LX.globalCompositeOperation = 'source-over'; LX.filter = 'none';
-        LX.clearRect(0, 0, cw, ch); LX.setTransform(scale, 0, 0, scale, 0, 0);
-      }
-    }
     for (const P of opt.noLyrics ? [] : passes) {
       if (P.pass !== 'main' && !ghostOn) continue;
       const tp = Math.max(0, tq - P.lag);
-      const cut = P.lag ? J.cutAt(plan, tp) : mainCut;
-      if (!cut) continue;
-      const csc = st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
-      const lt = tp - cut.start;
-      const X = LX || ctx;
-      const env = this.makeEnv(X, plan, cut, csc, {
-        pass: P.pass, passColor: P.pass === 'A' ? csc.ghostA : P.pass === 'B' ? csc.ghostB : null,
-        t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo,
-      });
-      X.save();
-      const area = cut.area, areaX = area ? area.x * W : 0, areaY = area ? area.y * H : 0;
-      const contentW = env.W, contentH = env.H;
-      if (area) {
-        X.translate(areaX + contentW / 2, areaY + contentH / 2);
-        X.rotate((area.angle || 0) * J.DEG);
-        X.translate(-areaX - contentW / 2, -areaY - contentH / 2);
-        X.beginPath(); X.rect(areaX, areaY, contentW, contentH); X.clip();
+      for (const cut of activeCuts(tp)) {
+        const csc = st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
+        const lt = tp - cut.start, motion = cut.motionScale ?? 1;
+        const envOptions = {
+          pass: P.pass, passColor: P.pass === 'A' ? csc.ghostA : P.pass === 'B' ? csc.ghostB : null,
+          t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo,
+        };
+        let X = ctx, env = this.makeEnv(X, plan, cut, csc, envOptions), cam = null;
+        const CD = J.CAMERA[cut.cam] || J.CAMERA.push;
+        try { cam = CD.get(env, cut.camP || {}); } catch (e) { cam = null; }
+        cam = cam || {};
+        // Reuse one canvas for a cut's focus blur. A later cut's camera must not
+        // blur earlier retained lyrics, and each glyph should only draw once.
+        const blur = allowFilter ? (cam.blur || 0) * motion : 0;
+        if (blur > .4) {
+          const layer = this.ensure(this.camLayer || (this.camLayer = mk(2, 2)), cw, ch);
+          X = layer.getContext('2d'); X.setTransform(1, 0, 0, 1, 0, 0); X.globalAlpha = 1; X.globalCompositeOperation = 'source-over'; X.filter = 'none';
+          X.clearRect(0, 0, cw, ch); X.setTransform(scale, 0, 0, scale, 0, 0);
+          env = this.makeEnv(X, plan, cut, csc, envOptions);
+        }
+        const blend = P.pass !== 'main' && J.lum(csc.bg) > .55 ? 'multiply' : 'source-over';
+        X.save();
+        const area = cut.area, areaX = area ? area.x * W : 0, areaY = area ? area.y * H : 0;
+        const contentW = env.W, contentH = env.H;
+        if (area) {
+          X.translate(areaX + contentW / 2, areaY + contentH / 2);
+          X.rotate((area.angle || 0) * J.DEG);
+          X.translate(-areaX - contentW / 2, -areaY - contentH / 2);
+          X.beginPath(); X.rect(areaX, areaY, contentW, contentH); X.clip();
+        }
+        const cs = J.lerp(1, cam.s ?? 1, motion) * (cut.contentScale ?? 1);
+        X.translate(areaX + contentW / 2 + (shx + P.off[0] + (cam.x || 0)) * motion, areaY + contentH / 2 + (shy + P.off[1] + (cam.y || 0)) * motion);
+        if (cam.rot) X.rotate(cam.rot * J.DEG * motion);
+        if (cam.skx) X.transform(1, 0, Math.tan(cam.skx * J.DEG * motion), 1, 0, 0);
+        X.scale(cs * J.lerp(1, cam.sx ?? 1, motion), cs * J.lerp(1, cam.sy ?? 1, motion)); X.translate(-contentW / 2, -contentH / 2);
+        if (X === ctx) X.globalCompositeOperation = blend;
+        this.drawCut(env);
+        X.restore();
+        if (X !== ctx) {
+          ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = blend;
+          ctx.filter = `blur(${(blur * scale).toFixed(1)}px)`; ctx.drawImage(X.canvas, 0, 0); ctx.restore();
+        }
       }
-      // camera move for this cut (default: slow push-in)
-      let cam = null;
-      const CD = J.CAMERA[cut.cam] || J.CAMERA.push;
-      try { cam = CD.get(env, cut.camP || {}); } catch (e) { cam = null; }
-      cam = cam || {};
-      const cs = cam.s ?? 1;
-      X.translate(areaX + contentW / 2 + shx + P.off[0] + (cam.x || 0), areaY + contentH / 2 + shy + P.off[1] + (cam.y || 0));
-      if (cam.rot) X.rotate(cam.rot * J.DEG);
-      if (cam.skx) X.transform(1, 0, Math.tan(cam.skx * J.DEG), 1, 0, 0);
-      X.scale(cs * (cam.sx ?? 1), cs * (cam.sy ?? 1)); X.translate(-contentW / 2, -contentH / 2);
-      if (P.pass !== 'main') X.globalCompositeOperation = J.lum(csc.bg) > 0.55 ? 'multiply' : 'source-over';
-      this.drawCut(env);
-      X.restore();
-      if (P.pass === 'main') { mainEnv = env; }
-    }
-    if (LX) {
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-      ctx.filter = `blur(${(layerBlur * scale).toFixed(1)}px)`; ctx.drawImage(LX.canvas, 0, 0); ctx.restore();
     }
     // ---------- cut-to-cut transition: composite the previous cut's resting frame with this one ----------
-    if (!opt.noLyrics && !opt.noTrans && mainCut && mainCut.trans && J.TRANS[mainCut.trans] && mainCut.index > 0) {
+    if (!opt.noTrans && mainCut && visible(mainCut) && mainCut.trans && J.TRANS[mainCut.trans] && mainCut.index > 0) {
       const lt = tq - mainCut.start, dur = mainCut.transDur || 0.35;
       const prev = plan.cuts[mainCut.index - 1];
       if (lt < dur && prev && Math.abs(prev.end - mainCut.start) < 0.06) {
@@ -282,6 +275,7 @@ class Renderer {
     const area = cut && cut.area && !o.bgOnly && !o.fullFrame ? cut.area : null;
     const W = area ? plan.W * area.w : plan.W, H = area ? plan.H * area.h : plan.H;
     const env = Object.assign({ ctx, W, H, sc, st: plan.style, fx: plan.fx, fps: plan.fps, cut, plan }, o);
+    if (cut && cut.motionScale < 1) env.fx = Object.assign({}, plan.fx, { motion: plan.fx.motion * cut.motionScale });
     if (cut) {
       env.pIn = J.clamp(o.lt / Math.max(0.01, cut.inDur));
       env.pOut = cut.outDur > 0 ? J.clamp((o.lt - (cut.dur - cut.outDur)) / cut.outDur) : 0;

@@ -53,6 +53,7 @@ function mergeProject(p) {
   o.enabled = en;
   o.overrides = (p && p.overrides) || {};
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
+  o.lyricEffects = J.lyricEffectSettings(o);
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
   o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
@@ -449,13 +450,14 @@ function rerollLyricLine(index) {
 function toggleLyricLineLock(index) {
   const line = S.plan.lines[index]; if (!line) return;
   const current = S.project.overrides[index] || {};
-  setOv(index, current.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: line.seed });
+  const lockedAreas = Object.fromEntries(S.plan.cuts.filter(c => c.line === index && Number.isInteger(c.part)).map(c => [c.part, c.area || null]));
+  setOv(index, current.lock ? { lock: false, lockedSeed: undefined, lockedAreas: undefined } : { lock: true, lockedSeed: line.seed, lockedAreas });
   replan();
 }
 function toggleLyricCutFrontmost(line, part) {
   const key = `${line}:${part}`, options = S.project.lyricCutOptions;
-  if (options[key] && options[key].frontmost) delete options[key];
-  else options[key] = { frontmost: true };
+  const cut = S.plan.cuts.find(c => c.line === line && c.part === part);
+  options[key] = { ...options[key], frontmost: !cut?.frontmost };
   replan();
 }
 function mediaCutOptions(layer, index) {
@@ -803,7 +805,7 @@ function renderLines() {
     const o = ov[i] || {};
     const li = document.createElement('li'); li.className = 'ln lyric-ln';
     const manual = S.project.timing.lineTimes && S.project.timing.lineTimes[i] != null;
-    const area = J.lyricArea(o.area) || { x: 0, y: 0, w: 1, h: 1 };
+    const area = J.lyricArea(o.area) || S.plan.cuts.find(c => c.line === i && c.part === 0)?.area || { x: 0, y: 0, w: 1, h: 1 };
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span>
       <input class="time mono" type="number" step="0.01" min="0" value="${ln.start.toFixed(2)}" title="開始（秒）${manual ? '・手動' : '・自動'}" aria-label="${i + 1}行目の開始秒" style="${manual ? 'border-color:var(--cyan)' : ''}">
       <span class="txt" title="${escapeHtml(ln.text)}">${escapeHtml(ln.text)}</span>
@@ -863,6 +865,7 @@ function showAreaDraft() {
   $('mediaAreaAngleField').hidden = !edit;
   if (edit) $('mediaAreaAngle').value = String(edit.angle);
   $('areaResetFull').hidden = !edit || media;
+  $('areaResetAuto').hidden = !edit || media;
   $('areaApplyOne').textContent = media ? 'このカットだけに適用' : 'この行だけに適用';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
@@ -874,7 +877,7 @@ function openAreaEditor(index) {
   const line = S.plan.lines[index]; if (!line) return;
   pause();
   clearTimeout(warmTimer); ++warmJob;
-  const saved = J.lyricArea((S.project.overrides[index] || {}).area);
+  const saved = J.lyricArea((S.project.overrides[index] || {}).area) || S.plan.cuts.find(c => c.line === index && c.part === 0)?.area;
   S.areaEdit = { kind: 'lyric', index, oldTime: S.t, draft: saved || { x: 0, y: 0, w: 1, h: 1 }, ratio: saved ? saved.h / saved.w : 1, lockAspect: saved ? saved.lockAspect : true, angle: saved ? saved.angle : 0, drag: null };
   const cut = S.plan.cuts.find(c => c.line === index);
   seek(cut ? cut.start + Math.min(cut.dur * 0.6, cut.inDur + 0.25) : line.start);
@@ -913,8 +916,9 @@ function applyAreaEditor(following) {
       mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect, angle: S.areaEdit.angle }, zoom: undefined, focus: undefined }, kind);
     }
   } else {
-    const full = draft.x === 0 && draft.y === 0 && draft.w === 1 && draft.h === 1 && S.areaEdit.angle === 0;
-    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: full ? undefined : J.lyricArea({ ...draft, angle: S.areaEdit.angle, lockAspect: S.areaEdit.lockAspect }) });
+    const area = J.lyricArea({ ...draft, angle: S.areaEdit.angle, lockAspect: S.areaEdit.lockAspect });
+    const automatic = S.areaEdit.autoDraft === JSON.stringify(area);
+    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: automatic ? undefined : area, lockedAreas: undefined });
   }
   S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
   replan(); commit();
@@ -1467,6 +1471,9 @@ const GROUPS = [['layout', 'レイアウト'], ['enter', '登場'], ['hold', '�
 const openGroups = new Set();
 function techItems(g) { return J.order(g).filter(k => J.registry(g)[k] && !J.registry(g)[k].special); }
 function renderTech() {
+  const lyricEffects = J.lyricEffectSettings(S.project);
+  $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
+  $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
   const box = $('techLists'); box.innerHTML = '';
   const q = ($('techFilter').value || '').trim().toLowerCase();
   let total = 0, onAll = 0;
@@ -1668,6 +1675,9 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground']]) {
+    $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; replan(); });
+  }
   $('timelineZoomOut').addEventListener('click', () => setTimelineZoom(S.timelineZoom / 1.5));
   $('timelineZoomIn').addEventListener('click', () => setTimelineZoom(S.timelineZoom * 1.5));
   $('timelineZoomOut').disabled = true;
@@ -1707,7 +1717,15 @@ function bind() {
   $('mediaAreaWidth').addEventListener('change', e => { if (!S.areaEdit) return; const w = J.clamp(+e.target.value / 100, 0.005, S.areaEdit.kind === 'lyric' ? 1 : 4); setMediaDraftSize(w, S.areaEdit.lockAspect ? w * S.areaEdit.ratio : S.areaEdit.draft.h); });
   $('mediaAreaHeight').addEventListener('change', e => { if (!S.areaEdit) return; const h = J.clamp(+e.target.value / 100, 0.005, S.areaEdit.kind === 'lyric' ? 1 : 4); setMediaDraftSize(S.areaEdit.lockAspect ? h / S.areaEdit.ratio : S.areaEdit.draft.w, h); });
   $('mediaAreaAngle').addEventListener('input', e => { if (!S.areaEdit || e.target.value === '') return; S.areaEdit.angle = J.clamp(+e.target.value || 0, -180, 180); showAreaDraft(); });
-  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; S.areaEdit.ratio = 1; S.areaEdit.angle = 0; showAreaDraft(); });
+  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.autoDraft = null; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; S.areaEdit.ratio = 1; S.areaEdit.angle = 0; showAreaDraft(); });
+  $('areaResetAuto').addEventListener('click', () => {
+    const edit = S.areaEdit; if (!edit || edit.kind !== 'lyric') return;
+    const project = { ...S.project, overrides: { ...S.project.overrides, [edit.index]: { ...S.project.overrides[edit.index], area: undefined, lockedAreas: undefined } } };
+    const area = J.plan(project, audioLike()).cuts.find(c => c.line === edit.index && c.part === 0)?.area || { x: 0, y: 0, w: 1, h: 1, angle: 0, lockAspect: true };
+    edit.draft = { ...area }; edit.ratio = area.h / area.w; edit.angle = area.angle; edit.lockAspect = area.lockAspect;
+    edit.autoDraft = JSON.stringify(J.lyricArea(area));
+    showAreaDraft();
+  });
   $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);

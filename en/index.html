@@ -470,12 +470,15 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
           <ul>
             <li>One phrase per line. A blank line adds a short pause.</li>
             <li><code>I remember/the dawn</code> … <code>/</code> marks a cut boundary</li>
-            <li><code>*transparent*</code> … emphasis (larger, stronger effects)</li>
+            <li>Wrap multiple lines in <code>{</code> and <code>}</code> to stack them until the final cut disappears.</li>
+            <li><code>First line\nSecond line</code> … <code>\n</code> adds a line break within one cut (use <code>\\n</code> to display it literally).</li>
+            <li><code>*emphasis*</code> … a larger automatic area, displayed above the foreground without avoiding it.</li>
+            <li><code>~whisper~</code> … a smaller display with gentler motion.</li>
             <li>A trailing <code>!</code> … adds a flash and shake</li>
             <li><code>lyrics|reading or note</code> … smaller text in annotation layouts</li>
             <li><code>[01:23.45]Lyrics</code> … uses an LRC timestamp</li>
             <li><code>#</code> starts a comment (ignored)</li>
-            <li>Place <code>\</code> before a control character to display it literally (for example: <code>\*</code>, <code>\/</code>, <code>\|</code>, <code>\!</code>, <code>\#</code>, <code>\[</code>, <code>\\</code>)</li>
+            <li>Place <code>\</code> before a control character to display it literally: <code>\*</code>, <code>\~</code>, <code>\{</code>, <code>\}</code>, <code>\/</code>, <code>\|</code>, <code>\!</code>, <code>\#</code>, <code>\[</code>, <code>\\</code>.</li>
           </ul>
         </div>
       </div>
@@ -532,7 +535,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="Preview">
       <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="areaEditOverlay" class="area-edit-overlay" aria-label="Edit position and size" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span></div><span class="area-edit-hint">Drag to select the lyrics display area</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
-      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>Lock aspect ratio</label><label>Width (% of canvas)<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>Height (% of canvas)<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">Rotation (°)<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">Reset to full area</button><button id="areaApplyOne" class="primary" disabled>Apply to this line</button><button id="areaApplyFollowing" disabled>Apply from here onward</button><button id="areaCancel" class="ghost">キャンセル</button></div>
+      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>Lock aspect ratio</label><label>Width (% of canvas)<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>Height (% of canvas)<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">Rotation (°)<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">Reset to full area</button><button id="areaResetAuto" class="ghost" type="button">Reset automatic placement</button><button id="areaApplyOne" class="primary" disabled>Apply to this line</button><button id="areaApplyFollowing" disabled>Apply from here onward</button><button id="areaCancel" class="ghost">キャンセル</button></div>
       <div class="transport">
         <button id="btnPlay" class="play" aria-label="Play">▶</button>
         <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><button id="timeDur" class="tc muted duration-value" type="button" title="Enter total video duration (blank for auto)" aria-label="Enter total video duration">00:00.00</button><input id="timeDurInput" class="tc duration-input" type="text" inputmode="decimal" aria-label="Total video duration (seconds or mm:ss; blank for auto)" hidden>
@@ -655,6 +658,10 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       </div>
 
       <div class="tabpane" data-pane="tech" hidden>
+        <div class="pick-sets">
+          <label class="check"><input id="lyricAutoPlacement" type="checkbox"><span>Vary lyric position and size automatically<small>When off, use the full stage. Manual areas are preserved; use Reset automatic placement to clear them.</small></span></label>
+          <label class="check"><input id="lyricAvoidForeground" type="checkbox" checked><span>Avoid overlapping the foreground<small>Automatic areas avoid foreground placement. Cuts marked with *emphasis* are exempt.</small></span></label>
+        </div>
         <div class="pick-sets">
           <label class="check"><input id="tExtra" class="extra-toggle" type="checkbox"><span>Include new effects<small>Include techniques, styles and fonts marked New in automatic picks.</small></span></label>
           <label class="check"><input id="tWa" class="wa-toggle" type="checkbox" checked><span>Include Japanese motifs<small>Include techniques and styles marked JP in automatic picks. Manual selections remain available.</small></span></label>
@@ -2405,6 +2412,8 @@ J.mainDraw = (env, it) => {
   const ho = J.HOLD[it.hold || cut.hold] || J.HOLD.still;
   // text treatment (outline, extrude, marker...) — layouts that paint their own plates opt out with it.plain
   if (cut.treat && !it.plain && J.TREAT && J.TREAT[cut.treat]) { try { J.TREAT[cut.treat].apply(env, it, cut.treatP || {}); } catch (e) { console.warn('treat', cut.treat, e); } }
+  const motion = cut.motionScale ?? 1;
+  const rest = motion < 1 ? { x: it.x, y: it.y, size: it.size, sx: it.sx ?? 1, sy: it.sy ?? 1, rot: it.rot || 0, skew: it.skew || 0 } : null;
   if (ltI < 0 && en === J.ENTER.cut) return null;
   if (en !== J.ENTER.cut && (pIn < 1 || en.pieces)) { env.lt = ltI; en.apply(env, it, pIn, ctx); env.lt = lt0; }
   if (ltI < 0 && !en.pieces) return null;
@@ -2413,6 +2422,17 @@ J.mainDraw = (env, it) => {
   if (pOut > 0 && ex !== J.EXIT.cut) ex.apply(env, it, pOut, ctx);
   it.charFn = J.combineChar(it.charFns);
   it.pieceFn = J.combinePiece(it.pieceFns);
+  if (rest) {
+    for (const key of Object.keys(rest)) if (it[key] != null) it[key] = J.lerp(rest[key], it[key], motion);
+    const damp = state => {
+      if (!state || state === J.PID) return state;
+      const next = { ...state };
+      for (const key of ['dx', 'dy', 'rot', 'skew']) if (next[key] != null) next[key] *= motion;
+      for (const key of ['s', 'sx', 'sy', 'st']) if (next[key] != null) next[key] = J.lerp(1, next[key], motion);
+      return next;
+    };
+    for (const key of ['charFn', 'pieceFn']) if (it[key]) { const fn = it[key]; it[key] = (...args) => damp(fn(...args)); }
+  }
   return J.drawFx(env, it);
 };
 
@@ -2477,6 +2497,7 @@ const unionBB = (a, b) => !a ? b : !b ? a : { x0: Math.min(a.x0, b.x0), y0: Math
 
 /* split long text into balanced lines, preferring script boundaries */
 J.splitLines = (text, maxPer) => {
+  if (text.includes('\n')) return text; // Explicit line breaks define the composition.
   const arr = [...text];
   if (arr.length <= maxPer) return text;
   const nLines = Math.ceil(arr.length / maxPer);
@@ -3319,6 +3340,7 @@ J.defaultProject = () => ({
   timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, cutTimes: {}, lineScale: 1 },
   overrides: {},
   lyricCutOptions: {},
+  lyricEffects: { autoPlacement: false, avoidForeground: true },
   lyricBlankCuts: [],
   timelineLinks: [],
   media: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
@@ -3335,38 +3357,55 @@ J.komaOf = fx => (fx.koma != null ? +fx.koma : (fx.onTwos === false ? 0 : 12));
 J.stepDur = (fx, fps) => { const k = J.komaOf(fx); return k > 0 ? 1 / k : 1 / (fps || 24); };
 
 /* ---------------- lyric parsing ---------------- */
-const lyricEscapes = { '\\': '\uE000', '#': '\uE001', '[': '\uE002', ']': '\uE003', '|': '\uE004', '!': '\uE005', '！': '\uE006', '*': '\uE007', '/': '\uE008' };
+const lyricEscapes = { '\\': '\uE000', '#': '\uE001', '[': '\uE002', ']': '\uE003', '|': '\uE004', '!': '\uE005', '！': '\uE006', '*': '\uE007', '/': '\uE008', '{': '\uE009', '}': '\uE00A', '~': '\uE00B' };
 const lyricUnescapes = Object.fromEntries(Object.entries(lyricEscapes).map(([literal, token]) => [token, literal]));
-const protectLyricEscapes = s => s.replace(/\\([\\#\[\]|!！*\/])/g, (_, literal) => lyricEscapes[literal]);
-const restoreLyricEscapes = s => String(s).replace(/[\uE000-\uE008]/g, token => lyricUnescapes[token]);
+const protectLyricEscapes = s => s.replace(/\\([\\#\[\]|!！*\/{}~n])/g, (_, literal) => literal === 'n' ? '\n' : lyricEscapes[literal]);
+const restoreLyricEscapes = s => String(s).replace(/[\uE000-\uE00B]/g, token => lyricUnescapes[token]);
 J.parseLyrics = (raw) => {
   const lines = []; const meta = {};
-  let pendingGap = false;
+  let pendingGap = false, group = null, nextGroup = 0;
   for (let src of String(raw || '').replace(/\r/g, '').split('\n')) {
-    const s0 = protectLyricEscapes(src.trim());
+    let s0 = protectLyricEscapes(src.trim());
     if (!s0) { if (lines.length) pendingGap = true; continue; }
     if (s0.startsWith('#')) continue;
     const mm = s0.match(/^\[(ti|ar|al|by|offset):(.*)\]$/i);
     if (mm) { meta[mm[1].toLowerCase()] = restoreLyricEscapes(mm[2].trim()); continue; }
+    if (s0.startsWith('{')) { group = nextGroup++; s0 = s0.slice(1).trim(); }
     let s = s0; const times = [];
     let m;
     while ((m = s.match(/^\[(\d+):(\d+(?:[.:]\d+)?)\]/))) { times.push(+m[1] * 60 + parseFloat(m[2].replace(':', '.'))); s = s.slice(m[0].length); }
     s = s.trim();
+    if (s.startsWith('{')) { group = nextGroup++; s = s.slice(1).trim(); }
+    const closeGroup = s.endsWith('}');
+    if (closeGroup) s = s.slice(0, -1).trim();
     let note = null;
     const bar = s.indexOf('|');
     if (bar >= 0) { note = restoreLyricEscapes(s.slice(bar + 1).trim()) || null; s = s.slice(0, bar).trim(); }
     let impact = false;
     if (/[!！]$/.test(s) && s.length > 1 && /!$/.test(s)) { impact = true; s = s.slice(0, -1).trim(); }
-    const emph = [];
-    s = s.replace(/\*([^*]+)\*/g, (_, w) => { emph.push(restoreLyricEscapes(w)); return w; });
+    const emph = [], soft = [], strengthSpans = [];
+    let plain = '', pos = 0;
+    const count = text => [...text.replace(/[\s/]/g, '')].length;
+    s.replace(/\*([^*]+)\*|~([^~]+)~/g, (match, strong, quiet, offset) => {
+      plain += s.slice(pos, offset);
+      const word = strong ?? quiet, start = count(plain);
+      plain += word;
+      strengthSpans.push({ start, end: count(plain), strong: strong != null });
+      (strong != null ? emph : soft).push(restoreLyricEscapes(word));
+      pos = offset + match.length;
+      return match;
+    });
+    s = plain + s.slice(pos);
     let manual = null;
     if (s.includes('/')) {
       manual = s.split('/').map(x => restoreLyricEscapes(x.trim())).filter(Boolean);
       const latin = manual.some(x => /[A-Za-z]/.test(x));
       s = manual.join(latin ? ' ' : '');
     }
+    const lineGroup = group;
+    if (closeGroup) group = null;
     if (!s) continue;
-    const base = { text: restoreLyricEscapes(s), note, impact, emph, manual, gapBefore: pendingGap };
+    const base = { text: restoreLyricEscapes(s), note, impact, emph, soft, strengthSpans, manual, group: lineGroup, gapBefore: pendingGap };
     pendingGap = false;
     if (times.length) times.forEach(t => lines.push(Object.assign({}, base, { lrc: t })));
     else lines.push(Object.assign({}, base, { lrc: null }));
@@ -3544,8 +3583,9 @@ J.plan = (project, audio) => {
     const visEnd = interludeTime != null && Number.isFinite(+interludeTime) && e - s > 1.81
       ? J.clamp(+interludeTime, s + 0.5, e - 1.31) : naturalVisEnd;
     const D = visEnd - s;
-    plan.lines.push({ index: li, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed });
-    const chunks = ln.manual || J.chunkText(ln.text);
+    plan.lines.push({ index: li, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, soft: ln.soft, group: ln.group, chunks: null, seed: lineSeed });
+    const multiline = ln.text.includes('\n');
+    const chunks = ln.manual || (multiline ? [ln.text] : J.chunkText(ln.text));
     plan.lines[li].chunks = chunks;
     const L = J.lerp(1.3, 0.5, fx.density);
     let nC = Math.round(D / L);
@@ -3555,9 +3595,10 @@ J.plan = (project, audio) => {
     // groups of chunks
     let groups;
     const nG = Math.min(nC, chunks.length);
-    if (nG <= 1) groups = [ln.text];
+    if (multiline && !ov.single) groups = chunks;
+    else if (nG <= 1) groups = [ln.text];
     else groups = partition(chunks, nG).map(g => g.join(/[A-Za-z]/.test(g.join('')) ? ' ' : ''));
-    const recap = nC > groups.length && groups.length >= 2;
+    const recap = !multiline && nC > groups.length && groups.length >= 2;
     const units = groups.map(g => ({ text: g, w: [...g].length + 1.6 }));
     if (recap) units.push({ text: ln.text, w: (units.reduce((a, u) => a + u.w, 0) / units.length) * 1.25, recap: true });
     const tot = units.reduce((a, u) => a + u.w, 0);
@@ -3574,12 +3615,19 @@ J.plan = (project, audio) => {
     let lineBg = ov.bg && J.BG[ov.bg] ? ov.bg : pickBg(rng, st, en, fx, bgHistory);
     bgHistory.push(lineBg);
     let lineBgP = J.BG[lineBg] && J.BG[lineBg].plan ? J.BG[lineBg].plan(rng, st) : {};
+    let textOffset = 0;
     units.forEach((u, k) => {
       const cs = bounds[k], ce = bounds[k + 1], dur = ce - cs;
       const txt = u.text;
       const nn = [...txt.replace(/\s+/g, '')].length;
-      const emph = ln.impact && (k === 0 || u.recap) || ln.emph.some(w => txt.includes(w));
-      const layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, layoutH > layoutW);
+      const begin = u.recap ? 0 : textOffset;
+      const spans = ln.strengthSpans.filter(span => span.start < begin + nn && span.end > begin);
+      const emphasis = spans.some(span => span.strong), suppressed = !emphasis && spans.some(span => !span.strong);
+      textOffset += nn;
+      const emph = ln.impact && (k === 0 || u.recap) || emphasis;
+      const fx = suppressed ? Object.assign({}, plan.fx, { motion: plan.fx.motion * 0.25, glitch: plan.fx.glitch * 0.25, decor: plan.fx.decor * 0.4 }) : plan.fx;
+      const eventStart = plan.events.length;
+      const layout = txt.includes('\n') ? 'center' : ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, layoutH > layoutW);
       let enter = ov.enter && J.ENTER[ov.enter] ? ov.enter : pickEnter(rng, st, en, layout, dur, history, emph, nn);
       let exit = ov.exit && J.EXIT[ov.exit] ? ov.exit : pickExit(rng, st, en, layout, dur, k === units.length - 1, history);
       const hold = ov.hold && J.HOLD[ov.hold] ? ov.hold : pickHold(rng, en, fx, history);
@@ -3596,6 +3644,7 @@ J.plan = (project, audio) => {
       if (nSchemes > 1 && k > 0 && rng.chance(0.12 * fx.bgSwitch)) sch = (schemeIdx + 1) % nSchemes;
       const LD = J.LAYOUTS[layout];
       const params = LD.plan(rng, { text: txt, n: nn, W: layoutW, H: layoutH, dur }, st);
+      if (txt.includes('\n')) params.sx = 1;
       const decor = Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, fx, layout, history);
       const treat = ov.treat && J.TREAT[ov.treat] ? ov.treat : pickTreat(rng, st, en, fx, LD, emph, history);
       const treatP = J.TREAT[treat].plan ? J.TREAT[treat].plan(rng, st) : {};
@@ -3605,8 +3654,9 @@ J.plan = (project, audio) => {
       const camP = J.CAMERA[cam].plan ? J.CAMERA[cam].plan(rng, st) : {};
       // cut-to-cut transition (replaces the previous cut's exit and this cut's entrance)
       const prevCut = plan.cuts[plan.cuts.length - 1];
+      const frontmost = !!(((project.lyricCutOptions || {})[`${li}:${k}`] || {}).frontmost ?? emphasis);
       let trans = null, transP = {}, transDur = 0;
-      const canTrans = prevCut && Math.abs(prevCut.end - cs) < 0.06 && prevCut.layout !== 'interlude' && dur > 0.5;
+      const canTrans = prevCut && ln.group == null && prevCut.group == null && !!prevCut.frontmost === frontmost && Math.abs(prevCut.end - cs) < 0.06 && prevCut.layout !== 'interlude' && dur > 0.5;
       if (canTrans) {
         trans = ov.trans && J.TRANS[ov.trans] ? ov.trans : pickTrans(rng, st, en, fx, emph, history);
         if (trans) {
@@ -3617,7 +3667,7 @@ J.plan = (project, audio) => {
           prevCut.exit = 'cut'; prevCut.outDur = 0;
         }
       }
-      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, part: k, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: J.h(lineSeed, k, 17), area, frontmost: !!((project.lyricCutOptions || {})[`${li}:${k}`] || {}).frontmost, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
+      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, part: k, group: ln.group, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: J.h(lineSeed, k, 17), area, frontmost: !!frontmost, emphasis, suppressed, motionScale: suppressed ? 0.25 : 1, contentScale: suppressed ? 0.7 : 1, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
         treat, treatP, bg, bgP: bg === lineBg ? lineBgP : {}, cam, camP, trans, transP, transDur });
       plan.cuts.push(cut);
       history.push({ layout, enter, exit, hold, treat, cam, trans, decor: decor.map(d => d.id) });
@@ -3641,6 +3691,7 @@ J.plan = (project, audio) => {
         if (pick) { const D2 = J.FXE[pick]; const d = (D2.dur || 4) * F; addEvent(cs - (D2.pre ? D2.pre * F : 0), pick, (D2.amp || 1) * (0.7 + 0.5 * g + (emph ? 0.3 : 0)), d); fxHistory.push(pick); }
       }
       if (dur > 1.1) { const pick = pickFx(rng, st, en, fx, emph, fxHistory, 'mid'); if (pick) { const D2 = J.FXE[pick]; addEvent(cs + rng.range(0.4, 0.75) * dur, pick, (D2.amp || 1) * (0.5 + 0.4 * g), (D2.dur || 3) * F); } }
+      if (suppressed) for (let j = eventStart; j < plan.events.length; j++) plan.events[j].amp *= 0.25;
     });
     // interlude in long gaps
     const nextStart = li < parsed.lines.length - 1 ? tm.starts[li + 1] : null;
@@ -3682,6 +3733,7 @@ J.plan = (project, audio) => {
   plan.events.sort((a, b) => a.t - b.t);
   plan.energy = audio && audio.energy ? audio.energy : null;
   plan.energyRate = audio && audio.energyRate ? audio.energyRate : 0;
+  if (J.finishLyricPlan) J.finishLyricPlan(project, plan, audio);
   return plan;
 };
 
@@ -4446,6 +4498,148 @@ J.drawMedia = (ctx, plan, t, owner, layer = 'media', previewEdit = false) => {
 };
 })();
 
+/* Lyric display lifetimes and deterministic, foreground-aware placement. */
+(() => {
+'use strict';
+
+J.lyricEffectSettings = project => ({
+  autoPlacement: project.lyricEffects?.autoPlacement === true,
+  avoidForeground: project.lyricEffects?.avoidForeground !== false,
+});
+
+// Use the actual fitted source rectangle, including its rotation. Coordinates are
+// normalized to the stage; rotation is calculated in pixels to preserve aspect.
+J.foregroundBounds = (project, plan, cut) => {
+  if (!cut.itemId) return null;
+  const item = project.foreground?.items?.find(item => item.id === cut.itemId);
+  if (!item) return null;
+  const source = J.mediaAssets?.get(cut.itemId)?.element;
+  const sw = source && (source.videoWidth || source.naturalWidth || source.width) || item.width || plan.W;
+  const sh = source && (source.videoHeight || source.naturalHeight || source.height) || item.height || plan.H;
+  const r = !cut.placement && cut.layout === 'cover' ? { x: 0, y: 0, w: 1, h: 1 }
+    : J.mediaPlacementRect(cut.placement, sw, sh, plan.W, plan.H);
+  if (!r) return null;
+  const a = (cut.placement?.angle || 0) * J.DEG, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
+  const w = r.w * c + r.h * plan.H / plan.W * s;
+  const h = r.h * c + r.w * plan.W / plan.H * s;
+  return { x: r.x + r.w / 2 - w / 2, y: r.y + r.h / 2 - h / 2, w, h };
+};
+
+const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x))
+  * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+
+function emptyRegions(obstacles) {
+  let regions = [{ x: .025, y: .025, w: .95, h: .95 }];
+  for (const b of obstacles) {
+    const next = [];
+    for (const a of regions) {
+      if (!overlap(a, b)) { next.push(a); continue; }
+      const x0 = Math.max(a.x, b.x), x1 = Math.min(a.x + a.w, b.x + b.w);
+      const y0 = Math.max(a.y, b.y), y1 = Math.min(a.y + a.h, b.y + b.h);
+      next.push({ x: a.x, y: a.y, w: x0 - a.x, h: a.h },
+        { x: x1, y: a.y, w: a.x + a.w - x1, h: a.h },
+        { x: x0, y: a.y, w: x1 - x0, h: y0 - a.y },
+        { x: x0, y: y1, w: x1 - x0, h: a.y + a.h - y1 });
+    }
+    // Bound work even for a retained lyric spanning hundreds of foreground cuts.
+    regions = next.filter(r => r.w >= .04 && r.h >= .04).sort((a, b) => b.w * b.h - a.w * a.h).slice(0, 64);
+    if (!regions.length) break;
+  }
+  return regions;
+}
+
+J.autoLyricArea = (cut, plan, obstacles = []) => {
+  const rng = J.rng(J.h(cut.seed, 947));
+  const portrait = plan.W < plan.H;
+  let w = cut.emphasis ? rng.range(.82, .95) : cut.suppressed ? rng.range(.28, .4) : rng.range(.48, .72);
+  let h = cut.emphasis ? rng.range(.7, .92) : cut.suppressed ? rng.range(.2, .3) : rng.range(.4, .62);
+  if (portrait && !cut.emphasis) { w = Math.min(.9, w * 1.2); h *= .8; }
+  const regions = emptyRegions(obstacles);
+  if (regions.length) {
+    const candidates = regions.map(r => ({ r, w: Math.min(w, r.w), h: Math.min(h, r.h) }));
+    const best = Math.max(...candidates.map(c => c.w * c.h));
+    const fit = rng.pick(candidates.filter(c => c.w * c.h >= best * .8));
+    w = fit.w; h = fit.h;
+    const x = fit.r.x + rng.pick([0, .5, 1]) * (fit.r.w - w);
+    const y = fit.r.y + rng.pick([0, .5, 1]) * (fit.r.h - h);
+    return { x, y, w, h, angle: 0, lockAspect: true };
+  }
+  // A full-stage foreground can leave no empty rectangle. Keep the lyric
+  // readable in the least covered candidate instead of generating a zero area.
+  const candidates = [];
+  for (const x of [0, .25, .5, .75, 1]) for (const y of [0, .25, .5, .75, 1]) {
+    const r = { x: .025 + x * (.95 - w), y: .025 + y * (.95 - h), w, h, angle: 0, lockAspect: true };
+    candidates.push({ r, score: obstacles.reduce((sum, b) => sum + overlap(r, b), 0) });
+  }
+  const min = Math.min(...candidates.map(c => c.score));
+  return rng.pick(candidates.filter(c => c.score <= min + 1e-8)).r;
+};
+
+J.finishLyricPlan = (project, plan, audio) => {
+  const groups = new Map();
+  for (const cut of plan.cuts) if (cut.group != null && Number.isInteger(cut.part)) {
+    if (!groups.has(cut.group)) groups.set(cut.group, []);
+    groups.get(cut.group).push(cut);
+  }
+  plan.retainedCutIndices = [];
+  for (const cuts of groups.values()) {
+    const last = cuts[cuts.length - 1];
+    for (const cut of cuts) {
+      cut.displayEnd = last.end;
+      cut.groupExit = last.exit;
+      cut.groupOutDur = last.outDur;
+      plan.retainedCutIndices.push(cut.index);
+    }
+  }
+  const settings = J.lyricEffectSettings(project);
+  const foreground = settings.autoPlacement && settings.avoidForeground && J.planMedia
+    ? J.planMedia(project, plan, audio?.duration, 'foreground') : null;
+  const bounds = foreground && foreground.opacity > 0 ? foreground.cuts.map(cut => ({ cut, box: J.foregroundBounds(project, plan, cut) })) : [];
+  for (const cut of plan.cuts) {
+    if (cut.line < 0 || !Number.isInteger(cut.part)) continue;
+    cut.areaMode = cut.area ? 'manual' : 'default';
+    if (cut.area || !settings.autoPlacement) continue;
+    const locked = project.overrides?.[cut.line];
+    const lockedArea = locked?.lock && locked.lockedAreas?.[cut.part];
+    if (lockedArea !== undefined && lockedArea !== false) {
+      cut.area = J.lyricArea(lockedArea);
+      cut.areaMode = cut.area ? 'auto' : 'default';
+    } else {
+      const obstacles = cut.emphasis ? [] : bounds
+        .filter(({ cut: f, box }) => box && f.start < (cut.displayEnd ?? cut.end) && f.end + .6 > cut.start)
+        .map(({ box }) => ({ x: box.x - .02, y: box.y - .02, w: box.w + .04, h: box.h + .04 }));
+      cut.area = J.autoLyricArea(cut, plan, obstacles);
+      cut.areaMode = 'auto';
+    }
+    // Some layouts choose columns or orientation during planning. Give those
+    // choices the resolved area dimensions as well as using them at render time.
+    if (cut.area && J.LAYOUTS[cut.layout]?.plan) {
+      cut.params = J.LAYOUTS[cut.layout].plan(J.rng(J.h(cut.seed, 318)), {
+        text: cut.text, n: [...cut.text.replace(/\s/g, '')].length,
+        W: plan.W * cut.area.w, H: plan.H * cut.area.h, dur: cut.dur,
+      }, plan.style);
+      if (cut.text.includes('\n')) cut.params.sx = 1;
+    }
+  }
+};
+
+// Timing/linking uses the original start/end; rendering alone extends a group's
+// lifetime. Store indices rather than references to avoid duplicating cut graphs.
+J.lyricCutsAt = (plan, t) => {
+  const current = J.cutAt(plan, t), cuts = [];
+  for (const index of plan.retainedCutIndices || []) {
+    const cut = plan.cuts[index];
+    if (cut && cut.start <= t && t < cut.displayEnd) cuts.push(cut);
+  }
+  if (current && !current.blank && !cuts.includes(current)) cuts.push(current);
+  return cuts.sort((a, b) => a.index - b.index);
+};
+J.lyricRenderCut = cut => cut.displayEnd != null ? Object.assign({}, cut, {
+  end: cut.displayEnd, dur: cut.displayEnd - cut.start,
+  exit: cut.groupExit, outDur: cut.groupOutDur,
+}) : cut;
+})();
+
 /* Media techniques: seeded recipes, transparent masks and canvas-local motion. */
 (() => {
 'use strict';
@@ -4877,9 +5071,8 @@ class Renderer {
     const foregroundCut = plan.foreground && J.mediaAt(plan, t, 'foreground');
     if (!opt.noForeground && foregroundCut && J.mediaAssets.has(foregroundCut.itemId)) {
       const step = J.stepDur(plan.fx, plan.fps);
-      const lyricCut = J.cutAt(plan, Math.floor(t / step + 1e-6) * step);
-      const frontmost = !!(lyricCut && lyricCut.frontmost);
-      this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true, noLyrics: frontmost }));
+      const frontmost = !opt.noLyrics && J.lyricCutsAt(plan, Math.floor(t / step + 1e-6) * step).some(c => c.frontmost);
+      this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true, lyricLayer: 'below' }));
       const layer = this.ensure(this.foregroundLayer || (this.foregroundLayer = document.createElement('canvas')), cw, ch);
       const lx = layer.getContext('2d'); lx.setTransform(1, 0, 0, 1, 0, 0); lx.globalAlpha = 1; lx.globalCompositeOperation = 'source-over'; lx.filter = 'none'; lx.clearRect(0, 0, cw, ch);
       J.drawMedia(lx, plan, t, this, 'foreground', !!opt.previewEdit);
@@ -4895,7 +5088,7 @@ class Renderer {
       ctx.drawImage(layer, 0, 0); ctx.restore();
       if (frontmost) {
         const top = this.ensure(this.frontmostLayer || (this.frontmostLayer = mk(2, 2)), cw, ch);
-        this.frame(top.getContext('2d'), plan, t, Object.assign({}, opt, { noForeground: true, noMedia: true, transparent: true, noHud: true, noPost: true }));
+        this.frame(top.getContext('2d'), plan, t, Object.assign({}, opt, { noForeground: true, noMedia: true, transparent: true, noHud: true, noPost: true, lyricLayer: 'above' }));
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = plan.media ? plan.media.opacity / 100 : 1;
         ctx.globalCompositeOperation = plan.media ? ({ normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.media.blend] || 'source-over') : 'source-over';
@@ -4921,6 +5114,9 @@ class Renderer {
     const clock = J.komaOf(fx) > 0 ? stepDur : 1 / 24;
     const tq = Math.floor(t / stepDur + 1e-6) * stepDur;
     const mainCut = J.cutAt(plan, tq);
+    const visible = cut => !opt.noLyrics && (opt.lyricLayer === 'above' ? cut.frontmost : opt.lyricLayer === 'below' ? !cut.frontmost : true);
+    const activeCuts = at => J.lyricCutsAt(plan, at).filter(visible)
+      .sort((a, b) => Number(!!a.frontmost) - Number(!!b.frontmost) || a.index - b.index).map(J.lyricRenderCut);
     const sc = st.schemes[mainCut ? mainCut.scheme % st.schemes.length : 0] || st.schemes[0];
     const allowFilter = this.filterOK && !opt.fast;
     if (J.setLang) J.setLang(plan.lang || 'ja');           // faces follow the plan's lyric language
@@ -4947,7 +5143,7 @@ class Renderer {
         ctx.filter = 'none'; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
     }
-    if (mainCut && mainCut.blank) {
+    if (mainCut && mainCut.blank && !activeCuts(tq).length) {
       ctx.restore();
       if (key && !opt.noPost) this.keyFinish(ctx, key, opt);
       return;
@@ -4986,64 +5182,55 @@ class Renderer {
       { pass: 'main', lag: 0, off: [0, 0] },
     ];
     const ghostOn = (fx.chroma ?? 0.7) > 0.02 && (st.ghost ?? 1) > 0.02 && !opt.noGhost;
-    let mainBB = null, mainEnv = null;
-    // camera blur (focus pulls etc.) is applied ONCE to the whole content layer — a blur filter on every
-    // individual draw call is extremely slow when a layout draws many text rows
-    let layerBlur = 0, LX = null;
-    if (!opt.noLyrics && allowFilter && mainCut && J.CAMERA[mainCut.cam] && mainCut.cam !== 'push') {
-      try {
-        const e0 = this.makeEnv(ctx, plan, mainCut, sc, { pass: 'main', t: tq, lt: tq - mainCut.start, ltb: tq - mainCut.start, step, scale, allowFilter, energy, beat: beatInfo });
-        const c0 = J.CAMERA[mainCut.cam].get(e0, mainCut.camP || {});
-        if (c0 && c0.blur > 0.4) layerBlur = c0.blur;
-      } catch (e) {}
-      if (layerBlur) {
-        const L = this.ensure(this.camLayer || (this.camLayer = mk(2, 2)), cw, ch);
-        LX = L.getContext('2d'); LX.setTransform(1, 0, 0, 1, 0, 0); LX.globalAlpha = 1; LX.globalCompositeOperation = 'source-over'; LX.filter = 'none';
-        LX.clearRect(0, 0, cw, ch); LX.setTransform(scale, 0, 0, scale, 0, 0);
-      }
-    }
     for (const P of opt.noLyrics ? [] : passes) {
       if (P.pass !== 'main' && !ghostOn) continue;
       const tp = Math.max(0, tq - P.lag);
-      const cut = P.lag ? J.cutAt(plan, tp) : mainCut;
-      if (!cut) continue;
-      const csc = st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
-      const lt = tp - cut.start;
-      const X = LX || ctx;
-      const env = this.makeEnv(X, plan, cut, csc, {
-        pass: P.pass, passColor: P.pass === 'A' ? csc.ghostA : P.pass === 'B' ? csc.ghostB : null,
-        t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo,
-      });
-      X.save();
-      const area = cut.area, areaX = area ? area.x * W : 0, areaY = area ? area.y * H : 0;
-      const contentW = env.W, contentH = env.H;
-      if (area) {
-        X.translate(areaX + contentW / 2, areaY + contentH / 2);
-        X.rotate((area.angle || 0) * J.DEG);
-        X.translate(-areaX - contentW / 2, -areaY - contentH / 2);
-        X.beginPath(); X.rect(areaX, areaY, contentW, contentH); X.clip();
+      for (const cut of activeCuts(tp)) {
+        const csc = st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
+        const lt = tp - cut.start, motion = cut.motionScale ?? 1;
+        const envOptions = {
+          pass: P.pass, passColor: P.pass === 'A' ? csc.ghostA : P.pass === 'B' ? csc.ghostB : null,
+          t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo,
+        };
+        let X = ctx, env = this.makeEnv(X, plan, cut, csc, envOptions), cam = null;
+        const CD = J.CAMERA[cut.cam] || J.CAMERA.push;
+        try { cam = CD.get(env, cut.camP || {}); } catch (e) { cam = null; }
+        cam = cam || {};
+        // Reuse one canvas for a cut's focus blur. A later cut's camera must not
+        // blur earlier retained lyrics, and each glyph should only draw once.
+        const blur = allowFilter ? (cam.blur || 0) * motion : 0;
+        if (blur > .4) {
+          const layer = this.ensure(this.camLayer || (this.camLayer = mk(2, 2)), cw, ch);
+          X = layer.getContext('2d'); X.setTransform(1, 0, 0, 1, 0, 0); X.globalAlpha = 1; X.globalCompositeOperation = 'source-over'; X.filter = 'none';
+          X.clearRect(0, 0, cw, ch); X.setTransform(scale, 0, 0, scale, 0, 0);
+          env = this.makeEnv(X, plan, cut, csc, envOptions);
+        }
+        const blend = P.pass !== 'main' && J.lum(csc.bg) > .55 ? 'multiply' : 'source-over';
+        X.save();
+        const area = cut.area, areaX = area ? area.x * W : 0, areaY = area ? area.y * H : 0;
+        const contentW = env.W, contentH = env.H;
+        if (area) {
+          X.translate(areaX + contentW / 2, areaY + contentH / 2);
+          X.rotate((area.angle || 0) * J.DEG);
+          X.translate(-areaX - contentW / 2, -areaY - contentH / 2);
+          X.beginPath(); X.rect(areaX, areaY, contentW, contentH); X.clip();
+        }
+        const cs = J.lerp(1, cam.s ?? 1, motion) * (cut.contentScale ?? 1);
+        X.translate(areaX + contentW / 2 + (shx + P.off[0] + (cam.x || 0)) * motion, areaY + contentH / 2 + (shy + P.off[1] + (cam.y || 0)) * motion);
+        if (cam.rot) X.rotate(cam.rot * J.DEG * motion);
+        if (cam.skx) X.transform(1, 0, Math.tan(cam.skx * J.DEG * motion), 1, 0, 0);
+        X.scale(cs * J.lerp(1, cam.sx ?? 1, motion), cs * J.lerp(1, cam.sy ?? 1, motion)); X.translate(-contentW / 2, -contentH / 2);
+        if (X === ctx) X.globalCompositeOperation = blend;
+        this.drawCut(env);
+        X.restore();
+        if (X !== ctx) {
+          ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = blend;
+          ctx.filter = `blur(${(blur * scale).toFixed(1)}px)`; ctx.drawImage(X.canvas, 0, 0); ctx.restore();
+        }
       }
-      // camera move for this cut (default: slow push-in)
-      let cam = null;
-      const CD = J.CAMERA[cut.cam] || J.CAMERA.push;
-      try { cam = CD.get(env, cut.camP || {}); } catch (e) { cam = null; }
-      cam = cam || {};
-      const cs = cam.s ?? 1;
-      X.translate(areaX + contentW / 2 + shx + P.off[0] + (cam.x || 0), areaY + contentH / 2 + shy + P.off[1] + (cam.y || 0));
-      if (cam.rot) X.rotate(cam.rot * J.DEG);
-      if (cam.skx) X.transform(1, 0, Math.tan(cam.skx * J.DEG), 1, 0, 0);
-      X.scale(cs * (cam.sx ?? 1), cs * (cam.sy ?? 1)); X.translate(-contentW / 2, -contentH / 2);
-      if (P.pass !== 'main') X.globalCompositeOperation = J.lum(csc.bg) > 0.55 ? 'multiply' : 'source-over';
-      this.drawCut(env);
-      X.restore();
-      if (P.pass === 'main') { mainEnv = env; }
-    }
-    if (LX) {
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-      ctx.filter = `blur(${(layerBlur * scale).toFixed(1)}px)`; ctx.drawImage(LX.canvas, 0, 0); ctx.restore();
     }
     // ---------- cut-to-cut transition: composite the previous cut's resting frame with this one ----------
-    if (!opt.noLyrics && !opt.noTrans && mainCut && mainCut.trans && J.TRANS[mainCut.trans] && mainCut.index > 0) {
+    if (!opt.noTrans && mainCut && visible(mainCut) && mainCut.trans && J.TRANS[mainCut.trans] && mainCut.index > 0) {
       const lt = tq - mainCut.start, dur = mainCut.transDur || 0.35;
       const prev = plan.cuts[mainCut.index - 1];
       if (lt < dur && prev && Math.abs(prev.end - mainCut.start) < 0.06) {
@@ -5098,6 +5285,7 @@ class Renderer {
     const area = cut && cut.area && !o.bgOnly && !o.fullFrame ? cut.area : null;
     const W = area ? plan.W * area.w : plan.W, H = area ? plan.H * area.h : plan.H;
     const env = Object.assign({ ctx, W, H, sc, st: plan.style, fx: plan.fx, fps: plan.fps, cut, plan }, o);
+    if (cut && cut.motionScale < 1) env.fx = Object.assign({}, plan.fx, { motion: plan.fx.motion * cut.motionScale });
     if (cut) {
       env.pIn = J.clamp(o.lt / Math.max(0.01, cut.inDur));
       env.pOut = cut.outDur > 0 ? J.clamp((o.lt - (cut.dur - cut.outDur)) / cut.outDur) : 0;
@@ -30393,6 +30581,7 @@ function mergeProject(p) {
   o.enabled = en;
   o.overrides = (p && p.overrides) || {};
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
+  o.lyricEffects = J.lyricEffectSettings(o);
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
   o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
@@ -30789,13 +30978,14 @@ function rerollLyricLine(index) {
 function toggleLyricLineLock(index) {
   const line = S.plan.lines[index]; if (!line) return;
   const current = S.project.overrides[index] || {};
-  setOv(index, current.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: line.seed });
+  const lockedAreas = Object.fromEntries(S.plan.cuts.filter(c => c.line === index && Number.isInteger(c.part)).map(c => [c.part, c.area || null]));
+  setOv(index, current.lock ? { lock: false, lockedSeed: undefined, lockedAreas: undefined } : { lock: true, lockedSeed: line.seed, lockedAreas });
   replan();
 }
 function toggleLyricCutFrontmost(line, part) {
   const key = `${line}:${part}`, options = S.project.lyricCutOptions;
-  if (options[key] && options[key].frontmost) delete options[key];
-  else options[key] = { frontmost: true };
+  const cut = S.plan.cuts.find(c => c.line === line && c.part === part);
+  options[key] = { ...options[key], frontmost: !cut?.frontmost };
   replan();
 }
 function mediaCutOptions(layer, index) {
@@ -31143,7 +31333,7 @@ function renderLines() {
     const o = ov[i] || {};
     const li = document.createElement('li'); li.className = 'ln lyric-ln';
     const manual = S.project.timing.lineTimes && S.project.timing.lineTimes[i] != null;
-    const area = J.lyricArea(o.area) || { x: 0, y: 0, w: 1, h: 1 };
+    const area = J.lyricArea(o.area) || S.plan.cuts.find(c => c.line === i && c.part === 0)?.area || { x: 0, y: 0, w: 1, h: 1 };
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span>
       <input class="time mono" type="number" step="0.01" min="0" value="${ln.start.toFixed(2)}" title="Start (s)${manual ? ' · manual' : ' · automatic'}" aria-label="Line ${i + 1} start time (s)" style="${manual ? 'border-color:var(--cyan)' : ''}">
       <span class="txt" title="${escapeHtml(ln.text)}">${escapeHtml(ln.text)}</span>
@@ -31203,6 +31393,7 @@ function showAreaDraft() {
   $('mediaAreaAngleField').hidden = !edit;
   if (edit) $('mediaAreaAngle').value = String(edit.angle);
   $('areaResetFull').hidden = !edit || media;
+  $('areaResetAuto').hidden = !edit || media;
   $('areaApplyOne').textContent = media ? 'Apply to this cut' : 'Apply to this line';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
@@ -31214,7 +31405,7 @@ function openAreaEditor(index) {
   const line = S.plan.lines[index]; if (!line) return;
   pause();
   clearTimeout(warmTimer); ++warmJob;
-  const saved = J.lyricArea((S.project.overrides[index] || {}).area);
+  const saved = J.lyricArea((S.project.overrides[index] || {}).area) || S.plan.cuts.find(c => c.line === index && c.part === 0)?.area;
   S.areaEdit = { kind: 'lyric', index, oldTime: S.t, draft: saved || { x: 0, y: 0, w: 1, h: 1 }, ratio: saved ? saved.h / saved.w : 1, lockAspect: saved ? saved.lockAspect : true, angle: saved ? saved.angle : 0, drag: null };
   const cut = S.plan.cuts.find(c => c.line === index);
   seek(cut ? cut.start + Math.min(cut.dur * 0.6, cut.inDur + 0.25) : line.start);
@@ -31253,8 +31444,9 @@ function applyAreaEditor(following) {
       mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect, angle: S.areaEdit.angle }, zoom: undefined, focus: undefined }, kind);
     }
   } else {
-    const full = draft.x === 0 && draft.y === 0 && draft.w === 1 && draft.h === 1 && S.areaEdit.angle === 0;
-    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: full ? undefined : J.lyricArea({ ...draft, angle: S.areaEdit.angle, lockAspect: S.areaEdit.lockAspect }) });
+    const area = J.lyricArea({ ...draft, angle: S.areaEdit.angle, lockAspect: S.areaEdit.lockAspect });
+    const automatic = S.areaEdit.autoDraft === JSON.stringify(area);
+    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: automatic ? undefined : area, lockedAreas: undefined });
   }
   S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
   replan(); commit();
@@ -31807,6 +31999,9 @@ const GROUPS = [['layout', 'Layout'], ['enter', 'Entrance'], ['hold', 'Hold'], [
 const openGroups = new Set();
 function techItems(g) { return J.order(g).filter(k => J.registry(g)[k] && !J.registry(g)[k].special); }
 function renderTech() {
+  const lyricEffects = J.lyricEffectSettings(S.project);
+  $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
+  $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
   const box = $('techLists'); box.innerHTML = '';
   const q = ($('techFilter').value || '').trim().toLowerCase();
   let total = 0, onAll = 0;
@@ -32008,6 +32203,9 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground']]) {
+    $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; replan(); });
+  }
   $('timelineZoomOut').addEventListener('click', () => setTimelineZoom(S.timelineZoom / 1.5));
   $('timelineZoomIn').addEventListener('click', () => setTimelineZoom(S.timelineZoom * 1.5));
   $('timelineZoomOut').disabled = true;
@@ -32047,7 +32245,15 @@ function bind() {
   $('mediaAreaWidth').addEventListener('change', e => { if (!S.areaEdit) return; const w = J.clamp(+e.target.value / 100, 0.005, S.areaEdit.kind === 'lyric' ? 1 : 4); setMediaDraftSize(w, S.areaEdit.lockAspect ? w * S.areaEdit.ratio : S.areaEdit.draft.h); });
   $('mediaAreaHeight').addEventListener('change', e => { if (!S.areaEdit) return; const h = J.clamp(+e.target.value / 100, 0.005, S.areaEdit.kind === 'lyric' ? 1 : 4); setMediaDraftSize(S.areaEdit.lockAspect ? h / S.areaEdit.ratio : S.areaEdit.draft.w, h); });
   $('mediaAreaAngle').addEventListener('input', e => { if (!S.areaEdit || e.target.value === '') return; S.areaEdit.angle = J.clamp(+e.target.value || 0, -180, 180); showAreaDraft(); });
-  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; S.areaEdit.ratio = 1; S.areaEdit.angle = 0; showAreaDraft(); });
+  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.autoDraft = null; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; S.areaEdit.ratio = 1; S.areaEdit.angle = 0; showAreaDraft(); });
+  $('areaResetAuto').addEventListener('click', () => {
+    const edit = S.areaEdit; if (!edit || edit.kind !== 'lyric') return;
+    const project = { ...S.project, overrides: { ...S.project.overrides, [edit.index]: { ...S.project.overrides[edit.index], area: undefined, lockedAreas: undefined } } };
+    const area = J.plan(project, audioLike()).cuts.find(c => c.line === edit.index && c.part === 0)?.area || { x: 0, y: 0, w: 1, h: 1, angle: 0, lockAspect: true };
+    edit.draft = { ...area }; edit.ratio = area.h / area.w; edit.angle = area.angle; edit.lockAspect = area.lockAspect;
+    edit.autoDraft = JSON.stringify(J.lyricArea(area));
+    showAreaDraft();
+  });
   $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);

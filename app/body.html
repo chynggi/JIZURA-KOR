@@ -36,12 +36,15 @@
           <ul>
             <li>1行が1フレーズ。空行は少し間を空けます</li>
             <li><code>夜明けの色を/覚えてる</code> … <code>/</code> でカットの切れ目を指定</li>
-            <li><code>*透明*</code> … 強調（大きく・インパクト寄りの演出）</li>
+            <li><code>{</code> と <code>}</code> で囲んだ複数行 … 最後のカットが消えるまで順に重ねて表示</li>
+            <li><code>夜明けの色を\n覚えてる</code> … <code>\n</code> で1カット内の改行を指定（文字として書く場合は <code>\\n</code>）</li>
+            <li><code>*透明*</code> … 強調（自動表示エリアを大きくし、前景より手前に表示。前景回避の対象外）</li>
+            <li><code>~ささやき~</code> … 抑制（表示と動きを小さく）</li>
             <li>行末の <code>!</code> … フラッシュと揺れを入れる</li>
             <li><code>歌詞|ruby or note</code> … 注釈レイアウトの小さな文字</li>
             <li><code>[01:23.45]歌詞</code> … LRC のタイムスタンプをそのまま使用</li>
             <li><code>#</code> で始まる行 … コメント（無視）</li>
-            <li><code>\</code> を制御文字の前に置くと、その文字を歌詞として表示（例：<code>\*</code>・<code>\/</code>・<code>\|</code>・<code>\!</code>・<code>\#</code>・<code>\[</code>・<code>\\</code>）</li>
+            <li><code>\</code> を制御文字の前に置くと、その文字を歌詞として表示（例：<code>\*</code>・<code>\~</code>・<code>\{</code>・<code>\}</code>・<code>\/</code>・<code>\|</code>・<code>\!</code>・<code>\#</code>・<code>\[</code>・<code>\\</code>）</li>
           </ul>
         </div>
       </div>
@@ -98,7 +101,7 @@
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="プレビュー">
       <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="areaEditOverlay" class="area-edit-overlay" aria-label="表示位置とサイズを編集" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span></div><span class="area-edit-hint">ドラッグして歌詞の表示範囲を指定</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
-      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>アスペクト比を固定</label><label>幅（画面比％）<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>高さ（画面比％）<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">角度（°）<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">全域へリセット</button><button id="areaApplyOne" class="primary" disabled>この行だけに適用</button><button id="areaApplyFollowing" disabled>これ以降全てに適用</button><button id="areaCancel" class="ghost">キャンセル</button></div>
+      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>アスペクト比を固定</label><label>幅（画面比％）<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>高さ（画面比％）<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">角度（°）<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">全域へリセット</button><button id="areaResetAuto" class="ghost" type="button">自動配置に戻す</button><button id="areaApplyOne" class="primary" disabled>この行だけに適用</button><button id="areaApplyFollowing" disabled>これ以降全てに適用</button><button id="areaCancel" class="ghost">キャンセル</button></div>
       <div class="transport">
         <button id="btnPlay" class="play" aria-label="再生">▶</button>
         <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><button id="timeDur" class="tc muted duration-value" type="button" title="動画全体の長さを入力（空欄で自動）" aria-label="動画全体の長さを入力">00:00.00</button><input id="timeDurInput" class="tc duration-input" type="text" inputmode="decimal" aria-label="動画全体の長さ（秒または分:秒、空欄で自動）" hidden>
@@ -221,6 +224,10 @@
       </div>
 
       <div class="tabpane" data-pane="tech" hidden>
+        <div class="pick-sets">
+          <label class="check"><input id="lyricAutoPlacement" type="checkbox"><span>配置・サイズにも自動で変化をつける<small>オフでは全画面を使用。手動の表示エリアは維持します。「自動配置に戻す」で手動指定を解除できます。</small></span></label>
+          <label class="check"><input id="lyricAvoidForeground" type="checkbox" checked><span>前景との重なりを避ける<small>自動配置時に前景の表示領域を避けます。*強調*したカットには適用しません。</small></span></label>
+        </div>
         <div class="pick-sets">
           <label class="check"><input id="tExtra" class="extra-toggle" type="checkbox"><span>追加分の演出も使う<small>「追加」印の手法・スタイル・書体。オフのときは、おまかせやシャッフルで最初の公開版の演出だけを使います</small></span></label>
           <label class="check"><input id="tWa" class="wa-toggle" type="checkbox" checked><span>和風の演出も使う<small>「和」印の手法とスタイル。オフにすると、おまかせやシャッフルでは選ばれません（追加分の判定のあとに適用。行ごとに手動で指定した場合は使えます）</small></span></label>

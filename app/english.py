@@ -310,6 +310,16 @@ def replace_copy(source, glossary):
 # Fork UI text is translated before the original glossary so short common
 # words such as 歌詞 and 追加 cannot split a longer fork label in half.
 FORK_BODY = {
+    '配置・サイズにも自動で変化をつける': 'Vary lyric position and size automatically',
+    'オフでは全画面を使用。手動の表示エリアは維持します。「自動配置に戻す」で手動指定を解除できます。': 'When off, use the full stage. Manual areas are preserved; use Reset automatic placement to clear them.',
+    '前景との重なりを避ける': 'Avoid overlapping the foreground',
+    '自動配置時に前景の表示領域を避けます。*強調*したカットには適用しません。': 'Automatic areas avoid foreground placement. Cuts marked with *emphasis* are exempt.',
+    '自動配置に戻す': 'Reset automatic placement',
+    '<code>{</code> と <code>}</code> で囲んだ複数行 … 最後のカットが消えるまで順に重ねて表示': 'Wrap multiple lines in <code>{</code> and <code>}</code> to stack them until the final cut disappears.',
+    r'<code>夜明けの色を\n覚えてる</code> … <code>\n</code> で1カット内の改行を指定（文字として書く場合は <code>\\n</code>）': r'<code>First line\nSecond line</code> … <code>\n</code> adds a line break within one cut (use <code>\\n</code> to display it literally).',
+    '<code>*透明*</code> … 強調（自動表示エリアを大きくし、前景より手前に表示。前景回避の対象外）': '<code>*emphasis*</code> … a larger automatic area, displayed above the foreground without avoiding it.',
+    '<code>~ささやき~</code> … 抑制（表示と動きを小さく）': '<code>~whisper~</code> … a smaller display with gentler motion.',
+    r'<code>\</code> を制御文字の前に置くと、その文字を歌詞として表示（例：<code>\*</code>・<code>\~</code>・<code>\{</code>・<code>\}</code>・<code>\/</code>・<code>\|</code>・<code>\!</code>・<code>\#</code>・<code>\[</code>・<code>\\</code>）': r'Place <code>\</code> before a control character to display it literally: <code>\*</code>, <code>\~</code>, <code>\{</code>, <code>\}</code>, <code>\/</code>, <code>\|</code>, <code>\!</code>, <code>\#</code>, <code>\[</code>, <code>\\</code>.',
     '歌詞に合わせて一括挿入': 'Insert cuts aligned to lyrics',
     '一括挿入の基準': 'Align inserted cuts to', '行に合わせる': 'Lyric lines', 'カットに合わせる': 'Lyric cuts',
     '空カット・ロック済みカットは維持します。素材の個別指定はオフにすると使えます。': 'Blank and locked cuts are preserved. Turn this off to select files per cut.',

@@ -27,6 +27,24 @@ Lyric syntax: `I remember/the dawn` makes a manual cut; `*word*` emphasizes a wo
 
 Use **Save** and **Open** for `.jizura.json` projects. **Export for AE** creates arrangement data to import into the After Effects panel. Generated videos and images belong to their creators; rights to music and lyrics remain with their respective rights holders. Project files, lyrics and audio are handled in the browser. Google Fonts are loaded as needed. The tool is MIT licensed; see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
+## Stacking lyrics, line breaks and automatic areas
+
+Wrap multiple input lines in `{` and `}` to stack their cuts until the last lyric cut in the group disappears. Timeline boundaries and links retain their original timing.
+
+```text
+{
+Colors of the dawn
+*Today\nI remember*
+~A quiet voice~
+}
+```
+
+Write `\n` within one input line to add a horizontal line break inside one cut. It can be combined with `/` to put multiple rows inside each manually separated cut. Use `\\n` for a literal `\n`, and `\{`, `\}`, or `\~` for literal control characters.
+
+In **Advanced → Techniques**, enable **Vary lyric position and size automatically** to vary the area for each lyric cut. This defaults to off, using the full stage. Manual areas and locks are preserved. In the area editor, **Reset automatic placement** clears a manual area; **Reset to full frame** saves an explicit full-stage area.
+
+**Avoid overlapping the foreground** considers foreground position, size and rotation throughout the lyric's display period. If there is no free region, it chooses a position with the least overlap. `*Emphasis*` creates a larger automatic area, enables **Show in front**, and ignores foreground avoidance. You can override the frontmost setting using the cut checkbox or timeline icon. `~Suppression~` makes the area and text smaller and reduces movement, rotation, camera motion and effects.
+
 ## Build and publish
 
 Run `python3 build.py` at the repository root. It creates `index.html` and `en/index.html`, both standalone pages for GitHub Pages. Run `python3 build_ae.py --lang en` to rebuild `JIZURA_AE_en.jsx`, and `python3 build_cep.py --lang en --out dist` to build `dist/JIZURA_CEP_en.zip` (copy the ZIP to the repository root for Pages downloads). Commit the built pages, panels and translation sources together. Publish from the repository root on GitHub Pages; the English edition is then served at `/JIZURA/en/`. Open either HTML file locally for offline use, with installed fonts as a fallback.
