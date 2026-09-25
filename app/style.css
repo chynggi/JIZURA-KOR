@@ -454,3 +454,12 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .timeline-legend-icon.remove { color: #ff6173; border-color: #ff6173; }
 .timeline-legend-icon.link { border-radius: 50%; color: var(--cyan); border-color: var(--cyan); }
 .timeline-legend-icon.unlink { border-radius: 50%; }
+.cut-details-dialog { width: min(880px, 94vw); max-height: 90vh; overflow: auto; border: 1px solid #555; border-radius: 12px; padding: 24px; background: #191b20; color: #eee; }
+.cut-details-dialog::backdrop { background: #000a; }
+.cut-details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.cut-detail-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.cut-detail-field input, .cut-detail-field select, .cut-detail-field textarea { width: 100%; min-width: 0; }
+.cut-detail-field input[type=checkbox] { width: 18px; height: 18px; }
+.cut-details-grid > details { grid-column: 1 / -1; border: 1px solid #45474e; border-radius: 6px; padding: 10px; }
+.cut-details-grid summary { cursor: pointer; margin-bottom: 8px; }
+.cut-details-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; position: sticky; bottom: -24px; background: #191b20; padding: 16px 0; margin-top: 18px; }

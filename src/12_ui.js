@@ -9,6 +9,7 @@ const LS_KEY = 'jizura.project.v1';
 const MEDIA_DELETE_KEY = 'jizura.media.pendingDelete.v1';
 const HUD_CHARS = '0123456789:./-_()【】・No.LYRICRECUNTITLEDXYlinebpminterlude—─／ ';
 const ICON = {
+  details: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/><path d="M5 2v4M11 6v4M7 10v4" stroke-width="3"/></svg>',
   area: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/><path d="M2 6h12M5 3v10"/></svg>',
   remove: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m4 4 8 8m0-8-8 8"/></svg>',
 
@@ -504,9 +505,158 @@ function toggleMediaCutLock(layer, index) {
   mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedEntrance: undefined, lockedDeparture: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedEntrance: cut.entrance, lockedDeparture: cut.departure, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
   replan();
 }
+function detailButton(onClick) {
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'icon ghost cut-details-open';
+  button.title = J.mediaLabel('カットの詳細編集','Edit cut details'); button.setAttribute('aria-label',button.title);
+  button.innerHTML = ICON.details; button.addEventListener('click',onClick); return button;
+}
+function openCutDetails(layer,index,part=0) {
+  const lyric = layer === 'lyrics', L = J.mediaLabel, clone = value => JSON.parse(JSON.stringify(value));
+  const blank = lyric && part === 'blank';
+  const cut = blank ? S.plan.cuts[index] : lyric ? S.plan.cuts.find(c=>c.line===index && c.part===part) : S.plan[layer]?.cuts[index];
+  if (!cut) return;
+  pause();
+  const key = `${index}:${part}`, original = clone(lyric ? S.project.lyricCutOptions[key] || {} : S.project[layer].cutOverrides[index] || {});
+  let draft = clone(original), current = clone(cut), start = cut.start;
+  let locked = !!(lyric ? S.project.overrides[index]?.lock : original.lock);
+  const initialLock = locked;
+  const dialog = document.createElement('dialog'); dialog.id='cutDetailsDialog'; dialog.className='cut-details-dialog';
+  dialog.setAttribute('aria-label',L('カットの詳細編集','Edit cut details'));
+  document.body.appendChild(dialog);
+  const names = {
+    text:['歌詞','Lyrics'],layout:['レイアウト','Layout'],enter:['登場','Entrance'],hold:['保持・モーション','Hold / motion'],exit:['退場','Exit'],
+    inDur:['登場時間（秒）','Entrance duration (s)'],outDur:['退場時間（秒）','Exit duration (s)'],stagger:['文字の時間差（秒）','Character delay (s)'],
+    decor:['装飾','Decoration'],scheme:['配色','Palette'],params:['レイアウト詳細','Layout parameters'],treat:['加工','Treatment'],treatP:['加工の詳細','Treatment parameters'],
+    bg:['背景演出','Background effect'],bgP:['背景演出の詳細','Background parameters'],cam:['カメラ','Camera'],camP:['カメラ詳細','Camera parameters'],
+    trans:['カット間のつなぎ','Transition'],transP:['つなぎの詳細','Transition parameters'],transDur:['つなぎ時間（秒）','Transition duration (s)'],
+    area:['表示範囲（画面比率）','Display area (stage ratios)'],placement:['配置・サイズ（画面比率）','Placement / size (stage ratios)'],
+    motionScale:['動きの倍率','Motion scale'],contentScale:['文字サイズ倍率','Text scale'],effectSettings:['演出パラメータ','Effect parameters'],
+    motion:['動きの強さ','Motion amount'],treatment:['加工の強さ','Treatment amount'],duration:['登場・退場時間（秒）','Entrance / exit duration (s)'],bpm:['BPM','BPM'],beatOffset:['拍の開始位置（秒）','Beat offset (s)'],x:['左位置','Left'],y:['上位置','Top'],cx:['中心 X','Center X'],cy:['中心 Y','Center Y'],w:['幅','Width'],h:['高さ','Height'],angle:['角度（度）','Angle (degrees)'],lockAspect:['縦横比を固定','Lock aspect ratio'],
+    technique:['手法','Technique'],entrance:['登場','Entrance'],departure:['退場','Exit'],itemId:['素材','Asset'],frontmost:['最前に表示','Frontmost'],blend:['合成方法','Blend mode'],opacity:['不透明度（％）','Opacity (%)'],videoLoop:['動画をループ再生','Loop video'],videoDuration:['動画の長さ（秒）','Video duration (s)'],chromaKey:['クロマキー合成','Chroma key'],chromaColor:['クロマキー色','Key color'],
+    font:['フォント','Font'],size:['サイズ','Size'],scale:['倍率','Scale'],rotation:['回転','Rotation'],color:['色','Color'],alpha:['不透明度','Opacity'],seed:['乱数シード','Random seed'],n:['個数','Count'],id:['種類','Type'],sx:['横方向倍率','Horizontal scale'],sy:['縦方向倍率','Vertical scale'],
+  };
+  const label = key => names[key] ? L(...names[key]) : key;
+  const nativeKeys = blank ? [] : lyric ? ['frontmost','blend','opacity'] : ['itemId','technique','entrance','departure','placement','videoLoop','videoDuration','chromaKey','chromaColor'];
+  function preview() {
+    const project = clone(S.project);
+    if (lyric) project.lyricCutOptions[key]=draft; else project[layer].cutOverrides[index]=draft;
+    const plan=J.plan(project,audioLike());
+    current=lyric ? plan.cuts.find(c=>c.line===index&&c.part===part) : J.planMedia(project,plan,S.audio?.duration,layer).cuts[index];
+    render();
+  }
+  function write(field,value,native) {
+    if (!lyric && native && ['technique','entrance','departure','itemId'].includes(field)) {
+      draft.lock = false; locked = false;
+    }
+    if(native) draft[field]=value; else { draft.details ||= {}; draft.details[field]=value; }
+  }
+  function options(field) {
+    if(field==='blend') return ['normal','multiply','screen','overlay'].map((v,i)=>[v,[L('通常','Normal'),L('乗算','Multiply'),L('スクリーン','Screen'),L('オーバーレイ','Overlay')][i]]);
+    if(field==='itemId') return [['',L('画像無し','No image')],...S.project[layer].items.map(a=>[a.id,a.name])];
+    if(field==='scheme') return S.plan.style.schemes.map((_,i)=>[String(i),String(i+1)]);
+    if(field==='technique') return [['',L('自動','Auto')],['none',L('演出無し','No effects')],...Object.entries(J.MEDIA_TECH).filter(([,d])=>!d.stage).map(([id,d])=>[id,d.name])];
+    if(field==='entrance'||field==='departure') return [['',L('自動','Auto')],['none',L('即時（なし）','Instant (none)')],...J.mediaPhaseOptions(field==='entrance'?'enter':'exit').map(([id,d])=>[id,d.name])];
+    if(!lyric && ['layout','hold','treat'].includes(field)) {
+      const registry=J['MEDIA_'+field.toUpperCase()] || {}, entries=Object.entries(registry).map(([id,d])=>[id,typeof d==='string'?d:d.name||id]);
+      for(const def of Object.values(J.MEDIA_TECH)) if(def[field]&&!entries.some(([id])=>id===def[field])) entries.push([def[field],def.name+' / '+def[field]]);
+      return entries;
+    }
+    const reg={layout:J.LAYOUTS,enter:J.ENTER,hold:J.HOLD,exit:J.EXIT,treat:J.TREAT,bg:J.BG,cam:J.CAMERA,trans:J.TRANS,font:J.FONTS,id:J.DECOR}[field];
+    return reg ? [...(field==='trans'?[['none',L('なし','None')]]:[]),...Object.entries(reg).map(([id,d])=>[id,d.name||id])] : null;
+  }
+  function fieldEditor(parent,field,value,onChange,path=field) {
+    if(value && typeof value==='object') {
+      const section=document.createElement('details'); section.open=['area','placement'].includes(field);
+      const title=document.createElement('summary'); title.textContent=label(field); section.append(title);
+      const grid=document.createElement('div'); grid.className='cut-details-grid';section.append(grid);parent.append(section);
+      for(const [child,v] of Object.entries(value)) {
+        // Random candidate pools belong to the layer; this editor changes the resolved cut.
+        if(['enabled','randomize','autoPlacement','sizeMin','sizeMax'].includes(child)) continue;
+        fieldEditor(grid,child,v,next=>{
+          if (value.lockAspect && ['w','h'].includes(child) && value[child]>0) {
+            const other=child==='w'?'h':'w'; value[other]*=next/value[child];
+            const input=grid.querySelector(`[data-detail-field="${path}.${other}"]`);if(input)input.value=value[other];
+          }
+          value[child]=next;onChange(clone(value));
+        },`${path}.${child}`);
+      }
+      if(field==='decor') {
+        const add=document.createElement('button');add.type='button';add.textContent=L('装飾を追加','Add decoration');
+        add.onclick=()=>{value.push({id:Object.keys(J.DECOR)[0],seed:cut.seed,n:1});onChange(clone(value));preview();};section.append(add);
+      }
+      if(Array.isArray(value)) value.forEach((_,i)=>{const del=document.createElement('button');del.type='button';del.textContent=L(`${i+1} を削除`,`Remove ${i+1}`);del.onclick=()=>{value.splice(i,1);onChange(clone(value));preview();};section.append(del);});
+      return;
+    }
+    const row=document.createElement('label');row.className='cut-detail-field';const text=document.createElement('span');text.textContent=label(field);row.append(text);
+    const choices=options(field); const input=document.createElement(choices?'select':field==='text'?'textarea':'input');input.dataset.detailField=path;
+    if(choices) { for(const [v,n] of choices) input.add(new Option(n,v));if(value!=null&&!choices.some(([v])=>String(v)===String(value))) input.add(new Option(String(value),String(value)));input.value=value??''; }
+    else if(typeof value==='boolean'){input.type='checkbox';input.checked=value;}
+    else if(typeof value==='number'){input.type='number';input.step='any';input.value=value; if(['w','h','n','inDur','outDur','transDur','stagger','motionScale','contentScale','videoDuration','opacity'].includes(field)) input.min=field==='videoDuration'?.04:0; if(field==='opacity')input.max=100;}
+    else {if(field!=='text')input.type=/^#[0-9a-f]{6}$/i.test(value||'')?'color':'text';input.value=value??'';}
+    if(lyric && field==='frontmost' && cut.emphasis){input.disabled=true;input.title=emphasisFrontmostHint();}
+    input.addEventListener('change',()=>{
+      const v=typeof value==='boolean'?input.checked:typeof value==='number'?Number(input.value):input.value;
+      if(typeof v==='number'&&!Number.isFinite(v))return;
+      onChange(v);
+      if(choices && !path.includes('.')) {
+        const param={layout:'params',treat:'treatP',bg:'bgP',cam:'camP',trans:'transP'}[field];
+        if(param&&draft.details)delete draft.details[param];
+        if(field==='technique'&&draft.details)for(const key of ['hold','treat','trans','transP'])delete draft.details[key];
+        preview();
+      }
+    });
+    row.append(input);parent.append(row);
+  }
+  function render() {
+    dialog.replaceChildren();const form=document.createElement('form');dialog.append(form);
+    const heading=document.createElement('h2');heading.textContent=L('カットの詳細編集','Edit cut details')+' — '+(lyric?L('歌詞','Lyrics'):layer==='foreground'?L('前景','Foreground'):L('背景','Background'))+` ${index+1}${lyric?` / ${part+1}`:''}`;form.append(heading);
+    const hint=document.createElement('p');hint.className='hint';hint.textContent=L('変更は「適用」で確定します。数値は現在のカットの値です。表示範囲の 1 は画面全体の幅・高さに相当します。','Changes are saved with Apply. Values describe this cut. A display-area ratio of 1 equals the full stage width or height.');form.append(hint);
+    const grid=document.createElement('div');grid.className='cut-details-grid';form.append(grid);
+    const group=boundaryGroupLimits(boundaryRef(layer,cut));
+    fieldEditor(grid,'start',start,v=>{start=v;});
+    const time=grid.querySelector('input');time.previousSibling.textContent=L('開始位置（秒・リンク先も移動）','Start (s; linked cuts move together)');time.min=group?.min??0;time.max=group?.max??S.plan.duration;time.disabled=!group;
+    if(!blank) {
+      fieldEditor(grid,'lock',locked,v=>{locked=v;});
+      grid.lastChild.querySelector('span').textContent=lyric?L('行の構成をロック','Lock line composition'):L('カットをロック','Lock cut');
+    }
+    for(const field of nativeKeys) {
+      if(['videoLoop','videoDuration','chromaKey','chromaColor'].includes(field)&&current.type!=='video')continue;
+      let value=draft[field]??current[field];
+      if(['technique','entrance','departure'].includes(field)&&Object.hasOwn(draft,field))value=draft[field]??'';
+      if(field==='placement')value ||= {cx:.5,cy:.5,w:1,h:1,angle:0,lockAspect:true};
+      if(field==='videoDuration')value=Number(value)||current.end-current.start;
+      fieldEditor(grid,field,clone(value??(field==='opacity'?100:'')),v=>write(field,['itemId','technique','entrance','departure'].includes(field)&&v===''?null:v,true));
+    }
+    for(const field of blank ? [] : J.cutDetailKeys[lyric?'lyrics':'media']) {
+      let value=current[field];
+      if(field==='area')value ||= {x:0,y:0,w:1,h:1,angle:0,lockAspect:true};
+      if(field==='trans')value ||= 'none';
+      if(value===undefined)continue;
+      fieldEditor(grid,field,clone(value),v=>write(field,field==='scheme'?+v:v,false));
+    }
+    const buttons=document.createElement('div');buttons.className='cut-details-actions';form.append(buttons);
+    const reset=document.createElement('button');reset.type='button';reset.textContent=L('詳細編集をリセット','Reset detail overrides');reset.onclick=()=>{delete draft.details;preview();};
+    const cancel=document.createElement('button');cancel.type='button';cancel.textContent=L('キャンセル','Cancel');cancel.onclick=()=>dialog.close();
+    const apply=document.createElement('button');apply.type='submit';apply.textContent=L('適用','Apply');buttons.append(reset,cancel,apply);
+    form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;
+      if(!blank) { if(lyric) S.project.lyricCutOptions[key]=draft; else S.project[layer].cutOverrides[index]=draft; }
+      if(!blank && (locked !== initialLock || !lyric)) {
+        if(lyric) setOv(index,locked ? {lock:true,lockedSeed:S.plan.lines[index].seed,
+          lockedAreas:Object.fromEntries(S.plan.cuts.filter(c=>c.line===index&&Number.isInteger(c.part)).map(c=>[c.part,c.area||null])),
+          lockedComposites:Object.fromEntries(S.plan.cuts.filter(c=>c.line===index&&Number.isInteger(c.part)).map(c=>[c.part,{blend:c.blend,opacity:c.opacity}]))
+        } : {lock:false,lockedSeed:undefined,lockedAreas:undefined,lockedComposites:undefined});
+        else mediaOv(index,locked ? {lock:true,lockedSeed:current.seed,lockedTechnique:current.technique,lockedEntrance:current.entrance,lockedDeparture:current.departure,lockedPlacement:draft.placement||current.placement,lockedPlacementMode:current.placementMode,lockedItemId:current.itemId} : {lock:false},layer);
+      }
+      if(group&&start!==cut.start) for(const member of group.members)setTimelineBoundaryTime(member,J.clamp(start,group.min,group.max));
+      replan();dialog.close();
+    };
+  }
+  dialog.addEventListener('close',()=>dialog.remove());render();dialog.showModal();
+}
 function performTimelineAction(control) {
   const layer = control.dataset.layer, index = +control.dataset.index;
   if (!Number.isInteger(index) || index < 0) return;
+  if (control.dataset.action === 'details') { openCutDetails(layer,index,control.dataset.part === 'blank' ? 'blank' : +control.dataset.part || 0); return; }
   if (control.dataset.action === 'area') {
     if (layer === 'lyrics') openAreaEditor(index);
     else if (layer === 'foreground' || layer === 'media') openMediaEditor(index, layer);
@@ -554,6 +704,7 @@ function drawTimelineLinks() {
     const actions = [['dice', false, layer === 'lyrics' ? 'この行を再抽選' : 'このカットを再抽選', ICON.dice], ['lock', locked, layer === 'lyrics' ? 'この行の構成をロック' : 'このカットをロック', ICON.lock]];
     if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? 'この行の表示エリアを編集' : 'このカットの配置とサイズを編集', ICON.area]);
     if (layer !== 'lyrics') actions.push(['remove', false, 'このカットを削除', ICON.remove]);
+    if (layer !== 'lyrics') actions.push(['details', false, J.mediaLabel('カットの詳細編集','Edit cut details'), ICON.details]);
     const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - (actions.length - 1) * 20 - 23);
     return actions.map(([name, active, label, icon], n) => {
       const x = left + n * 20, graphic = icon.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
@@ -569,10 +720,14 @@ function drawTimelineLinks() {
     const x = J.clamp(startX + 10, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 9);
     const y = canvas.offsetTop + 33, active = !!cut.frontmost;
     const graphic = ICON.frontmost.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
-    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}行目${cut.part + 1}カット目を最前に表示" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
+    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}行目${cut.part + 1}カット目を最前に表示" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g><g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${J.mediaLabel('カットの詳細編集','Edit cut details')}" transform="translate(${Math.min(x + 20,canvas.offsetLeft + canvas.clientWidth - 9)} ${y})"><title>${J.mediaLabel('カットの詳細編集','Edit cut details')}</title><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
+  }).join('');
+  const blankActions = S.plan.cuts.filter(c=>c.blank).map(c=> {
+    const canvas=$('timeline'), x=canvas.offsetLeft+c.start/S.plan.duration*canvas.clientWidth+10;
+    return `<g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${c.index}" data-part="blank" role="button" tabindex="0" aria-label="${J.mediaLabel('カットの詳細編集','Edit cut details')}" transform="translate(${x} ${canvas.offsetTop+33})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
   }).join('');
   const mediaActions = ['foreground', 'media'].map(layer => S.plan[layer].cuts.map(cut => action(layer, cut, cut.index, !!mediaCutOptions(layer, cut.index).lock)).join('')).join('');
-  svg.innerHTML = links + preview + handles + lyricActions + frontmostActions + mediaActions;
+  svg.innerHTML = links + preview + handles + lyricActions + frontmostActions + blankActions + mediaActions;
 }
 function markerNear(clientX, clientY, sourceLayer) {
   const rect = $('timelineStack').getBoundingClientRect(), x = clientX - rect.left, y = clientY - rect.top;
@@ -826,6 +981,7 @@ function renderLines() {
       li.querySelector('.time').addEventListener('change', e => { const blank = S.project.lyricBlankCuts.find(b => b.id === row.blankId); if (blank) blank.start = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
       li.querySelector('.txt').addEventListener('click', () => seek(row.start + 0.001));
       li.querySelector('.remove-blank').addEventListener('click', () => { S.project.lyricBlankCuts = S.project.lyricBlankCuts.filter(b => b.id !== row.blankId); replan(); });
+      li.querySelector('.tools').appendChild(detailButton(()=>openCutDetails('lyrics',S.plan.cuts.find(c=>c.blankId===row.blankId).index,'blank')));
       ol.appendChild(li); S.blankEls.set(row.blankId, li);
       return;
     }
@@ -885,7 +1041,7 @@ function renderLines() {
       blend.addEventListener('change', e => setLyricCutComposite(i, c.part, { blend: e.target.value || undefined }));
       opacity.addEventListener('change', e => setLyricCutComposite(i, c.part, { opacity: e.target.value === '' ? undefined : J.clamp(+e.target.value || 0, 0, 100) }));
       reset.addEventListener('click', () => setLyricCutComposite(i, c.part, { blend: undefined, opacity: undefined }));
-      cutOption.append(name, label, controls); cutsEl.appendChild(cutOption);
+      cutOption.append(name, detailButton(() => openCutDetails('lyrics',i,c.part)), label, controls); cutsEl.appendChild(cutOption);
     });
     ol.appendChild(li); S.lineEls.push(li);
   });
@@ -1267,6 +1423,7 @@ function renderMediaLines() {
       li.querySelector('.media-chroma-color').addEventListener('change', e => { mediaOv(i, { chromaColor: e.target.value }); replan(); });
     }
     li.querySelector('.dice').addEventListener('click', () => rerollMediaCut(layer, i));
+    li.querySelector('.tools').appendChild(detailButton(() => openCutDetails(layer,i)));
     li.querySelector('.lock').addEventListener('click', () => toggleMediaCutLock(layer, i));
     li.querySelector('.remove-media-cut').addEventListener('click', () => removeMediaCut(i, layer));
     ol.appendChild(li); S.mediaLineEls.push(li);
@@ -1282,6 +1439,14 @@ async function restoreMediaAssets() {
   replan();
 }
 function setOv(i, patch) {
+  // A later line-wide selection supersedes the corresponding per-cut edit.
+  for (const [key, options] of Object.entries(S.project.lyricCutOptions || {})) if (key.startsWith(`${i}:`) && options.details) {
+    for (const field of Object.keys(patch)) if (J.cutDetailKeys.lyrics.includes(field)) {
+      delete options.details[field];
+      const params={layout:'params',treat:'treatP',bg:'bgP',cam:'camP',trans:'transP'}[field];
+      if(params)delete options.details[params];
+    }
+  }
   const cur = Object.assign({}, S.project.overrides[i] || {}, patch);
   for (const k of Object.keys(cur)) if (cur[k] === undefined || cur[k] === false || cur[k] === '') delete cur[k];
   if (Object.keys(cur).length) S.project.overrides[i] = cur; else delete S.project.overrides[i];
@@ -1836,6 +2001,7 @@ function bind() {
     [ICON.dice,'再抽選','Reroll',''],
     [ICON.lock,'ロック','Lock',''],
     [ICON.area,'表示範囲','Display area',''],
+    [ICON.details,'詳細編集','Edit details',''],
     [ICON.remove,'削除','Delete','remove'],
     [ICON.frontmost,'最前表示','Show in front',''],
     ['🔗','開始位置をリンク','Link start positions','link'],
