@@ -1,4 +1,4 @@
-/* Jev chooses from JIZURA's existing expression vocabulary. The API key stays on the local server. */
+/* 「AI로 고르기」: a decision model on this PC (decision_server.py) chooses from JIZURA's own vocabulary. */
 (() => {
 'use strict';
 
@@ -10,14 +10,13 @@ const CORE = {
 const criteria = (keys, table) => Object.fromEntries(keys.filter(k => table[k]).map(k => [k, `${table[k].name}${table[k].tags ? ' / ' + table[k].tags.join(', ') : ''}`]));
 const choice = (instructions, options) => ({ type: 'choice', instructions, criteria: options });
 const valid = (answer, options) => answer && answer.type === 'choice' && Object.hasOwn(options, answer.choice) ? answer.choice : null;
-const endpoint = () => location.origin === 'https://hirazisora.github.io'
-  ? 'http://127.0.0.1:8765/api/jev' : '/api/jev';
+J.decideEndpoint = (loc = location) => /^http:\/\/(127\.0\.0\.1|localhost):8765$/.test(loc.origin) ? '/api/decide' : 'http://127.0.0.1:8765/api/decide';
 
-J.jevSuggest = async (project, signal) => {
+J.decideSuggest = async (project, signal) => {
   const lines = J.parseLyrics(project.lyrics).lines;
-  if (!lines.length) throw new Error('歌詞を入力してください');
-  const userDirection = String(project.jevPrompt || '').trim().slice(0, 1000);
-  const directionRule = userDirection ? '歌詞とユーザーの追加指示の両方を考慮する。' : '歌詞を考慮する。';
+  if (!lines.length) throw new Error('가사를 입력하세요');
+  const userDirection = String(project.aiPrompt || '').trim().slice(0, 1000);
+  const directionRule = userDirection ? '가사와 사용자의 추가 지시를 모두 고려한다.' : '가사를 고려한다.';
   const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
   const allowed = (g, k) => !J.randomOk || J.randomOk(project, g, k);
   const styleOptions = Object.fromEntries(J.STYLE_ORDER.filter(k => allowed('style', k)).map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
@@ -28,12 +27,12 @@ J.jevSuggest = async (project, signal) => {
     const batch = lines.slice(start, start + 12);
     const questions = {};
     if (start === 0) {
-      questions.mood = choice(`${directionRule} 歌詞全体に最も合う映像の雰囲気を選ぶ。`, moodOptions);
-      questions.style = choice(`${directionRule} 歌詞全体に最も合う文字PVの配色と書体のスタイルを選ぶ。`, styleOptions);
+      questions.mood = choice(`${directionRule} 가사 전체에 가장 어울리는 영상 분위기를 고른다.`, moodOptions);
+      questions.style = choice(`${directionRule} 가사 전체에 가장 어울리는 문자 PV 배색·서체 스타일을 고른다.`, styleOptions);
     }
     batch.forEach((line, i) => {
       const n = start + i;
-      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`${directionRule} 行 ${n + 1} に合う${{ layout: '文字レイアウト', enter: '登場の動き', exit: '退場の動き' }[g]}を選ぶ。`, options[g]);
+      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`${directionRule} 행 ${n + 1}에 어울리는 ${{ layout: '문자 레이아웃', enter: '등장 동작', exit: '퇴장 동작' }[g]}을 고른다.`, options[g]);
     });
     const state = {
       title: (project.title || '').slice(0, 120),
@@ -46,17 +45,17 @@ J.jevSuggest = async (project, signal) => {
     };
     let response;
     try {
-      response = await fetch(endpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state, questions }), signal });
+      response = await fetch(J.decideEndpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state, questions }), signal });
     } catch (error) {
-      throw new Error('Jev ローカルサーバーに接続できません。起動状態とブラウザのローカルネットワーク許可を確認してください');
+      throw new Error('로컬 결정 서버에 연결할 수 없습니다. decision_server.py가 실행 중인지, 브라우저의 로컬 네트워크 접근 허용을 확인하세요');
     }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || `Jev API: HTTP ${response.status}`);
+    if (!response.ok) throw new Error(data.error || `결정 서버: HTTP ${response.status}`);
     const answers = data.answers || {};
     if (start === 0) {
       selections.mood = valid(answers.mood, moodOptions);
       selections.style = valid(answers.style, styleOptions);
-      if (!selections.mood || !selections.style) throw new Error('Jev のスタイル選定結果を確認できませんでした');
+      if (!selections.mood || !selections.style) throw new Error('분위기·스타일 선택 결과를 확인하지 못했습니다');
     }
     batch.forEach((line, i) => {
       const n = start + i, picked = {};
@@ -70,13 +69,12 @@ J.jevSuggest = async (project, signal) => {
   return selections;
 };
 
-J.applyJev = (project, selections, rnd = Math.random) => {
+J.applyDecide = (project, selections, rnd = Math.random) => {
   const look = J.omakase(project, rnd, selections);
   const overrides = look.overrides;
   for (const [index, picks] of Object.entries(selections.lines || {})) {
     if (overrides[index] && overrides[index].lock) continue;
-    overrides[index] = Object.assign({}, overrides[index] && overrides[index].area ? { area: overrides[index].area } : {},
-      Object.fromEntries(Object.entries(picks).filter(([g, key]) => CORE[g] && CORE[g].includes(key) && J.registry(g)[key] && (!J.randomOk || J.randomOk(project, g, key)))));
+    overrides[index] = Object.assign({}, overrides[index], picks);
   }
   return look;
 };

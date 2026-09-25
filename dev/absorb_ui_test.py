@@ -144,7 +144,93 @@ async def test_asset_delete_is_undoable(b, url):
     assert not errs, errs
     await pg.close()
 
-TESTS = [test_undo_covers_our_edits, test_asset_delete_is_undoable]
+async def test_ai_pick_end_to_end(b, url):
+    # R9: 8765는 사용자 자신의 서버가 점유하므로 테스트에서 바인딩하지 않는다. 앱은 그대로 8766에서
+    # 서빙하고, decision_server.py는 PORT=8767로, 가짜 systemone 백엔드는 8799로 띄운 뒤, 페이지가
+    # http://127.0.0.1:8765/api/decide 로 보내는 요청을 Playwright route로 가로채 8767로 전달한다
+    # (decision_server는 자기 출처·Origin이 아니면 403을 돌려주므로 전달 시 Origin을 8767로 맞춘다).
+    import socket, subprocess, sys, tempfile, time
+
+    def wait_port(port, timeout=5.0):
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.2)
+                if s.connect_ex(('127.0.0.1', port)) == 0:
+                    return
+            time.sleep(0.05)
+        raise TimeoutError(f'port {port} did not open in time')
+
+    capture_fd, capture_path = tempfile.mkstemp(suffix='.json')
+    os.close(capture_fd)
+    # R5: 가짜 백엔드는 모든 질문에서 criteria의 "첫 키"를 고른다. 실제로 무엇이 첫 키였는지는
+    # 필터링(J.randomOk 등)에 따라 달라지므로, 받은 요청 본문을 파일에 남겨 나중에 그대로 검증한다.
+    fake = subprocess.Popen([sys.executable, '-c', '''
+import http.server, json, os
+CAPTURE = os.environ["CAPTURE_PATH"]
+class H(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        with open(CAPTURE, "w") as f:
+            json.dump(body, f)
+        ans = {q: {"type": "choice", "choice": list(v["criteria"])[0]} for q, v in body["questions"].items()}
+        raw = json.dumps({"answers": ans}).encode()
+        self.send_response(200); self.send_header("Content-Length", str(len(raw))); self.end_headers(); self.wfile.write(raw)
+http.server.HTTPServer(("127.0.0.1", 8799), H).serve_forever()
+'''], env=dict(os.environ, CAPTURE_PATH=capture_path))
+    env = dict(os.environ, DECISION_BACKEND='systemone', DECISION_URL='http://127.0.0.1:8799/v1/systemone', PORT='8767')
+    srv = subprocess.Popen([sys.executable, os.path.join(ROOT, 'decision_server.py')], env=env)
+    try:
+        wait_port(8799); wait_port(8767)
+        pg, errs = await open_app(b, url)
+
+        async def route_decide(route):
+            req = route.request
+            real_origin = req.headers.get('origin')  # 페이지의 실제 출처(8766) — 브라우저는 응답의 CORS 헤더를 이 값과 비교한다
+            headers = {k: v for k, v in req.headers.items() if k.lower() != 'host'}
+            headers['origin'] = 'http://127.0.0.1:8767'  # decision_server 자신의 출처 검사(403)를 통과시키기 위함
+            resp = await route.fetch(url='http://127.0.0.1:8767/api/decide', headers=headers)
+            body = await resp.body()
+            resp_headers = dict(resp.headers)
+            if real_origin:  # decision_server가 8767로 착각해 돌려준 CORS 헤더를 실제 출처로 되돌려 붙인다
+                resp_headers['access-control-allow-origin'] = real_origin
+                resp_headers['vary'] = 'Origin'
+            await route.fulfill(status=resp.status, headers=resp_headers, body=body)
+        await pg.route('http://127.0.0.1:8765/api/decide', route_decide)
+
+        await pg.click('#modePro')
+        await pg.fill('#lyrics', '밤하늘\n별빛')
+        await pg.wait_for_timeout(400)  # 가사 입력 핸들러가 S.project.lyrics에 반영될 시간
+        await pg.click('#btnAiPick')
+        await pg.wait_for_function(
+            "document.querySelector('#toast') && !document.querySelector('#toast').hidden"
+            " && document.querySelector('#toast').textContent.includes('AI로 고르기')",
+            timeout=8000)
+        toast_text = await pg.evaluate("document.querySelector('#toast').textContent")
+        assert 'AI로 고르기: ' in toast_text and '×' in toast_text, toast_text  # 성공 토스트인지 확인(오류 토스트에는 × 가 없음)
+
+        with open(capture_path, encoding='utf-8') as f:
+            sent = json.load(f)
+        expected_style = list(sent['questions']['style']['criteria'])[0]
+        expected_layout = list(sent['questions']['layout_0']['criteria'])[0]
+
+        state = await pg.evaluate('''() => ({
+          style: J.ui.project.style,
+          overrides: J.ui.project.overrides,
+        })''')
+        assert state['style'] == expected_style, (state['style'], expected_style)
+        overs = state['overrides'] or {}
+        assert any(o and o.get('layout') == expected_layout for o in overs.values()), (overs, expected_layout)
+        assert not errs, errs
+        await pg.close()
+    finally:
+        srv.terminate(); srv.wait(timeout=5)
+        fake.terminate(); fake.wait(timeout=5)
+        try: os.remove(capture_path)
+        except OSError: pass
+
+TESTS = [test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end]
 async def main():
     with serve() as url:
         async with async_playwright() as p:

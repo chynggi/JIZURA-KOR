@@ -36,9 +36,9 @@
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(‘되돌리기’나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
-        <label class="jev-prompt-label" for="jevPrompt">Jevへの追加指示（任意）</label>
-        <textarea id="jevPrompt" rows="2" maxlength="1000" placeholder="例：夜の街のような静かな雰囲気。サビは大胆に。" aria-label="Jevへの追加指示"></textarea>
-        <div class="hint">「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。</div>
+        <label class="ai-prompt-label" for="aiPrompt">AI에게 추가 지시(선택)</label>
+        <textarea id="aiPrompt" rows="2" maxlength="1000" placeholder="예: 밤거리 같은 조용한 분위기. 사비는 대담하게." aria-label="AI에게 추가 지시"></textarea>
+        <div class="hint">'AI로 고르기'를 실행할 때만 가사와 함께 전송합니다. 기존 스타일·기법 중에서 고릅니다.</div>
         <div class="fields media-blend-fields">
           <label class="field">가사 합성 방식<select id="lyricBlend"><option value="normal">표준</option><option value="multiply">곱하기</option><option value="screen">스크린</option></select></label>
           <label class="field">가사 불투명도(%)<input id="lyricOpacity" type="number" min="0" max="100" step="1"></label>
@@ -131,7 +131,7 @@
         </span>
         <button id="btnShuffle" class="accent" title="설정은 그대로 구조만 다시 뽑기(잠긴 행 유지)">셔플</button>
         <button id="btnOmakase" class="primary" title="스타일·분위기·연출·색 배합을 통째로 무작위(키 R)">자동</button>
-        <span class="jev-action"><button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></span>
+        <span class="ai-action"><button id="btnAiPick" title="PC에서 실행 중인 결정 모델(Laya·Kev·Tev1 등)이 가사에 맞는 분위기·스타일·행별 연출을 고릅니다">AI로 고르기(β)</button><a class="ai-guide" href="https://github.com/chynggi/JIZURA-KOR/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">가이드</a></span>
       </div>
       <div class="tl-bar">
         <span class="tl-hint muted">행 구분(위쪽 눈금)은 드래그로 옮길 수 있습니다. <span class="kbd">Shift</span>를 누르면 비트에 맞추지 않음</span>
@@ -153,8 +153,8 @@
       <div id="easyPanel" class="easy" hidden>
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">자동으로 만들기</button>
-          <div class="jev-action"><button id="btnJevBig" class="primary">歌詞からJevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></div>
-          <p class="hint">Jevを使うと、歌詞を外部APIへ送ってスタイル・雰囲気・行ごとのレイアウトと動きを選びます。ローカルサーバーとAPIキーが必要です。</p>
+          <div class="ai-action"><button id="btnAiPickBig" class="primary">AI로 고르기(β)</button><a class="ai-guide" href="https://github.com/chynggi/JIZURA-KOR/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">가이드</a></div>
+          <p class="hint">AI로 고르기를 사용하면 가사를 이 PC에서 실행 중인 로컬 결정 서버로 보내 스타일·분위기·행별 레이아웃과 동작을 고릅니다. decision_server.py 실행이 필요합니다.</p>
           <p class="hint">누를 때마다 스타일·분위기·움직임·색 배합·구성이 통째로 바뀝니다. 키보드 <span class="kbd">R</span> 로도 실행할 수 있습니다.</p>
           <div class="hist-row">
             <button id="btnPrev2" class="ghost">◀ 이전 안</button>
@@ -329,8 +329,8 @@
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
       <h3 id="termsForkTitle">字面 JIZURA（hirazi fork)</h3>
-      <p>이 사이트는 오리지널판을 기반으로 한 fork판입니다. Jev를 통한 구성 선정과 배경·전경 이미지·동영상 편집 기능 등을 추가했습니다.</p>
-      <p>일반적인 편집과 내보내기는 브라우저 안에서 처리합니다. 'Jev로 만들기'를 사용하는 경우, 가사와 선택적인 추가 지시를 로컬 서버를 통해 Jev API로 전송합니다. 곡의 음원 파일은 전송하지 않습니다.</p>
+      <p>이 사이트는 오리지널판을 기반으로 한 fork판입니다. AI로 고르기를 통한 구성 선정과 배경·전경 이미지·동영상 편집 기능 등을 추가했습니다.</p>
+      <p>일반적인 편집과 내보내기는 브라우저 안에서 처리합니다. 'AI로 고르기'를 사용하는 경우, 가사와 선택적인 추가 지시를 이 PC에서 실행 중인 로컬 결정 서버로 전송합니다. 곡의 음원 파일은 전송하지 않습니다.</p>
       <p>fork판 소스 코드: <a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>

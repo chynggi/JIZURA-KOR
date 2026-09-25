@@ -73,6 +73,7 @@ function mergeProject(p) {
   const en = J.defaultProject().enabled;
   for (const g of Object.keys(en)) en[g] = Object.assign(en[g], ((p && p.enabled) || {})[g] || {});
   o.enabled = en;
+  o.aiPrompt = String((p && (p.aiPrompt ?? p.jevPrompt)) || ''); delete o.jevPrompt;
   o.overrides = (p && p.overrides) || {};
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
@@ -1554,29 +1555,29 @@ function omakase() {
   toast(`자동: ${J.STYLES[r.style].name} × ${J.MOODS[r.mood].name}`, r.colors.accentOn ? [r.colors.accent, r.colors.ghostA, r.colors.ghostB] : null);
   restartPreview();
 }
-let jevBusy = false;
-async function jevOmakase() {
-  if (jevBusy || S.exporting || S.tap) return;
-  jevBusy = true;
-  ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = true; });
-  showMsg('Jev が歌詞と演出を選定中…');
+let aiBusy = false;
+async function aiPick() {
+  if (aiBusy || S.exporting || S.tap) return;
+  aiBusy = true;
+  ['btnAiPick', 'btnAiPickBig'].forEach(id => { $(id).disabled = true; });
+  showMsg('AI가 가사에 맞는 연출을 고르는 중…');
   try {
-    const lyrics = S.project.lyrics, jevPrompt = S.project.jevPrompt;
-    const selected = await J.jevSuggest(S.project);
-    if (S.project.lyrics !== lyrics || S.project.jevPrompt !== jevPrompt) throw new Error('選定中に歌詞か追加指示が変わりました。もう一度実行してください');
+    const lyrics = S.project.lyrics, aiPrompt = S.project.aiPrompt;
+    const selected = await J.decideSuggest(S.project);
+    if (S.project.lyrics !== lyrics || S.project.aiPrompt !== aiPrompt) throw new Error('고르는 동안 가사나 추가 지시가 바뀌었습니다. 다시 실행하세요');
     remember();
-    const look = J.applyJev(S.project, selected);
+    const look = J.applyDecide(S.project, selected);
     Object.assign(S.project, look);
     fontKey = ''; syncUI(); replan(); commit();
-    toast(`Jev：${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
+    toast(`AI로 고르기: ${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
     restartPreview();
   } catch (e) {
-    toast(`Jev：${e.message || e}`);
+    toast(`AI로 고르기: ${e.message || e}`);
     console.error(e);
   } finally {
     showMsg(null);
-    jevBusy = false;
-    ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = false; });
+    aiBusy = false;
+    ['btnAiPick', 'btnAiPickBig'].forEach(id => { $(id).disabled = false; });
   }
 }
 // change just one aspect of the current look
@@ -2152,7 +2153,7 @@ function updateTap() {
 function syncUI() {
   $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
   $('lyrics').value = S.project.lyrics;
-  $('jevPrompt').value = S.project.jevPrompt || '';
+  $('aiPrompt').value = S.project.aiPrompt || '';
   $('bpm').value = S.project.timing.bpm > 0 ? S.project.timing.bpm : '';
   $('bpm').placeholder = S.audio ? `자동 ${S.audio.bpm}` : '없음';
   $('offset').value = S.project.timing.offset ?? 0.4;
@@ -2244,7 +2245,7 @@ function bind() {
     if (changedCount) { clearTimeout(replanTimer); replan(); }
     else replanSoon(260);
   });
-  $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; markUndoGroup('jevPrompt'); autosave(); });
+  $('aiPrompt').addEventListener('input', e => { S.project.aiPrompt = e.target.value; markUndoGroup('aiPrompt'); autosave(); });
   $('lyricLang').addEventListener('change', e => {
     remember();
     S.project.lang = e.target.value; replan(); renderFontRoles(); commit(); flushSave();
@@ -2550,8 +2551,8 @@ function bind() {
   $('modePro').addEventListener('click', () => setMode('pro'));
   $('btnOmakase').addEventListener('click', omakase);
   $('btnOmakaseBig').addEventListener('click', omakase);
-  $('btnJev').addEventListener('click', jevOmakase);
-  $('btnJevBig').addEventListener('click', jevOmakase);
+  $('btnAiPick').addEventListener('click', aiPick);
+  $('btnAiPickBig').addEventListener('click', aiPick);
   ['btnPrev', 'btnPrev2'].forEach(id => $(id).addEventListener('click', () => histGo(-1)));
   ['btnNext', 'btnNext2'].forEach(id => $(id).addEventListener('click', () => histGo(1)));
   $('eStyle').addEventListener('click', () => rerollPart('style'));

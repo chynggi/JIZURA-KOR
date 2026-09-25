@@ -116,8 +116,8 @@ h3 { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-top: 1
 .media-item .missing { color: var(--amber); }
 .media-blend-fields { grid-template-columns: 1fr 1fr; }
 #lyrics { min-height: 150px; font-size: 14px; }
-.jev-prompt-label { font-size: 12px; font-weight: 700; }
-#jevPrompt { min-height: 60px; font-size: 13px; }
+.ai-prompt-label { font-size: 12px; font-weight: 700; }
+#aiPrompt { min-height: 60px; font-size: 13px; }
 .syntax { font-size: 12px; color: var(--muted); background: var(--raised); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
 .syntax code { font-family: var(--mono); color: var(--amber); }
 .syntax ul { margin: 0; padding-left: 16px; display: grid; gap: 3px; }
@@ -215,11 +215,11 @@ button.remove-media-cut:hover, button.remove-media-cut:focus-visible { color: #f
 .transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .transport .vol { display: inline-flex; align-items: center; gap: 4px; }
 .transport .vol input[type=range] { flex: 0 0 80px; width: 80px; }
-.jev-action { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.jev-guide { color: var(--cyan); font-size: 11px; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
-.jev-guide:hover { color: var(--text); }
-.easy-hero .jev-action { display: flex; }
-.easy-hero .jev-action button { flex: 1; }
+.ai-action { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.ai-guide { color: var(--cyan); font-size: 11px; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
+.ai-guide:hover { color: var(--text); }
+.easy-hero .ai-action { display: flex; }
+.easy-hero .ai-action button { flex: 1; }
 .transport .tc { font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }
 .duration-value { border: 0; background: transparent; padding: 2px 3px; color: var(--muted); cursor: text; white-space: nowrap; }
 .duration-value:hover, .duration-value:focus-visible { color: var(--amber); text-decoration: underline; }
@@ -545,9 +545,9 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(‘되돌리기’나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
-        <label class="jev-prompt-label" for="jevPrompt">Jevへの追加指示（任意）</label>
-        <textarea id="jevPrompt" rows="2" maxlength="1000" placeholder="例：夜の街のような静かな雰囲気。サビは大胆に。" aria-label="Jevへの追加指示"></textarea>
-        <div class="hint">「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。</div>
+        <label class="ai-prompt-label" for="aiPrompt">AI에게 추가 지시(선택)</label>
+        <textarea id="aiPrompt" rows="2" maxlength="1000" placeholder="예: 밤거리 같은 조용한 분위기. 사비는 대담하게." aria-label="AI에게 추가 지시"></textarea>
+        <div class="hint">'AI로 고르기'를 실행할 때만 가사와 함께 전송합니다. 기존 스타일·기법 중에서 고릅니다.</div>
         <div class="fields media-blend-fields">
           <label class="field">가사 합성 방식<select id="lyricBlend"><option value="normal">표준</option><option value="multiply">곱하기</option><option value="screen">스크린</option></select></label>
           <label class="field">가사 불투명도(%)<input id="lyricOpacity" type="number" min="0" max="100" step="1"></label>
@@ -640,7 +640,7 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
         </span>
         <button id="btnShuffle" class="accent" title="설정은 그대로 구조만 다시 뽑기(잠긴 행 유지)">셔플</button>
         <button id="btnOmakase" class="primary" title="스타일·분위기·연출·색 배합을 통째로 무작위(키 R)">자동</button>
-        <span class="jev-action"><button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></span>
+        <span class="ai-action"><button id="btnAiPick" title="PC에서 실행 중인 결정 모델(Laya·Kev·Tev1 등)이 가사에 맞는 분위기·스타일·행별 연출을 고릅니다">AI로 고르기(β)</button><a class="ai-guide" href="https://github.com/chynggi/JIZURA-KOR/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">가이드</a></span>
       </div>
       <div class="tl-bar">
         <span class="tl-hint muted">행 구분(위쪽 눈금)은 드래그로 옮길 수 있습니다. <span class="kbd">Shift</span>를 누르면 비트에 맞추지 않음</span>
@@ -662,8 +662,8 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
       <div id="easyPanel" class="easy" hidden>
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">자동으로 만들기</button>
-          <div class="jev-action"><button id="btnJevBig" class="primary">歌詞からJevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></div>
-          <p class="hint">Jevを使うと、歌詞を外部APIへ送ってスタイル・雰囲気・行ごとのレイアウトと動きを選びます。ローカルサーバーとAPIキーが必要です。</p>
+          <div class="ai-action"><button id="btnAiPickBig" class="primary">AI로 고르기(β)</button><a class="ai-guide" href="https://github.com/chynggi/JIZURA-KOR/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">가이드</a></div>
+          <p class="hint">AI로 고르기를 사용하면 가사를 이 PC에서 실행 중인 로컬 결정 서버로 보내 스타일·분위기·행별 레이아웃과 동작을 고릅니다. decision_server.py 실행이 필요합니다.</p>
           <p class="hint">누를 때마다 스타일·분위기·움직임·색 배합·구성이 통째로 바뀝니다. 키보드 <span class="kbd">R</span> 로도 실행할 수 있습니다.</p>
           <div class="hist-row">
             <button id="btnPrev2" class="ghost">◀ 이전 안</button>
@@ -838,8 +838,8 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
       <h3 id="termsForkTitle">字面 JIZURA（hirazi fork)</h3>
-      <p>이 사이트는 오리지널판을 기반으로 한 fork판입니다. Jev를 통한 구성 선정과 배경·전경 이미지·동영상 편집 기능 등을 추가했습니다.</p>
-      <p>일반적인 편집과 내보내기는 브라우저 안에서 처리합니다. 'Jev로 만들기'를 사용하는 경우, 가사와 선택적인 추가 지시를 로컬 서버를 통해 Jev API로 전송합니다. 곡의 음원 파일은 전송하지 않습니다.</p>
+      <p>이 사이트는 오리지널판을 기반으로 한 fork판입니다. AI로 고르기를 통한 구성 선정과 배경·전경 이미지·동영상 편집 기능 등을 추가했습니다.</p>
+      <p>일반적인 편집과 내보내기는 브라우저 안에서 처리합니다. 'AI로 고르기'를 사용하는 경우, 가사와 선택적인 추가 지시를 이 PC에서 실행 중인 로컬 결정 서버로 전송합니다. 곡의 음원 파일은 전송하지 않습니다.</p>
       <p>fork판 소스 코드: <a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>
@@ -3613,7 +3613,7 @@ J.defaultProject = () => ({
   title: '', artist: '',
   durationOverride: null,         // null = automatic; otherwise total video length in seconds
   lyrics: J.SAMPLE_LYRICS,
-  jevPrompt: '',
+  aiPrompt: '',
   style: 'noir', mood: null,
   extra: false,                   // random picks may use the parts added after the first version (追加分)
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
@@ -4657,7 +4657,7 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
 };
 })();
 
-/* Jev chooses from JIZURA's existing expression vocabulary. The API key stays on the local server. */
+/* 「AI로 고르기」: a decision model on this PC (decision_server.py) chooses from JIZURA's own vocabulary. */
 (() => {
 'use strict';
 
@@ -4669,14 +4669,13 @@ const CORE = {
 const criteria = (keys, table) => Object.fromEntries(keys.filter(k => table[k]).map(k => [k, `${table[k].name}${table[k].tags ? ' / ' + table[k].tags.join(', ') : ''}`]));
 const choice = (instructions, options) => ({ type: 'choice', instructions, criteria: options });
 const valid = (answer, options) => answer && answer.type === 'choice' && Object.hasOwn(options, answer.choice) ? answer.choice : null;
-const endpoint = () => location.origin === 'https://hirazisora.github.io'
-  ? 'http://127.0.0.1:8765/api/jev' : '/api/jev';
+J.decideEndpoint = (loc = location) => /^http:\/\/(127\.0\.0\.1|localhost):8765$/.test(loc.origin) ? '/api/decide' : 'http://127.0.0.1:8765/api/decide';
 
-J.jevSuggest = async (project, signal) => {
+J.decideSuggest = async (project, signal) => {
   const lines = J.parseLyrics(project.lyrics).lines;
-  if (!lines.length) throw new Error('歌詞を入力してください');
-  const userDirection = String(project.jevPrompt || '').trim().slice(0, 1000);
-  const directionRule = userDirection ? '歌詞とユーザーの追加指示の両方を考慮する。' : '歌詞を考慮する。';
+  if (!lines.length) throw new Error('가사를 입력하세요');
+  const userDirection = String(project.aiPrompt || '').trim().slice(0, 1000);
+  const directionRule = userDirection ? '가사와 사용자의 추가 지시를 모두 고려한다.' : '가사를 고려한다.';
   const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
   const allowed = (g, k) => !J.randomOk || J.randomOk(project, g, k);
   const styleOptions = Object.fromEntries(J.STYLE_ORDER.filter(k => allowed('style', k)).map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
@@ -4687,12 +4686,12 @@ J.jevSuggest = async (project, signal) => {
     const batch = lines.slice(start, start + 12);
     const questions = {};
     if (start === 0) {
-      questions.mood = choice(`${directionRule} 歌詞全体に最も合う映像の雰囲気を選ぶ。`, moodOptions);
-      questions.style = choice(`${directionRule} 歌詞全体に最も合う文字PVの配色と書体のスタイルを選ぶ。`, styleOptions);
+      questions.mood = choice(`${directionRule} 가사 전체에 가장 어울리는 영상 분위기를 고른다.`, moodOptions);
+      questions.style = choice(`${directionRule} 가사 전체에 가장 어울리는 문자 PV 배색·서체 스타일을 고른다.`, styleOptions);
     }
     batch.forEach((line, i) => {
       const n = start + i;
-      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`${directionRule} 行 ${n + 1} に合う${{ layout: '文字レイアウト', enter: '登場の動き', exit: '退場の動き' }[g]}を選ぶ。`, options[g]);
+      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`${directionRule} 행 ${n + 1}에 어울리는 ${{ layout: '문자 레이아웃', enter: '등장 동작', exit: '퇴장 동작' }[g]}을 고른다.`, options[g]);
     });
     const state = {
       title: (project.title || '').slice(0, 120),
@@ -4705,17 +4704,17 @@ J.jevSuggest = async (project, signal) => {
     };
     let response;
     try {
-      response = await fetch(endpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state, questions }), signal });
+      response = await fetch(J.decideEndpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state, questions }), signal });
     } catch (error) {
-      throw new Error('Jev ローカルサーバーに接続できません。起動状態とブラウザのローカルネットワーク許可を確認してください');
+      throw new Error('로컬 결정 서버에 연결할 수 없습니다. decision_server.py가 실행 중인지, 브라우저의 로컬 네트워크 접근 허용을 확인하세요');
     }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || `Jev API: HTTP ${response.status}`);
+    if (!response.ok) throw new Error(data.error || `결정 서버: HTTP ${response.status}`);
     const answers = data.answers || {};
     if (start === 0) {
       selections.mood = valid(answers.mood, moodOptions);
       selections.style = valid(answers.style, styleOptions);
-      if (!selections.mood || !selections.style) throw new Error('Jev のスタイル選定結果を確認できませんでした');
+      if (!selections.mood || !selections.style) throw new Error('분위기·스타일 선택 결과를 확인하지 못했습니다');
     }
     batch.forEach((line, i) => {
       const n = start + i, picked = {};
@@ -4729,13 +4728,12 @@ J.jevSuggest = async (project, signal) => {
   return selections;
 };
 
-J.applyJev = (project, selections, rnd = Math.random) => {
+J.applyDecide = (project, selections, rnd = Math.random) => {
   const look = J.omakase(project, rnd, selections);
   const overrides = look.overrides;
   for (const [index, picks] of Object.entries(selections.lines || {})) {
     if (overrides[index] && overrides[index].lock) continue;
-    overrides[index] = Object.assign({}, overrides[index] && overrides[index].area ? { area: overrides[index].area } : {},
-      Object.fromEntries(Object.entries(picks).filter(([g, key]) => CORE[g] && CORE[g].includes(key) && J.registry(g)[key] && (!J.randomOk || J.randomOk(project, g, key)))));
+    overrides[index] = Object.assign({}, overrides[index], picks);
   }
   return look;
 };
@@ -31217,6 +31215,7 @@ function mergeProject(p) {
   const en = J.defaultProject().enabled;
   for (const g of Object.keys(en)) en[g] = Object.assign(en[g], ((p && p.enabled) || {})[g] || {});
   o.enabled = en;
+  o.aiPrompt = String((p && (p.aiPrompt ?? p.jevPrompt)) || ''); delete o.jevPrompt;
   o.overrides = (p && p.overrides) || {};
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
@@ -32698,29 +32697,29 @@ function omakase() {
   toast(`자동: ${J.STYLES[r.style].name} × ${J.MOODS[r.mood].name}`, r.colors.accentOn ? [r.colors.accent, r.colors.ghostA, r.colors.ghostB] : null);
   restartPreview();
 }
-let jevBusy = false;
-async function jevOmakase() {
-  if (jevBusy || S.exporting || S.tap) return;
-  jevBusy = true;
-  ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = true; });
-  showMsg('Jev が歌詞と演出を選定中…');
+let aiBusy = false;
+async function aiPick() {
+  if (aiBusy || S.exporting || S.tap) return;
+  aiBusy = true;
+  ['btnAiPick', 'btnAiPickBig'].forEach(id => { $(id).disabled = true; });
+  showMsg('AI가 가사에 맞는 연출을 고르는 중…');
   try {
-    const lyrics = S.project.lyrics, jevPrompt = S.project.jevPrompt;
-    const selected = await J.jevSuggest(S.project);
-    if (S.project.lyrics !== lyrics || S.project.jevPrompt !== jevPrompt) throw new Error('選定中に歌詞か追加指示が変わりました。もう一度実行してください');
+    const lyrics = S.project.lyrics, aiPrompt = S.project.aiPrompt;
+    const selected = await J.decideSuggest(S.project);
+    if (S.project.lyrics !== lyrics || S.project.aiPrompt !== aiPrompt) throw new Error('고르는 동안 가사나 추가 지시가 바뀌었습니다. 다시 실행하세요');
     remember();
-    const look = J.applyJev(S.project, selected);
+    const look = J.applyDecide(S.project, selected);
     Object.assign(S.project, look);
     fontKey = ''; syncUI(); replan(); commit();
-    toast(`Jev：${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
+    toast(`AI로 고르기: ${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
     restartPreview();
   } catch (e) {
-    toast(`Jev：${e.message || e}`);
+    toast(`AI로 고르기: ${e.message || e}`);
     console.error(e);
   } finally {
     showMsg(null);
-    jevBusy = false;
-    ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = false; });
+    aiBusy = false;
+    ['btnAiPick', 'btnAiPickBig'].forEach(id => { $(id).disabled = false; });
   }
 }
 // change just one aspect of the current look
@@ -33296,7 +33295,7 @@ function updateTap() {
 function syncUI() {
   $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
   $('lyrics').value = S.project.lyrics;
-  $('jevPrompt').value = S.project.jevPrompt || '';
+  $('aiPrompt').value = S.project.aiPrompt || '';
   $('bpm').value = S.project.timing.bpm > 0 ? S.project.timing.bpm : '';
   $('bpm').placeholder = S.audio ? `자동 ${S.audio.bpm}` : '없음';
   $('offset').value = S.project.timing.offset ?? 0.4;
@@ -33388,7 +33387,7 @@ function bind() {
     if (changedCount) { clearTimeout(replanTimer); replan(); }
     else replanSoon(260);
   });
-  $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; markUndoGroup('jevPrompt'); autosave(); });
+  $('aiPrompt').addEventListener('input', e => { S.project.aiPrompt = e.target.value; markUndoGroup('aiPrompt'); autosave(); });
   $('lyricLang').addEventListener('change', e => {
     remember();
     S.project.lang = e.target.value; replan(); renderFontRoles(); commit(); flushSave();
@@ -33694,8 +33693,8 @@ function bind() {
   $('modePro').addEventListener('click', () => setMode('pro'));
   $('btnOmakase').addEventListener('click', omakase);
   $('btnOmakaseBig').addEventListener('click', omakase);
-  $('btnJev').addEventListener('click', jevOmakase);
-  $('btnJevBig').addEventListener('click', jevOmakase);
+  $('btnAiPick').addEventListener('click', aiPick);
+  $('btnAiPickBig').addEventListener('click', aiPick);
   ['btnPrev', 'btnPrev2'].forEach(id => $(id).addEventListener('click', () => histGo(-1)));
   ['btnNext', 'btnNext2'].forEach(id => $(id).addEventListener('click', () => histGo(1)));
   $('eStyle').addEventListener('click', () => rerollPart('style'));
