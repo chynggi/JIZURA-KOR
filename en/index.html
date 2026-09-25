@@ -481,7 +481,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         <div class="sec-h"><h2 id="mediaPaneTitle">Background</h2><label class="file">New<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
         <p class="hint">Drop images or videos here, or use Add to select files. Files are stored in this browser.</p>
         <div id="mediaList" class="media-list"></div>
-        <label class="check"><input id="mediaRandom" type="checkbox"><span>Shuffle order</span></label>
+        <label class="check"><input id="mediaRandom" type="checkbox"><span>Shuffle order<small>Blank and locked cuts are preserved. Turn this off to select files per cut.</small></span></label>
         <label class="check"><input id="mediaLoop" type="checkbox"><span>Loop cuts<small>Repeat the files in order and create more cuts than files.</small></span></label>
         <label class="field" id="mediaCutCountField" hidden>Number of cuts<input id="mediaCutCount" type="number" min="0" max="1000" step="1" inputmode="numeric"></label>
         <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
@@ -4116,11 +4116,19 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   const fixedDuration = Number.isFinite(+project.durationOverride) && +project.durationOverride > 0 ? +project.durationOverride : null;
   const count = m.manualCuts ? m.cutCount : items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
   const order = J.mediaOrder(project, layer);
-  const itemAt = i => {
+  const baseItems = Array.from({ length: count }, (_, i) => {
     const assigned = m.cutOverrides[i];
     if (assigned && Object.hasOwn(assigned, 'itemId')) return items.find(item => item.id === assigned.itemId) || null;
-    return order.length ? order[i % order.length] : null;
-  };
+    return items.length ? items[i % items.length] : null;
+  });
+  let randomIndex = 0;
+  const displayItems = baseItems.map((item, i) => {
+    if (!item) return null; // Explicit blank cuts never consume a shuffled slot.
+    const ov = Object.assign({}, m.overrides[item.id] || {}, m.cutOverrides[i] || {});
+    if (ov.lock) return items.find(x => x.id === (ov.lockedItemId || item.id)) || null;
+    return m.randomOrder && order.length ? order[randomIndex++ % order.length] : item;
+  });
+  const itemAt = i => displayItems[i];
   const videoDurationAt = i => {
     const item = itemAt(i);
     const setting = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {}).videoDuration;
@@ -4154,7 +4162,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
     const rng = J.rng(seed), reroll = ov.seed != null;
     const videoDuration = videoDurationAt(i);
     const nextStart = i + 1 < count ? starts[i + 1] : duration;
-    return { index: i, itemId: item ? item.id : null, name: item ? item.name : 'No image', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
+    return { index: i, itemId: item ? item.id : null, sourceItemId: baseItems[i]?.id || null, name: item ? item.name : 'No image', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
       layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
@@ -30784,7 +30792,7 @@ function rerollMediaCut(layer, index) {
 function toggleMediaCutLock(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode }, layer);
+  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
   replan();
 }
 function performTimelineAction(control) {
@@ -31296,8 +31304,8 @@ function syncSourceTab() {
   $('lyricBlend').value = S.project.media.blend;
   $('lyricOpacity').value = S.project.media.opacity;
   $('linesInfo').textContent = media ? `${m.items.length}files / ${S.plan[layer].cuts.length}cuts` : `${S.plan.lines.length} lines / ${S.plan.cuts.length} cuts`;
-  $('mediaRandom').disabled = !media || m.items.length < 2 || m.manualCuts;
-  $('mediaRandom').title = media && m.manualCuts ? 'Choose a file for each manually added cut' : '';
+  $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
+  $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上Newすると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
   $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
 }
@@ -31317,7 +31325,7 @@ function renderMediaList() {
     row.querySelector('button').addEventListener('click', () => {
       freezeMediaCuts(layer);
       m.items.splice(i, 1);
-      for (const cut of S.plan[layer].cuts) if (cut.itemId === item.id) mediaOv(cut.index, { itemId: null }, layer);
+      for (const cut of S.plan[layer].cuts) if (cut.sourceItemId === item.id || m.cutOverrides[cut.index]?.lockedItemId === item.id) mediaOv(cut.index, { itemId: null, lockedItemId: undefined }, layer);
       delete m.overrides[item.id];
       // Keep the file until this session's undo history is no longer available.
       queueMediaDeletion(item.id);
@@ -31340,7 +31348,7 @@ function mediaOv(index, patch, layer = activeMediaLayer() || 'media') {
 }
 function freezeMediaCuts(layer) {
   const m = S.project[layer], cuts = S.plan[layer].cuts;
-  cuts.forEach((cut, i) => { m.cutOverrides[i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.itemId }); });
+  cuts.forEach((cut, i) => { m.cutOverrides[i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId }); });
   m.manualCuts = true;
   m.cutCount = cuts.length;
 }
@@ -31350,7 +31358,7 @@ function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   const starts = cuts.map(cut => cut.start);
   const overrides = {};
   cuts.forEach((cut, i) => {
-    overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.itemId });
+    overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId });
   });
   overrides[index] = { itemId: null };
   let start;
@@ -31383,7 +31391,7 @@ function removeMediaCut(index, layer = activeMediaLayer() || 'media') {
   cuts.forEach((cut, oldIndex) => {
     if (oldIndex === index) return;
     const newIndex = oldIndex > index ? oldIndex - 1 : oldIndex;
-    overrides[newIndex] = Object.assign({}, m.cutOverrides[oldIndex] || {}, { itemId: cut.itemId });
+    overrides[newIndex] = Object.assign({}, m.cutOverrides[oldIndex] || {}, { itemId: cut.sourceItemId });
     times[newIndex] = +cut.start.toFixed(3);
   });
   m.manualCuts = true;
@@ -31439,7 +31447,7 @@ function renderMediaLines() {
   S.plan[layer].cuts.forEach((cut, i) => {
     addButton(i);
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
-    const fileSelect = `<select class="media-cut-file" aria-label="File for cut ${i + 1}"><option value="">No image</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
+    const fileSelect = `<select class="media-cut-file" ${m.randomOrder ? `disabled title="${J.mediaLabel('素材を指定するにはRandom順をオフにしてください', 'Turn off random order to select a file')}"` : ''} aria-label="File for cut ${i + 1}"><option value="">No image</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (ov[key] === undefined) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
@@ -31866,8 +31874,7 @@ function tapNow() {
     const m = S.project[S.tap.layer];
     if (i === 0) { m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true; }
     m.cutCount = i + 1;
-    const order = J.mediaOrder(S.project, S.tap.layer);
-    m.cutOverrides[i] = { itemId: order.length ? order[i % order.length].id : null };
+    m.cutOverrides[i] = { itemId: m.items.length ? m.items[i % m.items.length].id : null };
     m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();

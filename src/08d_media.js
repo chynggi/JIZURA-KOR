@@ -83,11 +83,19 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   const fixedDuration = Number.isFinite(+project.durationOverride) && +project.durationOverride > 0 ? +project.durationOverride : null;
   const count = m.manualCuts ? m.cutCount : items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
   const order = J.mediaOrder(project, layer);
-  const itemAt = i => {
+  const baseItems = Array.from({ length: count }, (_, i) => {
     const assigned = m.cutOverrides[i];
     if (assigned && Object.hasOwn(assigned, 'itemId')) return items.find(item => item.id === assigned.itemId) || null;
-    return order.length ? order[i % order.length] : null;
-  };
+    return items.length ? items[i % items.length] : null;
+  });
+  let randomIndex = 0;
+  const displayItems = baseItems.map((item, i) => {
+    if (!item) return null; // Explicit blank cuts never consume a shuffled slot.
+    const ov = Object.assign({}, m.overrides[item.id] || {}, m.cutOverrides[i] || {});
+    if (ov.lock) return items.find(x => x.id === (ov.lockedItemId || item.id)) || null;
+    return m.randomOrder && order.length ? order[randomIndex++ % order.length] : item;
+  });
+  const itemAt = i => displayItems[i];
   const videoDurationAt = i => {
     const item = itemAt(i);
     const setting = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {}).videoDuration;
@@ -121,7 +129,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
     const rng = J.rng(seed), reroll = ov.seed != null;
     const videoDuration = videoDurationAt(i);
     const nextStart = i + 1 < count ? starts[i + 1] : duration;
-    return { index: i, itemId: item ? item.id : null, name: item ? item.name : '画像無し', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
+    return { index: i, itemId: item ? item.id : null, sourceItemId: baseItems[i]?.id || null, name: item ? item.name : '画像無し', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
       layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),

@@ -310,6 +310,7 @@ def replace_copy(source, glossary):
 # Fork UI text is translated before the original glossary so short common
 # words such as 歌詞 and 追加 cannot split a longer fork label in half.
 FORK_BODY = {
+    '空カット・ロック済みカットは維持します。素材の個別指定はオフにすると使えます。': 'Blank and locked cuts are preserved. Turn this off to select files per cut.',
     'タイムラインを縮小': 'Zoom timeline out', 'タイムラインを拡大': 'Zoom timeline in',
     '動画サイズ': 'Video size', '画面比と解像度から指定': 'Use aspect ratio and resolution',
     '自由入力': 'Custom size', '幅（px）': 'Width (px)', '高さ（px）': 'Height (px)',

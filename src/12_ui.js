@@ -470,7 +470,7 @@ function rerollMediaCut(layer, index) {
 function toggleMediaCutLock(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode }, layer);
+  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
   replan();
 }
 function performTimelineAction(control) {
@@ -982,8 +982,8 @@ function syncSourceTab() {
   $('lyricBlend').value = S.project.media.blend;
   $('lyricOpacity').value = S.project.media.opacity;
   $('linesInfo').textContent = media ? `${m.items.length}素材 / ${S.plan[layer].cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
-  $('mediaRandom').disabled = !media || m.items.length < 2 || m.manualCuts;
-  $('mediaRandom').title = media && m.manualCuts ? '手動で追加したカットでは素材を個別に指定します' : '';
+  $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
+  $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
   $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
 }
@@ -1003,7 +1003,7 @@ function renderMediaList() {
     row.querySelector('button').addEventListener('click', () => {
       freezeMediaCuts(layer);
       m.items.splice(i, 1);
-      for (const cut of S.plan[layer].cuts) if (cut.itemId === item.id) mediaOv(cut.index, { itemId: null }, layer);
+      for (const cut of S.plan[layer].cuts) if (cut.sourceItemId === item.id || m.cutOverrides[cut.index]?.lockedItemId === item.id) mediaOv(cut.index, { itemId: null, lockedItemId: undefined }, layer);
       delete m.overrides[item.id];
       // Keep the file until this session's undo history is no longer available.
       queueMediaDeletion(item.id);
@@ -1026,7 +1026,7 @@ function mediaOv(index, patch, layer = activeMediaLayer() || 'media') {
 }
 function freezeMediaCuts(layer) {
   const m = S.project[layer], cuts = S.plan[layer].cuts;
-  cuts.forEach((cut, i) => { m.cutOverrides[i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.itemId }); });
+  cuts.forEach((cut, i) => { m.cutOverrides[i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId }); });
   m.manualCuts = true;
   m.cutCount = cuts.length;
 }
@@ -1036,7 +1036,7 @@ function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   const starts = cuts.map(cut => cut.start);
   const overrides = {};
   cuts.forEach((cut, i) => {
-    overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.itemId });
+    overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId });
   });
   overrides[index] = { itemId: null };
   let start;
@@ -1069,7 +1069,7 @@ function removeMediaCut(index, layer = activeMediaLayer() || 'media') {
   cuts.forEach((cut, oldIndex) => {
     if (oldIndex === index) return;
     const newIndex = oldIndex > index ? oldIndex - 1 : oldIndex;
-    overrides[newIndex] = Object.assign({}, m.cutOverrides[oldIndex] || {}, { itemId: cut.itemId });
+    overrides[newIndex] = Object.assign({}, m.cutOverrides[oldIndex] || {}, { itemId: cut.sourceItemId });
     times[newIndex] = +cut.start.toFixed(3);
   });
   m.manualCuts = true;
@@ -1125,7 +1125,7 @@ function renderMediaLines() {
   S.plan[layer].cuts.forEach((cut, i) => {
     addButton(i);
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
-    const fileSelect = `<select class="media-cut-file" aria-label="${i + 1}カット目の素材"><option value="">画像無し</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
+    const fileSelect = `<select class="media-cut-file" ${m.randomOrder ? `disabled title="${J.mediaLabel('素材を指定するにはランダム順をオフにしてください', 'Turn off random order to select a file')}"` : ''} aria-label="${i + 1}カット目の素材"><option value="">画像無し</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (ov[key] === undefined) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
@@ -1552,8 +1552,7 @@ function tapNow() {
     const m = S.project[S.tap.layer];
     if (i === 0) { m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true; }
     m.cutCount = i + 1;
-    const order = J.mediaOrder(S.project, S.tap.layer);
-    m.cutOverrides[i] = { itemId: order.length ? order[i % order.length].id : null };
+    m.cutOverrides[i] = { itemId: m.items.length ? m.items[i % m.items.length].id : null };
     m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();

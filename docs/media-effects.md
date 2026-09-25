@@ -10,6 +10,8 @@
 
 「画像・動画をシャッフル」は両レイヤーを再抽選します。通常のシャッフルでも自動の素材カットを再抽選します。明示的に選んだ手法・演出無し・ロックしたカットは維持されます。各カットのサイコロは、そのカットを自動へ切り替えて再抽選します。
 
+「ランダム順で表示」は、素材が2つ以上あれば、カット追加・削除やタップ同期の後も使えます。オンの間は素材一覧からランダムな順で割り当て、繰り返し表示します。空カットとロックしたカットは維持します。素材の個別指定はオフにすると再び使え、元の割り当てに戻ります。
+
 旧プロジェクトで個別指定した6項目は「従来の設定」として維持します。別の手法を選ぶと新しい設定が優先されます。配置・サイズは、手動設定がなければ演出に合わせて自動選定され、シャッフルで変化します。縦横比を保ったまま、中央・左右・上下・四隅などの構図とサイズを選びます。手動配置とロック済みの配置は維持されます。「自動配置に戻す」で再び自動選定できます。詳細の「配置・サイズにも自動で変化を付ける」をオフにすると中央の全体表示に戻ります（手動配置・ロックを除く）。演出無しと従来の設定は従来通りの配置です。動画ループ、クロマキー、開始時刻は手法とは独立しています。つなぎは隣接する素材カットがある場合に適用されます。
 
 ## 追加バリエーション（第2弾）
@@ -34,3 +36,5 @@ Choose **No effects**, **Auto**, or a named technique on each foreground/backgro
 **Shuffle media** rerolls automatic cuts in both layers. Explicit selections and locked cuts are preserved. A cut's dice button switches it to Auto and rerolls it. Existing projects keep their individual settings as **Legacy settings** until a new technique is selected. With automatic placement enabled, effect cuts without manual placement vary their position and size on shuffle, preserving the source aspect ratio. Manual placement and locked cuts stay fixed. Use Reset automatic placement to return a manually placed cut to automatic composition. Disable Vary position and size automatically in Details to keep automatic cuts centered at full fit. No effects and Legacy settings retain their original framing. Video looping, chroma key, and timing remain independent of technique selection. Transitions apply between adjacent media cuts.
 
 The second pack adds 33 techniques: 8 camera/motion variations, 10 masks/reveals, 10 panel/echo effects, and 5 color/texture treatments. Per-cut choices are grouped by category. New effects support transparent assets and live video frames; selection is deterministic for the same seed.
+
+Random order remains available after adding/removing cuts or tap sync when at least two files are uploaded. While enabled, media is assigned in a seeded shuffled cycle; blank and locked cuts are preserved. Turn it off to restore the underlying assignments and select files individually.
