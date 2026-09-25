@@ -1,10 +1,12 @@
 """Browser checks for the absorbed fork features. Serves the repo root on 8766 itself.
 usage: dev/.venv/bin/python dev/absorb_ui_test.py"""
-import asyncio, base64, contextlib, http.server, json, os, threading
+import asyncio, base64, contextlib, http.server, json, os, re, threading
 from functools import partial
 from playwright.async_api import async_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')
+# 로컬 글꼴 가져오기 단언용: Windows 전용 C:/Windows/Fonts/arial.ttf 대신 이 환경의 실제 ttf를 쓴다
+LOCAL_TTF = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 
 @contextlib.contextmanager
 def serve(port=8766):
@@ -230,7 +232,126 @@ http.server.HTTPServer(("127.0.0.1", 8799), H).serve_forever()
         try: os.remove(capture_path)
         except OSError: pass
 
-TESTS = [test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end]
+async def test_fork_features(b, url):
+    # hirazisora/main:dev/new_features_test.cjs 이식. en/ 로케일은 재빌드하지 않으므로 루트 index.html만 검사한다.
+    # Windows Edge 전제(executablePath, C:/... 경로)는 걷어내고 이 환경의 기본 Chromium과 실제 ttf를 쓴다.
+    def svg_img(name):
+        return {'name': name, 'mimeType': 'image/svg+xml',
+                'buffer': b'<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="red"/></svg>'}
+
+    pg = await b.new_page(viewport={'width': 1400, 'height': 950})
+    errs = []
+    pg.on('pageerror', lambda e: errs.append(str(e)))
+    # 첫 방문 투어가 클릭을 삼키지 않게 미리 본 것으로 표시(open_app과 동일한 처리)
+    await pg.add_init_script("try { localStorage.setItem('jizura.tourDone', '1'); } catch (e) {}")
+    await pg.add_init_script(
+        "window.queryLocalFonts = async () => [{ family: 'Arial', fullName: 'Arial Regular', "
+        "postscriptName: 'ArialMT', style: 'Regular' }];")
+    await pg.goto(url)
+    await pg.wait_for_function('window.J && J.ui && J.ui.project')
+
+    await pg.locator('#modePro').click()
+    await pg.locator('[data-tab="out"]').click()
+    await pg.locator('#outVideoSize').select_option('1080x1920')
+    assert await pg.evaluate('J.outputSize(J.ui.project)') == [1080, 1920]
+    assert await pg.locator('#eVideoSize').input_value() == '1080x1920'
+    await pg.locator('#outVideoSize').select_option('custom')
+    await pg.locator('#outVideoWidth').fill('1500'); await pg.locator('#outVideoWidth').dispatch_event('change')
+    await pg.locator('#outVideoHeight').fill('900'); await pg.locator('#outVideoHeight').dispatch_event('change')
+    assert await pg.evaluate('J.outputSize(J.ui.project)') == [1500, 900]
+    assert await pg.locator('#outVideoSize').input_value() == 'custom'
+
+    await pg.locator('#timelineZoomIn').click(); await pg.locator('#timelineZoomIn').click()
+    widths = await pg.evaluate(
+        "() => [document.querySelector('#timelineScroll').clientWidth, document.querySelector('#timelineStack').clientWidth]")
+    assert widths[1] > widths[0] * 2, f'timeline width: {widths}'
+
+    await pg.locator('[data-tab="style"]').click()
+    # 포크는 /Noto Sans JP/를 직접 단언했다. 한글판은 샘플 가사(기본 프로젝트)가 한글이라 언어 자동판정이
+    # 'ko'가 되고, #fontRoles는 그 언어에서 실제로 쓰이는 얼굴(J.faceOf)을 보여준다 — 이 경우 Noto Sans KR.
+    # J.FONTS.gothic_bold(카탈로그 원본, 여전히 "Noto Sans JP")가 아니라 J.faceOf 결과를 읽어 비교한다.
+    expected_family = await pg.evaluate("J.faceOf('gothic_bold').family.replace(/\"/g, '')")
+    style_family = await pg.locator('#fontRoles option[value="gothic_bold"]').first.evaluate('el => el.style.fontFamily')
+    assert expected_family in style_family, (expected_family, style_family)
+    await pg.locator('#btnListFonts').click()
+    assert await pg.locator('#installedFonts option').count() == 1
+    await pg.locator('#btnImportFont').click()
+    labels = await pg.locator('#fontRoles option').all_text_contents()
+    assert any('Arial' in label for label in labels), labels
+
+    await pg.locator('#compositeName').fill('Mixed test')
+    await pg.locator('#compositeBase').select_option('gothic_bold')
+    # 가져온 PC 글꼴의 실제 키(local_ + 16진수)를 하드코딩 대신 페이지에서 직접 읽는다(생성 규칙은 원본과 동일)
+    latin_key = await pg.evaluate("Object.keys(J.FONTS).find(k => J.FONTS[k].label === 'Arial Regular')")
+    assert latin_key and latin_key.startswith('local_'), latin_key
+    await pg.locator('#compositeParts [data-part="latin"]').select_option(latin_key)
+    await pg.locator('#btnSaveComposite').click()
+    composite = await pg.evaluate('''() => {
+      const def = J.ui.project.compositeFonts[0];
+      return { name: def.name, latin: J.fontForChar(def.key, 'A'), kana: J.fontForChar(def.key, '\u3042'),
+               punctuation: J.compositeCategory('\u30fb'), gaiji: J.compositeCategory('\ue000'),
+               size: J.outputSize(J.ui.project), role: J.plan(J.ui.project, null).style.fonts.display[0],
+               css: J.fontCSS(def.key, 40, 'A') };
+    }''')
+    assert composite['name'] == 'Mixed test', composite
+    assert composite['latin'] == latin_key, composite
+    assert composite['kana'] == 'gothic_bold', composite
+    assert composite['punctuation'] == 'punctuation', composite
+    assert composite['gaiji'] == 'gaiji', composite
+    assert composite['role'].startswith('composite_'), composite
+    assert 'Arial' in composite['css'], composite
+    assert composite['size'] == [1500, 900], composite
+
+    await pg.locator('#fontFile').set_input_files(LOCAL_TTF)
+    await pg.wait_for_function('() => J.ui.project.userFonts.some(font => font.file)')
+    ttf_base = os.path.splitext(os.path.basename(LOCAL_TTF))[0]
+    expected_uf_family = 'UF_' + re.sub(r'[^\w]', '_', ttf_base)
+    await pg.evaluate('J.uiApi.flushSave()')
+    await pg.reload()
+    await pg.wait_for_function('window.J && J.ui && J.ui.project')
+    assert await pg.locator('#compositeList .composite-saved').count() == 1
+    assert await pg.evaluate('J.outputSize(J.ui.project)') == [1500, 900]
+    await pg.wait_for_function(
+        "(fam) => [...document.fonts].some(face => face.family === fam)", arg=expected_uf_family)
+
+    await pg.locator('#sourceMedia').click()
+    await pg.locator('#mediaFiles').set_input_files([svg_img('one.svg'), svg_img('two.svg'), svg_img('three.svg')])
+    await pg.locator('#mediaRandom').check(); await pg.locator('#mediaLoop').check(); await pg.locator('#btnTap').click()
+    for i in range(5):
+        await pg.evaluate("(t) => { J.ui.t = t; document.querySelector('#tapBtn').click(); }", i + 0.3)
+    order_ok = await pg.evaluate('''() => {
+      const order = J.mediaOrder(J.ui.project, 'media').map(item => item.id);
+      return J.ui.plan.media.cuts.map((cut, index) => cut.itemId === order[index % order.length]);
+    }''')
+    assert order_ok == [True] * 5, order_ok
+    await pg.locator('#tapStop').click()
+
+    await pg.locator('.foreground-placement-open').first.click()
+    await pg.evaluate('''() => {
+      const el = document.querySelector('#areaEditOverlay'), rect = document.querySelector('#areaEditRect').getBoundingClientRect();
+      el.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: rect.x + rect.width / 2, clientY: rect.y + 3 }));
+    }''')
+    rotation_cursor = await pg.locator('#areaEditOverlay').evaluate(
+        "el => ({ inline: el.style.cursor, computed: getComputedStyle(el).cursor, rect: document.querySelector('#areaEditRect').style.cursor })")
+    assert re.search(r'data:image/svg\+xml', rotation_cursor['computed']), rotation_cursor
+    await pg.locator('#areaCancel').click()
+
+    await pg.locator('#sourceForeground').click()
+    await pg.locator('#mediaFiles').set_input_files([svg_img('front-one.svg'), svg_img('front-two.svg')])
+    await pg.locator('#mediaLoop').check(); await pg.locator('#btnTap').click()
+    for i in range(3):
+        await pg.evaluate("(t) => { J.ui.t = t; document.querySelector('#tapBtn').click(); }", i + 0.4)
+    order_ok2 = await pg.evaluate('''() => {
+      const order = J.mediaOrder(J.ui.project, 'foreground').map(item => item.id);
+      return J.ui.plan.foreground.cuts.map((cut, index) => cut.itemId === order[index % order.length]);
+    }''')
+    assert order_ok2 == [True] * 3, order_ok2
+    await pg.locator('#tapStop').click()
+
+    assert not errs, errs
+    await pg.close()
+
+TESTS = [test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end, test_fork_features]
 async def main():
     with serve() as url:
         async with async_playwright() as p:
