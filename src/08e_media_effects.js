@@ -58,6 +58,15 @@ J.mediaEffectSettings = (p, layer = 'media') => {
   settings.enabled = settings.enabled && typeof settings.enabled === 'object' ? Object.assign({}, settings.enabled) : {};
   return settings;
 };
+J.randomMediaEffectSettings = (project, layer, rnd = Math.random) => {
+  const settings = J.mediaEffectSettings(project, layer), keys = Object.keys(J.MEDIA_TECH);
+  settings.enabled = Object.fromEntries(keys.map(key => [key, rnd() < .55]));
+  // Keep a usable pool even for an unlucky draw, while still producing a subset.
+  const pick = () => keys[Math.floor(rnd() * keys.length)];
+  if (keys.length && !keys.some(key => settings.enabled[key])) settings.enabled[pick()] = true;
+  if (keys.length > 1 && keys.every(key => settings.enabled[key])) settings.enabled[pick()] = false;
+  return settings;
+};
 J.mediaTechnique = (project, ov, rng, layer = 'media') => {
   const settings = J.mediaEffectSettings(project, layer);
   // Untouched cuts retain the previous instant/still default. Explicit Auto is null.

@@ -30,6 +30,7 @@ const assert = require('node:assert/strict');
         await page.locator('.media-technique').selectOption('');
         await page.locator(`#${layer}EffectsPanel [data-media-action="disable"]`).click();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'none');
+        await page.locator(`#${layer}EffectsPanel details`).filter({has:page.locator('[data-media-tech="pixelScatter"]')}).locator('summary').click();
         await page.locator(`#${layer}EffectsPanel [data-media-tech="pixelScatter"]`).check();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'pixelScatter');
         await page.locator(`#${layer}EffectsPanel [data-media-action="enable"]`).click();

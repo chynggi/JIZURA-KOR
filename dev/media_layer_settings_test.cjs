@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
     for (const locale of ['', 'en/']) {
       const page = await browser.newPage({viewport:{width:1500,height:1000}}), errors = [];
       page.on('pageerror', e => errors.push(e.message));
+      await page.route('https://fonts.googleapis.com/**', route => route.fulfill({contentType:'text/css',body:''}));
       await page.goto('http://127.0.0.1:8765/' + locale);
       await page.locator('#modePro').click();
       for (const layer of ['foreground','media']) {
@@ -47,6 +48,24 @@ const assert = require('node:assert/strict');
         assert.equal(await panel.isVisible(), true);
         assert.equal(await page.locator(`#${other}EffectsPanel`).isVisible(), false);
         assert.equal(await panel.locator('[data-media-tech]').count(), 80);
+        assert.equal(await panel.locator('details[data-media-group]').count(),6);
+        assert.equal(await panel.locator('details[open]').count(),0,'categories initially collapse independently per layer');
+        assert.equal(await panel.locator('[data-media-tech]').first().isVisible(),false);
+        const cinema = panel.locator('[data-media-group="cinema"]'), total = await cinema.locator('[data-media-tech]').count();
+        await cinema.locator('summary').click();
+        await cinema.locator('[data-media-group-action="on"]').click();
+        assert.equal(await cinema.locator('.tg-cnt').innerText(),`${total}/${total}`);
+        assert.equal(await cinema.locator('[data-media-tech]:checked').count(),total);
+        await cinema.locator('[data-media-group-action="flip"]').click();
+        assert.equal(await cinema.locator('.tg-cnt').innerText(),`0/${total}`);
+        await cinema.locator('[data-media-tech]').first().check();
+        assert.equal(await cinema.locator('.tg-cnt').innerText(),`1/${total}`);
+        await cinema.locator('[data-media-group-action="off"]').click();
+        assert.equal(await cinema.evaluate(el=>el.open),true,'bulk edits keep the category expanded');
+        await cinema.locator('summary').click();
+        assert.equal(await panel.locator('[data-media-tech]').first().isVisible(),false);
+        assert.deepEqual(await snapshot(other),untouched,'category actions must stay local to the tab');
+        if(locale) assert.doesNotMatch(await panel.locator('summary').allTextContents().then(text=>text.join(' ')),/[\u3040-\u30ff\u4e00-\u9fff]/);
         const values = layer === 'foreground' ? {motion:1.6,treatment:.8,duration:.25} : {motion:.3,treatment:.1,duration:1.2};
         for (const [key,value] of Object.entries(values)) {
           await panel.locator(`[data-media-setting="${key}"]`).evaluate((el,value) => {el.value = value; el.dispatchEvent(new Event('input',{bubbles:true}));}, String(value));
@@ -59,6 +78,7 @@ const assert = require('node:assert/strict');
         await panel.locator('[data-media-action="disable"]').click();
         assert.ok((await snapshot(layer)).cuts.every(c => c.technique === 'none'));
         const technique = layer === 'foreground' ? 'pixelScatter' : 'pushIn';
+        await panel.locator('details').filter({has:page.locator(`[data-media-tech="${technique}"]`)}).locator('summary').click();
         await panel.locator(`[data-media-tech="${technique}"]`).check();
         assert.ok((await snapshot(layer)).cuts.every(c => c.technique === technique));
         await page.locator('#btnUndo').click();
@@ -84,6 +104,65 @@ const assert = require('node:assert/strict');
         assert.notDeepEqual((await snapshot(layer)).cuts.map(c => c.seed), beforeGlobal[layer].cuts.map(c => c.seed));
         assert.deepEqual((await snapshot(layer)).project.effects, beforeGlobal[layer].project.effects);
       }
+      const randomChecks = await page.evaluate(() => {
+        const failures=[], p=structuredClone(J.ui.project), original=JSON.stringify(p);
+        const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b), keys=Object.keys(J.MEDIA_TECH);
+        for(const seed of [12,71,2026]) {
+          const a=J.omakase(p,J.rng(seed)), b=J.omakase(p,J.rng(seed));
+          for(const layer of ['foreground','media']) {
+            const effects=a[layer].effects, on=keys.filter(key=>effects.enabled[key]);
+            if(!on.length||on.length===keys.length)failures.push('random subset missing on/off values');
+            if(!same(effects,b[layer].effects))failures.push('seeded randomization is not reproducible');
+            for(const key of ['motion','treatment','duration','autoPlacement'])if(effects[key]!==p[layer].effects[key])failures.push('randomization changed '+key);
+          }
+          if(same(a.foreground.effects.enabled,a.media.effects.enabled))failures.push('layers share one random subset');
+        }
+        for(const value of [0,.999]) {
+          const settings=J.randomMediaEffectSettings(p,'foreground',()=>value);
+          const on=keys.filter(key=>settings.enabled[key]);
+          if(!on.length||on.length===keys.length)failures.push('degenerate random source leaves no variation');
+        }
+        if(JSON.stringify(p)!==original)failures.push('randomization mutated the input project');
+        return failures;
+      });
+      assert.deepEqual(randomChecks,[]);
+      await page.evaluate(() => {
+        for(const layer of ['foreground','media'])Object.assign(J.ui.project[layer].cutOverrides,{
+          0:{technique:'iris'},1:{technique:'none'},
+          2:{technique:null,lock:true,lockedTechnique:'glitch',lockedSeed:42,lockedItemId:J.ui.project[layer].items[0].id,lockedPlacement:{cx:.5,cy:.5,w:.5}},
+          3:{itemId:null,technique:null},
+        });
+        J.uiApi.replan();
+      });
+      const beforeRandom={foreground:await snapshot('foreground'),media:await snapshot('media')};
+      await page.locator('#btnOmakase').click();
+      const afterRandom={foreground:await snapshot('foreground'),media:await snapshot('media')};
+      for(const layer of ['foreground','media']) {
+        const before=beforeRandom[layer], after=afterRandom[layer], {effects,...rest}=after.project;
+        assert.deepEqual(rest,(( {effects,...rest})=>rest)(before.project),'omakase changes media candidate checks without changing material/cut settings');
+        assert.notDeepEqual(effects.enabled,before.project.effects.enabled);
+        assert.deepEqual(after.cuts.slice(0,3).map(c=>c.technique),['iris','none','glitch'],'manual, no-effects and locked cuts stay fixed');
+        assert.equal(after.cuts[3].itemId,null);
+        assert.ok(after.cuts.slice(4).every(c=>effects.enabled[c.technique]),'automatic cuts must use enabled techniques');
+        const panel=page.locator(`#${layer}EffectsPanel`);
+        const uiChecks=await panel.locator('[data-media-tech]').evaluateAll(inputs=>Object.fromEntries(inputs.map(el=>[el.dataset.mediaTech,el.checked])));
+        assert.deepEqual(uiChecks,effects.enabled,'omakase updates visible checkbox state');
+        for(const group of await panel.locator('details').all()) {
+          const total=await group.locator('[data-media-tech]').count(), on=await group.locator('[data-media-tech]:checked').count();
+          assert.equal(await group.locator('.tg-cnt').innerText(),`${on}/${total}`);
+        }
+      }
+      await page.locator('#btnUndo').click();
+      for(const layer of ['foreground','media'])assert.deepEqual((await snapshot(layer)).project.effects,beforeRandom[layer].project.effects,'undo restores randomized candidates');
+      await page.locator('#btnRedo').click();
+      for(const layer of ['foreground','media'])assert.deepEqual((await snapshot(layer)).project.effects,afterRandom[layer].project.effects,'redo restores randomized candidates');
+      await page.evaluate(()=>{J.ui.project.foreground.timing.lineTimes[0]=.25;J.uiApi.replan();});
+      await page.locator('#btnPrev').click();
+      for(const layer of ['foreground','media'])assert.deepEqual((await snapshot(layer)).project.effects,beforeRandom[layer].project.effects,'previous variation restores media candidates');
+      assert.equal((await snapshot('foreground')).project.timing.lineTimes[0],.25,'look history must preserve timing edits');
+      await page.locator('#btnNext').click();
+      for(const layer of ['foreground','media'])assert.deepEqual((await snapshot(layer)).project.effects,afterRandom[layer].project.effects,'next variation restores media candidates');
+      assert.equal((await snapshot('foreground')).project.timing.lineTimes[0],.25);
       const saved = {foreground:await snapshot('foreground'),media:await snapshot('media')};
       const downloadReady = page.waitForEvent('download');
       await page.locator('#btnSave').click();
@@ -101,7 +180,7 @@ const assert = require('node:assert/strict');
       await page.locator('[data-tab="foregroundFx"]').click();
       await page.screenshot({path:`../media-layer-settings-${locale ? 'en' : 'ja'}.png`,fullPage:true});
       assert.deepEqual(errors, []);
-      console.log(locale || 'ja', 'independent media settings, legacy import, shuffle, undo, save/reload: OK');
+      console.log(locale || 'ja', 'folding, category actions, independent random subsets, locked/manual cuts, shuffle, undo/history and save/reload: OK');
       await page.close();
     }
   } finally { await browser.close(); }

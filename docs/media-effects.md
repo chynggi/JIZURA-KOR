@@ -8,7 +8,11 @@
 
 80種類の手法を、シネマ・カメラ、ダイナミックモーション、マスク・出現、色・質感、分割・残像・グリッチ、カット間のつなぎから選べます。詳細タブでは、動きの強さ、加工の強さ、登場・退場の秒数と、自動選定に含める手法を設定できます。詳細の「前景」「背景」タブでそれぞれ個別に設定できます。自動配置のオン・オフも別々に指定できます。以前の共通設定は両レイヤーへ引き継ぎます。
 
-各タブの「前景をシャッフル」「背景をシャッフル」は対象のレイヤーだけを再抽選します。通常のシャッフルは両レイヤーの自動の素材カットを再抽選します。明示的に選んだ手法・演出無し・ロックしたカットは維持されます。各カットのサイコロは、そのカットを自動へ切り替えて再抽選します。
+詳細の各カテゴリは見出しをクリックして折り畳み・展開できます。見出しには有効な手法数／総数を表示し、カテゴリごとに「すべてON」「すべてOFF」「反転」でまとめて変更できます。
+
+「おまかせ」は前景・背景それぞれの手法チェックを独立にランダム設定します。動き・加工の強さ、登場・退場時間、自動配置の設定は保持します。変更したチェックは「元に戻す／やり直す」「前の案／次の案」やプロジェクト保存に対応します。
+
+各タブの「前景をシャッフル」「背景をシャッフル」は対象のレイヤーだけを再抽選します。通常のシャッフルは両レイヤーの自動の素材カットを再抽選します。シャッフルでは手法チェックを保持します。明示的に選んだ手法・演出無し・ロックしたカットは維持されます。各カットのサイコロは、そのカットを自動へ切り替えて再抽選します。
 
 「ランダム順で表示」は、素材が2つ以上あれば、カット追加・削除やタップ同期の後も使えます。オンの間は素材一覧からランダムな順で割り当て、繰り返し表示します。空カットとロックしたカットは維持します。素材の個別指定はオフにすると再び使え、元の割り当てに戻ります。
 
@@ -32,6 +36,10 @@
 ## English
 
 Choose **No effects**, **Auto**, or a named technique on each foreground/background cut. No effects displays the file instantly without added motion; videos continue playing normally.
+
+Click a category heading in Details to expand or collapse it. Headings show the enabled/total technique count. Each category has **Enable all**, **Disable all**, and **Invert** controls.
+
+**Randomize** chooses a random set of checked techniques independently for foreground and background. It preserves motion/treatment intensity, entrance/exit duration, and automatic placement settings. The selections support Undo/Redo, Previous/Next variation, and project saving. **Shuffle** keeps the checked set and rerolls the automatic cuts within it.
 
 **Details → Foreground / Background** contains 80 techniques, grouped into cinema/camera, dynamic motion, masks/reveals, color/texture, panels/echoes/glitch, and cut transitions. Adjust motion and treatment intensity, entrance/exit duration, and the techniques included in Auto. Each layer has its own settings, including automatic placement. Previously shared settings are copied to both layers when an older project is opened.
 
