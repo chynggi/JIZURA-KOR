@@ -32,8 +32,8 @@ const assert = require('node:assert/strict');
         check(group.find(c => c.line === 2).motionScale < 1, 'suppression reduces motion');
         check(plan.cuts.every(c => !c.area), 'automatic areas default to off');
 
-        // Foreground bounds must use source aspect and rotation, across the
-        // entire lifetime of a retained lyric, including later foreground cuts.
+        // Foreground bounds use source aspect and rotation during each cut's
+        // own time slot, even when braces extend its rendered lifetime.
         const fg = {id:'lyric-test-foreground',name:'foreground.png',type:'image',width:640,height:360};
         const placement = {cx:.65,cy:.5,w:.4,h:.8,lockAspect:false,angle:15};
         p.foreground = {...p.foreground,items:[fg],manualCuts:true,cutCount:2,
@@ -41,9 +41,27 @@ const assert = require('node:assert/strict');
         p.lyricEffects = {autoPlacement:true,avoidForeground:true};
         const auto = J.plan(p), fore = J.planMedia(p,auto,null,'foreground');
         for (const cut of auto.cuts.filter(c => c.line < 3 && !c.emphasis)) {
-          for (const f of fore.cuts.filter(f => f.start < (cut.displayEnd ?? cut.end) && f.end + .6 > cut.start))
+          for (const f of fore.cuts.filter(f => f.start < cut.end && f.end + .6 > cut.start))
             check(overlap(cut.area,J.foregroundBounds(p,auto,f)) < 1e-8, 'automatic area must avoid all overlapping foreground cuts');
         }
+        // A right-side foreground followed by a top foreground used to squeeze
+        // every retained cut into their one shared lower-left rectangle.
+        const words = '[00:00]First\n[00:01]Second\n[00:02]Third';
+        const groupedProject = {...p,seed:1234,lyrics:`{\n${words}\n}\n[00:04]Outside`,overrides:{},
+          foreground:{...p.foreground,cutOverrides:{
+            0:{itemId:fg.id,technique:'none',placement:{cx:.65,cy:.5,w:.7,h:1,angle:0,lockAspect:false}},
+            1:{itemId:fg.id,technique:'none',placement:{cx:.5,cy:.3,w:1,h:.6,angle:0,lockAspect:false}},
+          },timing:{lineTimes:{0:0,1:2}}}};
+        const groupedPlan = J.plan(groupedProject);
+        const individualPlan = J.plan({...groupedProject,lyrics:words+'\n[00:04]Outside'});
+        const retained = groupedPlan.cuts.filter(c => c.group != null);
+        check(retained.length === 3 && retained.every(c => c.displayEnd === 4), 'independent areas preserve grouped lifetimes');
+        check(new Set(retained.map(c => JSON.stringify(c.area))).size === 3, 'retained cuts must receive their own varied areas');
+        check(same(groupedPlan.cuts.map(c => c.area),individualPlan.cuts.map(c => c.area)), 'braces must not change per-cut automatic placement');
+        const active = J.lyricCutsAt(groupedPlan,2.5).map(J.lyricRenderCut);
+        check(active.length === 3 && same(active.map(c => c.area),retained.map(c => c.area)), 'simultaneously retained lyrics render with their individual areas');
+        check(same(retained.map(c => c.area),J.plan(groupedProject).cuts.filter(c => c.group != null).map(c => c.area)), 'grouped areas are reproducible');
+        check(!same(retained.map(c => c.area),J.plan({...groupedProject,seed:1235}).cuts.filter(c => c.group != null).map(c => c.area)), 'shuffle varies grouped areas');
         const strong = auto.cuts.find(c => c.emphasis);
         check(overlap(strong.area,J.foregroundBounds(p,auto,fore.cuts[0])) > .05, 'emphasis ignores foreground avoidance');
         const noAvoid = J.plan({...p,lyricEffects:{autoPlacement:true,avoidForeground:false}});

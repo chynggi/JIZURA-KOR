@@ -41,7 +41,7 @@ function emptyRegions(obstacles) {
         { x: x0, y: a.y, w: x1 - x0, h: y0 - a.y },
         { x: x0, y: y1, w: x1 - x0, h: a.y + a.h - y1 });
     }
-    // Bound work even for a retained lyric spanning hundreds of foreground cuts.
+    // Bound work even for a lyric spanning hundreds of foreground cuts.
     regions = next.filter(r => r.w >= .04 && r.h >= .04).sort((a, b) => b.w * b.h - a.w * a.h).slice(0, 64);
     if (!regions.length) break;
   }
@@ -105,8 +105,10 @@ J.finishLyricPlan = (project, plan, audio) => {
       cut.area = J.lyricArea(lockedArea);
       cut.areaMode = cut.area ? 'auto' : 'default';
     } else {
+      // Retention extends rendering only. Place each cut using its own time slot
+      // so later foregrounds do not force a whole group into one shared area.
       const obstacles = cut.emphasis ? [] : bounds
-        .filter(({ cut: f, box }) => box && f.start < (cut.displayEnd ?? cut.end) && f.end + .6 > cut.start)
+        .filter(({ cut: f, box }) => box && f.start < cut.end && f.end + .6 > cut.start)
         .map(({ box }) => ({ x: box.x - .02, y: box.y - .02, w: box.w + .04, h: box.h + .04 }));
       cut.area = J.autoLyricArea(cut, plan, obstacles);
       cut.areaMode = 'auto';

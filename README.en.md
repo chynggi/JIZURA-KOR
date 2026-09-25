@@ -43,7 +43,7 @@ Write `\n` within one input line to add a horizontal line break inside one cut. 
 
 In **Advanced → Techniques**, enable **Vary lyric position and size automatically** to vary the area for each lyric cut. This defaults to off, using the full stage. Manual areas and locks are preserved. In the area editor, **Reset automatic placement** clears a manual area; **Reset to full frame** saves an explicit full-stage area.
 
-**Avoid overlapping the foreground** considers foreground position, size and rotation throughout the lyric's display period. If there is no free region, it chooses a position with the least overlap. `*Emphasis*` creates a larger automatic area, enables **Show in front**, and ignores foreground avoidance. You can override the frontmost setting using the cut checkbox or timeline icon. `~Suppression~` makes the area and text smaller and reduces movement, rotation, camera motion and effects.
+**Avoid overlapping the foreground** considers foreground position, size and rotation during each cut's original time slot. Lyrics retained with `{}` receive individual areas using the same rules as ordinary cuts. If there is no free region, it chooses a position with the least overlap. `*Emphasis*` creates a larger automatic area, enables **Show in front**, and ignores foreground avoidance. You can override the frontmost setting using the cut checkbox or timeline icon. `~Suppression~` makes the area and text smaller and reduces movement, rotation, camera motion and effects.
 
 ## Build and publish
 
