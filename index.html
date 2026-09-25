@@ -118,8 +118,6 @@ h3 { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-top: 1
 .media-cropped-edges label { display: flex; align-items: center; gap: 3px; }
 .media-blend-fields { grid-template-columns: 1fr 1fr; }
 #lyrics { min-height: 150px; font-size: 14px; }
-.jev-prompt-label { font-size: 12px; font-weight: 700; }
-#jevPrompt { min-height: 60px; font-size: 13px; }
 .syntax { font-size: 12px; color: var(--muted); background: var(--raised); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
 .syntax code { font-family: var(--mono); color: var(--amber); }
 .syntax ul { margin: 0; padding-left: 16px; display: grid; gap: 3px; }
@@ -225,11 +223,6 @@ button.remove-media-cut:hover, button.remove-media-cut:focus-visible { color: #f
 .key-badge i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(255,255,255,.5); }
 .overlay-msg { position: absolute; left: 12px; bottom: 12px; background: rgba(12,12,14,0.85); border: 1px solid var(--line2); padding: 6px 10px; border-radius: var(--r); font-size: 12px; }
 .transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.jev-action { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.jev-guide { color: var(--cyan); font-size: 11px; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
-.jev-guide:hover { color: var(--text); }
-.easy-hero .jev-action { display: flex; }
-.easy-hero .jev-action button { flex: 1; }
 .transport .tc { font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }
 .duration-value { border: 0; background: transparent; padding: 2px 3px; color: var(--muted); cursor: text; white-space: nowrap; }
 .duration-value:hover, .duration-value:focus-visible { color: var(--amber); text-decoration: underline; }
@@ -444,6 +437,13 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .media-technique {max-width:240px}
 .media-effects-panel {max-height:calc(100vh - 190px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
 
+.theme-settings { margin: 12px 0; }
+#themeLabels { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; font-size: 11px; }
+.theme-label { padding: 3px 7px; border: 1px solid var(--amber); border-radius: 12px; color: var(--amber); }
+#themeChoices { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+#themeChoices fieldset { border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+#themeChoices legend { font-weight: bold; }
+
 </style>
 </head>
 <body>
@@ -475,9 +475,6 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>歌詞</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">記法</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="歌詞（1行 = 1フレーズ）"></textarea>
-        <label class="jev-prompt-label" for="jevPrompt">Jevへの追加指示（任意）</label>
-        <textarea id="jevPrompt" rows="2" maxlength="1000" placeholder="例：夜の街のような静かな雰囲気。サビは大胆に。" aria-label="Jevへの追加指示"></textarea>
-        <div class="hint">「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。</div>
         <label class="lang-row">歌詞の言語<select id="lyricLang"><option value="auto">自動判定</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
@@ -516,6 +513,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
           <button id="btnRemoveAudio" class="ghost" type="button" hidden>曲を削除</button>
           <button id="btnTap" title="曲を再生しながら各行の頭でタップ">タップで同期</button>
         </div>
+        <div class="theme-settings"><button id="btnThemes" type="button">テーマ設定</button><div id="themeLabels" aria-live="polite"></div></div>
         <div class="fields pro-only">
           <label class="field">BPM<input id="bpm" type="number" min="0" max="300" step="0.1" placeholder="自動"></label>
           <label class="field">開始(秒)<input id="offset" type="number" min="0" step="0.05"></label>
@@ -561,7 +559,6 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         </span>
         <button id="btnShuffle" class="accent" title="設定はそのままで構成だけ再抽選（ロックした行は維持）">シャッフル</button>
         <button id="btnOmakase" class="primary" title="スタイル・雰囲気・演出・配色をまるごとランダムに（キー R）">おまかせ</button>
-        <span class="jev-action"><button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></span>
       </div>
       <div class="timeline-zoom"><button id="timelineZoomOut" type="button" aria-label="タイムラインを縮小">−</button><span id="timelineZoomValue" aria-live="polite">100%</span><button id="timelineZoomIn" type="button" aria-label="タイムラインを拡大">＋</button></div>
       <div id="timelineScroll" class="timeline-scroll"><div id="timelineStack" class="timeline-stack">
@@ -580,8 +577,6 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       <div id="easyPanel" class="easy" hidden>
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">おまかせで作る</button>
-          <div class="jev-action"><button id="btnJevBig" class="primary">歌詞からJevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></div>
-          <p class="hint">Jevを使うと、歌詞を外部APIへ送ってスタイル・雰囲気・行ごとのレイアウトと動きを選びます。ローカルサーバーとAPIキーが必要です。</p>
           <p class="hint">押すたびに、スタイル・雰囲気・動き・配色・構成がまるごと変わります。キーボードの <span class="kbd">R</span> でも実行できます。</p>
           <div class="hist-row">
             <button id="btnPrev2" class="ghost">◀ 前の案</button>
@@ -741,8 +736,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
       <h3 id="termsForkTitle">字面一 JIZURA ONE STOP EDITION</h3>
-      <p>このサイトはオリジナル版を基にしたfork版です。Jevによる構成選定と、背景・前景の画像・動画編集機能などを追加しています。</p>
-      <p>通常の編集と書き出しはブラウザ内で処理します。「Jevで作る」を使う場合は、歌詞と任意の追加指示をローカルサーバー経由で Jev API に送信します。曲の音声ファイルは送信しません。</p>
+      <p>このfork版は、テーマに合わせた構成選定と、背景・前景の画像・動画編集機能を追加しています。編集・書き出しはブラウザ内で処理します。</p>
       <p>fork版のソースコード：<a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>
@@ -756,6 +750,14 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
   <p>現在の編集内容を残す場合は、先に保存してください。</p>
   <label class="field">画面比<select id="newProjectAspect"><option>16:9</option><option>9:16</option><option>4:3</option><option>3:4</option><option>1:1</option><option>4:5</option><option>21:9</option></select></label>
   <div class="acts"><button value="cancel">キャンセル</button><button id="btnCreateProject" type="button">作成</button></div>
+ </form>
+</dialog>
+
+<dialog id="themesDlg" class="terms" aria-labelledby="themesTitle">
+ <form method="dialog"><h2 id="themesTitle">テーマ設定</h2>
+ <p>複数選択できます。おまかせでは、選んだテーマのいずれかに合う設定候補から構成します。未選択の場合は制限しません。</p>
+ <div id="themeChoices"></div>
+ <div class="acts"><button id="btnClearThemes" type="button">選択を解除</button><button value="cancel">キャンセル</button><button id="btnApplyThemes" type="button">適用</button></div>
  </form>
 </dialog>
 
@@ -3364,7 +3366,7 @@ J.defaultProject = () => ({
   title: '', artist: '',
   durationOverride: null,         // null = automatic; otherwise total video length in seconds
   lyrics: J.SAMPLE_LYRICS,
-  jevPrompt: '',
+  themes: [],
   style: 'noir', mood: null,
   extra: false,                   // random picks may use the parts added after the first version (追加分)
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
@@ -4044,90 +4046,6 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
   const look = { mood, style, fx, enabled, fonts, colors, overrides, seed: Math.floor(rnd() * 1e9) };
   if (J.randomMediaEffectSettings) for (const layer of ['foreground', 'media']) {
     look[layer] = Object.assign({}, project[layer], { effects: J.randomMediaEffectSettings(project, layer, rnd) });
-  }
-  return look;
-};
-})();
-
-/* Jev chooses from JIZURA's existing expression vocabulary. The API key stays on the local server. */
-(() => {
-'use strict';
-
-const CORE = {
-  layout: ['center', 'condensed', 'huge', 'tile', 'marquee', 'vcols', 'scatter', 'stack', 'gloss', 'circle', 'type', 'mixed', 'wave', 'labels', 'pill', 'ring', 'diag'],
-  enter: ['slice', 'scramble', 'assemble', 'flicker', 'zoom', 'stretch', 'blur', 'type', 'wipe', 'pop', 'drop', 'spin'],
-  exit: ['glitch', 'slice', 'explode', 'fall', 'blur', 'drift', 'wipe', 'shrink', 'scatter', 'stretch'],
-};
-const criteria = (keys, table) => Object.fromEntries(keys.filter(k => table[k]).map(k => [k, `${table[k].name}${table[k].tags ? ' / ' + table[k].tags.join(', ') : ''}`]));
-const choice = (instructions, options) => ({ type: 'choice', instructions, criteria: options });
-const valid = (answer, options) => answer && answer.type === 'choice' && Object.hasOwn(options, answer.choice) ? answer.choice : null;
-const endpoint = () => location.origin === 'https://hirazisora.github.io'
-  ? 'http://127.0.0.1:8765/api/jev' : '/api/jev';
-
-J.jevSuggest = async (project, signal) => {
-  const lines = J.parseLyrics(project.lyrics).lines;
-  if (!lines.length) throw new Error('歌詞を入力してください');
-  const userDirection = String(project.jevPrompt || '').trim().slice(0, 1000);
-  const directionRule = userDirection ? '歌詞とユーザーの追加指示の両方を考慮する。' : '歌詞を考慮する。';
-  const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
-  const allowed = (g, k) => !J.randomOk || J.randomOk(project, g, k);
-  const styleOptions = Object.fromEntries(J.STYLE_ORDER.filter(k => allowed('style', k)).map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
-  const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(keys.filter(k => allowed(g, k)), J.registry(g))]));
-  const selections = { lines: {} };
-  // Keep each request bounded; later batches use the globally chosen look as context.
-  for (let start = 0; start < lines.length; start += 12) {
-    const batch = lines.slice(start, start + 12);
-    const questions = {};
-    if (start === 0) {
-      questions.mood = choice(`${directionRule} 歌詞全体に最も合う映像の雰囲気を選ぶ。`, moodOptions);
-      questions.style = choice(`${directionRule} 歌詞全体に最も合う文字PVの配色と書体のスタイルを選ぶ。`, styleOptions);
-    }
-    batch.forEach((line, i) => {
-      const n = start + i;
-      for (const g of Object.keys(CORE)) questions[`${g}_${n}`] = choice(`${directionRule} 行 ${n + 1} に合う${{ layout: '文字レイアウト', enter: '登場の動き', exit: '退場の動き' }[g]}を選ぶ。`, options[g]);
-    });
-    const state = {
-      title: (project.title || '').slice(0, 120),
-      artist: (project.artist || '').slice(0, 120),
-      lyrics: lines.map(l => l.text).join('\n').slice(0, 6000),
-      ...(userDirection ? { userDirection } : {}),
-      selectedMood: selections.mood || null,
-      selectedStyle: selections.style || null,
-      targetLines: batch.map((line, i) => ({ index: start + i + 1, text: line.text, impact: !!line.impact })),
-    };
-    let response;
-    try {
-      response = await fetch(endpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state, questions }), signal });
-    } catch (error) {
-      throw new Error('Jev ローカルサーバーに接続できません。起動状態とブラウザのローカルネットワーク許可を確認してください');
-    }
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || `Jev API: HTTP ${response.status}`);
-    const answers = data.answers || {};
-    if (start === 0) {
-      selections.mood = valid(answers.mood, moodOptions);
-      selections.style = valid(answers.style, styleOptions);
-      if (!selections.mood || !selections.style) throw new Error('Jev のスタイル選定結果を確認できませんでした');
-    }
-    batch.forEach((line, i) => {
-      const n = start + i, picked = {};
-      for (const g of Object.keys(CORE)) {
-        const key = valid(answers[`${g}_${n}`], options[g]);
-        if (key) picked[g] = key;
-      }
-      if (Object.keys(picked).length) selections.lines[n] = picked;
-    });
-  }
-  return selections;
-};
-
-J.applyJev = (project, selections, rnd = Math.random) => {
-  const look = J.omakase(project, rnd, selections);
-  const overrides = look.overrides;
-  for (const [index, picks] of Object.entries(selections.lines || {})) {
-    if (overrides[index] && overrides[index].lock) continue;
-    overrides[index] = Object.assign({}, overrides[index] && overrides[index].area ? { area: overrides[index].area } : {},
-      Object.fromEntries(Object.entries(picks).filter(([g, key]) => CORE[g] && CORE[g].includes(key) && J.registry(g)[key] && (!J.randomOk || J.randomOk(project, g, key)))));
   }
   return look;
 };
@@ -30561,6 +30479,87 @@ J.randomOk = (project, g, k) => {
 };
 })();
 
+/* Local, curated theme presets. No network or audio classification required. */
+(() => {
+'use strict';
+const L = J.mediaLabel;
+const presets = {
+  pop: { category:'genre', name:L('ポップ','Pop'), moods:['pop'], styles:['magenta','caution','transit','rouge'], media:['pulse','swing','orbit','beatBounce','beatPulse'], phases:['pop','iris','enter_slide','enter_zoom'], motion:[.7,1.2], duration:[.2,.45], flash:true },
+  ballad: { category:'genre', name:L('バラード','Ballad'), moods:['calm','emotional'], styles:['paper','specimen','noir'], media:['pushIn','pullOut','drift','rackFocus','beatBreathe'], phases:['enter_fade','enter_blur','curtain'], motion:[.25,.55], duration:[.65,1.2], flash:false },
+  rock: { category:'genre', name:L('ロック','Rock'), moods:['glitch','emotional'], styles:['crimson','noir','mono'], media:['pulse','tumble','glitch','chromaticSplit','beatShake','beatTurn'], phases:['impact','whip','enter_glitch'], motion:[1,1.6], duration:[.12,.3], flash:true },
+  dance: { category:'genre', name:L('ダンス・EDM','Dance / EDM'), moods:['glitch','graphic'], styles:['mint','blueprint','hud','magenta'], media:['beatPulse','beatTurn','beatStep','beatFade','chromaticSplit','neonContour'], phases:['tiles','scan','enter_flipX'], motion:[.8,1.4], duration:[.12,.35], flash:true },
+  hiphop: { category:'genre', name:L('ヒップホップ','Hip-hop'), moods:['graphic','glitch'], styles:['mono','caution','crimson'], media:['beatStep','beatSway','beatPulse','panorama','glitch'], phases:['wipe','enter_slide','enter_squeezeX'], motion:[.6,1.1], duration:[.2,.4], flash:false },
+  jazz: { category:'genre', name:L('ジャズ','Jazz'), moods:['editorial','calm'], styles:['specimen','noir','paper'], media:['panorama','drift','pullOut','beatSway'], phases:['enter_fade','wipe','enter_blur'], motion:[.3,.65], duration:[.4,.8], flash:false },
+  acoustic: { category:'genre', name:L('アコースティック','Acoustic'), moods:['calm','editorial'], styles:['paper','specimen'], media:['pushIn','drift','rise','beatBreathe'], phases:['enter_fade','enter_rise','curtain'], motion:[.2,.5], duration:[.55,1], flash:false },
+  cool: { category:'taste', name:L('クール','Cool'), moods:['graphic','editorial'], styles:['noir','mono','blueprint','hud'], media:['panorama','diagonal','rackFocus','beatStep'], phases:['wipe','scan','enter_slide'], motion:[.4,.8], duration:[.25,.5], flash:false },
+  cute: { category:'taste', name:L('可愛い','Cute'), moods:['pop'], styles:['magenta','rouge'], media:['swing','orbit','beatBounce','beatHeart','drift'], phases:['pop','iris','enter_squeezeY'], motion:[.5,.9], duration:[.3,.6], flash:false },
+  elegant: { category:'taste', name:L('上品','Elegant'), moods:['editorial','calm'], styles:['specimen','paper','mono'], media:['pushIn','pullOut','rackFocus','drift'], phases:['enter_fade','enter_blur','curtain'], motion:[.2,.45], duration:[.7,1.2], flash:false },
+  dreamy: { category:'taste', name:L('幻想的','Dreamy'), moods:['calm','emotional'], styles:['hud','noir','magenta'], media:['drift','orbit','rackFocus','beatBreathe'], phases:['enter_blur','iris','enter_fade'], motion:[.3,.7], duration:[.65,1.3], flash:false },
+  retro: { category:'taste', name:L('レトロ','Retro'), moods:['editorial','graphic'], styles:['paper','caution','transit'], media:['panorama','pullOut','filmstrip','stipplePrint','beatSway'], phases:['blinds','wipe','enter_fade'], motion:[.35,.7], duration:[.35,.7], flash:false },
+};
+const descriptions = {
+  pop:L('明るい配色・弾む動き','Bright colors and bouncy motion'), ballad:L('落ち着いた配色・ゆっくりした余韻','Quiet colors and lingering motion'),
+  rock:L('強いコントラスト・激しい動き','Strong contrast and energetic motion'), dance:L('鮮やかな配色・ビート同期','Vivid colors and beat-driven motion'),
+  hiphop:L('太い文字・リズミカルな切り替え','Bold type and rhythmic cuts'), jazz:L('端正な文字・滑らかな動き','Refined type and smooth motion'),
+  acoustic:L('紙のような色味・穏やかな動き','Paper tones and gentle motion'), cool:L('寒色・シャープな構成','Cool tones and sharp composition'),
+  cute:L('ピンク系・柔らかく弾む動き','Pink tones and soft bounce'), elegant:L('整った文字・控えめな動き','Elegant type and subtle motion'),
+  dreamy:L('ぼかし・浮遊感・ゆっくりした動き','Blur, floating and slow motion'), retro:L('紙・フィルム・ドットの質感','Paper, film and print textures'),
+};
+for (const [key,theme] of Object.entries(presets)) theme.description = descriptions[key];
+J.THEMES = presets;
+J.themeIds = project => [...new Set((Array.isArray(project.themes) ? project.themes : []).filter(key=>Object.hasOwn(presets,key)))];
+const neutral = {layout:['center'],enter:['cut'],exit:['cut'],hold:['still'],decor:[],treat:['none'],bg:['none'],cam:['push'],fx:[],trans:[]};
+J.themeCandidates = (project,key) => {
+  const theme = presets[key]; if (!theme) return null;
+  const allowed = (group,id) => !J.randomOk || J.randomOk(project,group,id);
+  const lyrics = {};
+  for (const group of J.GROUP_KEYS) {
+    const wanted = new Set(neutral[group] || []);
+    for (const mood of theme.moods) {
+      for (const id of J.taggedWith(group,mood)) wanted.add(id);
+      if (Array.isArray(J.MOODS[mood][group])) for (const id of J.MOODS[mood][group]) wanted.add(id);
+    }
+    lyrics[group] = J.order(group).filter(id=>wanted.has(id) && !J.registry(group)[id]?.special && allowed(group,id));
+  }
+  const phases = theme.phases.flatMap(id=>[id,id.startsWith('enter_') ? 'exit_'+id.slice(6) : 'exit_'+id]);
+  return {styles:theme.styles.filter(id=>J.STYLES[id] && allowed('style',id)),lyrics,media:[...new Set([...theme.media,...phases])].filter(id=>J.MEDIA_TECH[id])};
+};
+const unrestricted = J.omakase;
+J.omakase = (project,rnd=Math.random,choices={}) => {
+  const ids = J.themeIds(project); if (!ids.length) return {...unrestricted(project,rnd,choices),appliedTheme:null};
+  const pick = a=>a[Math.min(a.length-1,Math.floor(rnd()*a.length))];
+  const key = pick(ids), theme = presets[key], pools = J.themeCandidates(project,key);
+  const mood = pick(theme.moods), styles = pools.styles.filter(id=>id!==project.style);
+  const look = unrestricted(project,rnd,{mood,style:pick(styles.length ? styles : pools.styles)});
+  // No out-of-theme "sprinkle" or random palette/font override.
+  look.fonts = {}; look.colors = {...project.colors,enabled:false,accentOn:false};
+  look.fx.flash = theme.flash && rnd()<.5;
+  look.fx.motion = Math.min(1,J.lerp(...theme.motion,rnd()));
+  if (!theme.flash) {look.fx.glitch=Math.min(look.fx.glitch,.2);look.fx.chroma=Math.min(look.fx.chroma,.4);}
+  for (const group of J.GROUP_KEYS) {
+    const pool = pools.lyrics[group], selected = pool.filter(()=>rnd()<.75);
+    if (!selected.length && pool.length) selected.push(pick(pool));
+    for (const id of neutral[group] || []) if (pool.includes(id)) selected.push(id);
+    const enabled = new Set(selected);
+    look.enabled[group] = Object.fromEntries(J.order(group).map(id=>[id,enabled.has(id)]));
+  }
+  for (const layer of ['foreground','media']) {
+    const settings = J.mediaEffectSettings(project,layer), on = new Set();
+    // Preserve a usable independent pool for main motion, entrance and exit.
+    for (const stage of [undefined,'enter','exit']) {
+      const pool = pools.media.filter(id=>J.MEDIA_TECH[id].stage===stage);
+      for (const id of pool) if (rnd()<.65) on.add(id);
+      if (pool.length && !pool.some(id=>on.has(id))) on.add(pick(pool));
+    }
+    settings.enabled = Object.fromEntries(Object.keys(J.MEDIA_TECH).map(id=>[id,on.has(id)]));
+    settings.motion = J.lerp(...theme.motion,rnd()); settings.duration = J.lerp(...theme.duration,rnd());
+    look[layer] = {...project[layer],effects:settings};
+  }
+  look.appliedTheme = key;
+  return look;
+};
+})();
+
 /* ============================================================
    JIZURA — editor UI
    ============================================================ */
@@ -30619,6 +30618,8 @@ function mergeProject(p) {
   o.overrides = (p && p.overrides) || {};
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
   o.lyricEffects = J.lyricEffectSettings(o);
+  o.themes = J.themeIds(o);
+  delete o.jevPrompt;
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
   o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
@@ -31984,31 +31985,6 @@ function omakase() {
   toast(`おまかせ：${J.STYLES[r.style].name} × ${J.MOODS[r.mood].name}`, r.colors.accentOn ? [r.colors.accent, r.colors.ghostA, r.colors.ghostB] : null);
   restartPreview();
 }
-let jevBusy = false;
-async function jevOmakase() {
-  if (jevBusy || S.exporting || S.tap) return;
-  jevBusy = true;
-  ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = true; });
-  showMsg('Jev が歌詞と演出を選定中…');
-  try {
-    const lyrics = S.project.lyrics, jevPrompt = S.project.jevPrompt;
-    const selected = await J.jevSuggest(S.project);
-    if (S.project.lyrics !== lyrics || S.project.jevPrompt !== jevPrompt) throw new Error('選定中に歌詞か追加指示が変わりました。もう一度実行してください');
-    remember();
-    const look = J.applyJev(S.project, selected);
-    Object.assign(S.project, look);
-    fontKey = ''; syncUI(); replan(); commit();
-    toast(`Jev：${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
-    restartPreview();
-  } catch (e) {
-    toast(`Jev：${e.message || e}`);
-    console.error(e);
-  } finally {
-    showMsg(null);
-    jevBusy = false;
-    ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = false; });
-  }
-}
 // change just one aspect of the current look
 function rerollPart(part) {
   if (S.exporting || S.tap) return;
@@ -32315,10 +32291,14 @@ function renderMediaEffects(layer) {
 }
 
 /* ---------------- sync all inputs from project ---------------- */
+function renderThemes() {
+  const ids = J.themeIds(S.project);
+  $('themeLabels').innerHTML = ids.length ? ids.map(id=>`<span class="theme-label">${J.THEMES[id].name}</span>`).join('') : `<span class="muted">${J.mediaLabel('未選択：すべてのテーマ','Not selected: unrestricted')}</span>`;
+}
 function syncUI() {
+  renderThemes();
   $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
   $('lyrics').value = S.project.lyrics;
-  $('jevPrompt').value = S.project.jevPrompt || '';
   $('bpm').value = S.project.timing.bpm > 0 ? S.project.timing.bpm : '';
   $('bpm').placeholder = S.audio ? `自動 ${S.audio.bpm}` : 'なし';
   $('offset').value = S.project.timing.offset ?? 0.4;
@@ -32332,6 +32312,17 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  $('btnThemes').addEventListener('click', () => {
+    const selected = new Set(J.themeIds(S.project));
+    $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${J.mediaLabel(category === 'genre' ? '曲ジャンル' : 'テイスト',category === 'genre' ? 'Music genre' : 'Taste')}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');
+    $('themesDlg').showModal();
+  });
+  $('btnApplyThemes').addEventListener('click', () => {
+    S.project.themes = [...$('themeChoices').querySelectorAll('input:checked')].map(el=>el.dataset.theme);
+    renderThemes(); autosave(); $('themesDlg').close();
+  });
+  $('btnClearThemes').addEventListener('click', () => $('themeChoices').querySelectorAll('input').forEach(el=>el.checked=false));
+
   $('lyricAvoidanceStrength').addEventListener('input', e => {
     S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), avoidanceStrength: +e.target.value };
     $('lyricAvoidanceStrengthValue').textContent = (+e.target.value).toFixed(2);
@@ -32428,7 +32419,6 @@ function bind() {
     if (changedCount) { clearTimeout(replanTimer); replan(); }
     else replanSoon(260);
   });
-  $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; markUndoGroup('jevPrompt'); autosave(); });
   $('lyricLang').addEventListener('change', e => {
     remember();
     S.project.lang = e.target.value; replan(); renderFontRoles(); commit(); flushSave();
@@ -32699,8 +32689,6 @@ function bind() {
   $('modePro').addEventListener('click', () => setMode('pro'));
   $('btnOmakase').addEventListener('click', omakase);
   $('btnOmakaseBig').addEventListener('click', omakase);
-  $('btnJev').addEventListener('click', jevOmakase);
-  $('btnJevBig').addEventListener('click', jevOmakase);
   ['btnPrev', 'btnPrev2'].forEach(id => $(id).addEventListener('click', () => histGo(-1)));
   ['btnNext', 'btnNext2'].forEach(id => $(id).addEventListener('click', () => histGo(1)));
   $('eStyle').addEventListener('click', () => rerollPart('style'));

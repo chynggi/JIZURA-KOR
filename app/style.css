@@ -100,8 +100,6 @@ h3 { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-top: 1
 .media-cropped-edges label { display: flex; align-items: center; gap: 3px; }
 .media-blend-fields { grid-template-columns: 1fr 1fr; }
 #lyrics { min-height: 150px; font-size: 14px; }
-.jev-prompt-label { font-size: 12px; font-weight: 700; }
-#jevPrompt { min-height: 60px; font-size: 13px; }
 .syntax { font-size: 12px; color: var(--muted); background: var(--raised); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
 .syntax code { font-family: var(--mono); color: var(--amber); }
 .syntax ul { margin: 0; padding-left: 16px; display: grid; gap: 3px; }
@@ -207,11 +205,6 @@ button.remove-media-cut:hover, button.remove-media-cut:focus-visible { color: #f
 .key-badge i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(255,255,255,.5); }
 .overlay-msg { position: absolute; left: 12px; bottom: 12px; background: rgba(12,12,14,0.85); border: 1px solid var(--line2); padding: 6px 10px; border-radius: var(--r); font-size: 12px; }
 .transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.jev-action { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.jev-guide { color: var(--cyan); font-size: 11px; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
-.jev-guide:hover { color: var(--text); }
-.easy-hero .jev-action { display: flex; }
-.easy-hero .jev-action button { flex: 1; }
 .transport .tc { font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }
 .duration-value { border: 0; background: transparent; padding: 2px 3px; color: var(--muted); cursor: text; white-space: nowrap; }
 .duration-value:hover, .duration-value:focus-visible { color: var(--amber); text-decoration: underline; }
@@ -425,3 +418,10 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .media-tech-group .checks {grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
 .media-technique {max-width:240px}
 .media-effects-panel {max-height:calc(100vh - 190px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
+
+.theme-settings { margin: 12px 0; }
+#themeLabels { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; font-size: 11px; }
+.theme-label { padding: 3px 7px; border: 1px solid var(--amber); border-radius: 12px; color: var(--amber); }
+#themeChoices { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+#themeChoices fieldset { border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+#themeChoices legend { font-weight: bold; }

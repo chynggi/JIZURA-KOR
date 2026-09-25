@@ -10,9 +10,7 @@ The English and Japanese browser editions share the same project format and save
 
 The **Foreground**, **Lyrics**, and **Background** tabs let you place uploaded images and videos above or below lyrics. Drop files into the media area, then click a file name in **Lines and cuts** to choose the file for that cut. Add a blank cut before, between, or after existing cuts; its initial file is **No image**. Automatic cut sequences still support random order and looping. Use **Tap to sync** or drag timeline boundaries to set cut times. Each media cut supports entrance, hold, exit, treatment, transition, and position and size controls. Videos can loop or use a chroma key. Foreground media can be blended with the layers below it; lyrics have their own blend mode and opacity controls. You can set a display area for each lyric line.
 
-**Create with Jev** selects a style and line effects from your lyrics and optional natural language directions. It requires an API key and the local server included in this repository. Set `TYPESAFE_API_KEY`, then run `python jev_server.py` in the repository root. The browser sends lyrics and directions to that server; audio files stay in the browser. See the [Japanese guide](README.md) for setup details. This fork is based on [the original JIZURA](https://github.com/852wa/JIZURA).
 
-[Jev setup guide](docs/JEV_GUIDE.en.md)
 
 ## Quick start
 
@@ -64,3 +62,11 @@ Install `JIZURA_AE_en.jsx` in After Effects' `Scripts/ScriptUI Panels` folder, r
 Select Left, Right, Top and/or Bottom under **Cropped edges (auto placement)** in each foreground/background asset card. Automatic placement puts about 20% of the source width/height outside the frame at each selected edge; opposite edges may require proportional enlargement. Manual and locked placements take priority. The setting belongs to the asset and is saved with the project. It controls the chosen display rectangle, not subsequent animation movement or rotation.
 
 **Details → Techniques → Foreground avoidance strength** ranges from 0 to 1 (default 1). At 1, automatic lyric areas avoid the foreground bounds. Lower values allow overlap around the foreground perimeter; 0 disables avoidance. Both automatic placement and foreground avoidance must be enabled. Emphasis, manual areas and locks retain their priority. If no free region exists, the least overlapping placement is used.
+
+### Theme settings
+
+Below Import audio, open **Theme settings**, select multiple themes and apply. Labels appear below the song. Genres: Pop, Ballad, Rock, Dance/EDM, Hip-hop, Jazz and Acoustic. Tastes: Cool, Cute, Elegant, Dreamy and Retro.
+
+Each **Randomize** chooses one selected theme and uses only its curated styles, lyric techniques and foreground/background motion and entrance/exit candidates. Palettes and fonts follow the selected style. Choosing themes alone leaves the current arrangement unchanged. No themes means unrestricted randomization. Manual media choices, manual areas and locked cuts keep their existing priority. Extra/Japanese-style permission switches are respected. Themes support project files, local save and Undo/Redo. Selection runs in your browser with no API key.
+
+For local preview run `python preview_server.py` and open `http://127.0.0.1:8765/`.

@@ -25,9 +25,6 @@
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>歌詞</h2><button id="btnSyntax" class="ghost small" aria-expanded="false">記法</button></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="歌詞（1行 = 1フレーズ）"></textarea>
-        <label class="jev-prompt-label" for="jevPrompt">Jevへの追加指示（任意）</label>
-        <textarea id="jevPrompt" rows="2" maxlength="1000" placeholder="例：夜の街のような静かな雰囲気。サビは大胆に。" aria-label="Jevへの追加指示"></textarea>
-        <div class="hint">「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。</div>
         <label class="lang-row">歌詞の言語<select id="lyricLang"><option value="auto">自動判定</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
@@ -66,6 +63,7 @@
           <button id="btnRemoveAudio" class="ghost" type="button" hidden>曲を削除</button>
           <button id="btnTap" title="曲を再生しながら各行の頭でタップ">タップで同期</button>
         </div>
+        <div class="theme-settings"><button id="btnThemes" type="button">テーマ設定</button><div id="themeLabels" aria-live="polite"></div></div>
         <div class="fields pro-only">
           <label class="field">BPM<input id="bpm" type="number" min="0" max="300" step="0.1" placeholder="自動"></label>
           <label class="field">開始(秒)<input id="offset" type="number" min="0" step="0.05"></label>
@@ -111,7 +109,6 @@
         </span>
         <button id="btnShuffle" class="accent" title="設定はそのままで構成だけ再抽選（ロックした行は維持）">シャッフル</button>
         <button id="btnOmakase" class="primary" title="スタイル・雰囲気・演出・配色をまるごとランダムに（キー R）">おまかせ</button>
-        <span class="jev-action"><button id="btnJev" title="歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ">Jevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></span>
       </div>
       <div class="timeline-zoom"><button id="timelineZoomOut" type="button" aria-label="タイムラインを縮小">−</button><span id="timelineZoomValue" aria-live="polite">100%</span><button id="timelineZoomIn" type="button" aria-label="タイムラインを拡大">＋</button></div>
       <div id="timelineScroll" class="timeline-scroll"><div id="timelineStack" class="timeline-stack">
@@ -130,8 +127,6 @@
       <div id="easyPanel" class="easy" hidden>
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">おまかせで作る</button>
-          <div class="jev-action"><button id="btnJevBig" class="primary">歌詞からJevで作る（β）</button><a class="jev-guide" href="https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md" target="_blank" rel="noopener">Jevの使い方</a></div>
-          <p class="hint">Jevを使うと、歌詞を外部APIへ送ってスタイル・雰囲気・行ごとのレイアウトと動きを選びます。ローカルサーバーとAPIキーが必要です。</p>
           <p class="hint">押すたびに、スタイル・雰囲気・動き・配色・構成がまるごと変わります。キーボードの <span class="kbd">R</span> でも実行できます。</p>
           <div class="hist-row">
             <button id="btnPrev2" class="ghost">◀ 前の案</button>
@@ -291,8 +286,7 @@
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
       <h3 id="termsForkTitle">字面一 JIZURA ONE STOP EDITION</h3>
-      <p>このサイトはオリジナル版を基にしたfork版です。Jevによる構成選定と、背景・前景の画像・動画編集機能などを追加しています。</p>
-      <p>通常の編集と書き出しはブラウザ内で処理します。「Jevで作る」を使う場合は、歌詞と任意の追加指示をローカルサーバー経由で Jev API に送信します。曲の音声ファイルは送信しません。</p>
+      <p>このfork版は、テーマに合わせた構成選定と、背景・前景の画像・動画編集機能を追加しています。編集・書き出しはブラウザ内で処理します。</p>
       <p>fork版のソースコード：<a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>
@@ -306,5 +300,13 @@
   <p>現在の編集内容を残す場合は、先に保存してください。</p>
   <label class="field">画面比<select id="newProjectAspect"><option>16:9</option><option>9:16</option><option>4:3</option><option>3:4</option><option>1:1</option><option>4:5</option><option>21:9</option></select></label>
   <div class="acts"><button value="cancel">キャンセル</button><button id="btnCreateProject" type="button">作成</button></div>
+ </form>
+</dialog>
+
+<dialog id="themesDlg" class="terms" aria-labelledby="themesTitle">
+ <form method="dialog"><h2 id="themesTitle">テーマ設定</h2>
+ <p>複数選択できます。おまかせでは、選んだテーマのいずれかに合う設定候補から構成します。未選択の場合は制限しません。</p>
+ <div id="themeChoices"></div>
+ <div class="acts"><button id="btnClearThemes" type="button">選択を解除</button><button value="cancel">キャンセル</button><button id="btnApplyThemes" type="button">適用</button></div>
  </form>
 </dialog>

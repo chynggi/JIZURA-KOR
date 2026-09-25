@@ -56,6 +56,8 @@ function mergeProject(p) {
   o.overrides = (p && p.overrides) || {};
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
   o.lyricEffects = J.lyricEffectSettings(o);
+  o.themes = J.themeIds(o);
+  delete o.jevPrompt;
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
   o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
@@ -1421,31 +1423,6 @@ function omakase() {
   toast(`おまかせ：${J.STYLES[r.style].name} × ${J.MOODS[r.mood].name}`, r.colors.accentOn ? [r.colors.accent, r.colors.ghostA, r.colors.ghostB] : null);
   restartPreview();
 }
-let jevBusy = false;
-async function jevOmakase() {
-  if (jevBusy || S.exporting || S.tap) return;
-  jevBusy = true;
-  ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = true; });
-  showMsg('Jev が歌詞と演出を選定中…');
-  try {
-    const lyrics = S.project.lyrics, jevPrompt = S.project.jevPrompt;
-    const selected = await J.jevSuggest(S.project);
-    if (S.project.lyrics !== lyrics || S.project.jevPrompt !== jevPrompt) throw new Error('選定中に歌詞か追加指示が変わりました。もう一度実行してください');
-    remember();
-    const look = J.applyJev(S.project, selected);
-    Object.assign(S.project, look);
-    fontKey = ''; syncUI(); replan(); commit();
-    toast(`Jev：${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
-    restartPreview();
-  } catch (e) {
-    toast(`Jev：${e.message || e}`);
-    console.error(e);
-  } finally {
-    showMsg(null);
-    jevBusy = false;
-    ['btnJev', 'btnJevBig'].forEach(id => { $(id).disabled = false; });
-  }
-}
 // change just one aspect of the current look
 function rerollPart(part) {
   if (S.exporting || S.tap) return;
@@ -1752,10 +1729,14 @@ function renderMediaEffects(layer) {
 }
 
 /* ---------------- sync all inputs from project ---------------- */
+function renderThemes() {
+  const ids = J.themeIds(S.project);
+  $('themeLabels').innerHTML = ids.length ? ids.map(id=>`<span class="theme-label">${J.THEMES[id].name}</span>`).join('') : `<span class="muted">${J.mediaLabel('未選択：すべてのテーマ','Not selected: unrestricted')}</span>`;
+}
 function syncUI() {
+  renderThemes();
   $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
   $('lyrics').value = S.project.lyrics;
-  $('jevPrompt').value = S.project.jevPrompt || '';
   $('bpm').value = S.project.timing.bpm > 0 ? S.project.timing.bpm : '';
   $('bpm').placeholder = S.audio ? `自動 ${S.audio.bpm}` : 'なし';
   $('offset').value = S.project.timing.offset ?? 0.4;
@@ -1769,6 +1750,17 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  $('btnThemes').addEventListener('click', () => {
+    const selected = new Set(J.themeIds(S.project));
+    $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${J.mediaLabel(category === 'genre' ? '曲ジャンル' : 'テイスト',category === 'genre' ? 'Music genre' : 'Taste')}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');
+    $('themesDlg').showModal();
+  });
+  $('btnApplyThemes').addEventListener('click', () => {
+    S.project.themes = [...$('themeChoices').querySelectorAll('input:checked')].map(el=>el.dataset.theme);
+    renderThemes(); autosave(); $('themesDlg').close();
+  });
+  $('btnClearThemes').addEventListener('click', () => $('themeChoices').querySelectorAll('input').forEach(el=>el.checked=false));
+
   $('lyricAvoidanceStrength').addEventListener('input', e => {
     S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), avoidanceStrength: +e.target.value };
     $('lyricAvoidanceStrengthValue').textContent = (+e.target.value).toFixed(2);
@@ -1865,7 +1857,6 @@ function bind() {
     if (changedCount) { clearTimeout(replanTimer); replan(); }
     else replanSoon(260);
   });
-  $('jevPrompt').addEventListener('input', e => { S.project.jevPrompt = e.target.value; markUndoGroup('jevPrompt'); autosave(); });
   $('lyricLang').addEventListener('change', e => {
     remember();
     S.project.lang = e.target.value; replan(); renderFontRoles(); commit(); flushSave();
@@ -2136,8 +2127,6 @@ function bind() {
   $('modePro').addEventListener('click', () => setMode('pro'));
   $('btnOmakase').addEventListener('click', omakase);
   $('btnOmakaseBig').addEventListener('click', omakase);
-  $('btnJev').addEventListener('click', jevOmakase);
-  $('btnJevBig').addEventListener('click', jevOmakase);
   ['btnPrev', 'btnPrev2'].forEach(id => $(id).addEventListener('click', () => histGo(-1)));
   ['btnNext', 'btnNext2'].forEach(id => $(id).addEventListener('click', () => histGo(1)));
   $('eStyle').addEventListener('click', () => rerollPart('style'));

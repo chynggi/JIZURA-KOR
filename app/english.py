@@ -1,6 +1,11 @@
 """English copy for the browser edition. The Japanese source stays authoritative."""
 
 BODY = {
+    'テーマ設定': 'Theme settings', '選択を解除': 'Clear selection',
+    '複数選択できます。おまかせでは、選んだテーマのいずれかに合う設定候補から構成します。未選択の場合は制限しません。': 'Select multiple themes. Randomize builds an arrangement from candidates matching one of your selected themes. No selection means unrestricted.',
+    'このfork版は、テーマに合わせた構成選定と、背景・前景の画像・動画編集機能を追加しています。編集・書き出しはブラウザ内で処理します。': 'This fork adds theme-guided arrangements and background/foreground image and video editing. Editing and export run in your browser.',
+    '<button id="btnApplyThemes" type="button">適用</button>': '<button id="btnApplyThemes" type="button">Apply</button>',
+
     '重なり回避の強度': 'Foreground avoidance strength',
     '1で前景の範囲を避け、下げると周辺の重なりを許容します。0では回避しません。空き領域がない場合は最も重なりの少ない配置を使います。': 'At 1, avoid the foreground bounds. Lower values allow overlap around its edges; 0 disables avoidance. If no free region exists, use the least overlapping placement.',
     '素材入りプロジェクト（.jizuraichi）を開く': 'Open a portable project (.jizuraichi)',
@@ -362,16 +367,9 @@ FORK_BODY = {
     '鎖マークを別のタイムラインの鎖へドラッグしてリンク。×で解除。': 'Drag a chain icon to one on another timeline to link boundaries. Use × to unlink.',
     'タイムラインの境界リンク': 'Timeline boundary links',
     '素材': 'Source', '前景': 'Foreground',
-    'Jevで作る（β）': 'Create with Jev (β)',
-    '歌詞からJevで作る（β）': 'Create from lyrics with Jev (β)',
-    'Jevの使い方': 'Jev guide',
-    'https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.md': 'https://github.com/hirazisora/JIZURA/blob/main/docs/JEV_GUIDE.en.md',
     'オリジナル版（852wa/JIZURA）': 'Original edition (852wa/JIZURA)',
     '字面 JIZURA（hirazi fork)': 'JIZURA (hirazi fork)',
-    'Jevへの追加指示（任意）': 'Additional directions for Jev (optional)',
-    'Jevへの追加指示': 'Additional directions for Jev',
     '例：夜の街のような静かな雰囲気。サビは大胆に。': 'Example: A quiet night city mood. Make the chorus bold.',
-    '「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。': 'Sent with your lyrics only when you use Jev. Jev chooses from the available styles and techniques.',
     '歌詞の合成方法': 'Lyrics blend mode', '歌詞不透明度（％）': 'Lyrics opacity (%)',
     '前景の合成方法': 'Foreground blend mode', '前景不透明度（％）': 'Foreground opacity (%)',
     '<option value="normal">通常</option>': '<option value="normal">Normal</option>',
@@ -388,14 +386,9 @@ FORK_BODY = {
     '幅（画面比％）': 'Width (% of canvas)', '高さ（画面比％）': 'Height (% of canvas)',
     '角度（°）': 'Rotation (°)', '全域へリセット': 'Reset to full area',
     'この行だけに適用': 'Apply to this line', 'これ以降全てに適用': 'Apply from here onward',
-    '歌詞を Jev に送り、スタイルと行ごとの演出を選ぶ': 'Send lyrics to Jev to choose styles and effects for each line',
-    'Jevで作る': 'Create with Jev', '歌詞からJevで作る': 'Create from lyrics with Jev',
-    'Jevを使うと、歌詞を外部APIへ送ってスタイル・雰囲気・行ごとのレイアウトと動きを選びます。ローカルサーバーとAPIキーが必要です。': 'Jev sends lyrics to an external API to choose styles, moods, layouts, and motion. A local server and API key are required.',
     '前景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）': 'Foreground timeline (drag a cut boundary to change its start time; drag elsewhere to seek)',
     '歌詞タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）': 'Lyrics timeline (drag a cut boundary to change its start time; drag elsewhere to seek)',
     '背景タイムライン（境界をドラッグして開始時刻を変更、ほかは再生位置を移動）': 'Background timeline (drag a cut boundary to change its start time; drag elsewhere to seek)',
-    'このサイトはオリジナル版を基にしたfork版です。Jevによる構成選定と、背景・前景の画像・動画編集機能などを追加しています。': 'This fork builds on the original. It adds Jev-guided arrangement and image and video editing for background and foreground layers.',
-    '通常の編集と書き出しはブラウザ内で処理します。「Jevで作る」を使う場合は、歌詞と任意の追加指示をローカルサーバー経由で Jev API に送信します。曲の音声ファイルは送信しません。': 'Editing and export run in your browser. When you use Jev, your lyrics and optional directions are sent to the Jev API through a local server. Audio files are not sent.',
     'fork版のソースコード：': 'Fork source code: ',
 }
 
@@ -462,26 +455,12 @@ FORK_UI = {
     'カット数の上限に達しました': 'Maximum number of cuts reached',
     'タップするたびに画像・動画のカットを追加します。終了するまで続けられます。': 'Each tap adds another image or video cut. Continue until you stop.',
     '曲に合わせて、各行・素材が始まる瞬間に Space かボタンを押してください。': 'Press Space or the button when each lyric line or media cut starts.',
-    'Jev が歌詞と演出を選定中…': 'Jev is choosing styles and effects…',
-    '選定中に歌詞か追加指示が変わりました。もう一度実行してください': 'Lyrics or directions changed while Jev was working. Please try again.',
     '読み込めませんでした': 'Could not load',
     '全体を表示': 'Show entire file', '全画面': 'Fill canvas',
     'フェード': 'Fade', 'スライド': 'Slide', 'ズーム': 'Zoom', '即時': 'Instant',
     '静止': 'Still', 'ゆっくり拡大': 'Slow zoom', '横移動': 'Pan',
     'なし': 'None', 'モノクロ': 'Monochrome', 'セピア': 'Sepia',
     '高コントラスト': 'High contrast', 'ぼかし': 'Blur', 'クロスフェード': 'Crossfade',
-}
-
-FORK_JEV_ERRORS = {
-    '歌詞を入力してください': 'Enter lyrics first',
-    'Jev ローカルサーバーに接続できません。起動状態とブラウザのローカルネットワーク許可を確認してください': 'Could not connect to the Jev local server. Check that it is running and that the browser allows local network access.',
-    'Jev のスタイル選定結果を確認できませんでした': 'Jev did not return a valid style selection',
-    '歌詞とユーザーの追加指示の両方を考慮する。': 'Consider both the lyrics and the user’s additional directions.',
-    '歌詞を考慮する。': 'Consider the lyrics.',
-    '歌詞全体に最も合う映像の雰囲気を選ぶ。': 'Choose the video mood that best fits the full lyrics.',
-    '歌詞全体に最も合う文字PVの配色と書体のスタイルを選ぶ。': 'Choose the lyric video palette and typography style that best fits the full lyrics.',
-    '文字レイアウト': 'text layout', '登場の動き': 'entrance motion', '退場の動き': 'exit motion',
-    ' に合う': ' that suits ', 'を選ぶ。': '.', '行 ': 'Line ',
 }
 
 FORK_MEDIA = dict(FORK_UI, **{
@@ -500,8 +479,6 @@ def localize_js(source, filename):
         return replace_copy(replace_copy(source, FORK_UI), UI)
     if filename.endswith('08d_media.js'):
         return replace_copy(source, FORK_MEDIA)
-    if filename.endswith('08c_jev.js'):
-        return replace_copy(source, FORK_JEV_ERRORS)
     if filename.endswith('11_export.js'):
         return replace_copy(source, EXPORT)
     return source

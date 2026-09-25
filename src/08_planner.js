@@ -14,7 +14,7 @@ J.defaultProject = () => ({
   title: '', artist: '',
   durationOverride: null,         // null = automatic; otherwise total video length in seconds
   lyrics: J.SAMPLE_LYRICS,
-  jevPrompt: '',
+  themes: [],
   style: 'noir', mood: null,
   extra: false,                   // random picks may use the parts added after the first version (追加分)
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
