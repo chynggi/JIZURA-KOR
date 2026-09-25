@@ -83,6 +83,36 @@ J.assetSetMask = async (a, maskCanvas) => {
   return J.assetPrepare(a);
 };
 
+/* AI 피사체 선택 (optional): Google MediaPipe's interactive segmenter, downloaded only after the user agreed
+   (see the consent dialog in the UI) — nothing here runs or loads before J.loadSegmenter() is called.
+   The photo never leaves the browser: the model runs locally. */
+J.ML = {
+  lib: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1',
+  model: 'https://storage.googleapis.com/mediapipe-models/interactive_segmenter_v2/magic_touch/int8/1/interactive_segmentation.task',
+};
+let segJob = null;
+J.loadSegmenter = () => {
+  if (!segJob) segJob = (async () => {
+    const V = await import(J.ML.lib + '/vision_bundle.mjs');
+    const fs = await V.FilesetResolver.forVisionTasks(J.ML.lib + '/wasm');
+    return V.InteractiveSegmenter.createFromOptions(fs, { baseOptions: { modelAssetPath: J.ML.model } });
+  })().catch(e => { segJob = null; throw e; });
+  return segJob;
+};
+/* points: [{ x, y (0..1), neg }] → mask canvas (w × h, alpha = subject) */
+J.segmentPoints = (seg, points, w, h) => {
+  const m = seg.segment(points.map(p => ({ brushMode: p.neg ? 2 : 1, point: [{ x: p.x, y: p.y }], isCompleted: true })));
+  const v = m.getAsFloat32Array(), mw = m.width, mh = m.height;
+  const c = document.createElement('canvas'); c.width = mw; c.height = mh;
+  const x = c.getContext('2d'), im = x.createImageData(mw, mh);
+  for (let i = 0; i < v.length; i++) { const k = i * 4; im.data[k] = im.data[k + 1] = im.data[k + 2] = 255; im.data[k + 3] = Math.round(J.clamp(v[i]) * 255); }
+  x.putImageData(im, 0, 0);
+  if (m.close) m.close();
+  if (mw === w && mh === h) return c;
+  const o = document.createElement('canvas'); o.width = w; o.height = h; o.getContext('2d').drawImage(c, 0, 0, w, h);
+  return o;
+};
+
 /* draw the assets of one side: 'back' (after the background, before the lyrics) or 'front' (over the lyrics).
    A 'subject' photo is drawn whole at the back and its masked subject again at the front. Design coordinates. */
 J.drawAssets = (ctx, plan, which) => {

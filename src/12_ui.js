@@ -486,6 +486,7 @@ async function resetAll() {
   S.audio = null; if ($('audioFile')) $('audioFile').value = '';
   if (J.forgetSong) await J.forgetSong();
   for (const id of [...J.ASSETS.keys()]) await J.assetForget(id);
+  try { localStorage.removeItem('jizura.mlConsent'); } catch (e) {}
   renderAssets();
   $('audioName').textContent = audioNameDefault;
   ED.undo = []; ED.redo = []; H.list = []; H.i = -1;
@@ -942,7 +943,9 @@ function renderAssets() {
     li.innerHTML = `<canvas class="a-thumb" width="64" height="40"></canvas>
       <div class="a-main"><div class="a-name" title="${escapeHtml(a.name)}">${escapeHtml(a.name)}${A && A.keyed ? ' <span class="muted">(그린백 제거)</span>' : ''}</div>
       <div class="a-row">
-        <select class="a-layer" aria-label="${i + 1}번 소재 위치"><option value="back">가사 뒤</option><option value="front">가사 앞</option></select>
+        <select class="a-kind" aria-label="${i + 1}번 소재 종류"><option value="overlay">겹치기</option><option value="subject">피사체 뒤로 문자</option></select>
+        ${a.kind === 'subject' ? `<button class="small a-mask" title="가사 앞에 다시 그릴 피사체를 칠하거나 AI로 고릅니다">피사체 편집${A && A.subj ? '' : ' (미설정)'}</button>` : ''}
+        <select class="a-layer" aria-label="${i + 1}번 소재 위치"${a.kind === 'subject' ? ' hidden' : ''}><option value="back">가사 뒤</option><option value="front">가사 앞</option></select>
         <select class="a-key" aria-label="${i + 1}번 소재 배경 빼기" title="자동: 테두리가 초록이면 그린백으로 보고 뺍니다"><option value="auto">배경: 자동</option><option value="green">그린백 빼기</option><option value="none">그대로</option></select>
         <select class="a-fit" aria-label="${i + 1}번 소재 맞춤"><option value="contain">전체 보이기</option><option value="cover">화면 채우기</option></select>
       </div>
@@ -957,10 +960,18 @@ function renderAssets() {
         <button class="icon ghost a-del" title="삭제" aria-label="${i + 1}번 소재 삭제">✕</button>
       </div>`;
     const q = s => li.querySelector(s);
+    q('.a-kind').value = a.kind || 'overlay';
     q('.a-layer').value = a.layer || 'back'; q('.a-key').value = a.key || 'auto'; q('.a-fit').value = a.fit || 'contain';
     if (A) { const tc = q('.a-thumb'), tx = tc.getContext('2d'), k = Math.min(tc.width / A.w, tc.height / A.h); tx.drawImage(A.img, (tc.width - A.w * k) / 2, (tc.height - A.h * k) / 2, A.w * k, A.h * k); }
     const set = (patch, again) => { Object.assign(a, patch); flushSave(); S.need = true; if (again) J.assetPrepare(a).then(() => { renderAssets(); S.need = true; }); };
     q('.a-layer').addEventListener('change', e => set({ layer: e.target.value }));
+    q('.a-kind').addEventListener('change', e => {
+      const subject = e.target.value === 'subject';
+      set(Object.assign({ kind: e.target.value }, subject ? { fit: 'cover' } : {}), true);
+      renderAssets();
+      if (subject && !(A && A.mask)) toast('「피사체 편집」에서 가사 앞에 둘 피사체를 칠하거나 AI로 고르세요');
+    });
+    if (q('.a-mask')) q('.a-mask').addEventListener('click', () => openMaskEditor(a));
     q('.a-key').addEventListener('change', e => set({ key: e.target.value }, true));
     q('.a-fit').addEventListener('change', e => set({ fit: e.target.value }));
     for (const [cls, k, f] of [['.a-scale', 'scale', v => v / 100], ['.a-x', 'x', v => v / 100], ['.a-y', 'y', v => v / 100], ['.a-op', 'opacity', v => v / 100]])
@@ -973,6 +984,109 @@ function renderAssets() {
     });
     ol.appendChild(li);
   });
+}
+/* ---- 피사체 편집: the mask = (AI selection ∪ painted) − erased, at the image's resolution ---- */
+const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+// the AI model is downloaded only after this dialog is accepted (remembered in this browser until 초기화)
+function mlConsent() {
+  try { if (localStorage.getItem('jizura.mlConsent') === '1') return Promise.resolve(true); } catch (e) {}
+  let dlg = $('mlDlg');
+  if (!dlg) {
+    dlg = document.createElement('dialog'); dlg.id = 'mlDlg'; dlg.className = 'terms'; dlg.setAttribute('aria-labelledby', 'mlTitle');
+    dlg.innerHTML = `<h2 id="mlTitle">AI 피사체 선택</h2>
+      <p>이 기능은 Google MediaPipe의 이미지 분할 모델(약 30MB)과 실행 파일(약 10MB)을 <strong>인터넷에서 내려받아</strong> 씁니다.</p>
+      <ul class="reset-list"><li>내려받는 곳: cdn.jsdelivr.net, storage.googleapis.com</li>
+        <li>사진은 내려받은 모델로 이 브라우저 안에서만 처리되며, 어디에도 보내지 않습니다.</li>
+        <li>동의하지 않아도 브러시로 직접 칠해서 쓸 수 있습니다.</li></ul>
+      <p class="terms-sub">동의는 이 브라우저에 기억됩니다(초기화하면 지워집니다).</p>
+      <div class="outbtns"><button class="ghost ml-no">취소</button><button class="primary ml-yes">동의하고 내려받기</button></div>`;
+    document.body.appendChild(dlg);
+  }
+  return new Promise(res => {
+    const done = ok => { dlg.close(); if (ok) { try { localStorage.setItem('jizura.mlConsent', '1'); } catch (e) {} } res(ok); };
+    dlg.querySelector('.ml-yes').onclick = () => done(true);
+    dlg.querySelector('.ml-no').onclick = () => done(false);
+    dlg.oncancel = () => res(false);
+    dlg.showModal();
+  });
+}
+function openMaskEditor(a) {
+  const A = J.ASSETS.get(a.id); if (!A) return;
+  let dlg = $('maskDlg');
+  if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'maskDlg'; dlg.className = 'terms mask-dlg'; dlg.setAttribute('aria-labelledby', 'maskTitle'); document.body.appendChild(dlg); }
+  dlg.innerHTML = `<h2 id="maskTitle">피사체 편집 — ${escapeHtml(a.name)}</h2>
+    <div class="mask-tools">
+      <button class="m-ai" aria-pressed="false" title="피사체를 클릭하면 AI가 골라 줍니다. Shift+클릭(또는 우클릭)은 빼기">AI 자동 선택</button>
+      <button class="m-add" aria-pressed="true">칠하기</button>
+      <button class="m-erase" aria-pressed="false">지우기</button>
+      <label class="m-size-l">브러시<input class="m-size" type="range" min="4" max="200" value="40"></label>
+      <button class="ghost m-clear">전부 지우기</button>
+    </div>
+    <p class="note m-hint">밝게 보이는 부분이 가사 앞에 다시 그려지는 피사체입니다. 칠하기/지우기로 다듬으세요.</p>
+    <div class="mask-wrap"><canvas class="mask-view" width="${A.w}" height="${A.h}"></canvas></div>
+    <div class="outbtns"><button class="ghost m-cancel">취소</button><button class="primary m-done">완료</button></div>`;
+  const q = s => dlg.querySelector(s), view = q('.mask-view'), vx = view.getContext('2d'), W = A.w, H = A.h;
+  const ai = mkCanvas(W, H), add = mkCanvas(W, H), erase = mkCanvas(W, H), mask = mkCanvas(W, H), tint = mkCanvas(W, H);
+  if (A.mask) add.getContext('2d').drawImage(A.mask, 0, 0, W, H);         // earlier edits stay editable
+  let tool = 'add', seg = null, points = [], last = null;
+  const compose = () => {
+    const m = mask.getContext('2d'); m.globalCompositeOperation = 'copy'; m.drawImage(ai, 0, 0);
+    m.globalCompositeOperation = 'source-over'; m.drawImage(add, 0, 0);
+    m.globalCompositeOperation = 'destination-out'; m.drawImage(erase, 0, 0); m.globalCompositeOperation = 'source-over';
+    return mask;
+  };
+  const draw = () => {
+    compose();
+    vx.globalCompositeOperation = 'copy'; vx.drawImage(A.img, 0, 0);
+    vx.globalCompositeOperation = 'source-over'; vx.fillStyle = 'rgba(0,0,0,0.62)'; vx.fillRect(0, 0, W, H);
+    const t = tint.getContext('2d'); t.globalCompositeOperation = 'copy'; t.drawImage(A.img, 0, 0);
+    t.globalCompositeOperation = 'destination-in'; t.drawImage(mask, 0, 0);
+    t.globalCompositeOperation = 'source-atop'; t.fillStyle = 'rgba(245,165,12,0.18)'; t.fillRect(0, 0, W, H);
+    vx.drawImage(tint, 0, 0);
+  };
+  const setTool = k => { tool = k; for (const [c, v] of [['.m-add', 'add'], ['.m-erase', 'erase'], ['.m-ai', 'ai']]) q(c).setAttribute('aria-pressed', String(tool === v)); };
+  const toImg = e => { const r = view.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height, W / r.width]; };
+  const paint = (x, y, k) => {
+    const [on, off] = tool === 'add' ? [add, erase] : [erase, add], r = +q('.m-size').value * k;
+    for (const [c, op] of [[on, 'source-over'], [off, 'destination-out']]) {
+      const g = c.getContext('2d'); g.globalCompositeOperation = op; g.strokeStyle = g.fillStyle = '#fff'; g.lineWidth = r; g.lineCap = 'round';
+      g.beginPath(); if (last) { g.moveTo(last[0], last[1]); g.lineTo(x, y); g.stroke(); } else { g.arc(x, y, r / 2, 0, 7); g.fill(); }
+    }
+    last = [x, y]; draw();
+  };
+  view.addEventListener('contextmenu', e => e.preventDefault());
+  view.addEventListener('pointerdown', e => {
+    const [x, y, k] = toImg(e);
+    if (tool === 'ai') {
+      if (!seg) return;
+      points.push({ x: x / W, y: y / H, neg: e.shiftKey || e.button === 2 });
+      try { const r = J.segmentPoints(seg, points, W, H), g = ai.getContext('2d'); g.globalCompositeOperation = 'copy'; g.drawImage(r, 0, 0); }
+      catch (err) { console.warn(err); toast('AI 선택에 실패했습니다'); }
+      draw(); return;
+    }
+    view.setPointerCapture(e.pointerId); last = null; paint(x, y, k);
+  });
+  view.addEventListener('pointermove', e => { if (last && tool !== 'ai') { const [x, y, k] = toImg(e); paint(x, y, k); } });
+  const end = () => { last = null; };
+  view.addEventListener('pointerup', end); view.addEventListener('pointercancel', end);
+  q('.m-add').onclick = () => setTool('add');
+  q('.m-erase').onclick = () => setTool('erase');
+  q('.m-clear').onclick = () => { for (const c of [ai, add, erase]) c.getContext('2d').clearRect(0, 0, W, H); points = []; draw(); };
+  q('.m-ai').onclick = async () => {
+    if (seg) { setTool('ai'); return; }
+    if (!(await mlConsent())) return;
+    q('.m-hint').textContent = 'AI 모델을 내려받는 중…(처음 한 번은 수십 초 걸릴 수 있습니다)';
+    try {
+      seg = await J.loadSegmenter(); seg.setImage(A.img);
+      setTool('ai'); q('.m-hint').textContent = '피사체를 클릭하세요. Shift+클릭(또는 우클릭)은 그 부분을 뺍니다. 칠하기/지우기로 이어서 다듬을 수 있습니다.';
+    } catch (err) { console.warn(err); seg = null; q('.m-hint').textContent = 'AI 모델을 불러오지 못했습니다(인터넷 연결을 확인하세요). 브러시로 칠해서 쓸 수 있습니다.'; }
+  };
+  q('.m-cancel').onclick = () => dlg.close();
+  q('.m-done').onclick = async () => {
+    await J.assetSetMask(a, compose());
+    dlg.close(); renderAssets(); S.need = true; toast('피사체를 저장했습니다');
+  };
+  draw(); dlg.showModal();
 }
 async function addAssetFiles(files) {
   for (const f of files) {

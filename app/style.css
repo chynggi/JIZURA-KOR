@@ -360,3 +360,9 @@ dialog.cand-dlg { width: min(860px, calc(100vw - 32px)); }
 .asset .a-sliders input { flex: 1; min-width: 0; }
 .asset .a-tools { display: flex; flex-direction: column; gap: 4px; }
 .asset .a-hide[aria-pressed=true] { color: var(--amber); }
+dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
+.mask-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.mask-tools [aria-pressed=true] { border-color: var(--amber); color: var(--amber); }
+.mask-tools .m-size-l { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.mask-wrap { display: flex; justify-content: center; background: #000; border-radius: var(--r); margin-bottom: 12px; }
+.mask-view { display: block; max-width: 100%; max-height: 58vh; width: auto; height: auto; cursor: crosshair; touch-action: none; }
