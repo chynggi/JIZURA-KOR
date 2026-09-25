@@ -322,7 +322,7 @@ J.plan = (project, audio) => {
     let nC = Math.round(D / L);
     const maxC = chunks.length + (chunks.length >= 2 && D > 2.0 ? 1 : 0);
     nC = J.clamp(nC, 1, Math.max(1, maxC));
-    const ovAny = Object.keys(ov).some(k2 => !['lock', 'lockedSeed', 'seed'].includes(k2));
+    const ovAny = Object.keys(ov).some(k2 => !['lock', 'lockedSeed', 'seed', 'utahame'].includes(k2));
     const kime = !!(U && U.kime.has(li) && !ov.cuts);
     if (ov.single || kime) nC = 1;
     if (zones) nC = Math.max(1, Math.min(nC, Math.floor(chunks.length / 2)));   // 中央を空ける: each cut is split in two, so keep ≥ 2 words per cut
@@ -362,6 +362,9 @@ J.plan = (project, audio) => {
       const UU = U && !ovAny ? U : null;                              // per-line settings always win over 統一感
       let layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, LH > LW);
       if (UU) layout = UU.layout(li, layout, { nn, dur, emph, kime, rng, portrait: LH > LW, recap: u.recap });
+      // 우타하메 (per line): the characters come in with the singing, so the lyric may only be drawn once
+      const uta = !!ov.utahame && !u.recap;
+      if (uta && !ov.layout && !UTA_LAYOUTS.includes(layout)) { const pool = UTA_LAYOUTS.filter(k2 => en.layout[k2] !== false); layout = rng.pick(pool.length ? pool : UTA_LAYOUTS); }
       let enter = ov.enter && J.ENTER[ov.enter] ? ov.enter : pickEnter(rng, st, en, layout, dur, history, emph, nn);
       let exit = ov.exit && J.EXIT[ov.exit] ? ov.exit : pickExit(rng, st, en, layout, dur, k === units.length - 1, history);
       let hold = ov.hold && J.HOLD[ov.hold] ? ov.hold : pickHold(rng, en, fx, history);
@@ -396,6 +399,7 @@ J.plan = (project, audio) => {
       let treatP = J.TREAT[treat].plan ? J.TREAT[treat].plan(rng, st) : {};
       if (!ov.bg && k > 0 && !U && rng.chance(0.18 * fx.bgSwitch + 0.04)) { lineBg = pickBg(rng, st, en, fx, bgHistory); lineBgP = J.BG[lineBg].plan ? J.BG[lineBg].plan(rng, st) : {}; }
       let bg = LD.busy && !(J.BG[lineBg] && J.BG[lineBg].subtle) ? 'none' : lineBg;
+      if (uta && bg === 'bigChar') bg = 'none';                        // the one background that draws the lyric itself
       let cam = ov.cam && J.CAMERA[ov.cam] ? ov.cam : pickCam(rng, st, en, fx, LD, emph, history);
       if (UU) cam = UU.cam(li, cam, { kime, emph, rng });
       let camP = J.CAMERA[cam].plan ? J.CAMERA[cam].plan(rng, st) : {};
@@ -427,6 +431,7 @@ J.plan = (project, audio) => {
           prevCut.exit = 'cut'; prevCut.outDur = 0;
         }
       }
+      if (uta) { enter = 'cut'; inDur = 0.12; }                       // 우타하메: no entrance (see J.mainDraw)
       const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: cutSeed, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
         treat, treatP, bg, bgP: bg === lineBg ? lineBgP : {}, cam, camP, trans, transP, transDur, zone: Z });
       // karaoke sync: [time since cut start, share of this cut's text already sung]
@@ -434,6 +439,7 @@ J.plan = (project, audio) => {
         const N = [...ln.text].length, c0 = uci[k], c1 = k + 1 < units.length ? uci[k + 1] : N, span = Math.max(1, c1 - c0);
         cut.sync = [[markTime(mk, c0, N, visEnd) - cs, 0]].concat(mk.filter(q => q.ci > c0 && q.ci < c1).map(q => [q.t - cs, (q.ci - c0) / span]), [[markTime(mk, c1, N, visEnd) - cs, 1]]);
       }
+      if (uta) cut.utahame = true;
       if (kime) cut.kime = true;
       if (weightGrow) cut.weightGrow = true;
       if (morph) cut.morph = morph;
@@ -542,6 +548,7 @@ const STRONG = { enter: ['bounceBig', 'whip', 'spin', 'slingshot', 'crumple', 's
   cam: ['earthquake', 'shakeHard', 'crashZoom', 'barrelRoll', 'whipIn', 'snapPan', 'vertigo', 'roll', 'spiralIn', 'jelly', 'bounce', 'beatPunch', 'stepZoom'] };
 const KIME = { layout: ['huge', 'huge', 'huge', 'columnsBig', 'columnsBig', 'halftoneBig', 'center'], enter: ['stamp', 'zoom', 'bounceBig', 'overexpose', 'slingshot', 'blur'],
   exit: ['zoomThrough', 'blur', 'shrink', 'zoomFar'], hold: ['still', 'pulse', 'heartbeat'], cam: ['beatPunch', 'crashZoom', 'dollyIn', 'push'] };
+const UTA_LAYOUTS = ['center', 'mixed', 'vcols', 'labels', 'condensed', 'circle', 'pill'];   // layouts that draw the lyric exactly once
 const SOFT_ENTER = ['blur', 'fadeStagger', 'trackIn', 'blurStagger', 'cut'];
 function makeUnify(lines, C) {
   const { st, en, fx, history } = C;

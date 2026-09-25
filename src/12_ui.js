@@ -12,6 +12,7 @@ const ICON = {
   lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>',
   pen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 13l1-3.5L11 2.5l2.5 2.5L6.5 12z"/><path d="M9.5 4l2.5 2.5"/></svg>',
   tap: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2" fill="currentColor"/><circle cx="8" cy="8" r="5.5"/></svg>',
+  cand: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="3.4" height="4" rx="0.6"/><rect x="6.3" y="3" width="3.4" height="4" rx="0.6"/><rect x="10.6" y="3" width="3.4" height="4" rx="0.6"/><rect x="2" y="9" width="3.4" height="4" rx="0.6"/><rect x="6.3" y="9" width="3.4" height="4" rx="0.6"/><rect x="10.6" y="9" width="3.4" height="4" rx="0.6"/></svg>',
   range: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3v10M13 3v10"/><path d="M5.5 8h5M8.5 5.5L11 8l-2.5 2.5"/></svg>',
 };
 
@@ -377,6 +378,8 @@ function renderLines() {
         <button class="icon ghost tapfrom" title="이 행부터 탭으로 동기화 다시 하기(Shift+클릭: 이 행만)" aria-label="${i + 1}행부터 탭">${ICON.tap}</button>
         <button class="icon ghost rng" title="내보낼 범위로 지정(Shift+클릭으로 범위 확장)" aria-pressed="${R && i >= R.from && i <= R.to ? 'true' : 'false'}" aria-label="${i + 1}행을 내보낼 범위로">${ICON.range}</button>
         ${ln.interlude ? '' : `<button class="icon ghost dice" title="이 행 다시 뽑기">${ICON.dice}</button>`}
+        ${ln.interlude ? '' : `<button class="icon ghost cand" title="이 행의 후보 6개 중에서 고르기" aria-label="${i + 1}행 후보 고르기">${ICON.cand}</button>`}
+        ${ln.interlude ? '' : `<button class="icon ghost uta" title="우타하메: 노래에 맞춰 한 글자씩 표시(단어 시각이 있으면 그 시각에 맞춤)" aria-pressed="${o.utahame ? 'true' : 'false'}" aria-label="${i + 1}행 우타하메">♪</button>`}
         ${ln.interlude ? '' : `<button class="icon ghost lock" title="이 행의 구성 잠금" aria-pressed="${o.lock ? 'true' : 'false'}">${ICON.lock}</button>`}
       </span></div>`;
     const q = sel => li.querySelector(sel);
@@ -397,6 +400,8 @@ function renderLines() {
     q('.tapfrom').addEventListener('click', e => startTap(i, e.shiftKey));
     q('.rng').addEventListener('click', e => setExportRange(i, e.shiftKey));
     if (q('.dice')) q('.dice').addEventListener('click', () => { const cur = ov[i] || {}; setOv(i, { seed: (cur.seed | 0) + 1, lock: false }); replan(); seek(ln.start + 0.001); });
+    if (q('.cand')) q('.cand').addEventListener('click', () => openCandidates(i));
+    if (q('.uta')) q('.uta').addEventListener('click', () => { const cur = ov[i] || {}; remember(); setOv(i, { utahame: !cur.utahame }); replan(); commit(); seek(ln.start + 0.001); });
     if (q('.lock')) q('.lock').addEventListener('click', () => {
       const cur = ov[i] || {};
       if (cur.lock) setOv(i, { lock: false, lockedSeed: undefined });
@@ -874,6 +879,53 @@ async function runExport(kind) {
     EXP_BTNS.forEach(id => { $(id).disabled = false; });
     codecNote();
   }
+}
+
+/* ---------------- 행별 후보 6개 ---------------- */
+// the next six re-rolls of a line, playing in small previews; picking one is the same as rolling the dice that many times
+let candAnim = 0;
+async function openCandidates(i) {
+  let dlg = $('candDlg');
+  if (!dlg) {
+    dlg = document.createElement('dialog'); dlg.id = 'candDlg'; dlg.className = 'terms cand-dlg'; dlg.setAttribute('aria-labelledby', 'candTitle');
+    document.body.appendChild(dlg);
+    dlg.addEventListener('close', () => { cancelAnimationFrame(candAnim); candAnim = 0; });
+  }
+  const ln = S.plan.lines[i]; if (!ln || ln.interlude) return;
+  const cur = S.project.overrides[i] || {}, base = cur.seed | 0;
+  const cands = [1, 2, 3, 4, 5, 6].map(k => {
+    const seed = base + k, ov = Object.assign({}, S.project.overrides, { [i]: Object.assign({}, cur, { seed, lock: false, lockedSeed: undefined }) });
+    const plan = J.plan(Object.assign({}, S.project, { overrides: ov }), S.audio);
+    const cuts = plan.cuts.filter(c => c.line === i && J.LAYOUTS[c.layout] && !J.LAYOUTS[c.layout].special);
+    return { seed, plan, cuts, label: cuts.map(c => J.LAYOUTS[c.layout].name).join('|') };
+  });
+  dlg.innerHTML = `<h2 id="candTitle">${i + 1}행 후보</h2><p class="terms-sub">${escapeHtml(ln.text)}</p><div class="cand-grid"></div>
+    <form method="dialog" class="outbtns"><button value="cancel" class="ghost">닫기</button></form>`;
+  const grid = dlg.querySelector('.cand-grid'), R = new J.Renderer(), tw = 240;
+  const views = cands.map(c => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cand-item'; b.dataset.layouts = c.label; b.dataset.seed = c.seed;
+    const cv = document.createElement('canvas'); cv.width = tw; cv.height = Math.round(tw * c.plan.H / c.plan.W);
+    const cap = document.createElement('span'); cap.textContent = c.label.split('|').join(' · ');
+    b.append(cv, cap); grid.appendChild(b);
+    b.addEventListener('click', () => {
+      remember(); setOv(i, { seed: c.seed, lock: false, lockedSeed: undefined }); replan(); commit(); dlg.close(); seek(ln.start + 0.001);
+      toast(`${i + 1}행: 후보 ${cands.indexOf(c) + 1}을(를) 골랐습니다`);
+    });
+    return { c, ctx: cv.getContext('2d') };
+  });
+  if (!dlg.open) dlg.showModal();
+  try { await J.ensureFonts(ln.text, [...new Set(cands.flatMap(c => J.fontsOfPlan(c.plan)))]); } catch (e) {}
+  // loop the line in every preview (about 15 fps is enough to judge the motion)
+  const t0 = ln.start, t1 = Math.max(ln.start + 0.5, ln.visEnd ?? ln.end), wall = performance.now();
+  let last = 0;
+  const tick = now => {
+    if (!dlg.open) return;
+    candAnim = requestAnimationFrame(tick);
+    if (now - last < 66) return; last = now;
+    const t = t0 + ((now - wall) / 1000) % (t1 - t0);
+    for (const v of views) R.frame(v.ctx, v.c.plan, t, { scale: tw / v.c.plan.W });
+  };
+  cancelAnimationFrame(candAnim); candAnim = requestAnimationFrame(tick);
 }
 
 /* ---------------- tap sync ---------------- */

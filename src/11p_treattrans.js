@@ -242,6 +242,7 @@ const syncAt = (S, t) => {
   for (let k = 1; k < S.length; k++) if (t < S[k][0]) return J.lerp(S[k - 1][1], S[k][1], (t - S[k - 1][0]) / Math.max(1e-3, S[k][0] - S[k - 1][0]));
   return 1;
 };
+J.syncAt = syncAt;
 reg('treat', 'karaoke', { name: '가라오케', tags: ['emotional', 'pop', 'editorial'], w: 0.9,
   plan: rng => ({ sp: rng.range(0.7, 0.85), ol: rng.chance(0.55) }),
   apply(env, it, P) {

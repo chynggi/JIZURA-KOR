@@ -26,6 +26,13 @@ J.mainDraw = (env, it) => {
   // text treatment (outline, extrude, marker...) — layouts that paint their own plates opt out with it.plain
   if (cut.treat && !it.plain && J.TREAT && J.TREAT[cut.treat]) { try { J.TREAT[cut.treat].apply(env, it, cut.treatP || {}); } catch (e) { console.warn('treat', cut.treat, e); } }
   if (ltI < 0 && en === J.ENTER.cut) return null;
+  // 우타하메: characters appear as they are sung — along the word times (cut.sync), else evenly over most of the cut
+  if (cut.utahame) {
+    const p = cut.sync && J.syncAt ? J.syncAt(cut.sync, lt0) : J.clamp(lt0 / Math.max(0.2, cut.dur * 0.8));
+    const full = String(cut.text).replace(/\n/g, ''), part = String(it.text ?? '').replace(/\n/g, ''), at = full.indexOf(part);
+    const off = at < 0 ? 0 : [...full.slice(0, at)].length, shown = p * [...(at < 0 ? part : full)].length;
+    it.charFns.push(i => (off + i > shown ? { hide: true } : null));
+  }
   if (en !== J.ENTER.cut && (pIn < 1 || en.pieces)) { env.lt = ltI; en.apply(env, it, pIn, ctx); env.lt = lt0; }
   if (ltI < 0 && !en.pieces) return null;
   const amt = J.clamp((ltI - cut.inDur * 0.85) / 0.25) * (1 - pOut);

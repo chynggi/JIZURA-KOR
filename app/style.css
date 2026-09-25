@@ -341,3 +341,10 @@ button.small.primary { padding: 4px 12px; }
 .center-dir select { width: auto; }
 .ln .warn { margin-left: 2px; font-style: normal; font-weight: 700; color: var(--amber); cursor: help; }
 .ln.fast .txt { text-decoration: underline wavy var(--amber); text-underline-offset: 3px; }
+dialog.cand-dlg { width: min(860px, calc(100vw - 32px)); }
+.cand-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 4px 0 14px; }
+.cand-item { display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--raised); border: 1px solid var(--line2); border-radius: var(--r); color: var(--muted); font-size: 11px; text-align: left; cursor: pointer; }
+.cand-item:hover, .cand-item:focus-visible { border-color: var(--amber); color: var(--text); }
+.cand-item canvas { display: block; width: 100%; height: auto; background: #000; }
+.ln .tools .uta { font-size: 13px; line-height: 1; }
+.ln .tools .uta[aria-pressed=true] { color: var(--amber); }
