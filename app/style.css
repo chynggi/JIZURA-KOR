@@ -215,7 +215,6 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 /* timeline controls, export range, line tools */
 .tl-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 0 4px; flex-wrap: wrap; }
 .tl-hint { font-size: 11px; }
-.tl-btns { display: flex; gap: 4px; margin-left: auto; }
 .rng-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; font-size: 12px; }
 .rng-row select { width: auto; max-width: 150px; }
 .rng-lab { color: var(--muted); font-size: 11px; }

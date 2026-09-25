@@ -107,6 +107,16 @@ async function cleanupDeletedMedia() {
   }
   try { localStorage.setItem(MEDIA_DELETE_KEY, JSON.stringify(pendingMediaDeletes().filter(id => !pending.includes(id) || failed.includes(id)))); } catch (e) {}
 }
+// 소재 files are deleted late (like the media above): deleting only drops the settings, so Ctrl+Z can bring it back;
+// the files go on pagehide / next start when no current setting uses them
+const ASSET_DELETE_KEY = LS_KEY + ':assetDeletes';
+function pendingAssetDeletes() { try { const ids = JSON.parse(localStorage.getItem(ASSET_DELETE_KEY) || '[]'); return Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : []; } catch (e) { return []; } }
+function queueAssetDeletion(id) { try { localStorage.setItem(ASSET_DELETE_KEY, JSON.stringify([...new Set([...pendingAssetDeletes(), id])])); } catch (e) {} }
+async function cleanupDeletedAssets() {
+  const active = new Set(S.project.assets.map(a => a.id));
+  for (const id of pendingAssetDeletes()) if (!active.has(id)) await J.assetForget(id).catch(() => {});
+  try { localStorage.setItem(ASSET_DELETE_KEY, JSON.stringify(pendingAssetDeletes().filter(id => active.has(id)))); } catch (e) {}
+}
 const U = { list: [], i: -1, restoring: false, pendingGroup: null, lastGroup: null, lastAt: 0 };
 function initUndo() { U.list = [JSON.stringify(S.project)]; U.i = 0; updateUndoButtons(); }
 function markUndoGroup(group) { U.pendingGroup = group; }
@@ -114,8 +124,9 @@ function updateUndoButtons() {
   if ($('btnUndo')) $('btnUndo').disabled = U.i <= 0;
   if ($('btnRedo')) $('btnRedo').disabled = U.i >= U.list.length - 1;
 }
-function recordUndoState() {
-  if (U.restoring || !S.project) return;
+// a tap-sync pass and a line-start handle drag are one step each: recorded when they end (stopTap / pointerup flushSave)
+function recordUndoState(force) {
+  if (U.restoring || !S.project || ((S.tap || TL.drag >= 0) && !force)) return;
   const snap = JSON.stringify(S.project), group = U.pendingGroup, now = Date.now();
   U.pendingGroup = null;
   if (U.i < 0) { U.list = [snap]; U.i = 0; updateUndoButtons(); return; }
@@ -130,7 +141,7 @@ function recordUndoState() {
 }
 function undoMove(direction) {
   if (S.exporting) return;
-  recordUndoState();
+  recordUndoState(true);
   const next = U.i + direction;
   if (next < 0 || next >= U.list.length) return;
   pause(); clearTimeout(replanTimer);
@@ -141,11 +152,12 @@ function undoMove(direction) {
   S.project = mergeProject(JSON.parse(U.list[next]));
   fontKey = ''; syncUI(); replan(); flushSave();
   U.restoring = false; updateUndoButtons();
+  prepareAssets();                                // a 소재 brought back by undo is decoded again
 }
 let saveTimer = 0;
 function autosave() { recordUndoState(); clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 700); }
 function flushSave() { recordUndoState(); clearTimeout(saveTimer); try { localStorage.setItem(LS_KEY, JSON.stringify(S.project)); } catch (e) {} }
-window.addEventListener('pagehide', () => { if (S.project) { flushSave(); cleanupDeletedMedia(); } });
+window.addEventListener('pagehide', () => { if (S.project) { flushSave(); cleanupDeletedMedia(); cleanupDeletedAssets(); } });
 
 /* ---------------- planning ---------------- */
 function audioLike() {
@@ -938,7 +950,6 @@ function renderLines() {
     if (q('.ncut')) q('.ncut').value = o.cuts ? String(o.cuts) : '';
     q('.time').addEventListener('change', e => {
       const v = parseFloat(e.target.value);
-      pushEdit();
       if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
       if (isFinite(v)) S.project.timing.lineTimes[i] = Math.max(0, v); else delete S.project.timing.lineTimes[i];
       replan();
@@ -994,7 +1005,6 @@ function editLine(li, ln) {
     if (done) return; done = true;
     const v = inp.value.trim();
     if (ok && v && v !== body) {
-      pushEdit();
       rows[ln.src] = pre + v;
       S.project.lyrics = rows.join('\n'); $('lyrics').value = S.project.lyrics;
       replan(); flushSave(); toast(`${ln.index + 1}행 가사를 고쳤습니다`);
@@ -1004,33 +1014,15 @@ function editLine(li, ln) {
   inp.addEventListener('blur', () => finish(true));
 }
 
-/* ---------------- 歌詞・タイミングの取り消し（Ctrl+Z） ---------------- */
-// separate from the ◀ ▶ history of looks: lyric edits, dragged / typed / tapped line times
-const ED = { undo: [], redo: [] };
-const edSnap = () => JSON.stringify({ lyrics: S.project.lyrics, lineTimes: S.project.timing.lineTimes || {} });
-function pushEdit() { const s = edSnap(); if (ED.undo[ED.undo.length - 1] !== s) ED.undo.push(s); if (ED.undo.length > 60) ED.undo.shift(); ED.redo = []; updateEditBtns(); }
-function edGo(d) {
-  const from = d < 0 ? ED.undo : ED.redo, to = d < 0 ? ED.redo : ED.undo;
-  if (!from.length) return;
-  const o = JSON.parse(from.pop()), cur = JSON.parse(edSnap());
-  if ('ov' in o) { cur.ov = S.project.overrides; cur.range = S.project.exportRange || null; }   // clearLyrics() also cleared these
-  to.push(JSON.stringify(cur));
-  S.project.lyrics = o.lyrics; S.project.timing.lineTimes = o.lineTimes; $('lyrics').value = o.lyrics;
-  if ('ov' in o) { S.project.overrides = o.ov || {}; S.project.exportRange = o.range || null; }
-  replan(); flushSave(); updateEditBtns();
-  toast(d < 0 ? '되돌렸습니다' : '다시 실행했습니다');
-}
 // 歌詞を消す: lyrics + everything tied to line numbers (times, per-line settings, export range); undoable
 function clearLyrics() {
   if (S.tap || S.exporting) return;
   const P = S.project;
   if (!P.lyrics.trim() && !Object.keys(P.timing.lineTimes || {}).length) { $('lyrics').focus(); return; }
-  const snap = JSON.parse(edSnap()); snap.ov = P.overrides || {}; snap.range = P.exportRange || null;
-  ED.undo.push(JSON.stringify(snap)); if (ED.undo.length > 60) ED.undo.shift(); ED.redo = [];
   pause();
   P.lyrics = ''; P.timing.lineTimes = {}; P.overrides = {}; P.exportRange = null; $('lyrics').value = '';
-  replan(); flushSave(); updateEditBtns(); seek(0);
-  toast('가사를 지웠습니다(‘되돌리기’나 Ctrl+Z로 복구 가능)');
+  replan(); flushSave(); seek(0);
+  toast('가사를 지웠습니다(‘실행 취소’나 Ctrl+Z로 복구 가능)');
 }
 // 初期化: back to a blank project — song (also the copy kept in this browser), settings and both histories go
 let audioNameDefault = '';
@@ -1045,13 +1037,12 @@ async function resetAll() {
   try { localStorage.removeItem('jizura.mlConsent'); } catch (e) {}
   renderAssets();
   $('audioName').textContent = audioNameDefault;
-  ED.undo = []; ED.redo = []; H.list = []; H.i = -1;
+  H.list = []; H.i = -1;
   setTimelineZoom(1);
   $('lyrics').value = ''; fontKey = '';
-  syncUI(); replan(); commit(); updateEditBtns(); flushSave(); initUndo(); seek(0);
+  syncUI(); replan(); commit(); flushSave(); initUndo(); seek(0);
   toast('초기화했습니다');
 }
-function updateEditBtns() { const u = $('btnUndoEdit'); if (u) u.disabled = !ED.undo.length; }
 
 /* ---------------- 書き出す範囲（選んだ行だけ） ---------------- */
 function exportRangeLines() {
@@ -1898,10 +1889,9 @@ function renderAssets() {
     for (const [cls, k, f] of [['.a-scale', 'scale', v => v / 100], ['.a-x', 'x', v => v / 100], ['.a-y', 'y', v => v / 100], ['.a-op', 'opacity', v => v / 100]])
       q(cls).addEventListener('input', e => set({ [k]: f(+e.target.value) }));
     q('.a-hide').addEventListener('click', () => { set({ hidden: !a.hidden }); renderAssets(); });
-    q('.a-del').addEventListener('click', async () => {
+    q('.a-del').addEventListener('click', () => {
       if (!window.confirm(`「${a.name}」 소재를 지울까요?`)) return;
-      S.project.assets = S.project.assets.filter(x => x !== a); await J.assetForget(a.id);
-      replan(); flushSave(); renderAssets();
+      removeAsset(a);
     });
     ol.appendChild(li);
   });
@@ -2016,6 +2006,11 @@ async function addAssetFiles(files) {
   }
   replan(); flushSave(); renderAssets();
 }
+function removeAsset(a) {
+  S.project.assets = S.project.assets.filter(x => x.id !== a.id);
+  queueAssetDeletion(a.id);
+  replan(); flushSave(); renderAssets();
+}
 async function prepareAssets() {
   await Promise.all(S.project.assets.map(a => J.assetPrepare(a).catch(() => null)));
   S.need = true; renderAssets();
@@ -2081,9 +2076,8 @@ async function draftFromSong() {
   try { ts = await J.draftLineStarts(S.audio, lines.map(l => l.text)); } catch (e) { console.warn(e); }
   showMsg(null);
   if (ts.length !== lines.length) { toast('곡에서 행의 시작을 찾지 못했습니다'); return; }
-  pushEdit();
   S.project.timing.lineTimes = {}; ts.forEach((t, i) => { S.project.timing.lineTimes[i] = t; });
-  replan(); flushSave(); updateEditBtns();
+  replan(); flushSave();
   toast(`${lines.length}행의 시작을 곡에서 추정했습니다(초안). 어긋난 행은 ◎ Shift+클릭이나 타임라인으로 고치세요. Ctrl+Z로 되돌릴 수 있습니다`);
 }
 
@@ -2094,7 +2088,7 @@ function startTap(from = 0, single = false) {
   const layer = activeMediaLayer();
   if (!(layer ? S.plan[layer].cuts.length || S.project[layer].loop : S.plan.lines.length)) return;
   if (layer) { from = 0; single = false; }
-  else { from = J.clamp(from | 0, 0, S.plan.lines.length - 1); pushEdit(); }
+  else from = J.clamp(from | 0, 0, S.plan.lines.length - 1);
   S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
   $('tapHint').textContent = S.tap.append ? '탭할 때마다 소재를 순환하며 컷을 추가합니다. 종료할 때까지 계속할 수 있습니다.' : '곡에 맞춰 각 행·소재가 시작되는 순간 Space나 버튼을 누르세요.';
@@ -2332,7 +2326,7 @@ function bind() {
     tl.addEventListener('pointerdown', e => {
       // lyric timeline: the line-start handles in the top band (snap to the beat; Shift: free)
       const h = layer === 'lyrics' && !S.tap && !S.exporting ? tlHandleAt(e) : -1;
-      if (h >= 0) { tl.setPointerCapture(e.pointerId); pushEdit(); TL.drag = h; pause(); tl.style.cursor = 'ew-resize'; drag = { mode: 'handle' }; return; }
+      if (h >= 0) { tl.setPointerCapture(e.pointerId); TL.drag = h; pause(); tl.style.cursor = 'ew-resize'; drag = { mode: 'handle' }; return; }
       const boundary = !S.exporting && !S.tap && timelineBoundaryAt(e, layer);
       const limits = boundary && boundaryGroupLimits(boundary.ref);
       drag = boundary && limits && limits.max > limits.min ? { ...boundary, min: limits.min, max: limits.max, mode: 'boundary', originX: e.clientX, preview: boundary.start, moved: false, duration: S.plan.duration } : { mode: 'seek' };
@@ -2358,7 +2352,7 @@ function bind() {
     });
     tl.addEventListener('pointerup', () => {
       if (!drag) return;
-      if (drag.mode === 'handle') { TL.drag = -1; flushSave(); renderLines(); drawTimeline(); }
+      if (drag.mode === 'handle') { cancelAnimationFrame(raf); TL.drag = -1; flushSave(); renderLines(); drawTimeline(); }
       else if (drag.mode === 'boundary') {
         S.timelineDrag = null;
         if (drag.moved) commitTimelineBoundary(drag);
@@ -2376,7 +2370,6 @@ function bind() {
     if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
     e.preventDefault(); setTimelineZoom(S.timelineZoom * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025)), e.clientX);
   }, { passive: false });
-  $('btnUndoEdit').addEventListener('click', () => edGo(-1));
   $('tapBack').addEventListener('click', tapBack);
   bindRangeUI();
   const linkSvg = $('timelineLinks');
@@ -2689,6 +2682,7 @@ function bindTour() {
 function boot() {
   S.project = loadLocal();
   cleanupDeletedMedia();
+  cleanupDeletedAssets();
   initUndo();
   bind(); initVolume(); syncUI(); replan();
   restoreMediaAssets();
@@ -2709,5 +2703,5 @@ function boot() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;
 // hooks for hosts that embed the app (the After Effects CEP panel)
-J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines, saveBundle, openProject };
+J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines, saveBundle, openProject, removeAsset };
 })();

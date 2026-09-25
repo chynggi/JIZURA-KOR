@@ -18,6 +18,8 @@ def serve(port=8766):
 async def open_app(b, url):
     pg = await b.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)))
+    # 첫 방문 투어는 캡처 단계에서 키 입력을 삼킨다(Ctrl+Z 테스트가 헛돈다): 본 것으로 표시해 둔다
+    await pg.add_init_script("try { localStorage.setItem('jizura.tourDone', '1'); } catch (e) {}")
     await pg.goto(url); await pg.wait_for_function('window.J && J.ui && J.ui.project')
     return pg, errs
 
@@ -100,7 +102,49 @@ async def test_bundle_roundtrip(b, url):
     assert not errs, errs
     await pg.close()
 
-TESTS = []
+async def test_undo_covers_our_edits(b, url):
+    pg, errs = await open_app(b, url)
+    # 편집마다 J.uiApi.flushSave()로 기록을 확정해 autosave 700ms 디바운스·묶음 창(1200ms)에 기대지 않는다
+    r = await pg.evaluate('''async () => {
+      const P = () => J.ui.project;
+      document.querySelector('#modePro') && document.querySelector('#modePro').click();
+      const ta = document.querySelector('#lyrics');
+      ta.value = '하나\\n둘\\n셋'; ta.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 1500)); J.uiApi.flushSave();
+      P().overrides[1] = Object.assign({}, P().overrides[1], { area: { x: 0.1, y: 0.1, w: 0.5, h: 0.5 }, lock: true });
+      J.uiApi.flushSave();
+      ta.value = '하나\\n둘'; ta.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 1500)); J.uiApi.flushSave();
+      ta.blur();
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', key: 'z', ctrlKey: true, bubbles: true }));
+      await new Promise(r => setTimeout(r, 300));
+      return { lyrics: P().lyrics, area: !!(P().overrides[1] && P().overrides[1].area),
+               oldBtn: !!document.querySelector('#btnUndoEdit'), hasED: typeof window.edGo === 'function' };
+    }''')
+    assert r['lyrics'] == '하나\n둘\n셋', r
+    assert r['area'], 'area override lost after undo'
+    assert not r['oldBtn'], 'btnUndoEdit must be removed'
+    assert not errs, errs
+    await pg.close()
+
+async def test_asset_delete_is_undoable(b, url):
+    pg, errs = await open_app(b, url)
+    r = await pg.evaluate('''async (png) => {
+      const bytes = Uint8Array.from(atob(png), c => c.charCodeAt(0));
+      const a = await J.assetAdd(new File([bytes], 's.png', { type: 'image/png' }));
+      J.ui.project.assets.push(a); J.uiApi.flushSave();
+      J.uiApi.removeAsset(a);                    // 소재 삭제 버튼과 같은 경로
+      await new Promise(r => setTimeout(r, 100));
+      const stillStored = !!(await J.idbGet('asset:' + a.id));
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', key: 'z', ctrlKey: true, bubbles: true }));
+      await new Promise(r => setTimeout(r, 300));
+      return { stillStored, back: J.ui.project.assets.some(x => x.id === a.id) };
+    }''', base64.b64encode(PNG).decode())
+    assert r == {'stillStored': True, 'back': True}, r
+    assert not errs, errs
+    await pg.close()
+
+TESTS = [test_undo_covers_our_edits, test_asset_delete_is_undoable]
 async def main():
     with serve() as url:
         async with async_playwright() as p:
