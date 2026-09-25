@@ -61,6 +61,6 @@ Install `JIZURA_AE_en.jsx` in After Effects' `Scripts/ScriptUI Panels` folder, r
 
 ### Cropped assets and lyric avoidance strength
 
-Select Left, Right, Top and/or Bottom under **Cropped edges (auto placement)** in each foreground/background asset card. Automatic placement keeps those source edges outside the frame; opposite edges may require proportional enlargement. Manual and locked placements take priority. The setting belongs to the asset and is saved with the project. It controls the chosen display rectangle, not subsequent animation movement or rotation.
+Select Left, Right, Top and/or Bottom under **Cropped edges (auto placement)** in each foreground/background asset card. Automatic placement puts about 20% of the source width/height outside the frame at each selected edge; opposite edges may require proportional enlargement. Manual and locked placements take priority. The setting belongs to the asset and is saved with the project. It controls the chosen display rectangle, not subsequent animation movement or rotation.
 
 **Details → Techniques → Foreground avoidance strength** ranges from 0 to 1 (default 1). At 1, automatic lyric areas avoid the foreground bounds. Lower values allow overlap around the foreground perimeter; 0 disables avoidance. Both automatic placement and foreground avoidance must be enabled. Emphasis, manual areas and locks retain their priority. If no free region exists, the least overlapping placement is used.

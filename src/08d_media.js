@@ -62,12 +62,13 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
     return J.clamp(target, extent / 2 + margin, 1 - extent / 2 - margin);
   };
   const placement = { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
-  const edges = item.croppedEdges || {}, pad = .01;
+  const edges = item.croppedEdges || {}, crop = .2;
   if (!['left','right','top','bottom'].some(edge => edges[edge] === true)) return placement;
-  // Opposite cropped edges require a source wider/taller than the stage.
-  const grow = Math.max(1, edges.left && edges.right ? (1 + 2 * pad) / w : 1, edges.top && edges.bottom ? (1 + 2 * pad) / h : 1);
+  // Hide 20% of the source extent at each selected edge. Opposite edges
+  // leave the middle 60% in frame, enlarging proportionally when necessary.
+  const grow = Math.max(1, edges.left && edges.right ? 1 / ((1 - 2 * crop) * w) : 1, edges.top && edges.bottom ? 1 / ((1 - 2 * crop) * h) : 1);
   placement.w *= grow; placement.h *= grow; placement.croppedAuto = true;
-  const anchor = (center, extent, before, after) => J.clamp(before && after ? .5 : before ? extent / 2 - pad : after ? 1 - extent / 2 + pad : center, 0, 1);
+  const anchor = (center, extent, before, after) => J.clamp(before && after ? .5 : before ? extent * (.5 - crop) : after ? 1 - extent * (.5 - crop) : center, 0, 1);
   placement.cx = anchor(placement.cx, placement.w, edges.left, edges.right);
   placement.cy = anchor(placement.cy, placement.h, edges.top, edges.bottom);
   return placement;

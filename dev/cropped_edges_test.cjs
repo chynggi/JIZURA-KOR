@@ -6,7 +6,7 @@ const result=await page.evaluate(()=>{
  for(const layer of ['media','foreground'])for(const type of ['image','video'])for(const [width,height] of [[1920,1080],[1080,1920],[100,2000],[2000,100]])for(let mask=1;mask<16;mask++)for(let seed=0;seed<8;seed++){
   const p=J.defaultProject(),item={id:'test',name:'test',type,width,height,croppedEdges:Object.fromEntries(edges.map((e,i)=>[e,!!(mask&(1<<i))]))};
   const placement=J.autoMediaPlacement(p,{itemId:item.id,seed,technique:'pushIn'},item,{W:1920,H:1080},layer),r=J.mediaPlacementRect(placement,width,height,1920,1080);
-  check(!(mask&1)||r.x<0,'left');check(!(mask&2)||r.x+r.w>1,'right');check(!(mask&4)||r.y<0,'top');check(!(mask&8)||r.y+r.h>1,'bottom');check(Math.abs(r.w*1920/(r.h*1080)-width/height)<1e-8,'aspect');
+  check(!(mask&1)||-r.x/r.w>=.2-1e-8,'left');check(!(mask&2)||(r.x+r.w-1)/r.w>=.2-1e-8,'right');check(!(mask&4)||-r.y/r.h>=.2-1e-8,'top');check(!(mask&8)||(r.y+r.h-1)/r.h>=.2-1e-8,'bottom');check(Math.abs(r.w*1920/(r.h*1080)-width/height)<1e-8,'aspect');
  }
  const overlap=(a,b)=>Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
  let strong=0,weak=0;
