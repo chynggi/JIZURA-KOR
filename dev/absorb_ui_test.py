@@ -267,12 +267,13 @@ async def test_fork_features(b, url):
     assert widths[1] > widths[0] * 2, f'timeline width: {widths}'
 
     await pg.locator('[data-tab="style"]').click()
-    # 포크는 /Noto Sans JP/를 직접 단언했다. 한글판은 샘플 가사(기본 프로젝트)가 한글이라 언어 자동판정이
-    # 'ko'가 되고, #fontRoles는 그 언어에서 실제로 쓰이는 얼굴(J.faceOf)을 보여준다 — 이 경우 Noto Sans KR.
-    # J.FONTS.gothic_bold(카탈로그 원본, 여전히 "Noto Sans JP")가 아니라 J.faceOf 결과를 읽어 비교한다.
-    expected_family = await pg.evaluate("J.faceOf('gothic_bold').family.replace(/\"/g, '')")
+    # 포크는 /Noto Sans JP/를 직접 단언했다. 한글판 기본 프로젝트는 샘플 가사(J.SAMPLE_LYRICS)가 한국어라
+    # 언어 자동판정이 'ko'가 되고, 이 언어에서 gothic_bold는 src/02b_lang.js의 ko.map에 따라 Noto Sans KR
+    # 700으로 그려진다. 기대값을 UI와 같은 J.faceOf() 호출로 만들면 동어반복 검증이 되므로, 이 빌드에서
+    # 실제로 쓰여야 하는 값을 하드코딩하고 언어가 정말 'ko'로 판정됐는지도 별도로 확인한다.
+    assert await pg.evaluate('J.lang') == 'ko', await pg.evaluate('J.lang')
     style_family = await pg.locator('#fontRoles option[value="gothic_bold"]').first.evaluate('el => el.style.fontFamily')
-    assert expected_family in style_family, (expected_family, style_family)
+    assert 'Noto Sans KR' in style_family, style_family
     await pg.locator('#btnListFonts').click()
     assert await pg.locator('#installedFonts option').count() == 1
     await pg.locator('#btnImportFont').click()
@@ -306,7 +307,8 @@ async def test_fork_features(b, url):
     await pg.wait_for_function('() => J.ui.project.userFonts.some(font => font.file)')
     ttf_base = os.path.splitext(os.path.basename(LOCAL_TTF))[0]
     expected_uf_family = 'UF_' + re.sub(r'[^\w]', '_', ttf_base)
-    await pg.evaluate('J.uiApi.flushSave()')
+    # 원본 포크 테스트처럼 명시적 flushSave 없이 reload한다 — pagehide 핸들러(src/12_ui.js ~161)가
+    # 저장을 맡는 실제 경로를 그대로 검증한다.
     await pg.reload()
     await pg.wait_for_function('window.J && J.ui && J.ui.project')
     assert await pg.locator('#compositeList .composite-saved').count() == 1
