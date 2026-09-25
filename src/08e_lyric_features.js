@@ -9,6 +9,7 @@ J.lyricEffectSettings = project => {
   const min = percent(settings.opacityMin, 0), max = percent(settings.opacityMax, 100);
   return {
     autoPlacement: settings.autoPlacement === true, avoidForeground: settings.avoidForeground !== false,
+    avoidanceStrength: settings.avoidanceStrength != null && Number.isFinite(+settings.avoidanceStrength) ? J.clamp(+settings.avoidanceStrength, 0, 1) : 1,
     randomBlend: settings.randomBlend === true, randomOpacity: settings.randomOpacity === true,
     opacityMin: Math.min(min, max), opacityMax: Math.max(min, max),
   };
@@ -143,9 +144,14 @@ J.finishLyricPlan = (project, plan, audio) => {
     } else {
       // Retention extends rendering only. Place each cut using its own time slot
       // so later foregrounds do not force a whole group into one shared area.
-      const obstacles = cut.emphasis ? [] : bounds
+      const obstacles = cut.emphasis || settings.avoidanceStrength === 0 ? [] : bounds
         .filter(({ cut: f, box }) => box && f.start < cut.end && f.end + .6 > cut.start)
-        .map(({ box }) => ({ x: box.x - .02, y: box.y - .02, w: box.w + .04, h: box.h + .04 }));
+        .map(({ box }) => {
+          const s = settings.avoidanceStrength;
+          // Lower strengths allow overlap around the foreground's perimeter.
+          const w = (box.w + .04) * s, h = (box.h + .04) * s;
+          return { x: box.x + box.w / 2 - w / 2, y: box.y + box.h / 2 - h / 2, w, h };
+        });
       cut.area = J.autoLyricArea(cut, plan, obstacles);
       cut.areaMode = 'auto';
     }

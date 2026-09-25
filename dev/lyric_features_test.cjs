@@ -107,7 +107,7 @@ const assert = require('node:assert/strict');
         source.getContext('2d').fillStyle='#00ff00';source.getContext('2d').fillRect(0,0,640,360);
         J.mediaAssets.set(fg.id,{element:source,type:'image'});
         const renderProject = {...p,lyricEffects:{autoPlacement:false},foreground:{...p.foreground,cutCount:1,
-          cutOverrides:{0:{itemId:fg.id,technique:'none',placement:{cx:.5,cy:.5,w:.6,h:.6,lockAspect:false,angle:0}}},timing:{lineTimes:{0:0}}}};
+          cutOverrides:{0:{itemId:fg.id,technique:'none',entrance:'none',departure:'none',placement:{cx:.5,cy:.5,w:.6,h:.6,lockAspect:false,angle:0}}},timing:{lineTimes:{0:0}}}};
         const rp = J.plan(renderProject);rp.foreground=J.planMedia(renderProject,rp,null,'foreground');
         rp.media={cuts:[],opacity:100,blend:'normal'};rp.events=[];rp.fx.chroma=0;rp.fx.texture=0;
         const calls=[];

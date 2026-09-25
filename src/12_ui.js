@@ -1079,6 +1079,13 @@ function renderMediaList() {
   m.items.forEach((item, i) => {
     const row = document.createElement('div'); row.className = 'media-item'; row.dataset.id = item.id;
     row.innerHTML = `${mediaThumb(item)}<span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><button class="ghost small" aria-label="${escapeHtml(item.name)}を削除">×</button>`;
+    const edges = document.createElement('fieldset'); edges.className = 'media-cropped-edges';
+    edges.innerHTML = `<legend>${J.mediaLabel('見切れている辺（自動配置）','Cropped edges (auto placement)')}</legend>` + [['left','左','Left'],['right','右','Right'],['top','上','Top'],['bottom','下','Bottom']].map(([key,ja,en]) => `<label><input type="checkbox" data-cropped-edge="${key}" ${item.croppedEdges?.[key] ? 'checked' : ''}>${J.mediaLabel(ja,en)}</label>`).join('');
+    edges.addEventListener('change', e => {
+      const edge = e.target.dataset.croppedEdge; if (!edge) return;
+      item.croppedEdges = { ...item.croppedEdges, [edge]: e.target.checked }; replan();
+    });
+    row.appendChild(edges);
     row.querySelector('button').addEventListener('click', () => {
       freezeMediaCuts(layer);
       m.items.splice(i, 1);
@@ -1528,6 +1535,9 @@ function renderTech() {
   const lyricEffects = J.lyricEffectSettings(S.project);
   $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
   $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
+  $('lyricAvoidanceStrength').value = lyricEffects.avoidanceStrength;
+  $('lyricAvoidanceStrengthValue').textContent = lyricEffects.avoidanceStrength.toFixed(2);
+  $('lyricAvoidanceStrength').disabled = !lyricEffects.autoPlacement || !lyricEffects.avoidForeground;
   $('lyricRandomBlend').checked = lyricEffects.randomBlend;
   $('lyricRandomOpacity').checked = lyricEffects.randomOpacity;
   $('lyricOpacityRange').hidden = !lyricEffects.randomOpacity;
@@ -1759,6 +1769,11 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  $('lyricAvoidanceStrength').addEventListener('input', e => {
+    S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), avoidanceStrength: +e.target.value };
+    $('lyricAvoidanceStrengthValue').textContent = (+e.target.value).toFixed(2);
+    markUndoGroup('lyricAvoidanceStrength'); replanSoon(100);
+  });
   for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground'], ['lyricRandomBlend', 'randomBlend'], ['lyricRandomOpacity', 'randomOpacity']]) {
     $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; renderTech(); replan(); });
   }

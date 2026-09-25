@@ -21,9 +21,10 @@ J.mediaPlacementRect = (placement, sw, sh, w, h) => {
   const aspect = sw / sh, stageAspect = w / h;
   const defaultWidth = Math.min(1, aspect / stageAspect);
   const locked = !placement || placement.lockAspect !== false;
-  let pw = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.005, 4) : defaultWidth;
+  const limit = placement?.croppedAuto ? Infinity : 4;
+  let pw = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.005, limit) : defaultWidth;
   let ph = locked ? pw * stageAspect / aspect : placement && Number.isFinite(+placement.h) ? J.clamp(+placement.h, 0.005, 4) : pw * stageAspect / aspect;
-  if (locked && ph > 4) { ph = 4; pw = ph * aspect / stageAspect; }
+  if (locked && ph > limit) { ph = limit; pw = ph * aspect / stageAspect; }
   const cx = placement && Number.isFinite(+placement.cx) ? J.clamp(+placement.cx, 0, 1) : 0.5;
   const cy = placement && Number.isFinite(+placement.cy) ? J.clamp(+placement.cy, 0, 1) : 0.5;
   return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
@@ -34,6 +35,7 @@ J.normalizeMediaPlacement = p => p && ['cx', 'cy', 'w'].every(k => Number.isFini
   h: p.h != null && Number.isFinite(+p.h) ? +p.h : undefined,
   lockAspect: p.lockAspect !== false,
   angle: p.angle != null && Number.isFinite(+p.angle) ? J.clamp(+p.angle, -180, 180) : 0,
+  ...(p.croppedAuto ? { croppedAuto: true } : {}),
 } : null;
 J.autoMediaPlacement = (project, cut, item, plan, layer) => {
   const [W, H] = plan.W && plan.H ? [plan.W, plan.H] : J.designSize ? J.designSize(project) : [1920, 1080];
@@ -59,7 +61,16 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
     if (background) return .5 + (J.clamp(target, 0, 1) - .5) * Math.abs(1 - extent);
     return J.clamp(target, extent / 2 + margin, 1 - extent / 2 - margin);
   };
-  return { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
+  const placement = { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
+  const edges = item.croppedEdges || {}, pad = .01;
+  if (!['left','right','top','bottom'].some(edge => edges[edge] === true)) return placement;
+  // Opposite cropped edges require a source wider/taller than the stage.
+  const grow = Math.max(1, edges.left && edges.right ? (1 + 2 * pad) / w : 1, edges.top && edges.bottom ? (1 + 2 * pad) / h : 1);
+  placement.w *= grow; placement.h *= grow; placement.croppedAuto = true;
+  const anchor = (center, extent, before, after) => J.clamp(before && after ? .5 : before ? extent / 2 - pad : after ? 1 - extent / 2 + pad : center, 0, 1);
+  placement.cx = anchor(placement.cx, placement.w, edges.left, edges.right);
+  placement.cy = anchor(placement.cy, placement.h, edges.top, edges.bottom);
+  return placement;
 };
 const defaults = () => ({ items: [], randomOrder: false, loop: false, lyricInsertMode: 'line', cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {

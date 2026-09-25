@@ -224,6 +224,8 @@
         <div class="pick-sets">
           <label class="check"><input id="lyricAutoPlacement" type="checkbox"><span>配置・サイズにも自動で変化をつける<small>オフでは全画面を使用。手動の表示エリアは維持します。「自動配置に戻す」で手動指定を解除できます。</small></span></label>
           <label class="check"><input id="lyricAvoidForeground" type="checkbox" checked><span>前景との重なりを避ける<small>自動配置時に前景の表示領域を避けます。*強調*したカットには適用しません。</small></span></label>
+          <label class="slider"><span>重なり回避の強度</span><input id="lyricAvoidanceStrength" type="range" min="0" max="1" step="0.05" value="1"><output id="lyricAvoidanceStrengthValue">1.00</output></label>
+          <p class="note">1で前景の範囲を避け、下げると周辺の重なりを許容します。0では回避しません。空き領域がない場合は最も重なりの少ない配置を使います。</p>
           <label class="check"><input id="lyricRandomBlend" type="checkbox"><span>合成方法もランダム<small>通常・乗算・スクリーン・オーバーレイからカットごとに選びます。</small></span></label>
           <label class="check"><input id="lyricRandomOpacity" type="checkbox"><span>歌詞不透明度もランダム<small>指定範囲内で、*強調*は高め、~抑制~は低めにします。手動指定とロックを優先します。</small></span></label>
           <div class="fields lyric-opacity-range" id="lyricOpacityRange" hidden>

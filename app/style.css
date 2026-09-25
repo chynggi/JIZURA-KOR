@@ -95,6 +95,9 @@ h3 { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-top: 1
 .media-item img, .media-item video, .media-ln-thumb { width: 52px; height: 38px; object-fit: cover; background: #000; }
 .media-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .media-item .missing { color: var(--amber); }
+.media-cropped-edges { grid-column: 1 / -1; border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--muted); }
+.media-cropped-edges legend { margin-bottom: 4px; }
+.media-cropped-edges label { display: flex; align-items: center; gap: 3px; }
 .media-blend-fields { grid-template-columns: 1fr 1fr; }
 #lyrics { min-height: 150px; font-size: 14px; }
 .jev-prompt-label { font-size: 12px; font-weight: 700; }

@@ -113,6 +113,9 @@ h3 { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); margin-top: 1
 .media-item img, .media-item video, .media-ln-thumb { width: 52px; height: 38px; object-fit: cover; background: #000; }
 .media-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .media-item .missing { color: var(--amber); }
+.media-cropped-edges { grid-column: 1 / -1; border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--muted); }
+.media-cropped-edges legend { margin-bottom: 4px; }
+.media-cropped-edges label { display: flex; align-items: center; gap: 3px; }
 .media-blend-fields { grid-template-columns: 1fr 1fr; }
 #lyrics { min-height: 150px; font-size: 14px; }
 .jev-prompt-label { font-size: 12px; font-weight: 700; }
@@ -671,6 +674,8 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
         <div class="pick-sets">
           <label class="check"><input id="lyricAutoPlacement" type="checkbox"><span>配置・サイズにも自動で変化をつける<small>オフでは全画面を使用。手動の表示エリアは維持します。「自動配置に戻す」で手動指定を解除できます。</small></span></label>
           <label class="check"><input id="lyricAvoidForeground" type="checkbox" checked><span>前景との重なりを避ける<small>自動配置時に前景の表示領域を避けます。*強調*したカットには適用しません。</small></span></label>
+          <label class="slider"><span>重なり回避の強度</span><input id="lyricAvoidanceStrength" type="range" min="0" max="1" step="0.05" value="1"><output id="lyricAvoidanceStrengthValue">1.00</output></label>
+          <p class="note">1で前景の範囲を避け、下げると周辺の重なりを許容します。0では回避しません。空き領域がない場合は最も重なりの少ない配置を使います。</p>
           <label class="check"><input id="lyricRandomBlend" type="checkbox"><span>合成方法もランダム<small>通常・乗算・スクリーン・オーバーレイからカットごとに選びます。</small></span></label>
           <label class="check"><input id="lyricRandomOpacity" type="checkbox"><span>歌詞不透明度もランダム<small>指定範囲内で、*強調*は高め、~抑制~は低めにします。手動指定とロックを優先します。</small></span></label>
           <div class="fields lyric-opacity-range" id="lyricOpacityRange" hidden>
@@ -3372,7 +3377,7 @@ J.defaultProject = () => ({
   timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, cutTimes: {}, lineScale: 1 },
   overrides: {},
   lyricCutOptions: {},
-  lyricEffects: { autoPlacement: false, avoidForeground: true, randomBlend: false, randomOpacity: false, opacityMin: 0, opacityMax: 100 },
+  lyricEffects: { autoPlacement: false, avoidForeground: true, avoidanceStrength: 1, randomBlend: false, randomOpacity: false, opacityMin: 0, opacityMax: 100 },
   lyricBlankCuts: [],
   timelineLinks: [],
   media: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
@@ -4151,9 +4156,10 @@ J.mediaPlacementRect = (placement, sw, sh, w, h) => {
   const aspect = sw / sh, stageAspect = w / h;
   const defaultWidth = Math.min(1, aspect / stageAspect);
   const locked = !placement || placement.lockAspect !== false;
-  let pw = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.005, 4) : defaultWidth;
+  const limit = placement?.croppedAuto ? Infinity : 4;
+  let pw = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.005, limit) : defaultWidth;
   let ph = locked ? pw * stageAspect / aspect : placement && Number.isFinite(+placement.h) ? J.clamp(+placement.h, 0.005, 4) : pw * stageAspect / aspect;
-  if (locked && ph > 4) { ph = 4; pw = ph * aspect / stageAspect; }
+  if (locked && ph > limit) { ph = limit; pw = ph * aspect / stageAspect; }
   const cx = placement && Number.isFinite(+placement.cx) ? J.clamp(+placement.cx, 0, 1) : 0.5;
   const cy = placement && Number.isFinite(+placement.cy) ? J.clamp(+placement.cy, 0, 1) : 0.5;
   return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
@@ -4164,6 +4170,7 @@ J.normalizeMediaPlacement = p => p && ['cx', 'cy', 'w'].every(k => Number.isFini
   h: p.h != null && Number.isFinite(+p.h) ? +p.h : undefined,
   lockAspect: p.lockAspect !== false,
   angle: p.angle != null && Number.isFinite(+p.angle) ? J.clamp(+p.angle, -180, 180) : 0,
+  ...(p.croppedAuto ? { croppedAuto: true } : {}),
 } : null;
 J.autoMediaPlacement = (project, cut, item, plan, layer) => {
   const [W, H] = plan.W && plan.H ? [plan.W, plan.H] : J.designSize ? J.designSize(project) : [1920, 1080];
@@ -4189,7 +4196,16 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
     if (background) return .5 + (J.clamp(target, 0, 1) - .5) * Math.abs(1 - extent);
     return J.clamp(target, extent / 2 + margin, 1 - extent / 2 - margin);
   };
-  return { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
+  const placement = { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
+  const edges = item.croppedEdges || {}, pad = .01;
+  if (!['left','right','top','bottom'].some(edge => edges[edge] === true)) return placement;
+  // Opposite cropped edges require a source wider/taller than the stage.
+  const grow = Math.max(1, edges.left && edges.right ? (1 + 2 * pad) / w : 1, edges.top && edges.bottom ? (1 + 2 * pad) / h : 1);
+  placement.w *= grow; placement.h *= grow; placement.croppedAuto = true;
+  const anchor = (center, extent, before, after) => J.clamp(before && after ? .5 : before ? extent / 2 - pad : after ? 1 - extent / 2 + pad : center, 0, 1);
+  placement.cx = anchor(placement.cx, placement.w, edges.left, edges.right);
+  placement.cy = anchor(placement.cy, placement.h, edges.top, edges.bottom);
+  return placement;
 };
 const defaults = () => ({ items: [], randomOrder: false, loop: false, lyricInsertMode: 'line', cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
@@ -4547,6 +4563,7 @@ J.lyricEffectSettings = project => {
   const min = percent(settings.opacityMin, 0), max = percent(settings.opacityMax, 100);
   return {
     autoPlacement: settings.autoPlacement === true, avoidForeground: settings.avoidForeground !== false,
+    avoidanceStrength: settings.avoidanceStrength != null && Number.isFinite(+settings.avoidanceStrength) ? J.clamp(+settings.avoidanceStrength, 0, 1) : 1,
     randomBlend: settings.randomBlend === true, randomOpacity: settings.randomOpacity === true,
     opacityMin: Math.min(min, max), opacityMax: Math.max(min, max),
   };
@@ -4681,9 +4698,14 @@ J.finishLyricPlan = (project, plan, audio) => {
     } else {
       // Retention extends rendering only. Place each cut using its own time slot
       // so later foregrounds do not force a whole group into one shared area.
-      const obstacles = cut.emphasis ? [] : bounds
+      const obstacles = cut.emphasis || settings.avoidanceStrength === 0 ? [] : bounds
         .filter(({ cut: f, box }) => box && f.start < cut.end && f.end + .6 > cut.start)
-        .map(({ box }) => ({ x: box.x - .02, y: box.y - .02, w: box.w + .04, h: box.h + .04 }));
+        .map(({ box }) => {
+          const s = settings.avoidanceStrength;
+          // Lower strengths allow overlap around the foreground's perimeter.
+          const w = (box.w + .04) * s, h = (box.h + .04) * s;
+          return { x: box.x + box.w / 2 - w / 2, y: box.y + box.h / 2 - h / 2, w, h };
+        });
       cut.area = J.autoLyricArea(cut, plan, obstacles);
       cut.areaMode = 'auto';
     }
@@ -31619,6 +31641,13 @@ function renderMediaList() {
   m.items.forEach((item, i) => {
     const row = document.createElement('div'); row.className = 'media-item'; row.dataset.id = item.id;
     row.innerHTML = `${mediaThumb(item)}<span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><button class="ghost small" aria-label="${escapeHtml(item.name)}を削除">×</button>`;
+    const edges = document.createElement('fieldset'); edges.className = 'media-cropped-edges';
+    edges.innerHTML = `<legend>${J.mediaLabel('見切れている辺（自動配置）','Cropped edges (auto placement)')}</legend>` + [['left','左','Left'],['right','右','Right'],['top','上','Top'],['bottom','下','Bottom']].map(([key,ja,en]) => `<label><input type="checkbox" data-cropped-edge="${key}" ${item.croppedEdges?.[key] ? 'checked' : ''}>${J.mediaLabel(ja,en)}</label>`).join('');
+    edges.addEventListener('change', e => {
+      const edge = e.target.dataset.croppedEdge; if (!edge) return;
+      item.croppedEdges = { ...item.croppedEdges, [edge]: e.target.checked }; replan();
+    });
+    row.appendChild(edges);
     row.querySelector('button').addEventListener('click', () => {
       freezeMediaCuts(layer);
       m.items.splice(i, 1);
@@ -32068,6 +32097,9 @@ function renderTech() {
   const lyricEffects = J.lyricEffectSettings(S.project);
   $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
   $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
+  $('lyricAvoidanceStrength').value = lyricEffects.avoidanceStrength;
+  $('lyricAvoidanceStrengthValue').textContent = lyricEffects.avoidanceStrength.toFixed(2);
+  $('lyricAvoidanceStrength').disabled = !lyricEffects.autoPlacement || !lyricEffects.avoidForeground;
   $('lyricRandomBlend').checked = lyricEffects.randomBlend;
   $('lyricRandomOpacity').checked = lyricEffects.randomOpacity;
   $('lyricOpacityRange').hidden = !lyricEffects.randomOpacity;
@@ -32299,6 +32331,11 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  $('lyricAvoidanceStrength').addEventListener('input', e => {
+    S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), avoidanceStrength: +e.target.value };
+    $('lyricAvoidanceStrengthValue').textContent = (+e.target.value).toFixed(2);
+    markUndoGroup('lyricAvoidanceStrength'); replanSoon(100);
+  });
   for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground'], ['lyricRandomBlend', 'randomBlend'], ['lyricRandomOpacity', 'randomOpacity']]) {
     $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; renderTech(); replan(); });
   }
