@@ -91,6 +91,8 @@ J.mediaTechnique = (project, ov, rng, layer = 'media') => {
 J.mediaTechniqueName = cut => cut.technique === 'legacy' ? label('従来の設定', 'Legacy settings') : J.MEDIA_TECH[cut.technique]?.name || label('演出無し', 'No effects');
 
 J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
+  // Also synchronize old projects and manually selected legacy hold names.
+  if (J.mediaBpmHoldAliases?.[cut.hold]) cut = {...cut, hold:J.mediaBpmHoldAliases[cut.hold]};
   const settings = cut.effectSettings || {}, amount = settings.motion ?? 1, treatment = settings.treatment ?? 1;
   const w = fit[0], h = fit[1], tau = Math.PI * 2, t = p * tau;
   let x = 0, y = 0, rotation = 0, scale = 1, sx = 1, sy = 1, alpha = 1, blur = 0;
@@ -138,6 +140,7 @@ J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
   if (J.mediaBeatState) {
     const v = J.mediaBeatState(cut, p, w, h);
     x += v.x; y += v.y; rotation += v.rotation; scale *= v.scale; alpha *= v.alpha;
+    sx *= v.sx ?? 1; sy *= v.sy ?? 1;
   }
   ctx.translate(x * amount, y * amount); ctx.rotate(rotation * amount); ctx.scale(Math.max(0.001, 1 + (scale * sx - 1) * amount), Math.max(0.001, 1 + (scale * sy - 1) * amount)); ctx.globalAlpha *= alpha;
   const mask = (type, q) => {
