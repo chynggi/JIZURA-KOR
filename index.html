@@ -32433,11 +32433,12 @@ function renderMediaEffects(layer) {
     box.appendChild(section);
   }
   setting('autoPlacement').onchange = e => { const next = J.mediaEffectSettings(S.project, layer); next.autoPlacement = e.target.checked; S.project[layer].effects = next; renderMediaEffects(layer); replan(); };
-  const sizeSlider = box.querySelector('[data-media-size-slider]');
+  const sizeRange = box.querySelector('[data-media-size-range]');
+  const sizeSlider = sizeRange.querySelector('[data-media-size-slider]');
   const syncSizeSlider = (min, max) => {
     sizeSlider.style.setProperty('--range-min', `${min / 5}%`); sizeSlider.style.setProperty('--range-max', `${max / 5}%`);
-    sizeSlider.querySelector('[data-media-size-value="min"]').textContent = `${min}%`;
-    sizeSlider.querySelector('[data-media-size-value="max"]').textContent = `${max}%`;
+    sizeRange.querySelector('[data-media-size-value="min"]').textContent = `${min}%`;
+    sizeRange.querySelector('[data-media-size-value="max"]').textContent = `${max}%`;
   };
   sizeSlider.querySelectorAll('[data-media-size]').forEach(input => input.addEventListener('input', () => {
     const changed = input.dataset.mediaSize;
