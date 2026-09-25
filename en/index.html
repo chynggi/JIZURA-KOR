@@ -32634,14 +32634,13 @@ function syncUI() {
 /* ---------------- wiring ---------------- */
 function bind() {
   $('timelineLegend').innerHTML = [
-    ['🔗','Link boundary（ドラッグ）','Link boundaries (drag)','link'],
     [ICON.dice,'再抽選','Reroll',''],
     [ICON.lock,'ロック','Lock',''],
-    [ICON.area,'表示エリア · 配置とサイズ','Display area / position and size',''],
-    [ICON.frontmost,'Show above foreground（歌詞）','Show in front (lyrics)',''],
-    [ICON.remove,'cuts削除（Foreground · Background）','Delete cut (foreground / background)','remove'],
-    ['×','リンク解除（線上）','Unlink (on connecting line)','unlink'],
-    ['◀▶','動画の長さ（末尾をドラッグ）','Duration (drag end)',''],
+    [ICON.area,'表示範囲','Display area',''],
+    [ICON.remove,'削除','Delete','remove'],
+    [ICON.frontmost,'最前表示','Show in front',''],
+    ['🔗','開始位置をリンク','Link start positions','link'],
+    ['×','リンク解除','Unlink','unlink'],
   ].map(([icon,ja,en,cls])=>`<span class="timeline-legend-item"><span class="timeline-legend-icon ${cls}" aria-hidden="true">${icon}</span><span>${J.mediaLabel(ja,en)}</span></span>`).join('');
 
   $('saveFilename').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('filenameDlg').querySelector('button[value="save"]').click();}});
