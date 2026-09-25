@@ -166,7 +166,7 @@ const assert = require('node:assert/strict');
       assert.equal((await snapshot('foreground')).project.timing.lineTimes[0],.25);
       const saved = {foreground:await snapshot('foreground'),media:await snapshot('media')};
       const downloadReady = page.waitForEvent('download');
-      await page.locator('#btnSave').click();
+      await page.locator('#projectMenu summary').click();await page.locator('#btnSave').click();
       const download = await downloadReady, chunks = [];
       for await (const chunk of await download.createReadStream()) chunks.push(chunk);
       const json = Buffer.concat(chunks);

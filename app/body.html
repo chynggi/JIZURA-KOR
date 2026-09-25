@@ -10,10 +10,21 @@
       <button id="modePro" aria-pressed="true" title="すべての設定を表示">詳細</button>
     </div>
     <div class="acts">
-      <button id="btnNew">新規</button>
-      <label class="file" title="素材入りプロジェクト（.jizuraichi）を開く">開く<input id="fileProject" type="file" accept=".jizuraichi"></label>
-      <button id="btnSave" title="画像・動画・音声を含むプロジェクトを保存">保存</button>
-      <button id="btnAE" title="After Effects パネル用の構成データを書き出す">AE用に書き出し</button>
+      <details class="header-menu" id="projectMenu">
+        <summary>プロジェクト</summary><div class="header-menu-items">
+          <button id="btnNew">新規</button>
+          <label class="file" tabindex="0" title="素材入りプロジェクト（.jizuraichi）を開く">開く<input id="fileProject" type="file" accept=".jizuraichi"></label>
+          <button id="btnSave" title="画像・動画・音声を含むプロジェクトを保存">保存</button>
+        </div>
+      </details>
+      <details class="header-menu" id="outputMenu">
+        <summary>出力</summary><div class="header-menu-items">
+          <button id="menuMP4" data-export-dialog="mp4">MP4 を書き出す</button>
+          <button id="menuPNG" data-export-dialog="png">連番PNG（ZIP）</button>
+          <button id="menuPNGA" data-export-dialog="pnga">透過PNG（ZIP・背景なし）</button>
+          <button id="btnAE" title="After Effects パネル用の構成データを書き出す">AE用に書き出し</button>
+        </div>
+      </details>
       <button id="btnTerms" class="ghost terms-open" title="出力物の権利とライセンス">利用について</button>
     </div>
   </header>
@@ -239,7 +250,7 @@
       <div class="tabpane" data-pane="foregroundFx" hidden><div id="foregroundEffectsPanel" class="media-effects-panel"></div></div>
       <div class="tabpane" data-pane="mediaFx" hidden><div id="mediaEffectsPanel" class="media-effects-panel"></div></div>
 
-      <div class="tabpane" data-pane="out" hidden>
+      <div class="tabpane" data-pane="out" hidden><div id="exportSettingsHome"><div id="exportSettings">
         <div class="fields">
           <label class="field">画面比<select id="outAspect"><option value="16:9">16:9</option><option value="9:16">9:16 縦</option><option value="4:3">4:3</option><option value="3:4">3:4 縦</option><option value="1:1">1:1</option><option value="4:5">4:5 縦</option><option value="21:9">21:9</option></select></label>
           <label class="field">解像度<select id="outRes"><option value="720">720p</option><option value="1080">1080p</option><option value="1440">1440p</option><option value="2160">4K</option></select></label>
@@ -261,7 +272,7 @@
           <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">中止</button></div>
         </div>
         <button class="terms-open linkish" style="margin-top:10px">書き出した動画・画像の権利とライセンスについて</button>
-        <p class="note" id="codecNote">書き出しはこのブラウザの中で行われます（Chrome / Edge 推奨）。</p>
+        <p class="note" id="codecNote">書き出しはこのブラウザの中で行われます（Chrome / Edge 推奨）。</p></div></div>
       </div>
     </section>
   </main>
@@ -286,7 +297,7 @@
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
       <h3 id="termsForkTitle">字面一 JIZURA ONE STOP EDITION</h3>
-      <p>このfork版は、テーマに合わせた構成選定と、背景・前景の画像・動画編集機能を追加しています。編集・書き出しはブラウザ内で処理します。</p>
+      <p>このfork版は、ワンストップで動画作成が完成する事を目指して<br>オリジナル版JIZURAに機能を追加したものです。<br>編集・書き出しはブラウザ内で処理します。</p>
       <p>fork版のソースコード：<a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>
@@ -309,4 +320,10 @@
  <div id="themeChoices"></div>
  <div class="acts"><button id="btnClearThemes" type="button">選択を解除</button><button value="cancel">キャンセル</button><button id="btnApplyThemes" type="button">適用</button></div>
  </form>
+</dialog>
+
+<dialog id="exportDlg" class="terms export-dialog" aria-labelledby="exportDlgTitle">
+ <h2 id="exportDlgTitle">出力</h2>
+ <div id="exportDialogContent"></div>
+ <div class="terms-foot"><button id="btnCloseExport" type="button">閉じる</button></div>
 </dialog>

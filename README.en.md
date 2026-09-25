@@ -70,3 +70,7 @@ Below Import audio, open **Theme settings**, select multiple themes and apply. L
 Each **Randomize** chooses one selected theme and uses only its curated styles, lyric techniques and foreground/background motion and entrance/exit candidates. Palettes and fonts follow the selected style. Choosing themes alone leaves the current arrangement unchanged. No themes means unrestricted randomization. Manual media choices, manual areas and locked cuts keep their existing priority. Extra/Japanese-style permission switches are respected. Themes support project files, local save and Undo/Redo. Selection runs in your browser with no API key.
 
 For local preview run `python preview_server.py` and open `http://127.0.0.1:8765/`.
+
+### Header menus
+
+**Project** contains New, Open and Save. **Export** contains MP4, PNG sequence ZIP, transparent PNG ZIP, and AE arrangement data. MP4/PNG open a settings dialog sharing the settings in Advanced → Export. MP4 includes quality and audio settings; PNG shows the applicable image settings. Start export, monitor progress and cancel from the dialog.

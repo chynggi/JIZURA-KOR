@@ -1,6 +1,10 @@
 """English copy for the browser edition. The Japanese source stays authoritative."""
 
 BODY = {
+    '<summary>プロジェクト</summary>': '<summary>Project</summary>',
+    '<summary>出力</summary>': '<summary>Export</summary>',
+    'このfork版は、ワンストップで動画作成が完成する事を目指して<br>オリジナル版JIZURAに機能を追加したものです。<br>編集・書き出しはブラウザ内で処理します。': 'This fork adds features to the original JIZURA<br>with the aim of completing video creation in one place.<br>Editing and export run in your browser.',
+
     'テーマ設定': 'Theme settings', '選択を解除': 'Clear selection',
     '複数選択できます。おまかせでは、選んだテーマのいずれかに合う設定候補から構成します。未選択の場合は制限しません。': 'Select multiple themes. Randomize builds an arrangement from candidates matching one of your selected themes. No selection means unrestricted.',
     'このfork版は、テーマに合わせた構成選定と、背景・前景の画像・動画編集機能を追加しています。編集・書き出しはブラウザ内で処理します。': 'This fork adds theme-guided arrangements and background/foreground image and video editing. Editing and export run in your browser.',

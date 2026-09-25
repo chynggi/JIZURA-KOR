@@ -1588,6 +1588,26 @@ async function codecNote() {
   if (!vc) $('eMP4').title = 'このブラウザは MP4 書き出しに対応していません（Chrome / Edge 推奨）';
 }
 const EXP_BTNS = ['btnMP4', 'btnPNG', 'btnPNGA', 'eMP4'];
+function openExportDialog(kind) {
+  if (S.exporting) return;
+  pause();
+  const mp4 = kind === 'mp4';
+  $('exportDlgTitle').textContent = J.mediaLabel(mp4 ? 'MP4 を書き出す' : kind === 'pnga' ? '透過PNG（ZIP・背景なし）' : '連番PNG（ZIP）', mp4 ? 'Export MP4' : kind === 'pnga' ? 'Transparent PNG (ZIP)' : 'PNG sequence (ZIP)');
+  $('exportDialogContent').appendChild($('exportSettings'));
+  for (const [id,type] of [['btnMP4','mp4'],['btnPNG','png'],['btnPNGA','pnga']]) $(id).hidden = kind !== type;
+  $('outQuality').closest('label').hidden = !mp4;
+  $('outAudio').closest('label').hidden = !mp4;
+  $('outKey').closest('label').hidden = kind === 'pnga';
+  $('exportSettings').querySelector('.key-note').hidden = kind === 'pnga';
+  $('codecNote').hidden = !mp4;
+  syncOut(); codecNote(); $('exportDlg').showModal();
+}
+function restoreExportSettings() {
+  $('exportSettingsHome').appendChild($('exportSettings'));
+  for (const id of ['btnMP4','btnPNG','btnPNGA','codecNote']) $(id).hidden = false;
+  for (const id of ['outQuality','outAudio','outKey']) $(id).closest('label').hidden = false;
+  $('exportSettings').querySelector('.key-note').hidden = false;
+}
 function baseName() {
   const k = J.keyMode(S.project);
   return ((S.project.title || 'jizura').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'jizura') + (k ? (k === 'green' ? '_greenback' : '_blackback') : '');
@@ -1596,6 +1616,8 @@ async function runExport(kind) {
   if (S.exporting) return;
   pause();
   const ac = new AbortController(); S.exporting = ac;
+  const settingsInputs = [...$('exportSettings').querySelectorAll('input,select')].map(el=>[el,el.disabled]);
+  settingsInputs.forEach(([el])=>{el.disabled=true;}); $('btnCloseExport').disabled = true;
   const boxes = [...document.querySelectorAll('.exp-box')];
   const setText = m => boxes.forEach(b => { b.querySelector('.exp-text').textContent = m; });
   const txt = { set textContent(m) { setText(m); }, get textContent() { return boxes[0].querySelector('.exp-text').textContent; } };
@@ -1621,6 +1643,7 @@ async function runExport(kind) {
     console.error(e);
   } finally {
     S.exporting = null; S.need = true;
+    settingsInputs.forEach(([el,disabled])=>{el.disabled=disabled;}); $('btnCloseExport').disabled = false;
     EXP_BTNS.forEach(id => { $(id).disabled = false; });
     codecNote();
   }
@@ -1750,6 +1773,19 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  const menus = [...document.querySelectorAll('.header-menu')];
+  menus.forEach(menu => {
+    menu.addEventListener('toggle', () => { if (menu.open) menus.forEach(other=>{if(other!==menu)other.open=false;}); });
+    menu.addEventListener('click', e => { if (e.target.closest('button')) menu.open=false; });
+  });
+  document.addEventListener('click', e => menus.forEach(menu=>{if(!menu.contains(e.target))menu.open=false;}));
+  document.addEventListener('keydown', e => {if(e.key==='Escape')menus.forEach(menu=>{menu.open=false;});});
+  $('fileProject').closest('label').addEventListener('keydown', e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();$('fileProject').click();}});
+  $('fileProject').addEventListener('change',()=>{$('projectMenu').open=false;});
+  document.querySelectorAll('[data-export-dialog]').forEach(button=>button.addEventListener('click',()=>openExportDialog(button.dataset.exportDialog)));
+  $('btnCloseExport').addEventListener('click',()=>{if(!S.exporting)$('exportDlg').close();});
+  $('exportDlg').addEventListener('cancel',e=>{if(S.exporting)e.preventDefault();});
+  $('exportDlg').addEventListener('close',restoreExportSettings);
   $('btnThemes').addEventListener('click', () => {
     const selected = new Set(J.themeIds(S.project));
     $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${J.mediaLabel(category === 'genre' ? '曲ジャンル' : 'テイスト',category === 'genre' ? 'Music genre' : 'Taste')}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');

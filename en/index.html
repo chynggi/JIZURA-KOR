@@ -444,6 +444,14 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 #themeChoices fieldset { border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
 #themeChoices legend { font-weight: bold; }
 
+.header-menu { position: relative; }
+.header-menu summary { cursor: pointer; padding: 8px 12px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 12px; }
+.header-menu[open] summary { color: var(--amber); }
+.header-menu-items { position: absolute; right: 0; top: calc(100% + 6px); z-index: 100; display: flex; flex-direction: column; gap: 4px; padding: 8px; min-width: 220px; background: var(--panel); border: 1px solid var(--line2); border-radius: var(--r); box-shadow: 0 12px 30px #0008; }
+.header-menu-items button, .header-menu-items .file { width: 100%; text-align: left; justify-content: flex-start; white-space: nowrap; }
+.export-dialog .fields { margin-bottom: 12px; }
+.export-dialog .outbtns { margin: 16px 0; }
+
 </style>
 </head>
 <body>
@@ -460,10 +468,21 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
     </div>
     <nav class="lang-switch" aria-label="Language"><a href="../index.html" lang="ja">日本語</a><span aria-current="page">English</span></nav>
     <div class="acts">
-      <button id="btnNew">New</button>
-      <label class="file" title="Source入りプロジェクト（.jizuraichi）をOpen">Open<input id="fileProject" type="file" accept=".jizuraichi"></label>
-      <button id="btnSave" title="Save project with images, videos and audio">Save</button>
-      <button id="btnAE" title="Export project data for the After Effects panel">Export for AE</button>
+      <details class="header-menu" id="projectMenu">
+        <summary>Project</summary><div class="header-menu-items">
+          <button id="btnNew">New</button>
+          <label class="file" tabindex="0" title="Source入りプロジェクト（.jizuraichi）をOpen">Open<input id="fileProject" type="file" accept=".jizuraichi"></label>
+          <button id="btnSave" title="Save project with images, videos and audio">Save</button>
+        </div>
+      </details>
+      <details class="header-menu" id="outputMenu">
+        <summary>Export</summary><div class="header-menu-items">
+          <button id="menuMP4" data-export-dialog="mp4">Export MP4</button>
+          <button id="menuPNG" data-export-dialog="png">PNG sequence (ZIP)</button>
+          <button id="menuPNGA" data-export-dialog="pnga">Transparent PNG (ZIP)</button>
+          <button id="btnAE" title="Export project data for the After Effects panel">Export for AE</button>
+        </div>
+      </details>
       <button id="btnTerms" class="ghost terms-open" title="Rights and licenses for your exports">About / rights</button>
     </div>
   </header>
@@ -689,7 +708,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
       <div class="tabpane" data-pane="foregroundFx" hidden><div id="foregroundEffectsPanel" class="media-effects-panel"></div></div>
       <div class="tabpane" data-pane="mediaFx" hidden><div id="mediaEffectsPanel" class="media-effects-panel"></div></div>
 
-      <div class="tabpane" data-pane="out" hidden>
+      <div class="tabpane" data-pane="out" hidden><div id="exportSettingsHome"><div id="exportSettings">
         <div class="fields">
           <label class="field">Aspect ratio<select id="outAspect"><option value="16:9">16:9</option><option value="9:16">9:16 portrait</option><option value="4:3">4:3</option><option value="3:4">3:4 portrait</option><option value="1:1">1:1</option><option value="4:5">4:5 portrait</option><option value="21:9">21:9</option></select></label>
           <label class="field">Resolution<select id="outRes"><option value="720">720p</option><option value="1080">1080p</option><option value="1440">1440p</option><option value="2160">4K</option></select></label>
@@ -711,7 +730,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
           <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">Cancel</button></div>
         </div>
         <button class="terms-open linkish" style="margin-top:10px">Rights and licenses for exported videos and images</button>
-        <p class="note" id="codecNote">Export runs in your browser (Chrome or Edge recommended).</p>
+        <p class="note" id="codecNote">Export runs in your browser (Chrome or Edge recommended).</p></div></div>
       </div>
     </section>
   </main>
@@ -736,7 +755,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
     </section>
     <section class="terms-section terms-fork" aria-labelledby="termsForkTitle">
       <h3 id="termsForkTitle">字面一 JIZURA ONE STOP EDITION</h3>
-      <p>このfork版は、テーマに合わせたArrangement選定と、Background・Foregroundの画像・動画編集機能をNewしています。編集・Exportはブラウザ内で処理します。</p>
+      <p>This fork adds features to the original JIZURA<br>with the aim of completing video creation in one place.<br>Editing and export run in your browser.</p>
       <p>Fork source code: <a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>
@@ -759,6 +778,12 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
  <div id="themeChoices"></div>
  <div class="acts"><button id="btnClearThemes" type="button">Clear selection</button><button value="cancel">Cancel</button><button id="btnApplyThemes" type="button">Apply</button></div>
  </form>
+</dialog>
+
+<dialog id="exportDlg" class="terms export-dialog" aria-labelledby="exportDlgTitle">
+ <h2 id="exportDlgTitle">出力</h2>
+ <div id="exportDialogContent"></div>
+ <div class="terms-foot"><button id="btnCloseExport" type="button">Close</button></div>
 </dialog>
 
 <script>
@@ -32383,6 +32408,26 @@ async function codecNote() {
   if (!vc) $('eMP4').title = 'MP4 export is unavailable here (Chrome or Edge recommended)';
 }
 const EXP_BTNS = ['btnMP4', 'btnPNG', 'btnPNGA', 'eMP4'];
+function openExportDialog(kind) {
+  if (S.exporting) return;
+  pause();
+  const mp4 = kind === 'mp4';
+  $('exportDlgTitle').textContent = J.mediaLabel(mp4 ? 'MP4 を書き出す' : kind === 'pnga' ? '透過PNG（ZIP · BackgroundNone）' : '連番PNG（ZIP）', mp4 ? 'Export MP4' : kind === 'pnga' ? 'Transparent PNG (ZIP)' : 'PNG sequence (ZIP)');
+  $('exportDialogContent').appendChild($('exportSettings'));
+  for (const [id,type] of [['btnMP4','mp4'],['btnPNG','png'],['btnPNGA','pnga']]) $(id).hidden = kind !== type;
+  $('outQuality').closest('label').hidden = !mp4;
+  $('outAudio').closest('label').hidden = !mp4;
+  $('outKey').closest('label').hidden = kind === 'pnga';
+  $('exportSettings').querySelector('.key-note').hidden = kind === 'pnga';
+  $('codecNote').hidden = !mp4;
+  syncOut(); codecNote(); $('exportDlg').showModal();
+}
+function restoreExportSettings() {
+  $('exportSettingsHome').appendChild($('exportSettings'));
+  for (const id of ['btnMP4','btnPNG','btnPNGA','codecNote']) $(id).hidden = false;
+  for (const id of ['outQuality','outAudio','outKey']) $(id).closest('label').hidden = false;
+  $('exportSettings').querySelector('.key-note').hidden = false;
+}
 function baseName() {
   const k = J.keyMode(S.project);
   return ((S.project.title || 'jizura').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'jizura') + (k ? (k === 'green' ? '_greenback' : '_blackback') : '');
@@ -32391,6 +32436,8 @@ async function runExport(kind) {
   if (S.exporting) return;
   pause();
   const ac = new AbortController(); S.exporting = ac;
+  const settingsInputs = [...$('exportSettings').querySelectorAll('input,select')].map(el=>[el,el.disabled]);
+  settingsInputs.forEach(([el])=>{el.disabled=true;}); $('btnCloseExport').disabled = true;
   const boxes = [...document.querySelectorAll('.exp-box')];
   const setText = m => boxes.forEach(b => { b.querySelector('.exp-text').textContent = m; });
   const txt = { set textContent(m) { setText(m); }, get textContent() { return boxes[0].querySelector('.exp-text').textContent; } };
@@ -32416,6 +32463,7 @@ async function runExport(kind) {
     console.error(e);
   } finally {
     S.exporting = null; S.need = true;
+    settingsInputs.forEach(([el,disabled])=>{el.disabled=disabled;}); $('btnCloseExport').disabled = false;
     EXP_BTNS.forEach(id => { $(id).disabled = false; });
     codecNote();
   }
@@ -32545,6 +32593,19 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  const menus = [...document.querySelectorAll('.header-menu')];
+  menus.forEach(menu => {
+    menu.addEventListener('toggle', () => { if (menu.open) menus.forEach(other=>{if(other!==menu)other.open=false;}); });
+    menu.addEventListener('click', e => { if (e.target.closest('button')) menu.open=false; });
+  });
+  document.addEventListener('click', e => menus.forEach(menu=>{if(!menu.contains(e.target))menu.open=false;}));
+  document.addEventListener('keydown', e => {if(e.key==='Escape')menus.forEach(menu=>{menu.open=false;});});
+  $('fileProject').closest('label').addEventListener('keydown', e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();$('fileProject').click();}});
+  $('fileProject').addEventListener('change',()=>{$('projectMenu').open=false;});
+  document.querySelectorAll('[data-export-dialog]').forEach(button=>button.addEventListener('click',()=>openExportDialog(button.dataset.exportDialog)));
+  $('btnCloseExport').addEventListener('click',()=>{if(!S.exporting)$('exportDlg').close();});
+  $('exportDlg').addEventListener('cancel',e=>{if(S.exporting)e.preventDefault();});
+  $('exportDlg').addEventListener('close',restoreExportSettings);
   $('btnThemes').addEventListener('click', () => {
     const selected = new Set(J.themeIds(S.project));
     $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${J.mediaLabel(category === 'genre' ? '曲ジャンル' : 'テイスト',category === 'genre' ? 'Music genre' : 'Taste')}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');
