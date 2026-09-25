@@ -85,6 +85,13 @@ J.saveFontFile = async (key, file) => {
     });
   } finally { db.close(); }
 };
+J.readFontFile = async key => {
+  const db = await fontDatabase();
+  try { return await new Promise((resolve,reject) => {
+    const q = db.transaction('files').objectStore('files').get(key);
+    q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error);
+  }); } finally { db.close(); }
+};
 J.restoreFontFiles = async userFonts => {
   const files = (userFonts || []).filter(font => font.file);
   if (!files.length) return;

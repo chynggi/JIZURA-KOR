@@ -10,8 +10,9 @@
       <button id="modePro" aria-pressed="true" title="すべての設定を表示">詳細</button>
     </div>
     <div class="acts">
-      <label class="file" title="保存したプロジェクト(.json)を開く">開く<input id="fileProject" type="file" accept=".json,application/json"></label>
-      <button id="btnSave" title="プロジェクトを .json で保存">保存</button>
+      <button id="btnNew">新規</button>
+      <label class="file" title="素材入りプロジェクト、または従来のJSONを開く">開く<input id="fileProject" type="file" accept=".jizura,.json,application/json,application/octet-stream"></label>
+      <button id="btnSave" title="画像・動画・音声を含むプロジェクトを保存">保存</button>
       <button id="btnAE" title="After Effects パネル用の構成データを書き出す">AE用に書き出し</button>
       <button id="btnTerms" class="ghost terms-open" title="出力物の権利とライセンス">利用について</button>
     </div>
@@ -295,4 +296,13 @@
     </section>
     <div class="terms-foot"><button value="close" class="primary" autofocus>閉じる</button></div>
   </form>
+</dialog>
+
+<dialog id="newProjectDlg" class="terms" aria-labelledby="newProjectTitle">
+ <form method="dialog">
+  <h2 id="newProjectTitle">新規プロジェクト</h2>
+  <p>現在の編集内容を残す場合は、先に保存してください。</p>
+  <label class="field">画面比<select id="newProjectAspect"><option>16:9</option><option>9:16</option><option>4:3</option><option>3:4</option><option>1:1</option><option>4:5</option><option>21:9</option></select></label>
+  <div class="acts"><button value="cancel">キャンセル</button><button id="btnCreateProject" type="button">作成</button></div>
+ </form>
 </dialog>

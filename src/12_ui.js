@@ -33,7 +33,9 @@ const AP = {
 const NO_AUDIO_LABEL = '曲なし（読み込むと拍を検出してカットを合わせます）';
 function removeAudio() {
   if (!S.audio) return;
-  pause(); S.audio = null;
+  S.audioLoad = (S.audioLoad || 0) + 1;
+  pause(); S.audio = null; S.audioFile = null; delete S.project.audioAsset;
+  S.audioAssetId = null;
   $('audioFile').value = '';
   $('audioName').textContent = NO_AUDIO_LABEL;
   $('btnRemoveAudio').hidden = true;
@@ -120,6 +122,10 @@ function undoMove(direction) {
   $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false');
   U.restoring = true; U.i = next; U.pendingGroup = null; U.lastGroup = null;
   S.project = mergeProject(JSON.parse(U.list[next]));
+  if (S.project.audioAsset?.id !== S.audioAssetId) {
+    S.audioLoad = (S.audioLoad || 0) + 1;
+    S.audio = null; S.audioFile = null; refreshAudioName(); restoreAudioAsset();
+  }
   fontKey = ''; syncUI(); replan(); flushSave();
   U.restoring = false; updateUndoButtons();
 }
@@ -1859,18 +1865,7 @@ function bind() {
   $('lineScale').addEventListener('change', e => { S.project.timing.lineScale = J.clamp(parseFloat(e.target.value) || 1, 0.3, 4); replan(); });
   $('snap').addEventListener('change', e => { S.project.timing.snap = e.target.checked; replan(); });
   $('btnResetTimes').addEventListener('click', () => { const layer = activeMediaLayer(), timing = layer ? S.project[layer].timing : S.project.timing; timing.lineTimes = {}; if (!layer) timing.cutTimes = {}; replan(); });
-  $('audioFile').addEventListener('change', async e => {
-    const f = e.target.files && e.target.files[0]; if (!f) return;
-    $('audioName').textContent = '解析中…';
-    try {
-      pause();
-      S.audio = await J.analyzeAudio(f);
-      $('audioName').textContent = `${f.name}（${J.fmtTime(S.audio.duration)}・約${S.audio.bpm}BPM）`;
-      $('btnRemoveAudio').hidden = false;
-      S.project.timing.snap = true;
-      syncUI(); replan();
-    } catch (err) { $('audioName').textContent = '読み込めませんでした: ' + err.message; S.audio = null; $('btnRemoveAudio').hidden = true; }
-  });
+  $('audioFile').addEventListener('change', e => { const f = e.target.files?.[0]; if (f) loadAudioFile(f); });
   $('btnRemoveAudio').addEventListener('click', removeAudio);
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
@@ -2139,12 +2134,27 @@ function bind() {
   const openTerms = () => { if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', ''); };
   document.querySelectorAll('.terms-open').forEach(b => b.addEventListener('click', openTerms));
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });   // click on the backdrop
-  $('btnSave').addEventListener('click', () => J.saveFile(baseName() + '.jizura.json', JSON.stringify(S.project, null, 1)));
+  $('btnNew').addEventListener('click', () => { if (!S.exporting && !S.projectBusy) $('newProjectDlg').showModal(); });
+  $('btnCreateProject').addEventListener('click', () => {
+    const project = J.defaultProject(); project.lyrics = ''; project.aspect = $('newProjectAspect').value;
+    replaceProject(project, null, null, new Map()); $('newProjectDlg').close();
+  });
+  $('btnSave').addEventListener('click', async () => {
+    if (S.projectBusy) return;
+    S.projectBusy = true; $('btnSave').disabled = true;
+    const project = JSON.parse(JSON.stringify(S.project)), audio = S.audioFile;
+    try { await J.saveFile(baseName() + '.jizura', await J.packProject(project, audio)); }
+    catch (err) { toast(J.mediaLabel('保存できませんでした：', 'Could not save: ') + err.message); }
+    finally { S.projectBusy = false; $('btnSave').disabled = false; }
+  });
   $('btnAE').addEventListener('click', () => J.saveFile(baseName() + '_ae.json', JSON.stringify(J.planForAE(S.plan, S.project), null, 1)));
   $('fileProject').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    try { S.project = mergeProject(JSON.parse(await f.text())); syncUI(); replan(); await Promise.all([restoreMediaAssets(), J.restoreFontFiles(S.project.userFonts)]); fontKey = ''; ensureFonts(); }
-    catch (err) { showMsg('プロジェクトを読み込めませんでした'); setTimeout(() => showMsg(null), 2500); }
+    if (S.exporting || S.projectBusy) { e.target.value = ''; return; }
+    S.projectBusy = true;
+    try { await openProjectFile(f); }
+    catch (err) { toast(J.mediaLabel('プロジェクトを読み込めませんでした：', 'Could not open project: ') + err.message); }
+    finally { S.projectBusy = false; }
     e.target.value = '';
   });
   document.addEventListener('keydown', e => {
@@ -2154,7 +2164,7 @@ function bind() {
     if (!typing && !e.altKey && e.ctrlKey && e.code === 'KeyY') { e.preventDefault(); undoMove(1); return; }
     if (S.tap && (e.code === 'Space' || e.code === 'Enter') && !typing) { e.preventDefault(); tapNow(); return; }
     if (S.tap && e.code === 'Escape') { pause(); stopTap(); return; }
-    if (typing || $('termsDlg').open) return;
+    if (typing || document.querySelector('dialog[open]')) return;
     if (e.code === 'Space') { e.preventDefault(); S.playing ? pause() : play(); }
     else if (e.code === 'ArrowRight') seek(S.t + (e.shiftKey ? 1 : 1 / S.plan.fps));
     else if (e.code === 'ArrowLeft') seek(S.t - (e.shiftKey ? 1 : 1 / S.plan.fps));
@@ -2167,16 +2177,88 @@ function bind() {
 
 /* song file -> beat analysis (file input, or a host such as the After Effects panel) */
 async function loadAudioFile(f) {
+  const project = S.project, request = S.audioLoad = (S.audioLoad || 0) + 1;
   $('audioName').textContent = '解析中…';
   try {
     pause();
-    S.audio = await J.analyzeAudio(f);
-    $('audioName').textContent = `${f.name}（${J.fmtTime(S.audio.duration)}・約${S.audio.bpm}BPM）`;
-    $('btnRemoveAudio').hidden = false;
+    const audio = await J.analyzeAudio(f);
+    if (S.project !== project || S.audioLoad !== request) return false;
+    S.audio = audio; S.audioFile = f;
+    S.project.audioAsset = {id:'audio_' + crypto.randomUUID(),name:f.name,type:f.type};
+    await J.storeMedia(S.project.audioAsset.id, f).catch(() => {});
+    if (S.project !== project || S.audioLoad !== request) return false;
+    refreshAudioName();
     S.project.timing.snap = true;
     syncUI(); replan();
     return true;
-  } catch (err) { $('audioName').textContent = '読み込めませんでした: ' + err.message; S.audio = null; $('btnRemoveAudio').hidden = true; return false; }
+  } catch (err) {
+    if (S.project === project && S.audioLoad === request) { refreshAudioName(); toast(J.mediaLabel('曲を読み込めませんでした：','Could not import audio: ') + err.message); }
+    return false;
+  }
+}
+
+function releaseProjectAssets(assets) {
+  for (const asset of assets.values()) {
+    if (asset.type === 'video') { asset.element.pause(); asset.element.removeAttribute('src'); asset.element.load(); }
+    URL.revokeObjectURL(asset.url);
+  }
+  assets.clear();
+}
+function refreshAudioName() {
+  S.audioAssetId = S.audio ? S.project.audioAsset?.id : null;
+  $('audioFile').value = '';
+  $('audioName').textContent = S.audio ? `${S.project.audioAsset?.name || ''}（${J.fmtTime(S.audio.duration)}・約${S.audio.bpm}BPM）` : NO_AUDIO_LABEL;
+  $('btnRemoveAudio').hidden = !S.audio;
+}
+function replaceProject(project, audio, audioFile, assets) {
+  S.audioLoad = (S.audioLoad || 0) + 1;
+  pause(); clearTimeout(replanTimer); clearTimeout(saveTimer);
+  if (S.areaEdit) cancelAreaEditor();
+  S.tap = null; S.timelineDrag = null; S.linkDrag = null; S.scrubbing = false;
+  $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed','false');
+  releaseProjectAssets(J.mediaAssets);
+  for (const [id,asset] of assets) { J.mediaAssets.set(id,asset); asset.element.addEventListener('seeked',()=>{S.need=true}); }
+  for (const font of S.project.userFonts || []) delete J.FONTS[font.key];
+  S.project = mergeProject(project); S.audio = audio; S.audioFile = audioFile;
+  S.t = 0; S.sourceTab = 'lyrics'; S.timelineZoom = 1; S.loop = true;
+  $('btnLoop').setAttribute('aria-pressed','true'); $('mediaFiles').value = '';
+  J.mediaTransitionFrame = null; J.foregroundTransitionFrame = null;
+  H.list = []; H.i = -1; fontKey = ''; initUndo();
+  refreshAudioName(); syncUI(); replan(); setTimelineZoom(1); commit(); flushSave(); ensureFonts();
+}
+async function restoreAudioAsset() {
+  const project = S.project, info = project.audioAsset;
+  if (!info) return;
+  try {
+    const file = await J.loadMedia(info.id);
+    if (!file) return;
+    const audio = await J.analyzeAudio(file);
+    if (S.project !== project || S.project.audioAsset !== info) return;
+    S.audio = audio; S.audioFile = file; refreshAudioName(); syncUI(); replan();
+  } catch (err) { toast(J.mediaLabel('曲を復元できませんでした：','Could not restore audio: ') + err.message); }
+}
+async function openProjectFile(file) {
+  const loaded = await J.unpackProject(file), project = loaded.project, assets = new Map();
+  let audio = null, audioFile = null;
+  try {
+    const files = new Map(loaded.files.map(entry=>[entry.kind+':'+entry.id,entry.file]));
+    for (const item of [...(project.media?.items || []),...(project.foreground?.items || [])]) {
+      if (assets.has(item.id)) continue;
+      const blob = files.get('media:'+item.id) || await J.loadMedia(item.id);
+      if (blob) await J.attachMedia(item,blob,assets);
+    }
+    if (project.audioAsset) {
+      audioFile = files.get('audio:'+project.audioAsset.id) || await J.loadMedia(project.audioAsset.id);
+      if (audioFile) audio = await J.analyzeAudio(audioFile);
+    }
+    // Decode everything first: malformed projects leave the current edit intact.
+    for (const entry of loaded.files) {
+      if (entry.kind === 'font') await J.saveFontFile(entry.id,entry.file);
+      else await J.storeMedia(entry.id,entry.file);
+    }
+    await J.restoreFontFiles(project.userFonts);
+    replaceProject(project,audio,audioFile,assets);
+  } catch (err) { releaseProjectAssets(assets); throw err; }
 }
 
 /* ---------------- boot ---------------- */
@@ -2186,6 +2268,7 @@ function boot() {
   initUndo();
   bind(); syncUI(); replan();
   restoreMediaAssets();
+  restoreAudioAsset();
   J.restoreFontFiles(S.project.userFonts).then(() => { fontKey = ''; ensureFonts(); S.need = true; }).catch(() => {});
   let mode = 'easy'; try { mode = localStorage.getItem('jizura.mode') || 'easy'; } catch (e) {}
   setMode(mode); commit();

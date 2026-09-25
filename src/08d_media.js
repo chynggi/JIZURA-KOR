@@ -198,14 +198,15 @@ const dbOp = async (mode, cb) => {
   const db = await dbOpen();
   try { return await new Promise((resolve, reject) => {
     const tx = db.transaction('files', mode), q = cb(tx.objectStore('files'));
-    q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error);
+    tx.oncomplete = () => resolve(q.result);
+    tx.onerror = () => reject(tx.error || q.error); tx.onabort = () => reject(tx.error || new Error('Media storage transaction aborted'));
   }); } finally { db.close(); }
 };
 J.storeMedia = (id, file) => dbOp('readwrite', s => s.put(file, id));
 J.loadMedia = id => dbOp('readonly', s => s.get(id));
 J.removeMedia = id => dbOp('readwrite', s => s.delete(id));
-J.attachMedia = (item, file) => new Promise((resolve, reject) => {
-  const previous = J.mediaAssets.get(item.id); if (previous) URL.revokeObjectURL(previous.url);
+J.attachMedia = (item, file, assets = J.mediaAssets) => new Promise((resolve, reject) => {
+  const previous = assets.get(item.id); if (previous) URL.revokeObjectURL(previous.url);
   const url = URL.createObjectURL(file);
   const el = document.createElement(item.type === 'video' ? 'video' : 'img');
   if (item.type === 'video') { el.muted = true; el.playsInline = true; el.preload = 'auto'; }
@@ -218,7 +219,7 @@ J.attachMedia = (item, file) => new Promise((resolve, reject) => {
     }
     const posterElement = item.type === 'video' ? new Image() : null;
     if (posterElement) posterElement.src = poster;
-    J.mediaAssets.set(item.id, { url, element: el, type: item.type, poster, posterElement }); resolve(el);
+    assets.set(item.id, { url, element: el, type: item.type, poster, posterElement, file }); resolve(el);
   };
   el.onerror = () => { URL.revokeObjectURL(url); reject(new Error('画像・動画を読み込めませんでした')); };
   if (item.type === 'video') el.onloadeddata = ready; else el.onload = ready;

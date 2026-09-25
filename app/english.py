@@ -1,6 +1,12 @@
 """English copy for the browser edition. The Japanese source stays authoritative."""
 
 BODY = {
+    '素材入りプロジェクト、または従来のJSONを開く': 'Open a portable project or legacy JSON',
+    '画像・動画・音声を含むプロジェクトを保存': 'Save project with images, videos and audio',
+    '新規プロジェクト': 'New project', '新規': 'New', '<button value="cancel">キャンセル</button>': '<button value="cancel">Cancel</button>',
+    '現在の編集内容を残す場合は、先に保存してください。': 'Save first if you want to keep your current work.',
+    '<button id="btnCreateProject" type="button">作成</button>': '<button id="btnCreateProject" type="button">Create</button>',
+
     '歌詞の言語': 'Lyrics language', '<option value="auto">自動判定</option>': '<option value="auto">Auto-detect</option>',
     '<button id="btnAddFont">追加</button>': '<button id="btnAddFont">Add</button>',
     '曲名': 'Song title', '自動': 'Auto',
