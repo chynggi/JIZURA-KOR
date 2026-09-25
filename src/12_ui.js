@@ -928,6 +928,21 @@ async function openCandidates(i) {
   cancelAnimationFrame(candAnim); candAnim = requestAnimationFrame(tick);
 }
 
+/* ---------------- 곡에서 초안 ---------------- */
+async function draftFromSong() {
+  if (!S.audio) { toast('먼저 곡을 불러오세요'); return; }
+  const lines = S.plan.lines; if (!lines.length || S.tap) return;
+  showMsg('곡에서 행의 시작을 찾는 중…');
+  let ts = [];
+  try { ts = await J.draftLineStarts(S.audio, lines.map(l => l.text)); } catch (e) { console.warn(e); }
+  showMsg(null);
+  if (ts.length !== lines.length) { toast('곡에서 행의 시작을 찾지 못했습니다'); return; }
+  pushEdit();
+  S.project.timing.lineTimes = {}; ts.forEach((t, i) => { S.project.timing.lineTimes[i] = t; });
+  replan(); flushSave(); updateEditBtns();
+  toast(`${lines.length}행의 시작을 곡에서 추정했습니다(초안). 어긋난 행은 ◎ Shift+클릭이나 타임라인으로 고치세요. Ctrl+Z로 되돌릴 수 있습니다`);
+}
+
 /* ---------------- tap sync ---------------- */
 // start from any line: playback begins a little before that line, earlier lines keep their times
 // (single: only that one line is re-tapped, then tap sync ends)
@@ -1007,6 +1022,7 @@ function bind() {
   $('btnResetTimes').addEventListener('click', () => { S.project.timing.lineTimes = {}; replan(); });
   $('audioFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadAudioFile(f); });
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
+  $('btnDraft').addEventListener('click', draftFromSong);
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
   $('btnPlay').addEventListener('click', () => (S.playing ? pause() : play()));

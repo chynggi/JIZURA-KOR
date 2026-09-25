@@ -117,6 +117,69 @@ J.forgetSong = async () => {
   try { const db = await IDB.open(); await new Promise(res => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete('song'); tx.oncomplete = res; tx.onerror = res; }); } catch (e) {}
 };
 
+/* 곡에서 초안: guess where each lyric line starts from the song alone.
+   The voice band (200 Hz – 3.5 kHz) is followed at 100 fps; a phrase start is a clear rise of that level after a
+   quieter stretch. Then one start per line is chosen in order (dynamic programming): strong rises, with the gaps
+   between them close to what the lengths of the lines suggest. Returns seconds, one per line (a draft to fix by hand). */
+J.draftLineStarts = async (audio, texts) => {
+  const n = texts.length, buf = audio && audio.buffer;
+  if (!n || !buf) return [];
+  const sr = Math.min(22050, buf.sampleRate), len = Math.ceil(buf.duration * sr);
+  const oc = new OfflineAudioContext(1, len, sr);
+  const src = oc.createBufferSource(); src.buffer = buf;
+  const hp = oc.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 200;
+  const lp = oc.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3500;
+  src.connect(hp); hp.connect(lp); lp.connect(oc.destination); src.start();
+  const x = (await oc.startRendering()).getChannelData(0);
+  const rate = 100, hop = Math.round(sr / rate), F = Math.floor(x.length / hop);
+  const db = new Float32Array(F);
+  for (let f = 0; f < F; f++) { let e = 0; for (let i = f * hop, end = i + hop; i < end; i++) e += x[i] * x[i]; db[f] = 10 * Math.log10(e / hop + 1e-10); }
+  // activity 0..1 between the noise floor (20th percentile) and the loud parts (97th), lightly smoothed
+  const sorted = Array.from(db).sort((a, b) => a - b), lo = sorted[Math.floor(F * 0.2)], hi = sorted[Math.floor(F * 0.97)];
+  const act = new Float32Array(F);
+  for (let f = 0; f < F; f++) { let s = 0, k = 0; for (let j = Math.max(0, f - 2); j <= Math.min(F - 1, f + 2); j++) { s += db[j]; k++; } act[f] = J.clamp((s / k - lo) / Math.max(1, hi - lo)); }
+  const mean = (a, b) => { a = Math.max(0, a); b = Math.min(F, b); let s = 0; for (let f = a; f < b; f++) s += act[f]; return b > a ? s / (b - a) : 0; };
+  // phrase-start candidates: local maxima of "level after − level before"
+  const rise = new Float32Array(F);
+  for (let f = 1; f < F - 1; f++) { const after = mean(f, f + 30), before = mean(f - 40, f - 3); rise[f] = Math.max(0, after - before) * (after > 0.35 ? 1 : 0.3); }
+  const cand = [];
+  for (let f = 1; f < F - 1; f++) {
+    if (rise[f] < 0.08) continue;
+    let top = true; for (let j = Math.max(0, f - 30); j <= Math.min(F - 1, f + 30); j++) if (rise[j] > rise[f] || (rise[j] === rise[f] && j < f)) { top = false; break; }
+    if (!top) continue;
+    // exact start: where the level first crosses halfway between before and after, searching back from the peak
+    const before = mean(f - 40, f - 3), after = mean(f, f + 30), mid = (before + after) / 2;
+    let s = f; for (let j = f + 15; j >= f - 20; j--) if (j >= 0 && j < F && act[j] >= mid && (j === 0 || act[j - 1] < mid)) { s = j; break; }
+    cand.push({ t: s / rate, w: rise[f] });
+  }
+  const chars = texts.map(t => Math.max(2, [...String(t).replace(/\s+/g, '')].length));
+  if (cand.length < n) {                        // too few clear starts: spread the lines by length over the song
+    const t0 = cand.length ? cand[0].t : 0.5, t1 = Math.max(t0 + n, audio.duration - 1), tot = chars.reduce((a, b) => a + b, 0);
+    let acc = t0; return chars.map(c => { const s = acc; acc += (t1 - t0) * c / tot; return +s.toFixed(3); });
+  }
+  // seconds per character, from the part of the song that has voice
+  const m = cand.length, span = cand[m - 1].t - cand[0].t, per = span > 0 ? span / chars.slice(0, -1).reduce((a, b) => a + b, 1) : 0.3;
+  const pen = (gap, exp) => (gap < 0.5 ? 1e9 : gap < exp ? Math.pow(Math.log(exp / gap), 2) * 1.2 : Math.pow(Math.log(gap / exp), 2) * 0.25);
+  // best[k][j]: best score with line k starting at candidate j
+  const best = [], from = [];
+  for (let k = 0; k < n; k++) {
+    best.push(new Float64Array(m).fill(-Infinity)); from.push(new Int32Array(m).fill(-1));
+    for (let j = k; j < m - (n - 1 - k); j++) {
+      if (k === 0) { best[0][j] = cand[j].w; continue; }
+      const exp = chars[k - 1] * per;
+      for (let i = k - 1; i < j; i++) {
+        if (best[k - 1][i] === -Infinity) continue;
+        const v = best[k - 1][i] + cand[j].w - 0.4 * pen(cand[j].t - cand[i].t, exp);
+        if (v > best[k][j]) { best[k][j] = v; from[k][j] = i; }
+      }
+    }
+  }
+  let j = 0; for (let q = 1; q < m; q++) if (best[n - 1][q] > best[n - 1][j]) j = q;
+  const out = new Array(n);
+  for (let k = n - 1; k >= 0; k--) { out[k] = +cand[j].t.toFixed(3); j = from[k][j]; }
+  return out;
+};
+
 /* rebuild a beat grid from a user BPM + first-beat offset */
 J.beatGrid = (bpm, offset, duration) => {
   const out = []; if (!(bpm > 0)) return out;
