@@ -8,13 +8,42 @@ J.PID = Object.freeze({ dx: 0, dy: 0, rot: 0, s: 1, st: 1, sdir: 0, a: 1 });
 J.PT = (dx = 0, dy = 0, rot = 0, s = 1, st = 1, sdir = 0, a = 1) => ({ dx, dy, rot, s, st, sdir, a });
 
 /* ---------- 文字整列 (typeset): set per plan by the planner / renderer (J.setTypeset) ----------
-   kana set a little tighter, particles smaller and the first character larger, Latin a little larger with a
-   small gap to Japanese. Only the size / advance of each glyph changes, so every layout keeps working. */
+   kana set a little tighter, particles (Japanese and Korean) smaller and the first character larger, Latin a little
+   larger with a small gap to Japanese / Hangul. Only the size / advance of each glyph changes, so every layout keeps working. */
 J.TYPESET = false;
 J.setTypeset = on => { J.TYPESET = !!on; };
-const HIRA = /[ぁ-ゟ]/, KATA = /[゠-ヿㇰ-ㇿ]/, KANJI = /[㐀-鿿豈-﫿々〆]/, LATIN = /[A-Za-z0-9]/;
+const HIRA = /[ぁ-ゟ]/, KATA = /[゠-ヿㇰ-ㇿ]/, KANJI = /[㐀-鿿豈-﫿々〆]/, LATIN = /[A-Za-z0-9]/, HANGUL = /[가-힣]/;
 const PARTICLES = 'はがをにでとのへも';
-const cls = ch => (!ch ? '' : LATIN.test(ch) ? 'L' : KANJI.test(ch) ? 'K' : KATA.test(ch) ? 'T' : HIRA.test(ch) ? 'H' : /\s/.test(ch) ? 'S' : 'P');
+const cls = ch => (!ch ? '' : LATIN.test(ch) ? 'L' : HANGUL.test(ch) ? 'G' : KANJI.test(ch) ? 'K' : KATA.test(ch) ? 'T' : HIRA.test(ch) ? 'H' : /\s/.test(ch) ? 'S' : 'P');
+/* Korean particles (조사) at the end of a word, longest first. after: 'c' = only after a final consonant (받침),
+   'v' = only after a vowel ('로' also after ㄹ), '' = either. stem = syllables the word needs before the particle */
+const KO_PARTICLES = [
+  ['에서는', '', 1], ['으로는', 'c', 1], ['에게서', '', 1], ['이라도', 'c', 1],
+  ['에서', '', 1], ['에게', '', 1], ['한테', '', 1], ['까지', '', 1], ['부터', '', 1], ['처럼', '', 1], ['보다', '', 1], ['마저', '', 1], ['조차', '', 1], ['으로', 'c', 1], ['이랑', 'c', 1],
+  ['는', 'v', 1], ['를', 'v', 1], ['은', 'c', 2], ['을', 'c', 1], ['이', 'c', 2], ['가', 'v', 2], ['과', 'c', 2], ['와', 'v', 2], ['로', 'v', 2], ['랑', 'v', 2],
+  ['에', '', 2], ['의', '', 2], ['도', '', 2], ['만', '', 2],
+];
+const jong = ch => (ch.charCodeAt(0) - 0xac00) % 28;          // 0 = no final consonant, 8 = ㄹ
+/* indices of the characters that form a particle at the end of a Hangul word */
+function koParticles(arr) {
+  const out = new Set();
+  for (let i = 0; i < arr.length;) {
+    if (cls(arr[i]) !== 'G') { i++; continue; }
+    let j = i; while (j < arr.length && cls(arr[j]) === 'G') j++;       // word = arr[i..j)
+    const word = arr.slice(i, j).join('');
+    for (const [p, after, stem] of KO_PARTICLES) {
+      const k = j - [...p].length;
+      if (k - i < stem || !word.endsWith(p)) continue;
+      const jj = jong(arr[k - 1]);
+      if (after === 'c' && (!jj || (p.startsWith('으로') && jj === 8))) continue;
+      if (after === 'v' && jj && !(p === '로' && jj === 8)) continue;
+      for (let q = k; q < j; q++) out.add(q);
+      break;
+    }
+    i = j;
+  }
+  return out;
+}
 function isParticle(arr, i) {
   const ch = arr[i], prev = arr[i - 1], next = arr[i + 1];
   if (!prev || PARTICLES.indexOf(ch) < 0 || prev === 'っ' || prev === 'ッ' || prev === 'ー') return false;
@@ -29,13 +58,15 @@ J.typesetLine = (arr) => {
   if (!J.TYPESET) return out;
   const content = arr.filter(c => !/\s/.test(c)).length;
   let first = true;
+  const ko = arr.some(ch => HANGUL.test(ch)) ? koParticles(arr) : null;
   arr.forEach((ch, i) => {
     const c = cls(ch), o = out[i];
     if (c === 'S') return;
     if (c === 'H' || c === 'T') o.adv = J.isSmallKana(ch) ? 0.86 : ch === 'ー' ? 0.94 : 0.9;       // kana: set tighter
     if (c === 'L') o.f = 1.08;
     if ((c === 'H' || c === 'T') && content >= 3 && isParticle(arr, i)) o.f = 0.78;
-    if (first && content >= 3 && (c === 'K' || c === 'H' || c === 'T')) o.f = 1.18;               // 頭の字を大きく
+    if (c === 'G' && content >= 3 && ko.has(i)) o.f = 0.78;                                          // 조사를 작게
+    if (first && content >= 3 && (c === 'K' || c === 'H' || c === 'T' || c === 'G')) o.f = 1.18;               // 頭の字を大きく
     first = false;
     const pc = i > 0 ? cls(arr[i - 1]) : '';
     if (i > 0 && pc !== 'S' && ((c === 'L') !== (pc === 'L')) && pc && pc !== 'P' && c !== 'P') o.gap = 0.2;   // 英字と日本語の間
@@ -265,8 +296,8 @@ J.weightNow = (env) => {
 };
 J.varFontCSS = (key, px, e) => {
   const f = J.FONTS[key] || {}, serif = f.kind === 'mincho';
-  const w = Math.round(serif ? 200 + e * 700 : 100 + e * 800);
-  return `${w} ${px.toFixed(2)}px ${serif ? '"Noto Serif JP"' : '"Noto Sans JP"'},${f.fb || 'sans-serif'}`;
+  const w = Math.round(serif ? 200 + e * 700 : 100 + e * 800), kr = J.lang === 'ko';
+  return `${w} ${px.toFixed(2)}px ${serif ? (kr ? '"Noto Serif KR"' : '"Noto Serif JP"') : (kr ? '"Noto Sans KR"' : '"Noto Sans JP"')},${f.fb || 'sans-serif'}`;
 };
 
 /* returns true if pieces were drawn (i.e. not at rest) */

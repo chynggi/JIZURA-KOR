@@ -92,7 +92,7 @@ J.fontsOfPlan = (plan) => {
     else if (Array.isArray(v)) v.forEach(x => { if (typeof x === 'string' && J.FONTS[x]) set.add(x); });
   }
   const out = [...set].filter(k => J.FONTS[k]);
-  if ((plan.cuts || []).some(c => c.weightGrow)) out.push('@var');     // 太さ: the variable Noto Sans / Serif JP
+  if ((plan.cuts || []).some(c => c.weightGrow)) out.push('@var');     // 太さ: the variable Noto Sans / Serif JP (KR for Korean lyrics)
   return out;
 };
 /* make sure the glyphs we need are loaded (Google Fonts are unicode-range split). keys = null → every catalogue face */
@@ -100,8 +100,9 @@ J.ensureFonts = async (text, keys) => {
   if (!document.fonts || !document.fonts.load) return;
   const uniq = [...new Set([...text])].join('') || 'あ';
   if (keys && keys.includes('@var')) {
-    await Promise.all(['Noto+Sans+JP:wght@100..900', 'Noto+Serif+JP:wght@200..900'].map(attachFamily));
-    await Promise.all(['100 64px "Noto Sans JP"', '900 64px "Noto Sans JP"', '200 64px "Noto Serif JP"', '900 64px "Noto Serif JP"'].map(f => document.fonts.load(f, uniq).catch(() => null)));
+    const kr = J.lang === 'ko', sans = kr ? 'Noto Sans KR' : 'Noto Sans JP', serif = kr ? 'Noto Serif KR' : 'Noto Serif JP';
+    await Promise.all([sans.replace(/ /g, '+') + ':wght@100..900', serif.replace(/ /g, '+') + ':wght@200..900'].map(attachFamily));
+    await Promise.all([`100 64px "${sans}"`, `900 64px "${sans}"`, `200 64px "${serif}"`, `900 64px "${serif}"`].map(f => document.fonts.load(f, uniq).catch(() => null)));
   }
   const list = (keys || Object.keys(J.FONTS)).filter(k => J.FONTS[k]);
   // faces in the current lyric language (+ its fallback sans / serif), each with the weight it is drawn at
