@@ -53,7 +53,10 @@ J.autoMediaPlacement = (project, cut, item, plan, layer) => {
   const group = J.MEDIA_TECH?.[cut.technique]?.group;
   const dynamic = group === 'dynamic' || group === 'graphic';
   const background = layer === 'media';
-  const scale = background ? rng.range(1, 1.35) : J.clamp(size * .9 * rng.range(.92, 1.08), .36, dynamic ? .72 : .94);
+  const settings = cut.effectSettings || J.mediaEffectSettings(project, layer);
+  const sizeScale = rng.range(settings.sizeMin ?? 75, settings.sizeMax ?? 125) / 100;
+  const baseScale = background ? rng.range(1, 1.35) : J.clamp(size * .9 * rng.range(.92, 1.08), .36, dynamic ? .72 : .94);
+  const scale = background ? Math.max(1, baseScale * sizeScale) : J.clamp(baseScale * sizeScale, .005, 4);
   const w = fit.w * scale, h = fit.h * scale, margin = dynamic ? .07 : .03;
   const position = (center, extent) => {
     const target = center + rng.range(-.025, .025);

@@ -416,6 +416,7 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 .media-lyric-insert > button {width:100%;white-space:normal}
 .media-lyric-insert .hint {margin:6px 0 0}
 .lyric-auto-size-range { margin: -2px 0 10px 24px; max-width: 420px; }
+.media-auto-size-range { margin: -2px 0 10px 24px; max-width: 420px; }
 .range-title { font-size: 11px; color: var(--muted); }
 .range-pair { position: relative; height: 24px; display: flex; align-items: center; touch-action: pan-y; }
 .range-pair::before { content: ''; position: absolute; inset: 10px 0; border-radius: 5px; background: linear-gradient(to right, var(--line) 0 var(--range-min), var(--amber) var(--range-min) var(--range-max), var(--line) var(--range-max) 100%); }
