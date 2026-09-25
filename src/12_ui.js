@@ -1100,13 +1100,43 @@ async function prepareAssets() {
   S.need = true; renderAssets();
 }
 
-// replace the project; 소재 files the new one does not use are dropped from this browser's storage
+// replace the project; 소재 files the new one does not use are dropped from this browser's storage.
+// A file saved with 「곡·소재 포함 저장」 carries p.media: its files go into this browser's storage first.
 async function openProject(p) {
+  const media = p && p.media; if (media) delete p.media;
+  if (media) for (const [k, r] of Object.entries(media.files || {})) await J.idbPut(k, { name: r.name, type: r.type, data: fromB64(r.data) });
   const old = S.project.assets.map(a => a.id);
   S.project = mergeProject(p); syncUI(); replan();
   const keep = new Set(S.project.assets.map(a => a.id));
   for (const id of old) if (!keep.has(id)) await J.assetForget(id);
   await prepareAssets();
+  if (media && media.song) {
+    const f = new File([fromB64(media.song.data)], media.song.name, { type: media.song.type || '' }), snap = S.project.timing.snap;
+    S.audio = null;
+    if (await loadAudioFile(f)) { S.project.timing.snap = snap; replan(); }
+  }
+  flushSave();
+}
+
+/* ---------------- 곡·소재 포함 저장: the project plus the song and every 소재 file, base64 in one .json ---------------- */
+const toB64 = buf => { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+const fromB64 = b64 => { const s = atob(b64), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u.buffer; };
+async function saveBundle() {
+  showMsg('곡과 소재를 모으는 중…');
+  try {
+    const media = { version: 1, files: {} };
+    const song = S.audio && J.loadSong ? await J.loadSong() : null;
+    const hasSong = !!(song && song.name === S.project.audioName);
+    if (hasSong) media.song = { name: song.name, type: song.type, data: toB64(await song.arrayBuffer()) };
+    for (const a of S.project.assets) for (const k of ['asset:', 'mask:']) {
+      const r = await J.idbGet(k + a.id);
+      if (r) media.files[k + a.id] = { name: r.name, type: r.type, data: toB64(r.data) };
+    }
+    const text = JSON.stringify(Object.assign({}, S.project, { media }));
+    showMsg(null);
+    await J.saveFile(baseName() + '_all.jizura.json', text);
+    toast(`저장했습니다(${(text.length / 1048576).toFixed(1)}MB${hasSong ? ' · 곡 포함' : ''} · 소재 ${S.project.assets.length}개)` + (S.audio && !hasSong ? '. 곡은 이 브라우저에 보관되지 않아 빠졌습니다' : ''));
+  } catch (e) { showMsg(null); toast('저장하지 못했습니다: ' + (e.message || e)); }
 }
 
 /* ---------------- 곡에서 초안 ---------------- */
@@ -1332,6 +1362,7 @@ function bind() {
   document.querySelectorAll('.terms-open').forEach(b => b.addEventListener('click', openTerms));
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });   // click on the backdrop
   $('btnSave').addEventListener('click', () => J.saveFile(baseName() + '.jizura.json', JSON.stringify(S.project, null, 1)));
+  $('btnSaveAll').addEventListener('click', saveBundle);
   $('btnAE').addEventListener('click', () => J.saveFile(baseName() + rangeSuffix() + '_ae.json', JSON.stringify(J.planForAE(S.plan, S.project, exportRange()), null, 1)));
   audioNameDefault = $('audioName').textContent;
   $('btnClearLyrics').addEventListener('click', clearLyrics);
