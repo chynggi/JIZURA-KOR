@@ -2,10 +2,45 @@
 (() => {
 'use strict';
 
-J.lyricEffectSettings = project => ({
-  autoPlacement: project.lyricEffects?.autoPlacement === true,
-  avoidForeground: project.lyricEffects?.avoidForeground !== false,
-});
+J.LYRIC_BLENDS = ['normal', 'multiply', 'screen', 'overlay'];
+const percent = (value, fallback) => value != null && value !== '' && Number.isFinite(+value) ? J.clamp(+value, 0, 100) : fallback;
+J.lyricEffectSettings = project => {
+  const settings = project.lyricEffects || {};
+  const min = percent(settings.opacityMin, 0), max = percent(settings.opacityMax, 100);
+  return {
+    autoPlacement: settings.autoPlacement === true, avoidForeground: settings.avoidForeground !== false,
+    randomBlend: settings.randomBlend === true, randomOpacity: settings.randomOpacity === true,
+    opacityMin: Math.min(min, max), opacityMax: Math.max(min, max),
+  };
+};
+
+J.lyricComposite = (project, cut, settings = J.lyricEffectSettings(project)) => {
+  const options = project.lyricCutOptions?.[`${cut.line}:${cut.part}`] || {};
+  const line = project.overrides?.[cut.line];
+  const locked = line?.lock ? line.lockedComposites?.[cut.part] : null;
+  const blend = J.LYRIC_BLENDS.includes(options.blend) ? options.blend : J.LYRIC_BLENDS.includes(locked?.blend) ? locked.blend
+    : settings.randomBlend ? J.rng(J.h(cut.seed, 953)).pick(J.LYRIC_BLENDS) : 'normal';
+  const random = J.rng(J.h(cut.seed, 967))();
+  const strength = cut.emphasis ? (2 + random) / 3 : cut.suppressed ? random / 3 : random;
+  const opacity = percent(options.opacity, null) ?? percent(locked?.opacity, null)
+    ?? (settings.randomOpacity ? J.clamp(Math.round(J.lerp(settings.opacityMin, settings.opacityMax, strength)), settings.opacityMin, settings.opacityMax) : 100);
+  return { blend, opacity };
+};
+
+// Older projects stored one lyric blend/opacity on the background layer.
+// Transfer a non-default setting to the existing cuts once, preserving edits.
+J.migrateLyricCompositing = project => {
+  const media = project.media;
+  if (!media || (media.blend === 'normal' && media.opacity === 100)) return;
+  const blend = J.LYRIC_BLENDS.includes(media.blend) ? media.blend : 'normal';
+  const opacity = percent(media.opacity, 100);
+  const options = project.lyricCutOptions || (project.lyricCutOptions = {});
+  for (const cut of J.plan(project).cuts) if (cut.line >= 0 && Number.isInteger(cut.part)) {
+    const key = `${cut.line}:${cut.part}`;
+    options[key] = { blend, opacity, ...options[key] };
+  }
+  media.blend = 'normal'; media.opacity = 100;
+};
 
 // Use the actual fitted source rectangle, including its rotation. Coordinates are
 // normalized to the stage; rotation is calculated in pixels to preserve aspect.
@@ -97,6 +132,7 @@ J.finishLyricPlan = (project, plan, audio) => {
   const bounds = foreground && foreground.opacity > 0 ? foreground.cuts.map(cut => ({ cut, box: J.foregroundBounds(project, plan, cut) })) : [];
   for (const cut of plan.cuts) {
     if (cut.line < 0 || !Number.isInteger(cut.part)) continue;
+    Object.assign(cut, J.lyricComposite(project, cut, settings));
     cut.areaMode = cut.area ? 'manual' : 'default';
     if (cut.area || !settings.autoPlacement) continue;
     const locked = project.overrides?.[cut.line];

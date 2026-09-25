@@ -45,6 +45,14 @@ In **Advanced → Techniques**, enable **Vary lyric position and size automatica
 
 **Avoid overlapping the foreground** considers foreground position, size and rotation during each cut's original time slot. Lyrics retained with `{}` receive individual areas using the same rules as ordinary cuts. If there is no free region, it chooses a position with the least overlap. `*Emphasis*` creates a larger automatic area, enables **Show in front**, and ignores foreground avoidance. You can override the frontmost setting using the cut checkbox or timeline icon. `~Suppression~` makes the area and text smaller and reduces movement, rotation, camera motion and effects.
 
+## Lyric cut blend modes and opacity
+
+Each cut in **Lines and cuts** has its own blend mode (Normal, Multiply, Screen or Overlay) and opacity (0–100%). New cuts default to Normal and 100%. Lyrics stacked with `{}` are composited individually.
+
+In **Advanced → Techniques**, **Randomize lyric blend modes** and **Randomize lyric opacity** can be enabled independently. Random opacity exposes minimum and maximum values, initially 0–100%. `*Emphasis*` selects from the upper third of that range; `~Suppression~` selects from the lower third. Shuffle or reroll generates new values; the same seed reproduces them.
+
+Manual values and locks take priority. A cut's **Reset to auto** clears its manual settings. With randomization off, automatic values are Normal and 100%. Global lyric settings from older projects are transferred to their existing cuts when opened.
+
 ## Build and publish
 
 Run `python3 build.py` at the repository root. It creates `index.html` and `en/index.html`, both standalone pages for GitHub Pages. Run `python3 build_ae.py --lang en` to rebuild `JIZURA_AE_en.jsx`, and `python3 build_cep.py --lang en --out dist` to build `dist/JIZURA_CEP_en.zip` (copy the ZIP to the repository root for Pages downloads). Commit the built pages, panels and translation sources together. Publish from the repository root on GitHub Pages; the English edition is then served at `/JIZURA/en/`. Open either HTML file locally for offline use, with installed fonts as a fallback.

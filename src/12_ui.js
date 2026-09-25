@@ -66,6 +66,7 @@ function mergeProject(p) {
   for (const uf of o.userFonts) if (!J.FONTS[uf.key]) J.addUserFont(uf.key, uf.label, uf.family, uf.weight || 400);
   o.compositeFonts = Array.isArray(p && p.compositeFonts) ? p.compositeFonts : [];
   J.setCompositeFonts(o.compositeFonts);
+  J.migrateLyricCompositing(o);
   return o;
 }
 function setBadges(d) {
@@ -451,13 +452,24 @@ function toggleLyricLineLock(index) {
   const line = S.plan.lines[index]; if (!line) return;
   const current = S.project.overrides[index] || {};
   const lockedAreas = Object.fromEntries(S.plan.cuts.filter(c => c.line === index && Number.isInteger(c.part)).map(c => [c.part, c.area || null]));
-  setOv(index, current.lock ? { lock: false, lockedSeed: undefined, lockedAreas: undefined } : { lock: true, lockedSeed: line.seed, lockedAreas });
+  const lockedComposites = Object.fromEntries(S.plan.cuts.filter(c => c.line === index && Number.isInteger(c.part)).map(c => [c.part, { blend: c.blend, opacity: c.opacity }]));
+  setOv(index, current.lock ? { lock: false, lockedSeed: undefined, lockedAreas: undefined, lockedComposites: undefined } : { lock: true, lockedSeed: line.seed, lockedAreas, lockedComposites });
   replan();
 }
 function toggleLyricCutFrontmost(line, part) {
   const key = `${line}:${part}`, options = S.project.lyricCutOptions;
   const cut = S.plan.cuts.find(c => c.line === line && c.part === part);
   options[key] = { ...options[key], frontmost: !cut?.frontmost };
+  replan();
+}
+function setLyricCutComposite(line, part, patch) {
+  const key = `${line}:${part}`, options = S.project.lyricCutOptions;
+  options[key] = { ...options[key], ...patch };
+  for (const field of ['blend', 'opacity']) if (options[key][field] === undefined) delete options[key][field];
+  if (!Object.keys(options[key]).length) delete options[key];
+  const override = S.project.overrides[line];
+  const locked = override?.lockedComposites?.[part];
+  if (locked) for (const [field, value] of Object.entries(patch)) if (value === undefined) delete locked[field];
   replan();
 }
 function mediaCutOptions(layer, index) {
@@ -834,6 +846,7 @@ function renderLines() {
     const cutsEl = li.querySelector('.cuts');
     S.plan.cuts.filter(c => c.line === i && J.LAYOUTS[c.layout] && !J.LAYOUTS[c.layout].special).forEach(c => {
       const cutOption = document.createElement('span'); cutOption.className = 'lyric-cut-option';
+      cutOption.dataset.line = i; cutOption.dataset.part = c.part;
       cutOption.style.borderColor = `hsla(${layoutHue(c.layout)},70%,58%,0.7)`;
       const name = document.createElement('button'); name.type = 'button'; name.className = 'lyric-cut-name';
       name.textContent = `${c.part + 1}: ${J.LAYOUTS[c.layout].name}`;
@@ -844,7 +857,20 @@ function renderLines() {
       input.setAttribute('aria-label', `${i + 1}行目${c.part + 1}カット目を最前に表示`);
       input.addEventListener('change', () => toggleLyricCutFrontmost(i, c.part));
       label.append(input, document.createTextNode('最前に表示'));
-      cutOption.append(name, label); cutsEl.appendChild(cutOption);
+      const L = J.mediaLabel, settings = J.lyricEffectSettings(S.project);
+      const options = S.project.lyricCutOptions[`${i}:${c.part}`] || {};
+      const modes = { normal: L('通常', 'Normal'), multiply: L('乗算', 'Multiply'), screen: L('スクリーン', 'Screen'), overlay: L('オーバーレイ', 'Overlay') };
+      const controls = document.createElement('div'); controls.className = 'lyric-cut-compositing';
+      controls.innerHTML = `<label>${L('合成方法', 'Blend')}<select class="lyric-cut-blend" aria-label="${L('このカットの合成方法', 'This cut blend mode')}"><option value="">${L('自動', 'Auto')} (${modes[c.blend]})</option>${Object.entries(modes).map(([key, text]) => `<option value="${key}">${text}</option>`).join('')}</select></label><label>${L('不透明度（％）', 'Opacity (%)')}<input class="lyric-cut-opacity" type="number" min="0" max="100" step="1" aria-label="${L('このカットの不透明度（％）', 'This cut opacity (%)')}" value="${c.opacity}"></label><button type="button" class="ghost small lyric-composite-auto" title="${L('このカットの合成方法・不透明度を自動に戻す', 'Reset this cut blend and opacity to automatic')}">${L('自動に戻す', 'Reset to auto')}</button>`;
+      const blend = controls.querySelector('select'), opacity = controls.querySelector('input'), reset = controls.querySelector('button');
+      blend.value = options.blend || (settings.randomBlend ? '' : c.blend);
+      opacity.title = settings.randomOpacity && options.opacity == null ? L('自動で選ばれた不透明度。入力すると手動指定になります。', 'Random opacity. Enter a value to set it manually.') : '';
+      opacity.classList.toggle('automatic', settings.randomOpacity && options.opacity == null);
+      reset.hidden = options.blend == null && options.opacity == null;
+      blend.addEventListener('change', e => setLyricCutComposite(i, c.part, { blend: e.target.value || undefined }));
+      opacity.addEventListener('change', e => setLyricCutComposite(i, c.part, { opacity: e.target.value === '' ? undefined : J.clamp(+e.target.value || 0, 0, 100) }));
+      reset.addEventListener('click', () => setLyricCutComposite(i, c.part, { blend: undefined, opacity: undefined }));
+      cutOption.append(name, label, controls); cutsEl.appendChild(cutOption);
     });
     ol.appendChild(li); S.lineEls.push(li);
   });
@@ -988,8 +1014,6 @@ function syncSourceTab() {
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
   $('mediaPaneTitle').textContent = layer === 'foreground' ? '前景' : '背景';
   $('foregroundBlendFields').hidden = layer !== 'foreground';
-  $('lyricBlend').value = S.project.media.blend;
-  $('lyricOpacity').value = S.project.media.opacity;
   $('linesInfo').textContent = media ? `${m.items.length}素材 / ${S.plan[layer].cuts.length}カット` : `${S.plan.lines.length}行 / ${S.plan.cuts.length}カット`;
   $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
   $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
@@ -1330,6 +1354,7 @@ const lookSnap = () => {
   for (const group of J.GROUP_KEYS) Object.assign(enabled[group], S.project.enabled[group] || {});
   return JSON.stringify({
     ...Object.fromEntries(HKEYS.map(k => [k, S.project[k] ?? null])), enabled,
+    lyricEffects: J.lyricEffectSettings(S.project),
     mediaEffects: Object.fromEntries(['foreground', 'media'].map(layer => [layer, J.mediaEffectSettings(S.project, layer)])),
   });
 };
@@ -1488,6 +1513,11 @@ function renderTech() {
   const lyricEffects = J.lyricEffectSettings(S.project);
   $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
   $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
+  $('lyricRandomBlend').checked = lyricEffects.randomBlend;
+  $('lyricRandomOpacity').checked = lyricEffects.randomOpacity;
+  $('lyricOpacityRange').hidden = !lyricEffects.randomOpacity;
+  $('lyricOpacityMin').value = lyricEffects.opacityMin;
+  $('lyricOpacityMax').value = lyricEffects.opacityMax;
   const box = $('techLists'); box.innerHTML = '';
   const q = ($('techFilter').value || '').trim().toLowerCase();
   let total = 0, onAll = 0;
@@ -1711,8 +1741,19 @@ function syncUI() {
 
 /* ---------------- wiring ---------------- */
 function bind() {
-  for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground']]) {
-    $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; replan(); });
+  for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground'], ['lyricRandomBlend', 'randomBlend'], ['lyricRandomOpacity', 'randomOpacity']]) {
+    $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; renderTech(); replan(); });
+  }
+  for (const [id, key] of [['lyricOpacityMin', 'opacityMin'], ['lyricOpacityMax', 'opacityMax']]) {
+    $(id).addEventListener('change', e => {
+      const settings = J.lyricEffectSettings(S.project);
+      if (e.target.value !== '' && Number.isFinite(+e.target.value)) {
+        settings[key] = J.clamp(+e.target.value, 0, 100);
+        if (key === 'opacityMin') settings.opacityMax = Math.max(settings.opacityMin, settings.opacityMax);
+        else settings.opacityMin = Math.min(settings.opacityMin, settings.opacityMax);
+      }
+      S.project.lyricEffects = settings; renderTech(); replan();
+    });
   }
   $('timelineZoomOut').addEventListener('click', () => setTimelineZoom(S.timelineZoom / 1.5));
   $('timelineZoomIn').addEventListener('click', () => setTimelineZoom(S.timelineZoom * 1.5));
@@ -1782,8 +1823,6 @@ function bind() {
     if (e.target.checked && !m.cutCount) m.cutCount = Math.min(1000, m.items.length * 2);
     replan();
   });
-  $('lyricBlend').addEventListener('change', e => { S.project.media.blend = e.target.value; replan(); });
-  $('lyricOpacity').addEventListener('change', e => { S.project.media.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('mediaBlend').addEventListener('change', e => { S.project.foreground.blend = e.target.value; replan(); });
   $('mediaOpacity').addEventListener('change', e => { S.project.foreground.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('lyrics').addEventListener('input', e => {

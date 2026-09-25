@@ -27,10 +27,6 @@
         <label class="jev-prompt-label" for="jevPrompt">Jevへの追加指示（任意）</label>
         <textarea id="jevPrompt" rows="2" maxlength="1000" placeholder="例：夜の街のような静かな雰囲気。サビは大胆に。" aria-label="Jevへの追加指示"></textarea>
         <div class="hint">「Jevで作る」ときだけ歌詞と一緒に送信します。既存のスタイル・手法から選びます。</div>
-        <div class="fields media-blend-fields">
-          <label class="field">歌詞の合成方法<select id="lyricBlend"><option value="normal">通常</option><option value="multiply">乗算</option><option value="screen">スクリーン</option></select></label>
-          <label class="field">歌詞不透明度（％）<input id="lyricOpacity" type="number" min="0" max="100" step="1"></label>
-        </div>
         <label class="lang-row">歌詞の言語<select id="lyricLang"><option value="auto">自動判定</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
@@ -227,6 +223,12 @@
         <div class="pick-sets">
           <label class="check"><input id="lyricAutoPlacement" type="checkbox"><span>配置・サイズにも自動で変化をつける<small>オフでは全画面を使用。手動の表示エリアは維持します。「自動配置に戻す」で手動指定を解除できます。</small></span></label>
           <label class="check"><input id="lyricAvoidForeground" type="checkbox" checked><span>前景との重なりを避ける<small>自動配置時に前景の表示領域を避けます。*強調*したカットには適用しません。</small></span></label>
+          <label class="check"><input id="lyricRandomBlend" type="checkbox"><span>合成方法もランダム<small>通常・乗算・スクリーン・オーバーレイからカットごとに選びます。</small></span></label>
+          <label class="check"><input id="lyricRandomOpacity" type="checkbox"><span>歌詞不透明度もランダム<small>指定範囲内で、*強調*は高め、~抑制~は低めにします。手動指定とロックを優先します。</small></span></label>
+          <div class="fields lyric-opacity-range" id="lyricOpacityRange" hidden>
+            <label class="field">最低不透明度（％）<input id="lyricOpacityMin" type="number" min="0" max="100" step="1" value="0"></label>
+            <label class="field">最大不透明度（％）<input id="lyricOpacityMax" type="number" min="0" max="100" step="1" value="100"></label>
+          </div>
         </div>
         <div class="pick-sets">
           <label class="check"><input id="tExtra" class="extra-toggle" type="checkbox"><span>追加分の演出も使う<small>「追加」印の手法・スタイル・書体。オフのときは、おまかせやシャッフルで最初の公開版の演出だけを使います</small></span></label>

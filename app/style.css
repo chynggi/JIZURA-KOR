@@ -158,7 +158,14 @@ button.remove-media-cut:hover, button.remove-media-cut:focus-visible { color: #f
 .ln .cuts { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; }
 .ln .cuts span { font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--line2); color: var(--muted); cursor: pointer; }
 .ln .cuts span:hover { color: var(--text); border-color: var(--amber); }
-.ln .cuts .lyric-cut-option { display: inline-flex; align-items: center; gap: 5px; padding: 1px 4px; }
+.ln .cuts .lyric-cut-option { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 4px; width: 100%; cursor: default; }
+.lyric-cut-compositing { display: flex; flex-wrap: wrap; align-items: end; gap: 5px; width: 100%; }
+.lyric-cut-compositing label { display: flex; flex-direction: column; gap: 3px; font-size: 10px; }
+.lyric-cut-compositing select { width: 126px; min-width: 0; padding: 3px; font-size: 10px; }
+.lyric-cut-compositing input { width: 64px; padding: 3px; font-size: 10px; }
+.lyric-cut-compositing input.automatic { border-color: var(--cyan); }
+.lyric-cut-compositing .lyric-composite-auto { font-size: 10px; padding: 3px 5px; }
+.lyric-opacity-range { margin: 3px 0 0 22px; }
 .lyric-cut-name { padding: 0 2px; border: 0; background: transparent; color: var(--muted); font-size: 10px; }
 .lyric-frontmost { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; color: var(--muted); font-size: 10px; cursor: pointer; }
 .lyric-frontmost input { margin: 0; accent-color: var(--amber); }
