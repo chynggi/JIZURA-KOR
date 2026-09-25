@@ -20,21 +20,21 @@ const assert = require('node:assert/strict');
         assert.ok(await page.evaluate(layer => !!J.MEDIA_TECH[J.ui.plan[layer].cuts[0].technique],layer));
         await page.locator('#mediaLineList .lock').click();
         const locked = await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer);
-        await page.locator('[data-tab="mediaFx"]').click();
-        await page.locator('#shuffleMediaEffects').click();
+        await page.locator(`[data-tab="${layer}Fx"]`).click();
+        await page.locator(`#${layer}EffectsPanel [data-media-action="shuffle"]`).click();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),locked);
         await page.locator('#mediaLineList .lock').click();
         await page.locator('.media-technique').selectOption('iris');
-        await page.locator('#shuffleMediaEffects').click();
+        await page.locator(`#${layer}EffectsPanel [data-media-action="shuffle"]`).click();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'iris');
         await page.locator('.media-technique').selectOption('');
-        await page.locator('#disableMediaEffects').click();
+        await page.locator(`#${layer}EffectsPanel [data-media-action="disable"]`).click();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'none');
-        await page.locator('[data-media-tech="pixelScatter"]').check();
+        await page.locator(`#${layer}EffectsPanel [data-media-tech="pixelScatter"]`).check();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'pixelScatter');
-        await page.locator('#enableMediaEffects').click();
+        await page.locator(`#${layer}EffectsPanel [data-media-action="enable"]`).click();
         await page.locator('.media-technique').selectOption('none');
-        await page.locator('#shuffleMediaEffects').click();
+        await page.locator(`#${layer}EffectsPanel [data-media-action="shuffle"]`).click();
         assert.equal(await page.evaluate(layer => J.ui.plan[layer].cuts[0].technique,layer),'none');
       }
       const report = await page.evaluate(() => {

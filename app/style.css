@@ -249,7 +249,7 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 .hint { font-size: 12px; color: var(--muted); }
 
 /* ---------- right panel ---------- */
-.tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 2; }
+.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 2; }
 .tabs button { border: 0; border-radius: 0; background: transparent; padding: 11px 4px; color: var(--muted); border-bottom: 2px solid transparent; }
 .tabs button[aria-selected=true] { color: var(--text); border-bottom-color: var(--amber); }
 .tabpane { padding: 14px 16px 24px; }
@@ -404,5 +404,4 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
 
 .media-tech-group {border:1px solid var(--line);border-radius:8px;margin:14px 0;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
 .media-technique {max-width:240px}
-.tabs {grid-template-columns:repeat(5,minmax(0,1fr))}
-#mediaEffectsPanel {max-height:calc(100vh - 150px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
+.media-effects-panel {max-height:calc(100vh - 190px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}

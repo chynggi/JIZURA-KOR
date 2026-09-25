@@ -34,7 +34,7 @@ const assert=require('node:assert/strict');
         await page.locator('#mediaRandom').check();
         await page.locator('#mediaLineList .lock').first().click();
         const locked=await page.evaluate(layer=>J.ui.plan[layer].cuts[0].itemId,layer);
-        await page.locator('[data-tab="mediaFx"]').click();await page.locator('#shuffleMediaEffects').click();
+        await page.locator(`[data-tab="${layer}Fx"]`).click();await page.locator(`#${layer}EffectsPanel [data-media-action="shuffle"]`).click();
         assert.equal(await page.evaluate(layer=>J.ui.plan[layer].cuts[0].itemId,layer),locked);
         // Editing cut structure while shuffled must preserve the underlying manual order.
         await page.locator('#mediaLineList .media-cut-insert button').last().click();

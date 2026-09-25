@@ -57,6 +57,8 @@ function mergeProject(p) {
   o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
   o.foreground = J.normalizeMedia(p && p.foreground);
+  for (const layer of ['media', 'foreground']) o[layer].effects = J.mediaEffectSettings(o, layer);
+  delete o.mediaEffects;
   o.colors = Object.assign({ enabled: false }, (p && p.colors) || {});
   o.fonts = (p && p.fonts) || {};
   o.userFonts = (p && p.userFonts) || [];
@@ -1576,33 +1578,38 @@ function updateTap() {
   $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.layer ? ln.name : ln.text}` : '—';
 }
 
-function shuffleMediaEffects() {
-  for (const layer of ['media', 'foreground']) for (const cut of S.plan[layer].cuts) {
+function shuffleMediaEffects(layers = ['media', 'foreground']) {
+  for (const layer of layers) for (const cut of S.plan[layer].cuts) {
     const ov = mediaCutOptions(layer, cut.index);
     if (!ov.lock && (ov.technique == null)) mediaOv(cut.index, { technique: null }, layer);
   }
 }
-function renderMediaEffects() {
-  const box = $('mediaEffectsPanel'); if (!box) return;
-  const settings = J.mediaEffectSettings(S.project), L = J.mediaLabel;
-  box.innerHTML = `<p class="note">${L('前景・背景で共通。チェックした手法を「自動」とシャッフルで使用します。手動指定した手法とロック済みカットは維持されます。', 'Shared by foreground and background. Checked techniques are used by Auto and Shuffle. Explicit selections and locked cuts are preserved.')}</p><label class="check"><input id="mediaAutoPlacement" type="checkbox" ${settings.autoPlacement !== false ? 'checked' : ''}><span>${L('配置・サイズにも自動で変化を付ける', 'Vary position and size automatically')}<small>${L('手動配置とロックは維持します。演出無しは中央に全体表示します。', 'Manual placement and locks are preserved. No effects keeps the centered full view.')}</small></span></label><div id="mediaEffectSliders"></div><div class="row"><button type="button" id="shuffleMediaEffects">${L('画像・動画をシャッフル', 'Shuffle media')}</button><button type="button" id="enableMediaEffects">${L('全て有効', 'Enable all')}</button><button type="button" id="disableMediaEffects">${L('全て無効', 'Disable all')}</button></div>`;
+function renderMediaEffects(layer) {
+  if (!layer) { for (const target of ['foreground', 'media']) renderMediaEffects(target); return; }
+  const box = $(layer + 'EffectsPanel'); if (!box) return;
+  const settings = J.mediaEffectSettings(S.project, layer), L = J.mediaLabel;
+  const layerNote = layer === 'foreground' ? L('前景の画像・動画に適用します。', 'Applies to foreground images and videos.') : L('背景の画像・動画に適用します。', 'Applies to background images and videos.');
+  const shuffleLabel = layer === 'foreground' ? L('前景をシャッフル', 'Shuffle foreground') : L('背景をシャッフル', 'Shuffle background');
+  const setting = key => box.querySelector(`[data-media-setting="${key}"]`);
+  const action = key => box.querySelector(`[data-media-action="${key}"]`);
+  box.innerHTML = `<p class="note">${layerNote} ${L('チェックした手法を「自動」とシャッフルで使用します。手動指定した手法とロック済みカットは維持されます。', 'Checked techniques are used by Auto and Shuffle. Explicit selections and locked cuts are preserved.')}</p><label class="check"><input data-media-setting="autoPlacement" type="checkbox" ${settings.autoPlacement !== false ? 'checked' : ''}><span>${L('配置・サイズにも自動で変化を付ける', 'Vary position and size automatically')}<small>${L('手動配置とロックは維持します。演出無しは中央に全体表示します。', 'Manual placement and locks are preserved. No effects keeps the centered full view.')}</small></span></label><div class="media-effect-sliders"></div><div class="row"><button type="button" data-media-action="shuffle">${shuffleLabel}</button><button type="button" data-media-action="enable">${L('全て有効', 'Enable all')}</button><button type="button" data-media-action="disable">${L('全て無効', 'Disable all')}</button></div>`;
   for (const [key, name, max, step] of [['motion', L('動きの強さ', 'Motion intensity'), 2, .05], ['treatment', L('加工の強さ', 'Treatment intensity'), 1, .05], ['duration', L('登場・退場時間', 'Entrance / exit (s)'), 1.5, .05]]) {
-    const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
-    row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project); next[key] = +e.target.value; S.project.mediaEffects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + key); replanSoon(100); }); box.querySelector('#mediaEffectSliders').appendChild(row);
+    const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input data-media-setting="${key}" type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
+    row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project, layer); next[key] = +e.target.value; S.project[layer].effects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + layer + ':' + key); replanSoon(100); }); box.querySelector('.media-effect-sliders').appendChild(row);
   }
   const groups = MEDIA_EFFECT_GROUPS;
   for (const [group, name] of Object.entries(groups)) {
     const section = document.createElement('fieldset'); section.className = 'media-tech-group'; section.innerHTML = `<legend>${name} (${Object.values(J.MEDIA_TECH).filter(def => def.group === group).length})</legend>`;
     for (const [key, def] of Object.entries(J.MEDIA_TECH).filter(([, d]) => d.group === group)) {
       const row = document.createElement('label'); row.className = 'check'; row.innerHTML = `<input type="checkbox" data-media-tech="${key}" ${settings.enabled[key] !== false ? 'checked' : ''}><span>${def.name}</span>`;
-      row.querySelector('input').addEventListener('change', e => { const next = J.mediaEffectSettings(S.project); next.enabled = Object.assign({}, next.enabled, { [key]: e.target.checked }); S.project.mediaEffects = next; replan(); }); section.appendChild(row);
+      row.querySelector('input').addEventListener('change', e => { const next = J.mediaEffectSettings(S.project, layer); next.enabled[key] = e.target.checked; S.project[layer].effects = next; replan(); }); section.appendChild(row);
     }
     box.appendChild(section);
   }
-  $('mediaAutoPlacement').onchange = e => { const next = J.mediaEffectSettings(S.project); next.autoPlacement = e.target.checked; S.project.mediaEffects = next; replan(); };
-  $('shuffleMediaEffects').onclick = () => { shuffleMediaEffects(); for (const layer of ['media', 'foreground']) S.project[layer].seed++; replan(); };
-  const all = value => { const next = J.mediaEffectSettings(S.project); next.enabled = Object.fromEntries(Object.keys(J.MEDIA_TECH).map(key => [key, value])); S.project.mediaEffects = next; renderMediaEffects(); replan(); };
-  $('enableMediaEffects').onclick = () => all(true); $('disableMediaEffects').onclick = () => all(false);
+  setting('autoPlacement').onchange = e => { const next = J.mediaEffectSettings(S.project, layer); next.autoPlacement = e.target.checked; S.project[layer].effects = next; replan(); };
+  action('shuffle').onclick = () => { shuffleMediaEffects([layer]); S.project[layer].seed++; replan(); };
+  const all = value => { const next = J.mediaEffectSettings(S.project, layer); next.enabled = Object.fromEntries(Object.keys(J.MEDIA_TECH).map(key => [key, value])); S.project[layer].effects = next; renderMediaEffects(layer); replan(); };
+  action('enable').onclick = () => all(true); action('disable').onclick = () => all(false);
 }
 
 /* ---------------- sync all inputs from project ---------------- */

@@ -51,14 +51,15 @@ for (const [key, ja, en] of [
   ['checker', 'チェッカー接続', 'Checker transition'], ['blockDissolve', 'ブロック接続', 'Block dissolve transition'],
   ['flashCross', 'フラッシュ接続', 'Flash cross transition'],
 ]) add('transition_' + key, ja, en, 'transition', 'fade', 'still', 'fade', 'none', key);
-J.mediaEffectSettings = p => {
-  const settings = Object.assign({ motion: 1, treatment: 1, duration: 0.45, autoPlacement: true, enabled: {} }, p.mediaEffects || {});
+J.mediaEffectSettings = (p, layer = 'media') => {
+  // Projects saved before the layer split have one shared mediaEffects object.
+  const settings = Object.assign({ motion: 1, treatment: 1, duration: 0.45, autoPlacement: true, enabled: {} }, p[layer]?.effects || p.mediaEffects || {});
   for (const [key, min, max, fallback] of [['motion', 0, 2, 1], ['treatment', 0, 1, 1], ['duration', .05, 1.5, .45]]) settings[key] = Number.isFinite(+settings[key]) ? J.clamp(+settings[key], min, max) : fallback;
-  settings.enabled = settings.enabled && typeof settings.enabled === 'object' ? settings.enabled : {};
+  settings.enabled = settings.enabled && typeof settings.enabled === 'object' ? Object.assign({}, settings.enabled) : {};
   return settings;
 };
-J.mediaTechnique = (project, ov, rng) => {
-  const settings = J.mediaEffectSettings(project);
+J.mediaTechnique = (project, ov, rng, layer = 'media') => {
+  const settings = J.mediaEffectSettings(project, layer);
   // Untouched cuts retain the previous instant/still default. Explicit Auto is null.
   const legacy = ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].some(k => Object.hasOwn(ov, k));
   let key = ov.lock && ov.lockedTechnique ? ov.lockedTechnique : ov.technique;

@@ -146,7 +146,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   });
   if (J.mediaTechnique) for (const cut of cuts) {
     const ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[cut.index] || {});
-    Object.assign(cut, J.mediaTechnique(project, ov, J.rng(J.h(cut.seed, 173))));
+    Object.assign(cut, J.mediaTechnique(project, ov, J.rng(J.h(cut.seed, 173)), layer));
     cut.effectTransition = cut.trans;
     delete cut.trans;
   }
