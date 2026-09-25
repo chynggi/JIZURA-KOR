@@ -1,5 +1,5 @@
 """Offline tests for the local decision server. usage: python3 dev/decision_server_test.py"""
-import http.server, json, sys, threading, unittest, urllib.error, urllib.request
+import http.client, http.server, json, sys, threading, unittest, urllib.error, urllib.request
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import decision_server as ds
@@ -32,10 +32,18 @@ class Pure(unittest.TestCase):
         self.assertIn('A: calm: 잔잔함', prompt); self.assertIn('B: pop: 경쾌함', prompt)
         self.assertTrue(prompt.rstrip().endswith('Answer with one letter only.'))
     def test_letter_to_key(self):
-        self.assertEqual(ds.letter_to_key(' b', ['calm', 'pop']), 'pop')
-        self.assertEqual(ds.letter_to_key('A.', ['calm', 'pop']), 'calm')
-        self.assertIsNone(ds.letter_to_key('Z', ['calm', 'pop']))
-        self.assertIsNone(ds.letter_to_key('', ['calm', 'pop']))
+        keys = ['calm', 'pop', 'x']
+        self.assertEqual(ds.letter_to_key('A.', keys), 'calm')
+        self.assertEqual(ds.letter_to_key(' b', keys), 'pop')
+        self.assertEqual(ds.letter_to_key('**B**', keys), 'pop')
+        self.assertEqual(ds.letter_to_key('(C)', keys), 'x')
+        self.assertEqual(ds.letter_to_key('Answer: C', keys), 'x')
+        self.assertEqual(ds.letter_to_key('The answer is B', keys), 'pop')
+        self.assertEqual(ds.letter_to_key('answer: b.', keys), 'pop')
+        self.assertIsNone(ds.letter_to_key('Apple', keys))
+        self.assertIsNone(ds.letter_to_key('A or B', keys))
+        self.assertIsNone(ds.letter_to_key('Z', keys))
+        self.assertIsNone(ds.letter_to_key('', keys))
     def test_too_many_options(self):
         many = {'type': 'choice', 'instructions': 'x', 'criteria': {f'k{i}': str(i) for i in range(25)}}
         with self.assertRaises(ds.BackendError): ds.to_letter_prompt(STATE, many)
@@ -104,6 +112,40 @@ class Http(unittest.TestCase):
         try:
             with urllib.request.urlopen(req) as r: return r.status, json.loads(r.read())
         except urllib.error.HTTPError as e: return e.code, json.loads(e.read() or b'{}')
+    def raw_post(self, content_length, body=b'{}', timeout=3):
+        """Send a POST with a literal (possibly malformed) Content-Length header. Returns the status code,
+        or None if the connection was dropped or timed out instead of getting a response."""
+        conn = http.client.HTTPConnection('127.0.0.1', self.srv.server_port, timeout=timeout)
+        try:
+            conn.connect()
+            conn.putrequest('POST', '/api/decide', skip_host=True, skip_accept_encoding=True)
+            conn.putheader('Host', '127.0.0.1')
+            conn.putheader('Content-Type', 'application/json')
+            conn.putheader('Content-Length', content_length)
+            conn.endheaders()
+            conn.send(body)
+            resp = conn.getresponse()
+            status = resp.status
+            resp.read()
+        except (http.client.HTTPException, OSError):
+            status = None
+        finally:
+            conn.close()
+        return status
+    def test_malformed_content_length_non_numeric(self):
+        self.assertEqual(self.raw_post('abc'), 400)
+    def test_malformed_content_length_negative(self):
+        self.assertEqual(self.raw_post('-1'), 400)
+    def test_questions_not_dict(self):
+        code, _ = self.post(json.dumps({'state': STATE, 'questions': 'nope'}).encode())
+        self.assertEqual(code, 400)
+    def test_question_value_not_dict(self):
+        code, _ = self.post(json.dumps({'state': STATE, 'questions': {'mood': 'nope'}}).encode())
+        self.assertEqual(code, 400)
+    def test_choice_criteria_not_dict(self):
+        bad_q = {'mood': {'type': 'choice', 'instructions': 'x', 'criteria': 'nope'}}
+        code, _ = self.post(json.dumps({'state': STATE, 'questions': bad_q}).encode())
+        self.assertEqual(code, 400)
     def test_too_large(self):
         self.assertEqual(self.post(b'{' + b' ' * 70000 + b'}')[0], 413)
     def test_bad_json(self):
@@ -121,6 +163,7 @@ class Http(unittest.TestCase):
             self.assertEqual(r.headers['Access-Control-Allow-Private-Network'], 'true')
     def test_serves_index_only(self):
         with urllib.request.urlopen(self.base + '/') as r: self.assertIn(b'<html', r.read()[:200].lower())
+        with urllib.request.urlopen(self.base + '/index.html?v=1') as r: self.assertIn(b'<html', r.read()[:200].lower())
         with self.assertRaises(urllib.error.HTTPError): urllib.request.urlopen(self.base + '/decision_server.py')
 
 if __name__ == '__main__': unittest.main()

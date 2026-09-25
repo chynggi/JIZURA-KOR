@@ -10,6 +10,7 @@ import http.server
 import json
 import os
 from pathlib import Path
+import re
 import string
 import urllib.error
 import urllib.request
@@ -38,14 +39,22 @@ def to_letter_prompt(state, q):
     return prompt, keys
 
 
+# R8: accept only a reply that, as a whole (full-match, case-insensitive), is a single letter optionally
+# wrapped: an optional "the answer is" / "answer is" / "answer" prefix (with an optional ':' or '-'), then
+# optional '*'/'('/'[' wrappers, one letter, optional closing '*'/')'/']' wrappers, and trailing '.'/':'/whitespace.
+_LETTER_RE = re.compile(
+    r'^\s*(?:(?:the\s+answer\s+is|answer\s+is|answer)\s*[:\-]?\s*)?'
+    r'[\*\(\[]*\s*([A-Za-z])\s*[\*\)\]]*\s*[.:]?\s*$',
+    re.IGNORECASE,
+)
+
+
 def letter_to_key(text, keys):
-    for ch in (text or '').strip().upper():
-        if ch in LETTERS:
-            i = LETTERS.index(ch)
-            return keys[i] if i < len(keys) else None
-        if not ch.isspace():
-            return None
-    return None
+    m = _LETTER_RE.match(text or '')
+    if not m:
+        return None
+    i = LETTERS.index(m.group(1).upper())
+    return keys[i] if i < len(keys) else None
 
 
 def post_json(url, payload, key):
@@ -108,6 +117,22 @@ def choose(state, q, env, url, key):
     return ask_llm(state, instructions, {k: criteria[k] for k in winners}, env, url, key)
 
 
+def valid_request(body):
+    """body must be a dict, questions a dict of dicts, and choice questions must have a dict criteria.
+    (state may be any JSON value.)"""
+    if not isinstance(body, dict):
+        return False
+    questions = body.get('questions')
+    if not isinstance(questions, dict):
+        return False
+    for q in questions.values():
+        if not isinstance(q, dict):
+            return False
+        if q.get('type') == 'choice' and not isinstance(q.get('criteria'), dict):
+            return False
+    return True
+
+
 def decide(body, env):
     backend = env.get('DECISION_BACKEND', 'systemone')
     if backend not in DEFAULT_URL:
@@ -163,7 +188,8 @@ def make_server(host, port, env=None):
             self.wfile.write(raw)
 
         def do_GET(self):
-            if self.path not in ('/', '/index.html', '/favicon.ico'):
+            path = self.path.split('?', 1)[0]
+            if path not in ('/', '/index.html', '/favicon.ico'):
                 self.send_error(404)
                 return
             super().do_GET()
@@ -187,14 +213,21 @@ def make_server(host, port, env=None):
             if self.headers.get('Origin') and not self.allowed_origin():
                 self.reply(403, {'error': '허용되지 않은 출처입니다'})
                 return
-            length = int(self.headers.get('Content-Length') or 0)
+            raw_length = self.headers.get('Content-Length')
+            try:
+                length = int(raw_length) if raw_length is not None else 0
+                if length < 0:
+                    raise ValueError
+            except ValueError:
+                self.reply(400, {'error': '요청을 읽을 수 없습니다'})
+                return
             if length > MAX_BODY:
                 self.rfile.read(min(length, 1 << 20))
                 self.reply(413, {'error': '요청이 너무 큽니다'})
                 return
             try:
                 body = json.loads(self.rfile.read(length) or b'')
-                if not isinstance(body, dict):
+                if not valid_request(body):
                     raise ValueError
             except ValueError:
                 self.reply(400, {'error': '요청을 읽을 수 없습니다'})
