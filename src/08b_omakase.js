@@ -46,7 +46,7 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
   const moodOk = k => !J.MOODS[k].set || (J.setOn && J.setOn(project, J.MOODS[k].set));
   const moods = Object.keys(J.MOODS).filter(k => k !== project.mood && moodOk(k));
   // with the ホラー switch on, おまかせ leans to the ホラー mood (it may repeat)
-  const mood = J.MOODS[choices.mood] ? choices.mood : moodOk('horror') && rnd() < 0.55 ? 'horror' : pick(moods), M = J.MOODS[mood];
+  const mood = J.MOODS[choices.mood] && moodOk(choices.mood) ? choices.mood : moodOk('horror') && rnd() < 0.55 ? 'horror' : pick(moods), M = J.MOODS[mood];
   // a set tied to a mood (ホラー) is only used in that mood
   const moodSetOk = d => !(d && d.set) || !Object.values(J.MOODS).some(m => m.set === d.set) || M.set === d.set;
   // style: mostly one that suits the mood, sometimes anything; never the same twice in a row

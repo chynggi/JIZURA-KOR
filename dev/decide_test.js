@@ -71,3 +71,14 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
   assert.match(String(lastError && lastError.message), /[가-힣]/);
   console.log('DECIDE OK');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+// AI가 고른 분위기라도 그 세트 스위치가 꺼져 있으면 쓰지 않는다(실제 08b_omakase.js)
+{
+  const real = vm.createContext({ window: {}, document: { createElement: () => ({ getContext: () => ({}) }), fonts: { add() {} } } });
+  const src = require('node:path').join(__dirname, '..', 'src');
+  for (const f of fs.readdirSync(src).sort()) if (f < '08c' || /^11[pq]_/.test(f)) vm.runInContext(fs.readFileSync(require('node:path').join(src, f), 'utf8'), real);
+  const R = real.window.J, base = R.defaultProject();
+  for (let i = 0; i < 20; i++) assert.notEqual(R.omakase(Object.assign({}, base, { horror: false }), Math.random, { mood: 'horror' }).mood, 'horror', 'horror mood with the horror switch off');
+  assert.equal(R.omakase(Object.assign({}, base, { horror: true }), Math.random, { mood: 'horror' }).mood, 'horror');
+  assert.equal(R.omakase(base, Math.random, { mood: 'calm' }).mood, 'calm');
+}
