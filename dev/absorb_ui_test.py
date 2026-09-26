@@ -109,6 +109,46 @@ async def test_binary_bundle_roundtrip(b, url):
     assert not errs, errs
     await pg.close()
 
+WAV_JS = '''(() => { const sr = 22050, n = sr * 3, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  w(0,'RIFF'); v.setUint32(4,36+n*2,true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,n*2,true);
+  for (let i = 0; i < n; i++) v.setInt16(44 + i*2, (i % (sr/2) < 400 ? 12000 : 0) * Math.sin(i/5), true);
+  return buf; })()'''
+SEED_SONG = '''async () => {
+  const buf = %s;
+  await J.idbPut('song', { name: 't.wav', type: 'audio/wav', data: buf });
+  J.ui.project.audioName = 't.wav'; delete J.ui.project.audioAsset; J.uiApi.flushSave();
+  return buf.byteLength;
+}''' % WAV_JS
+
+async def test_legacy_song_migration(b, url):
+    # 예전 'song' 레코드(다른 언어판도 같은 출처에서 읽고 씀)는 audioAsset으로 옮겨지되 지워지지 않는다
+    pg, errs = await open_app(b, url)
+    size = await pg.evaluate(SEED_SONG)
+    await pg.reload(); await pg.wait_for_function('window.J && J.ui && J.ui.audio && J.ui.project.audioAsset', timeout=20000)
+    r = await pg.evaluate('''async () => {
+      const id = J.ui.project.audioAsset.id, f = await J.loadMedia(id), song = await J.idbGet('song');
+      const saved = JSON.parse(localStorage.getItem('jizura.project.v1'));
+      return { size: f && f.size, song: !!song, saved: saved.audioAsset && saved.audioAsset.id === id };
+    }''')
+    assert r == {'size': size, 'song': True, 'saved': True}, r
+    assert not errs, errs
+    await pg.close()
+    # 미디어 저장소에 쓰지 못하면: 'song'에서 그대로 재생하고, 없는 파일을 가리키는 audioAsset은 남기지 않는다
+    pg, errs = await open_app(b, url)
+    await pg.evaluate(SEED_SONG)
+    await pg.add_init_script("""const iv = setInterval(() => { if (window.J && J.storeMedia) { J.storeMedia = () => Promise.reject(new Error('quota')); clearInterval(iv); } }, 0);""")
+    await pg.reload(); await pg.wait_for_function('window.J && J.ui && J.ui.audio', timeout=20000)
+    r = await pg.evaluate('''async () => {
+      J.uiApi.flushSave();
+      const saved = JSON.parse(localStorage.getItem('jizura.project.v1'));
+      return { asset: !!J.ui.project.audioAsset, savedAsset: !!saved.audioAsset, name: saved.audioName, song: !!(await J.idbGet('song')) };
+    }''')
+    assert r == {'asset': False, 'savedAsset': False, 'name': 't.wav', 'song': True}, r
+    assert not errs, errs
+    await pg.close()
+
 async def test_undo_covers_our_edits(b, url):
     pg, errs = await open_app(b, url)
     # 편집마다 J.uiApi.flushSave()로 기록을 확정해 autosave 700ms 디바운스·묶음 창(1200ms)에 기대지 않는다
@@ -533,7 +573,7 @@ async def test_line_start_change_is_one_undo_step(b, url):
     assert not errs, errs
     await pg.close()
 
-TESTS = [test_cut_times_follow_line, test_layered_export_media, test_blank_cut_keeps_assets,
+TESTS = [test_legacy_song_migration, test_cut_times_follow_line, test_layered_export_media, test_blank_cut_keeps_assets,
          test_line_start_change_is_one_undo_step,
          test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end, test_fork_features]
 async def main():

@@ -2997,7 +2997,7 @@ async function saveBundle() {
   showMsg('곡과 소재를 모으는 중…');
   try {
     const project = JSON.parse(JSON.stringify(S.project));
-    const song = project.audioAsset ? S.audioFile || await J.loadMedia(project.audioAsset.id).catch(() => null) : null;
+    const song = !project.audioAsset ? null : S.audioFile && S.audioAssetId === project.audioAsset.id ? S.audioFile : await J.loadMedia(project.audioAsset.id).catch(() => null);
     if (project.audioAsset && !song) delete project.audioAsset;      // not kept in this browser: saved without it
     const blob = await J.packProject(project, song);
     const mediaCount = new Set([...project.media.items, ...project.foreground.items].map(item => item.id)).size;
@@ -3750,19 +3750,22 @@ async function loadAudioFile(f, restored) {
     const a = await J.analyzeAudio(f);
     if (stale()) return false;
     S.audio = a; S.audioFile = f;
-    // the portable project file (.jizuraichi) takes the song from here
-    if (!restored || !S.project.audioAsset) {
-      if (S.project.audioAsset) queueMediaDeletion(S.project.audioAsset.id);   // the song this one replaces
-      S.project.audioAsset = { id: 'audio_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)), name: f.name, type: f.type };
-      await J.storeMedia(S.project.audioAsset.id, f).catch(() => {});
-      if (stale()) return false;
-    }
-    S.audioAssetId = S.project.audioAsset.id;
+    // the song is kept as project.audioAsset (media storage); the .jizura file takes it from here.
+    // restored: moved from the older 'song' record (boot, only when the project has no usable audioAsset file) —
+    // it becomes the project's song only once stored and readable back; otherwise it keeps playing from 'song'
+    const info = { id: 'audio_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)), name: f.name, type: f.type };
+    if (!restored && S.project.audioAsset) queueMediaDeletion(S.project.audioAsset.id);   // the song this one replaces
+    let stored = await J.storeMedia(info.id, f).then(() => true, () => false);
+    if (restored && stored) stored = !!(await J.loadMedia(info.id).catch(() => null));
+    if (stale()) return false;
+    if (stored || !restored) S.project.audioAsset = info; else delete S.project.audioAsset;
+    S.audioAssetId = S.project.audioAsset ? S.project.audioAsset.id : null;
     $('audioName').textContent = `${f.name} (${J.fmtTime(S.audio.duration)} · 약 ${S.audio.bpm}BPM)` + (restored ? ' · 지난번 음원' : '');
     S.project.audioName = f.name;
     $('btnRemoveAudio').hidden = false;
     S.project.timing.snap = true;
     syncUI(); replan();
+    if (restored && stored) flushSave();                 // the moved song is on record right away
     return true;
   } catch (err) { if (stale()) return false; $('audioName').textContent = '불러올 수 없습니다: ' + err.message; S.audio = null; S.audioFile = null; $('btnRemoveAudio').hidden = true; return false; }
 }
@@ -3907,7 +3910,6 @@ function boot() {
   bind(); initVolume(); syncUI(); syncLoopBtn(); replan();
   restoreMediaAssets();
   restoreFonts();
-  if (S.project.audioAsset) restoreAudioAsset();   // the song of this project, kept with its 배경·전경 files
   // first visit on a phone: スマホ mode
   let mode = window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 'mobile' : 'easy';
   try { mode = localStorage.getItem('jizura.mode') || mode; } catch (e) {}
@@ -3920,10 +3922,14 @@ function boot() {
   if (c0) seek(c0.start + Math.min(c0.dur * 0.6, c0.inDur + 0.25));
   requestAnimationFrame(tick);
   // the song used last time (same name as the saved project's) comes back after a reload
-  // (older versions kept it as the 'song' record: read once, moved into the media storage as project.audioAsset, then dropped)
-  if (J.loadSong && S.project.audioName && !S.project.audioAsset) J.loadSong().then(async f => {
-    if (f && f.name === S.project.audioName && !S.audio && await loadAudioFile(f, true) && S.project.audioAsset && J.forgetSong) J.forgetSong();
-  });
+  // the song of this project (project.audioAsset, kept with its 배경·전경 files); without a usable one, the older
+  // 'song' record (still read and written by the other language editions on this origin: never deleted here) is moved over
+  (async () => {
+    if (S.project.audioAsset && await J.loadMedia(S.project.audioAsset.id).catch(() => null)) return restoreAudioAsset();
+    if (!J.loadSong || !S.project.audioName) return;
+    const f = await J.loadSong();
+    if (f && f.name === S.project.audioName && !S.audio) loadAudioFile(f, true);
+  })();
   prepareAssets();                                         // 소재 images come back from this browser's storage
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

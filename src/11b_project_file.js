@@ -50,7 +50,7 @@ J.unpackProject = async file => {
   if (manifest.project.audioAsset && !seen.has('audio:'+manifest.project.audioAsset.id)) throw fail();
   for (const font of manifest.project.userFonts || []) if (font.file && !seen.has('font:'+font.key)) throw fail();
   for (const entry of files) if (entry.kind === 'asset' || entry.kind === 'mask')
-    await J.idbPut(entry.kind + ':' + entry.id, {name:entry.name,type:entry.type,data:await entry.file.arrayBuffer()});
+    if (!await J.idbPut(entry.kind + ':' + entry.id, {name:entry.name,type:entry.type,data:await entry.file.arrayBuffer()})) throw fail();
   return {project:manifest.project,files,portable:true};
 };
 })();
