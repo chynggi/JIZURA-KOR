@@ -1,30 +1,30 @@
 /* Rhythmic media pack. Absolute song time keeps adjacent cuts on the same beat. */
 (() => {
 'use strict';
-const L=J.mediaLabel, TAU=Math.PI*2;
+const TAU=Math.PI*2;
 J.mediaBpmHoldAliases=Object.fromEntries(['float','breathe','pulse','rock','swing','orbit','rotate','shake','figureEight','dollyOrbit','hopSteps','zigzagStep'].map(key=>[key,'sync_'+key]));
 for(const def of Object.values(J.MEDIA_TECH)) {
   if(!J.mediaBpmHoldAliases[def.hold])continue;
   def.hold=J.mediaBpmHoldAliases[def.hold];
-  if(!def.stage) {def.group='bpm';def.name+=L('（BPM同期）',' (BPM sync)');}
+  if(!def.stage) {def.group='bpm';def.name+='(BPM 동기화)';}
 }
 J.MEDIA_RHYTHM_KEYS=[];
-for(const [key,ja,en] of [
- ['beatSideHop','ビート・サイドホップ','Beat side hop'],
- ['beatPendulum','ビート・振り子','Beat pendulum'],
- ['beatBox','4拍スクエア移動','Four-beat square'],
- ['beatDiamond','4拍ダイヤ移動','Four-beat diamond'],
- ['beatZoomSteps','4拍ステップズーム','Four-beat zoom steps'],
- ['beatSpring','ビート・スプリング','Beat spring'],
- ['beatSquash','ビート・スクワッシュ','Beat squash'],
- ['beatStretch','ビート・縦ストレッチ','Beat vertical stretch'],
- ['beatTwistHop','ツイスト・ホップ','Twist hop'],
- ['beatWaltz','3拍ワルツ','Three-beat waltz'],
- ['beatSpiral','4拍スパイラル','Four-beat spiral'],
- ['beatSwayZoom','スウェイ・ズーム','Sway zoom'],
+for(const [key,name] of [
+ ['beatSideHop','박자 사이드 홉'],
+ ['beatPendulum','박자 시계추'],
+ ['beatBox','4박 사각 이동'],
+ ['beatDiamond','4박 다이아몬드 이동'],
+ ['beatZoomSteps','4박 스텝 줌'],
+ ['beatSpring','박자 스프링'],
+ ['beatSquash','박자 스쿼시'],
+ ['beatStretch','박자 세로 스트레치'],
+ ['beatTwistHop','트위스트 홉'],
+ ['beatWaltz','3박 왈츠'],
+ ['beatSpiral','4박 스파이럴'],
+ ['beatSwayZoom','스웨이 줌'],
 ]) {
  J.MEDIA_RHYTHM_KEYS.push(key);
- J.MEDIA_TECH[key]={name:L(ja,en),group:'bpm',enter:'cut',hold:key,exit:'cut',treat:'none',trans:'none'};
+ J.MEDIA_TECH[key]={name,group:'bpm',enter:'cut',hold:key,exit:'cut',treat:'none',trans:'none'};
 }
 const previous=J.mediaBeatState;
 J.mediaBeatState=(cut,p,w,h)=>{

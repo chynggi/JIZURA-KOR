@@ -3,11 +3,11 @@
 (() => {
 'use strict';
 const magic = 'JIZURA01', text = new TextEncoder(), decode = new TextDecoder();
-const fail = () => new Error(J.mediaLabel('プロジェクトファイルが不正または未対応の形式です', 'Invalid or unsupported project file'));
+const fail = () => new Error('프로젝트 파일이 올바르지 않거나 지원하지 않는 형식입니다');
 J.packProject = async (project, audioFile) => {
   const entries = [], parts = []; let offset = 0;
   const add = (kind, id, file, name) => {
-    if (!(file instanceof Blob)) throw new Error(J.mediaLabel('素材が見つかりません。再読み込みしてください：', 'Missing asset. Please import it again: ') + name);
+    if (!(file instanceof Blob)) throw new Error('소재를 찾을 수 없습니다. 다시 불러와 주세요: ' + name);
     entries.push({kind,id,name:name || file.name || id,type:file.type,offset,size:file.size});
     parts.push(file); offset += file.size;
   };

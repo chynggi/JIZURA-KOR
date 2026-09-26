@@ -700,7 +700,7 @@ function toggleLyricLineLock(index) {
   replan();
 }
 function emphasisFrontmostHint() {
-  return J.mediaLabel('*強調*した歌詞は常に最前表示です。解除するには歌詞の * を外してください。', 'Emphasized lyrics always appear in front. Remove the * markers to turn this off.');
+  return '*강조*한 가사는 항상 맨 앞에 표시됩니다. 해제하려면 가사의 * 표시를 지우세요.';
 }
 function toggleLyricCutFrontmost(line, part) {
   const key = `${line}:${part}`, options = S.project.lyricCutOptions;
@@ -738,11 +738,11 @@ function toggleMediaCutLock(layer, index) {
 }
 function detailButton(onClick) {
   const button = document.createElement('button'); button.type = 'button'; button.className = 'icon ghost cut-details-open';
-  button.title = J.mediaLabel('カットの詳細編集','Edit cut details'); button.setAttribute('aria-label',button.title);
+  button.title = '컷 상세 편집'; button.setAttribute('aria-label',button.title);
   button.innerHTML = ICON.details; button.addEventListener('click',onClick); return button;
 }
 function openCutDetails(layer,index,part=0) {
-  const lyric = layer === 'lyrics', L = J.mediaLabel, clone = value => JSON.parse(JSON.stringify(value));
+  const lyric = layer === 'lyrics', clone = value => JSON.parse(JSON.stringify(value));
   const blank = lyric && part === 'blank';
   const cut = blank ? S.plan.cuts[index] : lyric ? S.plan.cuts.find(c=>c.line===index && c.part===part) : S.plan[layer]?.cuts[index];
   if (!cut) return;
@@ -752,21 +752,21 @@ function openCutDetails(layer,index,part=0) {
   let locked = !!(lyric ? S.project.overrides[index]?.lock : original.lock);
   const initialLock = locked;
   const dialog = document.createElement('dialog'); dialog.id='cutDetailsDialog'; dialog.className='cut-details-dialog';
-  dialog.setAttribute('aria-label',L('カットの詳細編集','Edit cut details'));
+  dialog.setAttribute('aria-label','컷 상세 편집');
   document.body.appendChild(dialog);
   const names = {
-    text:['歌詞','Lyrics'],layout:['レイアウト','Layout'],enter:['登場','Entrance'],hold:['保持・モーション','Hold / motion'],exit:['退場','Exit'],
-    inDur:['登場時間（秒）','Entrance duration (s)'],outDur:['退場時間（秒）','Exit duration (s)'],stagger:['文字の時間差（秒）','Character delay (s)'],
-    decor:['装飾','Decoration'],scheme:['配色','Palette'],params:['レイアウト詳細','Layout parameters'],treat:['加工','Treatment'],treatP:['加工の詳細','Treatment parameters'],
-    bg:['背景演出','Background effect'],bgP:['背景演出の詳細','Background parameters'],cam:['カメラ','Camera'],camP:['カメラ詳細','Camera parameters'],
-    trans:['カット間のつなぎ','Transition'],transP:['つなぎの詳細','Transition parameters'],transDur:['つなぎ時間（秒）','Transition duration (s)'],
-    area:['表示範囲（画面比率）','Display area (stage ratios)'],placement:['配置・サイズ（画面比率）','Placement / size (stage ratios)'],
-    motionScale:['動きの倍率','Motion scale'],contentScale:['文字サイズ倍率','Text scale'],effectSettings:['演出パラメータ','Effect parameters'],
-    motion:['動きの強さ','Motion amount'],treatment:['加工の強さ','Treatment amount'],duration:['登場・退場時間（秒）','Entrance / exit duration (s)'],bpm:['BPM','BPM'],beatOffset:['拍の開始位置（秒）','Beat offset (s)'],x:['左位置','Left'],y:['上位置','Top'],cx:['中心 X','Center X'],cy:['中心 Y','Center Y'],w:['幅','Width'],h:['高さ','Height'],angle:['角度（度）','Angle (degrees)'],lockAspect:['縦横比を固定','Lock aspect ratio'],
-    technique:['手法','Technique'],entrance:['登場','Entrance'],departure:['退場','Exit'],itemId:['素材','Asset'],frontmost:['最前に表示','Frontmost'],blend:['合成方法','Blend mode'],opacity:['不透明度（％）','Opacity (%)'],videoLoop:['動画をループ再生','Loop video'],videoDuration:['動画の長さ（秒）','Video duration (s)'],chromaKey:['クロマキー合成','Chroma key'],chromaColor:['クロマキー色','Key color'],
-    font:['フォント','Font'],size:['サイズ','Size'],scale:['倍率','Scale'],rotation:['回転','Rotation'],color:['色','Color'],alpha:['不透明度','Opacity'],seed:['乱数シード','Random seed'],n:['個数','Count'],id:['種類','Type'],sx:['横方向倍率','Horizontal scale'],sy:['縦方向倍率','Vertical scale'],
+    text:'가사',layout:'레이아웃',enter:'등장',hold:'유지·모션',exit:'퇴장',
+    inDur:'등장 시간(초)',outDur:'퇴장 시간(초)',stagger:'글자 시간차(초)',
+    decor:'장식',scheme:'배색',params:'레이아웃 상세',treat:'가공',treatP:'가공 상세',
+    bg:'배경 연출',bgP:'배경 연출 상세',cam:'카메라',camP:'카메라 상세',
+    trans:'컷 간 전환',transP:'전환 상세',transDur:'전환 시간(초)',
+    area:'표시 영역(화면 비율)',placement:'배치·크기(화면 비율)',
+    motionScale:'움직임 배율',contentScale:'글자 크기 배율',effectSettings:'효과 설정',
+    motion:'움직임 강도',treatment:'가공 강도',duration:'등장·퇴장 시간(초)',bpm:'BPM',beatOffset:'박자 시작 위치(초)',x:'왼쪽 위치',y:'위쪽 위치',cx:'중심 X',cy:'중심 Y',w:'너비',h:'높이',angle:'각도(°)',lockAspect:'가로세로 비율 고정',
+    technique:'기법',entrance:'등장',departure:'퇴장',itemId:'파일',frontmost:'맨 앞에 표시',blend:'합성 방법',opacity:'불투명도(%)',videoLoop:'동영상 반복 재생',videoDuration:'동영상 길이(초)',chromaKey:'크로마키 합성',chromaColor:'크로마키 색',
+    font:'글꼴',size:'크기',scale:'배율',rotation:'회전',color:'색',alpha:'불투명도',seed:'무작위 시드',n:'개수',id:'종류',sx:'가로 배율',sy:'세로 배율',
   };
-  const label = key => names[key] ? L(...names[key]) : key;
+  const label = key => names[key] || key;
   const nativeKeys = blank ? [] : lyric ? ['frontmost','blend','opacity'] : ['itemId','technique','entrance','departure','placement','videoLoop','videoDuration','chromaKey','chromaColor'];
   function preview() {
     const project = clone(S.project);
@@ -782,18 +782,18 @@ function openCutDetails(layer,index,part=0) {
     if(native) draft[field]=value; else { draft.details ||= {}; draft.details[field]=value; }
   }
   function options(field) {
-    if(field==='blend') return ['normal','multiply','screen','overlay'].map((v,i)=>[v,[L('通常','Normal'),L('乗算','Multiply'),L('スクリーン','Screen'),L('オーバーレイ','Overlay')][i]]);
-    if(field==='itemId') return [['',L('画像無し','No image')],...S.project[layer].items.map(a=>[a.id,a.name])];
+    if(field==='blend') return ['normal','multiply','screen','overlay'].map((v,i)=>[v,['표준','곱하기','스크린','오버레이'][i]]);
+    if(field==='itemId') return [['','이미지 없음'],...S.project[layer].items.map(a=>[a.id,a.name])];
     if(field==='scheme') return S.plan.style.schemes.map((_,i)=>[String(i),String(i+1)]);
-    if(field==='technique') return [['',L('自動','Auto')],['none',L('演出無し','No effects')],...Object.entries(J.MEDIA_TECH).filter(([,d])=>!d.stage).map(([id,d])=>[id,d.name])];
-    if(field==='entrance'||field==='departure') return [['',L('自動','Auto')],['none',L('即時（なし）','Instant (none)')],...J.mediaPhaseOptions(field==='entrance'?'enter':'exit').map(([id,d])=>[id,d.name])];
+    if(field==='technique') return [['','자동'],['none','효과 없음'],...Object.entries(J.MEDIA_TECH).filter(([,d])=>!d.stage).map(([id,d])=>[id,d.name])];
+    if(field==='entrance'||field==='departure') return [['','자동'],['none','즉시(없음)'],...J.mediaPhaseOptions(field==='entrance'?'enter':'exit').map(([id,d])=>[id,d.name])];
     if(!lyric && ['layout','hold','treat'].includes(field)) {
       const registry=J['MEDIA_'+field.toUpperCase()] || {}, entries=Object.entries(registry).map(([id,d])=>[id,typeof d==='string'?d:d.name||id]);
       for(const def of Object.values(J.MEDIA_TECH)) if(def[field]&&!entries.some(([id])=>id===def[field])) entries.push([def[field],def.name+' / '+def[field]]);
       return entries;
     }
     const reg={layout:J.LAYOUTS,enter:J.ENTER,hold:J.HOLD,exit:J.EXIT,treat:J.TREAT,bg:J.BG,cam:J.CAMERA,trans:J.TRANS,font:J.FONTS,id:J.DECOR}[field];
-    return reg ? [...(field==='trans'?[['none',L('なし','None')]]:[]),...Object.entries(reg).map(([id,d])=>[id,d.name||id])] : null;
+    return reg ? [...(field==='trans'?[['none','없음']]:[]),...Object.entries(reg).map(([id,d])=>[id,d.name||id])] : null;
   }
   function fieldEditor(parent,field,value,onChange,path=field) {
     if(value && typeof value==='object') {
@@ -812,10 +812,10 @@ function openCutDetails(layer,index,part=0) {
         },`${path}.${child}`);
       }
       if(field==='decor') {
-        const add=document.createElement('button');add.type='button';add.textContent=L('装飾を追加','Add decoration');
+        const add=document.createElement('button');add.type='button';add.textContent='장식 추가';
         add.onclick=()=>{value.push({id:Object.keys(J.DECOR)[0],seed:cut.seed,n:1});onChange(clone(value));preview();};section.append(add);
       }
-      if(Array.isArray(value)) value.forEach((_,i)=>{const del=document.createElement('button');del.type='button';del.textContent=L(`${i+1} を削除`,`Remove ${i+1}`);del.onclick=()=>{value.splice(i,1);onChange(clone(value));preview();};section.append(del);});
+      if(Array.isArray(value)) value.forEach((_,i)=>{const del=document.createElement('button');del.type='button';del.textContent=`${i+1} 삭제`;del.onclick=()=>{value.splice(i,1);onChange(clone(value));preview();};section.append(del);});
       return;
     }
     const row=document.createElement('label');row.className='cut-detail-field';const text=document.createElement('span');text.textContent=label(field);row.append(text);
@@ -840,15 +840,15 @@ function openCutDetails(layer,index,part=0) {
   }
   function render() {
     dialog.replaceChildren();const form=document.createElement('form');dialog.append(form);
-    const heading=document.createElement('h2');heading.textContent=L('カットの詳細編集','Edit cut details')+' — '+(lyric?L('歌詞','Lyrics'):layer==='foreground'?L('前景','Foreground'):L('背景','Background'))+` ${index+1}${lyric?` / ${part+1}`:''}`;form.append(heading);
-    const hint=document.createElement('p');hint.className='hint';hint.textContent=L('変更は「適用」で確定します。数値は現在のカットの値です。表示範囲の 1 は画面全体の幅・高さに相当します。','Changes are saved with Apply. Values describe this cut. A display-area ratio of 1 equals the full stage width or height.');form.append(hint);
+    const heading=document.createElement('h2');heading.textContent='컷 상세 편집'+' — '+(lyric?'가사':layer==='foreground'?'전경':'배경')+` ${index+1}${lyric?` / ${part+1}`:''}`;form.append(heading);
+    const hint=document.createElement('p');hint.className='hint';hint.textContent='변경은 「적용」으로 확정됩니다. 수치는 현재 컷의 값입니다. 표시 영역의 1은 화면 전체의 너비·높이에 해당합니다.';form.append(hint);
     const grid=document.createElement('div');grid.className='cut-details-grid';form.append(grid);
     const group=boundaryGroupLimits(boundaryRef(layer,cut));
     fieldEditor(grid,'start',start,v=>{start=v;});
-    const time=grid.querySelector('input');time.previousSibling.textContent=L('開始位置（秒・リンク先も移動）','Start (s; linked cuts move together)');time.min=group?.min??0;time.max=group?.max??S.plan.duration;time.disabled=!group;
+    const time=grid.querySelector('input');time.previousSibling.textContent='시작 위치(초·연결된 대상도 함께 이동)';time.min=group?.min??0;time.max=group?.max??S.plan.duration;time.disabled=!group;
     if(!blank) {
       fieldEditor(grid,'lock',locked,v=>{locked=v;});
-      grid.lastChild.querySelector('span').textContent=lyric?L('行の構成をロック','Lock line composition'):L('カットをロック','Lock cut');
+      grid.lastChild.querySelector('span').textContent=lyric?'행의 구성 잠금':'컷 잠금';
     }
     for(const field of nativeKeys) {
       if(['videoLoop','videoDuration','chromaKey','chromaColor'].includes(field)&&current.type!=='video')continue;
@@ -866,9 +866,9 @@ function openCutDetails(layer,index,part=0) {
       fieldEditor(grid,field,clone(value),v=>write(field,field==='scheme'?+v:v,false));
     }
     const buttons=document.createElement('div');buttons.className='cut-details-actions';form.append(buttons);
-    const reset=document.createElement('button');reset.type='button';reset.textContent=L('詳細編集をリセット','Reset detail overrides');reset.onclick=()=>{delete draft.details;preview();};
-    const cancel=document.createElement('button');cancel.type='button';cancel.textContent=L('キャンセル','Cancel');cancel.onclick=()=>dialog.close();
-    const apply=document.createElement('button');apply.type='submit';apply.textContent=L('適用','Apply');buttons.append(reset,cancel,apply);
+    const reset=document.createElement('button');reset.type='button';reset.textContent='상세 편집 초기화';reset.onclick=()=>{delete draft.details;preview();};
+    const cancel=document.createElement('button');cancel.type='button';cancel.textContent='취소';cancel.onclick=()=>dialog.close();
+    const apply=document.createElement('button');apply.type='submit';apply.textContent='적용';buttons.append(reset,cancel,apply);
     form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;
       if(!blank) { if(lyric) S.project.lyricCutOptions[key]=draft; else S.project[layer].cutOverrides[index]=draft; }
       if(!blank && (locked !== initialLock || !lyric)) {
@@ -934,7 +934,7 @@ function drawTimelineLinks() {
     const y = canvas.offsetTop + 11;
     const actions = [['dice', false, layer === 'lyrics' ? '이 행 다시 뽑기' : '이 컷 다시 뽑기', ICON.dice], ['lock', locked, layer === 'lyrics' ? '이 행의 구성 잠금' : '이 컷 잠금', ICON.lock]];
     if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? '이 행의 표시 영역을 편집' : '이 컷의 배치·크기 편집', ICON.area]);
-    if (layer !== 'lyrics') actions.push(['details', false, J.mediaLabel('カットの詳細編集','Edit cut details'), ICON.details]);
+    if (layer !== 'lyrics') actions.push(['details', false, '컷 상세 편집', ICON.details]);
     if (layer !== 'lyrics') actions.push(['remove', false, '이 컷 삭제', ICON.remove]);
     const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - (actions.length - 1) * 20 - 23);
     return actions.map(([name, active, label, icon], n) => {
@@ -951,11 +951,11 @@ function drawTimelineLinks() {
     const x = J.clamp(startX + 10, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 9);
     const y = canvas.offsetTop + 33, active = !!cut.frontmost;
     const graphic = ICON.frontmost.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
-    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}행 ${cut.part + 1}컷을 맨 앞에 표시" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g><g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${J.mediaLabel('カットの詳細編集','Edit cut details')}" transform="translate(${Math.min(x + 20,canvas.offsetLeft + canvas.clientWidth - 9)} ${y})"><title>${J.mediaLabel('カットの詳細編集','Edit cut details')}</title><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
+    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}행 ${cut.part + 1}컷을 맨 앞에 표시" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g><g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="컷 상세 편집" transform="translate(${Math.min(x + 20,canvas.offsetLeft + canvas.clientWidth - 9)} ${y})"><title>컷 상세 편집</title><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
   }).join('');
   const blankActions = S.plan.cuts.filter(c=>c.blank).map(c=> {
     const canvas=$('timeline'), x=canvas.offsetLeft+c.start/S.plan.duration*canvas.clientWidth+10;
-    return `<g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${c.index}" data-part="blank" role="button" tabindex="0" aria-label="${J.mediaLabel('カットの詳細編集','Edit cut details')}" transform="translate(${x} ${canvas.offsetTop+33})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
+    return `<g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${c.index}" data-part="blank" role="button" tabindex="0" aria-label="컷 상세 편집" transform="translate(${x} ${canvas.offsetTop+33})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
   }).join('');
   const mediaActions = ['foreground', 'media'].map(layer => S.plan[layer].cuts.map(cut => action(layer, cut, cut.index, !!mediaCutOptions(layer, cut.index).lock)).join('')).join('');
   svg.innerHTML = links + preview + handles + lyricActions + frontmostActions + blankActions + mediaActions;
@@ -1177,7 +1177,7 @@ function updateCutInfo() {
   if (!cut && !mc && !fc) { el.innerHTML = '<span class="hint">이 위치에는 컷이 없습니다</span>'; if (cutPick.g) closeCutPick(); return; }
   const chip = (cls, k, v) => `<span class="chip ${cls}"><b>${k}</b>${v}</span>`;
   const n = (tbl, k) => (tbl[k] ? tbl[k].name : k);
-  const mediaChips = [].concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '전경' : '배경', escapeHtml(mediaCut.name)), chip('l', J.mediaLabel('手法', 'Technique'), J.mediaTechniqueName(mediaCut)), mediaCut.placement && mediaCut.placement.angle ? chip('c', '각도', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', '크로마키', mediaCut.chromaColor) : ''] : [])).join('');
+  const mediaChips = [].concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '전경' : '배경', escapeHtml(mediaCut.name)), chip('l', '기법', J.mediaTechniqueName(mediaCut)), mediaCut.placement && mediaCut.placement.angle ? chip('c', '각도', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', '크로마키', mediaCut.chromaColor) : ''] : [])).join('');
   if (S.mode !== 'pro' || !cut || cut.blank) {          // 간단/스마트폰, 또는 가사 컷이 아닌 곳: 정적 칩 표시
     if (cutPick.g) closeCutPick();
     el.innerHTML = (cut && cut.blank ? [chip('l', '가사', '무표시')] : cut ? [
@@ -1477,14 +1477,14 @@ function renderLines() {
       input.setAttribute('aria-label', `${i + 1}행 ${c.part + 1}컷을 맨 앞에 표시`);
       input.addEventListener('change', () => toggleLyricCutFrontmost(i, c.part));
       label.append(input, document.createTextNode('맨 앞에 표시'));
-      const L = J.mediaLabel, settings = J.lyricEffectSettings(S.project);
+      const settings = J.lyricEffectSettings(S.project);
       const options = S.project.lyricCutOptions[`${i}:${c.part}`] || {};
-      const modes = { normal: L('通常', 'Normal'), multiply: L('乗算', 'Multiply'), screen: L('スクリーン', 'Screen'), overlay: L('オーバーレイ', 'Overlay') };
+      const modes = { normal: '표준', multiply: '곱하기', screen: '스크린', overlay: '오버레이' };
       const controls = document.createElement('div'); controls.className = 'lyric-cut-compositing';
-      controls.innerHTML = `<label>${L('合成方法', 'Blend')}<select class="lyric-cut-blend" aria-label="${L('このカットの合成方法', 'This cut blend mode')}"><option value="">${L('自動', 'Auto')} (${modes[c.blend]})</option>${Object.entries(modes).map(([key, text]) => `<option value="${key}">${text}</option>`).join('')}</select></label><label>${L('不透明度（％）', 'Opacity (%)')}<input class="lyric-cut-opacity" type="number" min="0" max="100" step="1" aria-label="${L('このカットの不透明度（％）', 'This cut opacity (%)')}" value="${c.opacity}"></label><button type="button" class="ghost small lyric-composite-auto" title="${L('このカットの合成方法・不透明度を自動に戻す', 'Reset this cut blend and opacity to automatic')}">${L('自動に戻す', 'Reset to auto')}</button>`;
+      controls.innerHTML = `<label>합성 방법<select class="lyric-cut-blend" aria-label="이 컷의 합성 방법"><option value="">자동 (${modes[c.blend]})</option>${Object.entries(modes).map(([key, text]) => `<option value="${key}">${text}</option>`).join('')}</select></label><label>불투명도(%)<input class="lyric-cut-opacity" type="number" min="0" max="100" step="1" aria-label="이 컷의 불투명도(%)" value="${c.opacity}"></label><button type="button" class="ghost small lyric-composite-auto" title="이 컷의 합성 방법·불투명도를 자동으로 되돌리기">자동으로 되돌리기</button>`;
       const blend = controls.querySelector('select'), opacity = controls.querySelector('input'), reset = controls.querySelector('button');
       blend.value = options.blend || (settings.randomBlend ? '' : c.blend);
-      opacity.title = settings.randomOpacity && options.opacity == null ? L('自動で選ばれた不透明度。入力すると手動指定になります。', 'Random opacity. Enter a value to set it manually.') : '';
+      opacity.title = settings.randomOpacity && options.opacity == null ? '자동으로 선택된 불투명도입니다. 값을 입력하면 직접 지정됩니다.' : '';
       opacity.classList.toggle('automatic', settings.randomOpacity && options.opacity == null);
       reset.hidden = options.blend == null && options.opacity == null;
       blend.addEventListener('change', e => setLyricCutComposite(i, c.part, { blend: e.target.value || undefined }));
@@ -1750,7 +1750,7 @@ function syncSourceTab() {
   $('foregroundBlendFields').hidden = layer !== 'foreground';
   $('linesInfo').textContent = media ? `파일 ${m.items.length} / 컷 ${S.plan[layer].cuts.length}` : `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
   $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
-  $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
+  $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? '파일을 2개 이상 추가하면 선택할 수 있습니다' : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
   $('mediaGroupLyrics').checked = !media || m.groupLyricsAsOneCut !== false;
   $('audioTimingSection').hidden = media;
@@ -1758,9 +1758,9 @@ function syncSourceTab() {
   $('mediaLyricInsertMode').value = media && m.lyricInsertMode === 'cut' ? 'cut' : 'line';
   $('btnMediaFromLyrics').disabled = !targets.length;
   $('mediaLyricInsertHint').textContent = !media || !m.items.length
-    ? J.mediaLabel('画像・動画を追加すると使用できます。', 'Add images or videos to use this feature.')
+    ? '이미지·동영상을 추가하면 사용할 수 있습니다.'
     : !targets.length
-      ? J.mediaLabel('対象となる歌詞の行・カットがありません。', 'There are no lyric lines or cuts to align to.')
+      ? '대상이 될 가사 행·컷이 없습니다.'
       : '';
 }
 function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
@@ -1803,7 +1803,7 @@ function insertMediaFromLyrics() {
     S.project.timelineLinks.push({ a: prefix + index, b: boundaryRef('lyrics', cut) });
   });
   replan(); seek(targets[0].start);
-  toast(J.mediaLabel(`${targets.length}カットを歌詞に合わせて挿入しました`, `Inserted ${targets.length} cuts aligned to lyrics`));
+  toast(`${targets.length}컷을 가사에 맞춰 삽입했습니다`);
 }
 function mediaThumb(item, cls = '') {
   if (!item) return `<span class="missing media-ln-thumb" aria-hidden="true">—</span>`;
@@ -1818,7 +1818,7 @@ function renderMediaList() {
     const row = document.createElement('div'); row.className = 'media-item'; row.dataset.id = item.id;
     row.innerHTML = `${mediaThumb(item)}<span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><button class="ghost small" aria-label="${escapeHtml(item.name)} 삭제">×</button>`;
     const edges = document.createElement('fieldset'); edges.className = 'media-cropped-edges';
-    edges.innerHTML = `<legend>${J.mediaLabel('見切れている辺（自動配置）','Cropped edges (auto placement)')}</legend>` + [['left','左','Left'],['right','右','Right'],['top','上','Top'],['bottom','下','Bottom']].map(([key,ja,en]) => `<label><input type="checkbox" data-cropped-edge="${key}" ${item.croppedEdges?.[key] ? 'checked' : ''}>${J.mediaLabel(ja,en)}</label>`).join('');
+    edges.innerHTML = `<legend>잘려나가는 쪽(자동 배치)</legend>` + [['left','왼쪽'],['right','오른쪽'],['top','위'],['bottom','아래']].map(([key,name]) => `<label><input type="checkbox" data-cropped-edge="${key}" ${item.croppedEdges?.[key] ? 'checked' : ''}>${name}</label>`).join('');
     edges.addEventListener('change', e => {
       const edge = e.target.dataset.croppedEdge; if (!edge) return;
       item.croppedEdges = { ...item.croppedEdges, [edge]: e.target.checked }; replan();
@@ -1932,18 +1932,18 @@ async function addMediaFiles(files, layer) {
   replan();
 }
 const MEDIA_EFFECT_GROUPS = {
-  enter: J.mediaLabel('登場', 'Entrance'), exit: J.mediaLabel('退場', 'Exit'),
-  cinema: J.mediaLabel('シネマ・カメラ', 'Cinema / camera'), dynamic: J.mediaLabel('ダイナミックモーション', 'Dynamic motion'),
-  bpm: J.mediaLabel('BPM同期', 'BPM sync'), texture: J.mediaLabel('色・質感', 'Color / texture'),
-  graphic: J.mediaLabel('分割・残像・グリッチ', 'Panels / echoes / glitch'), transition: J.mediaLabel('カット間のつなぎ', 'Cut transitions'),
+  enter: '등장', exit: '퇴장',
+  cinema: '시네마·카메라', dynamic: '다이내믹 모션',
+  bpm: 'BPM 동기화', texture: '색·질감',
+  graphic: '분할·잔상·글리치', transition: '컷 간 전환',
 };
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${J.MEDIA_TECH[cut.technique]?.stage ? `<option value="${cut.technique}" selected>${J.mediaTechniqueName(cut)} (${J.mediaLabel('従来の設定', 'Legacy settings')})</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).filter(([group]) => !['enter', 'exit'].includes(group)).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group && !def.stage).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="이미지·동영상 기법"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>효과 없음</option><option value="" ${ov.technique === null ? 'selected' : ''}>자동</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>기존 설정</option>` : ''}${J.MEDIA_TECH[cut.technique]?.stage ? `<option value="${cut.technique}" selected>${J.mediaTechniqueName(cut)} (기존 설정)</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).filter(([group]) => !['enter', 'exit'].includes(group)).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group && !def.stage).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
   const selectPhase = (ov, cut, stage, field) => {
     const value = ov[field] ?? '', title = MEDIA_EFFECT_GROUPS[stage];
-    return `<label>${title}<select class="media-phase" data-media-phase="${field}" aria-label="${title}"><option value="" ${!value ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option><option value="none" ${value === 'none' ? 'selected' : ''}>${J.mediaLabel('即時（なし）', 'Instant (none)')}</option>${J.mediaPhaseOptions(stage).map(([key, def]) => `<option value="${key}" ${value === key ? 'selected' : ''}>${def.name}</option>`).join('')}</select></label>`;
+    return `<label>${title}<select class="media-phase" data-media-phase="${field}" aria-label="${title}"><option value="" ${!value ? 'selected' : ''}>자동</option><option value="none" ${value === 'none' ? 'selected' : ''}>즉시(없음)</option>${J.mediaPhaseOptions(stage).map(([key, def]) => `<option value="${key}" ${value === key ? 'selected' : ''}>${def.name}</option>`).join('')}</select></label>`;
 
   };
   const addButton = index => {
@@ -1955,13 +1955,13 @@ function renderMediaLines() {
   S.plan[layer].cuts.forEach((cut, i) => {
     addButton(i);
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
-    const fileSelect = `<select class="media-cut-file" ${m.randomOrder ? `disabled title="${J.mediaLabel('素材を指定するにはランダム順をオフにしてください', 'Turn off random order to select a file')}"` : ''} aria-label="${i + 1}컷 파일"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
+    const fileSelect = `<select class="media-cut-file" ${m.randomOrder ? `disabled title="파일을 지정하려면 무작위 순서를 꺼주세요"` : ''} aria-label="${i + 1}컷 파일"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (ov[key] === undefined) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
     const sw = source && (source.videoWidth || source.naturalWidth), sh = source && (source.videoHeight || source.naturalHeight);
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
-    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}컷 배치와 크기 편집"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>배치·크기 편집</button>${cut.placementMode === 'auto' ? `<span class="tagl">${J.mediaLabel('自動配置', 'Auto placement')}</span>` : ''}${cut.placementMode === 'manual' ? '<button class="foreground-placement-reset ghost" type="button">자동 배치로 되돌리기</button>' : ''}</span>`;
+    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}컷 배치와 크기 편집"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>배치·크기 편집</button>${cut.placementMode === 'auto' ? `<span class="tagl">자동 배치</span>` : ''}${cut.placementMode === 'manual' ? '<button class="foreground-placement-reset ghost" type="button">자동 배치로 되돌리기</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}컷 시작 초">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.mediaTechniqueName(cut)}</span></span><span class="tools">${selectTechnique(ov, cut)}<button class="icon ghost dice" title="이 컷 다시 뽑기">${ICON.dice}</button><button class="icon ghost lock" title="이 컷 잠금" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}컷 삭제">삭제</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>동영상 반복 재생</label><label class="media-video-duration">동영상 길이(초)<input type="number" min="0.04" max="3600" step="0.01" placeholder="자동" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}컷 동영상 길이(초)"></label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>크로마키 합성</label><label>색<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}컷 크로마키 색" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
@@ -2614,7 +2614,7 @@ function openExportDialog(kind) {
   const mp4 = kind === 'mp4';
   S.exportKind = kind;
   $('exportFilename').value = baseName() + rangeSuffix() + (mp4 ? '.mp4' : kind === 'pnga' ? '_alpha_png.zip' : '_png.zip');
-  $('exportDlgTitle').textContent = J.mediaLabel(mp4 ? 'MP4 を書き出す' : kind === 'pnga' ? '透過PNG（ZIP・背景なし）' : '連番PNG（ZIP）', mp4 ? 'Export MP4' : kind === 'pnga' ? 'Transparent PNG (ZIP)' : 'PNG sequence (ZIP)');
+  $('exportDlgTitle').textContent = mp4 ? 'MP4 내보내기' : kind === 'pnga' ? '투명 PNG (ZIP·배경 없음)' : 'PNG 시퀀스 (ZIP)';
   $('exportDialogContent').appendChild($('exportSettings'));
   for (const [id,type] of [['btnMP4','mp4'],['btnPNG','png'],['btnPNGA','pnga'],['btnPNGL','pnga']]) $(id).hidden = kind !== type;
   $('outQuality').closest('label').hidden = !mp4;
@@ -2637,7 +2637,7 @@ function baseName() {
 }
 function requestFilename(kind) {
   const dlg = $('filenameDlg'), project = kind === 'project';
-  $('filenameDlgTitle').textContent = J.mediaLabel(project ? 'プロジェクトを保存' : 'AE用に書き出し', project ? 'Save project' : 'Export for AE');
+  $('filenameDlgTitle').textContent = project ? '프로젝트 저장' : 'AE용 내보내기';
   $('saveFilename').value = baseName() + (project ? '.jizuraichi' : rangeSuffix() + '_ae.json');
   dlg.returnValue = ''; dlg.showModal(); $('saveFilename').select();
   return new Promise(resolve=>dlg.addEventListener('close',()=>resolve(dlg.returnValue === 'save' ? J.exportFilename($('saveFilename').value,project ? '.jizuraichi' : '.json',baseName()) : null),{once:true}));
@@ -3092,19 +3092,19 @@ const openMediaGroups = { foreground: new Set(), media: new Set() };
 function renderMediaEffects(layer) {
   if (!layer) { for (const target of ['foreground', 'media']) renderMediaEffects(target); return; }
   const box = $(layer + 'EffectsPanel'); if (!box) return;
-  const settings = J.mediaEffectSettings(S.project, layer), L = J.mediaLabel;
-  const layerNote = layer === 'foreground' ? L('前景の画像・動画に適用します。', 'Applies to foreground images and videos.') : L('背景の画像・動画に適用します。', 'Applies to background images and videos.');
-  const shuffleLabel = layer === 'foreground' ? L('前景をシャッフル', 'Shuffle foreground') : L('背景をシャッフル', 'Shuffle background');
+  const settings = J.mediaEffectSettings(S.project, layer);
+  const layerNote = layer === 'foreground' ? '전경의 이미지·동영상에 적용합니다.' : '배경의 이미지·동영상에 적용합니다.';
+  const shuffleLabel = layer === 'foreground' ? '전경 섞기' : '배경 섞기';
   const setting = key => box.querySelector(`[data-media-setting="${key}"]`);
   const action = key => box.querySelector(`[data-media-action="${key}"]`);
-  box.innerHTML = `<p class="note">${layerNote} ${L('チェックした手法を「自動」とシャッフルで使用します。手動指定した手法とロック済みカットは維持されます。', 'Checked techniques are used by Auto and Shuffle. Explicit selections and locked cuts are preserved.')}</p><label class="check"><input data-media-setting="autoPlacement" type="checkbox" ${settings.autoPlacement !== false ? 'checked' : ''}><span>${L('配置・サイズにも自動で変化を付ける', 'Vary position and size automatically')}<small>${L('手動配置とロックは維持します。演出無しは中央に全体表示します。', 'Manual placement and locks are preserved. No effects keeps the centered full view.')}</small></span></label><div class="media-auto-size-range" data-media-size-range ${settings.autoPlacement !== false ? '' : 'hidden'}><div class="range-title">${L('最小・最大サイズ倍率（％）', 'Minimum / maximum area scale (%)')}</div><div class="range-pair" data-media-size-slider><input type="range" min="0" max="500" step="5" value="${settings.sizeMin}" data-media-size="min" aria-label="${L('自動サイズの最小倍率', 'Minimum automatic size scale')}"><input type="range" min="0" max="500" step="5" value="${settings.sizeMax}" data-media-size="max" aria-label="${L('自動サイズの最大倍率', 'Maximum automatic size scale')}"></div><div class="range-pair-values"><span>${L('最小 ', 'Min ')}<output data-media-size-value="min">${settings.sizeMin}%</output></span><span>${L('最大 ', 'Max ')}<output data-media-size-value="max">${settings.sizeMax}%</output></span></div></div><div class="media-effect-sliders"></div><div class="row"><button type="button" data-media-action="shuffle">${shuffleLabel}</button><button type="button" data-media-action="enable">${L('全て有効', 'Enable all')}</button><button type="button" data-media-action="disable">${L('全て無効', 'Disable all')}</button></div>`;
+  box.innerHTML = `<p class="note">${layerNote} 체크한 기법을 「자동」과 섞기에서 사용합니다. 수동으로 지정한 기법과 잠긴 컷은 유지됩니다.</p><label class="check"><input data-media-setting="autoPlacement" type="checkbox" ${settings.autoPlacement !== false ? 'checked' : ''}><span>배치·크기에도 자동으로 변화를 줍니다<small>수동 배치와 잠금은 유지됩니다. 효과 없음은 중앙에 전체 표시합니다.</small></span></label><div class="media-auto-size-range" data-media-size-range ${settings.autoPlacement !== false ? '' : 'hidden'}><div class="range-title">최소·최대 크기 배율(%)</div><div class="range-pair" data-media-size-slider><input type="range" min="0" max="500" step="5" value="${settings.sizeMin}" data-media-size="min" aria-label="자동 크기의 최소 배율"><input type="range" min="0" max="500" step="5" value="${settings.sizeMax}" data-media-size="max" aria-label="자동 크기의 최대 배율"></div><div class="range-pair-values"><span>최소 <output data-media-size-value="min">${settings.sizeMin}%</output></span><span>최대 <output data-media-size-value="max">${settings.sizeMax}%</output></span></div></div><div class="media-effect-sliders"></div><div class="row"><button type="button" data-media-action="shuffle">${shuffleLabel}</button><button type="button" data-media-action="enable">모두 켜기</button><button type="button" data-media-action="disable">모두 끄기</button></div>`;
   const randomNote = document.createElement('p'); randomNote.className = 'note';
-  randomNote.textContent = L('「おまかせ」では前景・背景それぞれの手法チェックをランダムに設定します。', 'Randomize selects a random set of checked techniques independently for foreground and background.');
+  randomNote.textContent = '「자동으로 만들기」에서는 전경·배경 각각의 기법 체크를 무작위로 설정합니다.';
   box.appendChild(randomNote);
   const beatNote = document.createElement('p'); beatNote.className = 'note';
-  beatNote.textContent = L('登場・退場はカットごとに独立して設定できます（初期値：自動）。BPM同期は「曲・タイミング」のBPMを使用し、未設定時は120 BPMで動きます。', 'Set entrance and exit independently for each cut (default: Auto). BPM sync uses the BPM in Audio and timing, or 120 BPM when unset.');
+  beatNote.textContent = '등장·퇴장은 컷마다 독립적으로 설정할 수 있습니다(초깃값: 자동). BPM 동기화는 「곡과 타이밍」의 BPM을 사용하며, 설정하지 않으면 120 BPM으로 동작합니다.';
   box.appendChild(beatNote);
-  for (const [key, name, max, step] of [['motion', L('動きの強さ', 'Motion intensity'), 2, .05], ['treatment', L('加工の強さ', 'Treatment intensity'), 1, .05], ['duration', L('登場・退場時間', 'Entrance / exit (s)'), 1.5, .05]]) {
+  for (const [key, name, max, step] of [['motion', '움직임 강도', 2, .05], ['treatment', '가공 강도', 1, .05], ['duration', '등장·퇴장 시간', 1.5, .05]]) {
     const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input data-media-setting="${key}" type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
     row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project, layer); next[key] = +e.target.value; S.project[layer].effects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + layer + ':' + key); replanSoon(100); }); box.querySelector('.media-effect-sliders').appendChild(row);
   }
@@ -3118,7 +3118,7 @@ function renderMediaEffects(layer) {
       if (!section.isConnected) return;
       if (section.open) openMediaGroups[layer].add(group); else openMediaGroups[layer].delete(group);
     });
-    section.innerHTML = `<summary><span class="tg-name">${name}</span><span class="tg-cnt mono">${count(settings.enabled)}</span></summary><div class="tg-tools"><button type="button" class="ghost small" data-media-group-action="on">${L('すべてON', 'Enable all')}</button><button type="button" class="ghost small" data-media-group-action="off">${L('すべてOFF', 'Disable all')}</button><button type="button" class="ghost small" data-media-group-action="flip">${L('反転', 'Invert')}</button></div>`;
+    section.innerHTML = `<summary><span class="tg-name">${name}</span><span class="tg-cnt mono">${count(settings.enabled)}</span></summary><div class="tg-tools"><button type="button" class="ghost small" data-media-group-action="on">모두 켜기</button><button type="button" class="ghost small" data-media-group-action="off">모두 끄기</button><button type="button" class="ghost small" data-media-group-action="flip">반전</button></div>`;
     const list = document.createElement('div'); list.className = 'checks';
     for (const [key, def] of items) {
       const row = document.createElement('label'); row.innerHTML = `<input type="checkbox" data-media-tech="${key}" ${settings.enabled[key] !== false ? 'checked' : ''}><span>${def.name}</span>`;
@@ -3161,7 +3161,7 @@ function renderMediaEffects(layer) {
 /* ---------------- sync all inputs from project ---------------- */
 function renderThemes() {
   const ids = J.themeIds(S.project);
-  $('themeLabels').innerHTML = ids.length ? ids.map(id=>`<span class="theme-label">${J.THEMES[id].name}</span>`).join('') : `<span class="muted">${J.mediaLabel('未選択：すべてのテーマ','Not selected: unrestricted')}</span>`;
+  $('themeLabels').innerHTML = ids.length ? ids.map(id=>`<span class="theme-label">${J.THEMES[id].name}</span>`).join('') : `<span class="muted">미선택: 제한 없음</span>`;
 }
 function syncUI() {
   renderThemes();
@@ -3185,15 +3185,15 @@ function syncUI() {
 /* ---------------- wiring ---------------- */
 function bind() {
   $('timelineLegend').innerHTML = [
-    [ICON.dice,'再抽選','Reroll',''],
-    [ICON.lock,'ロック','Lock',''],
-    [ICON.area,'表示範囲','Display area',''],
-    [ICON.details,'詳細編集','Edit details',''],
-    [ICON.remove,'削除','Delete','remove'],
-    [ICON.frontmost,'最前表示','Show in front',''],
-    ['🔗','開始位置をリンク','Link start positions','link'],
-    ['×','リンク解除','Unlink','unlink'],
-  ].map(([icon,ja,en,cls])=>`<span class="timeline-legend-item"><span class="timeline-legend-icon ${cls}" aria-hidden="true">${icon}</span><span>${J.mediaLabel(ja,en)}</span></span>`).join('');
+    [ICON.dice,'다시 뽑기',''],
+    [ICON.lock,'잠금',''],
+    [ICON.area,'표시 영역',''],
+    [ICON.details,'상세 편집',''],
+    [ICON.remove,'삭제','remove'],
+    [ICON.frontmost,'맨 앞에 표시',''],
+    ['🔗','시작 위치 링크','link'],
+    ['×','링크 해제','unlink'],
+  ].map(([icon,text,cls])=>`<span class="timeline-legend-item"><span class="timeline-legend-icon ${cls}" aria-hidden="true">${icon}</span><span>${text}</span></span>`).join('');
 
   $('saveFilename').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('filenameDlg').querySelector('button[value="save"]').click();}});
   const menus = [...document.querySelectorAll('.header-menu')];
@@ -3211,7 +3211,7 @@ function bind() {
   $('exportDlg').addEventListener('close',restoreExportSettings);
   $('btnThemes').addEventListener('click', () => {
     const selected = new Set(J.themeIds(S.project));
-    $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${J.mediaLabel(category === 'genre' ? '曲ジャンル' : 'テイスト',category === 'genre' ? 'Music genre' : 'Taste')}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');
+    $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${category === 'genre' ? '장르' : '취향'}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');
     $('themesDlg').showModal();
   });
   $('btnApplyThemes').addEventListener('click', () => {
@@ -3684,14 +3684,14 @@ function bind() {
     S.projectBusy = true; $('btnSavePortable').disabled = true;
     const project = JSON.parse(JSON.stringify(S.project)), audio = S.audioFile;
     try { await J.saveFile(filename, await J.packProject(project, audio)); }
-    catch (err) { toast(J.mediaLabel('保存できませんでした：', 'Could not save: ') + err.message); }
+    catch (err) { toast('저장할 수 없습니다: ' + err.message); }
     finally { S.projectBusy = false; $('btnSavePortable').disabled = false; }
   });
   $('btnAE').addEventListener('click', async () => {
     if (S.projectBusy || S.exporting) return;
     const filename = await requestFilename('ae'); if (!filename) return;
     try { await J.saveFile(filename, JSON.stringify(J.planForAE(S.plan, S.project, exportRange()), null, 1)); }
-    catch (err) { toast(J.mediaLabel('保存できませんでした：','Could not save: ') + err.message); }
+    catch (err) { toast('저장할 수 없습니다: ' + err.message); }
   });
   $('btnNew').addEventListener('click', () => { if (!S.exporting && !S.projectBusy) $('newProjectDlg').showModal(); });
   $('btnCreateProject').addEventListener('click', () => {
@@ -3876,7 +3876,7 @@ async function restoreAudioAsset() {
     if (S.project !== project || S.project.audioAsset !== info) return;
     if (S.audio) return;
     S.audio = audio; S.audioFile = file; S.project.audioName = S.project.audioName || info.name; refreshAudioName(); syncUI(); replan();
-  } catch (err) { toast(J.mediaLabel('曲を復元できませんでした：','Could not restore audio: ') + err.message); }
+  } catch (err) { toast('곡을 복원할 수 없습니다: ' + err.message); }
 }
 async function openProjectFile(file) {
   const loaded = await J.unpackProject(file), project = loaded.project, assets = new Map();

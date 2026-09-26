@@ -1,33 +1,32 @@
 /* Independent media entrances/exits and motions on the project's beat clock. */
 (() => {
 'use strict';
-const L = J.mediaLabel;
 const moved = new Set(['dissolve', 'pop', 'spin', 'whip', 'impact', 'spiralApproach', 'rubberLaunch', 'boomerang']);
 for (const [key, def] of Object.entries(J.MEDIA_TECH)) {
   if (def.group !== 'mask' && !moved.has(key)) continue;
   def.group = 'enter'; def.stage = 'enter'; def.motion = def.enter;
-  J.MEDIA_TECH['exit_' + key] = { ...def, name: L('退場：', 'Exit: ') + def.name, group: 'exit', stage: 'exit', motion: def.exit };
+  J.MEDIA_TECH['exit_' + key] = { ...def, name: '퇴장: ' + def.name, group: 'exit', stage: 'exit', motion: def.exit };
 }
-for (const [motion, ja, en] of [
-  ['fade', 'フェード', 'Fade'], ['slide', '右からスライド', 'Slide from right'],
-  ['slideLeft', '左からスライド', 'Slide from left'], ['rise', '下からスライド', 'Slide from below'],
-  ['fall', '上からスライド', 'Slide from above'], ['diagonal', '対角スライド', 'Diagonal slide'],
-  ['zoom', 'ズーム', 'Zoom'], ['shrink', 'スケール', 'Scale'], ['blur', 'ぼかし', 'Blur'],
-  ['swing', 'スイング', 'Swing'], ['glitch', 'グリッチ', 'Glitch'],
-  ['flipX', '横フリップ', 'Horizontal flip'], ['flipY', '縦フリップ', 'Vertical flip'],
-  ['squeezeX', '横ストレッチ', 'Horizontal stretch'], ['squeezeY', '縦ストレッチ', 'Vertical stretch'],
+for (const [motion, name] of [
+  ['fade', '페이드'], ['slide', '오른쪽에서 슬라이드'],
+  ['slideLeft', '왼쪽에서 슬라이드'], ['rise', '아래에서 슬라이드'],
+  ['fall', '위에서 슬라이드'], ['diagonal', '대각선 슬라이드'],
+  ['zoom', '줌'], ['shrink', '스케일'], ['blur', '블러'],
+  ['swing', '스윙'], ['glitch', '글리치'],
+  ['flipX', '가로 플립'], ['flipY', '세로 플립'],
+  ['squeezeX', '가로 스트레치'], ['squeezeY', '세로 스트레치'],
 ]) for (const stage of ['enter', 'exit']) {
-  const name = stage === 'enter' ? L('登場：', 'Enter: ') : L('退場：', 'Exit: ');
-  J.MEDIA_TECH[stage + '_' + motion] = { name: name + (stage === 'exit' && ({slide:1,slideLeft:1,rise:1,fall:1})[motion] ? ({slide:L('左へスライド','Slide to left'),slideLeft:L('右へスライド','Slide to right'),rise:L('上へスライド','Slide upward'),fall:L('下へスライド','Slide downward')})[motion] : L(ja, en)), group: stage, stage, motion,
+  const prefix = stage === 'enter' ? '등장: ' : '퇴장: ';
+  J.MEDIA_TECH[stage + '_' + motion] = { name: prefix + (stage === 'exit' && ({slide:1,slideLeft:1,rise:1,fall:1})[motion] ? ({slide:'왼쪽으로 슬라이드',slideLeft:'오른쪽으로 슬라이드',rise:'위로 슬라이드',fall:'아래로 슬라이드'})[motion] : name), group: stage, stage, motion,
     enter: stage === 'enter' ? motion : 'cut', exit: stage === 'exit' ? motion : 'cut', hold: 'still', treat: 'none', trans: 'none' };
 }
-for (const [key, ja, en] of [
-  ['beatPulse', 'ビート・ズーム', 'Beat zoom'], ['beatBounce', 'ビート・バウンス', 'Beat bounce'],
-  ['beatSway', 'ビート・スウェイ', 'Beat sway'], ['beatOrbit', 'ビート・オービット', 'Beat orbit'],
-  ['beatTurn', '拍ごとに回転', 'Beat turn'], ['beatShake', 'ビート・シェイク', 'Beat shake'],
-  ['beatHeart', 'ダブル・ハートビート', 'Double heartbeat'], ['beatBreathe', '2拍ブリーズ', 'Two-beat breathing'],
-  ['beatStep', 'ビート・ステップ', 'Beat steps'], ['beatFade', 'ビート・フェード', 'Beat fade'],
-]) J.MEDIA_TECH[key] = { name: L(ja, en), group: 'bpm', enter: 'cut', hold: key, exit: 'cut', treat: 'none', trans: 'none' };
+for (const [key, name] of [
+  ['beatPulse', '박자 맥동'], ['beatBounce', '박자 튀기'],
+  ['beatSway', '박자 스웨이'], ['beatOrbit', '박자 궤도'],
+  ['beatTurn', '박자마다 회전'], ['beatShake', '박자 셰이크'],
+  ['beatHeart', '더블 하트비트'], ['beatBreathe', '2박 호흡'],
+  ['beatStep', '박자 스텝'], ['beatFade', '박자 페이드'],
+]) J.MEDIA_TECH[key] = { name, group: 'bpm', enter: 'cut', hold: key, exit: 'cut', treat: 'none', trans: 'none' };
 
 J.mediaPhaseOptions = stage => Object.entries(J.MEDIA_TECH).filter(([, def]) => def.stage === stage);
 J.applyMediaPhases = (project, cut, ov, layer) => {

@@ -1,56 +1,54 @@
 /* Media techniques: seeded recipes, transparent masks and canvas-local motion. */
 (() => {
 'use strict';
-J.mediaLabel = (ja, en) => typeof document !== 'undefined' && document.documentElement?.lang === 'en' ? en : ja;
-const label = J.mediaLabel;
 J.MEDIA_TECH = {};
-const add = (key, ja, en, group, enter, hold, exit, treat = 'none', trans = 'none') => {
-  J.MEDIA_TECH[key] = { name: label(ja, en), group, enter, hold, exit, treat, trans };
+const add = (key, name, group, enter, hold, exit, treat = 'none', trans = 'none') => {
+  J.MEDIA_TECH[key] = { name, group, enter, hold, exit, treat, trans };
 };
-add('dissolve', '柔らかなディゾルブ', 'Soft dissolve', 'cinema', 'fade', 'still', 'fade', 'none', 'crossfade');
-add('pushIn', 'シネマ・プッシュイン', 'Cinematic push in', 'cinema', 'fade', 'push', 'fade');
-add('pullOut', 'シネマ・プルアウト', 'Cinematic pull out', 'cinema', 'fade', 'pull', 'fade');
-add('drift', '浮遊するフレーム', 'Floating frame', 'cinema', 'fade', 'float', 'fade');
-add('panorama', 'パノラマ移動', 'Panorama', 'cinema', 'slide', 'pan', 'slide');
-add('rise', 'ゆっくり上昇', 'Slow ascent', 'cinema', 'rise', 'rise', 'rise');
-add('diagonal', '対角トラッキング', 'Diagonal tracking', 'cinema', 'diagonal', 'diagonal', 'diagonal');
-add('rackFocus', 'ピント送り', 'Rack focus', 'cinema', 'blur', 'push', 'blur');
-add('pop', '弾むポップ', 'Spring pop', 'dynamic', 'bounce', 'breathe', 'shrink');
-add('spin', 'スピンイン', 'Spin in', 'dynamic', 'spin', 'rock', 'spin');
-add('swing', '振り子スイング', 'Pendulum swing', 'dynamic', 'swing', 'swing', 'swing');
-add('whip', 'ウィップパン', 'Whip pan', 'dynamic', 'whip', 'still', 'whip');
-add('impact', 'インパクトズーム', 'Impact zoom', 'dynamic', 'impact', 'shake', 'zoom');
-add('pulse', 'リズムパルス', 'Rhythmic pulse', 'dynamic', 'zoom', 'pulse', 'shrink');
-add('orbit', 'オービット', 'Orbit', 'dynamic', 'fade', 'orbit', 'fade');
-add('tumble', '回転ズーム', 'Rotating zoom', 'dynamic', 'spin', 'rotate', 'shrink');
-add('wipe', '横ワイプ', 'Horizontal reveal', 'mask', 'wipe', 'still', 'wipe');
-add('curtain', 'カーテンオープン', 'Curtain open', 'mask', 'curtain', 'push', 'curtain');
-add('iris', '円形アイリス', 'Circular iris', 'mask', 'iris', 'breathe', 'iris');
-add('diamond', 'ダイヤモンド', 'Diamond reveal', 'mask', 'diamond', 'still', 'diamond');
-add('blinds', 'ブラインド', 'Venetian blinds', 'mask', 'blinds', 'pan', 'blinds');
-add('tiles', 'タイル出現', 'Tile reveal', 'mask', 'tiles', 'still', 'tiles');
-add('scan', '縦スキャン', 'Vertical scan', 'mask', 'scan', 'rise', 'scan');
-add('split', 'スプリットオープン', 'Split open', 'mask', 'split', 'pull', 'split');
-add('noir', 'フィルム・ノワール', 'Film noir', 'texture', 'fade', 'push', 'fade', 'mono');
-add('sepia', 'セピアの記憶', 'Sepia memory', 'texture', 'blur', 'float', 'fade', 'sepia');
-add('vivid', 'ビビッドポップ', 'Vivid pop', 'texture', 'bounce', 'pulse', 'shrink', 'vivid');
-add('dream', 'ドリームグロー', 'Dream glow', 'texture', 'blur', 'breathe', 'blur', 'glow');
-add('duotone', '冷たいコントラスト', 'Cool contrast', 'texture', 'wipe', 'pan', 'wipe', 'cool');
-add('warm', 'ウォームフィルム', 'Warm film', 'texture', 'fade', 'pull', 'fade', 'warm');
-add('invert', 'ネガ反転', 'Negative', 'texture', 'scan', 'still', 'scan', 'invert');
-add('poster', 'ポスタライズ', 'Poster contrast', 'texture', 'tiles', 'still', 'tiles', 'poster');
-add('echo', 'モーション残像', 'Motion echoes', 'graphic', 'slide', 'pan', 'slide', 'echo');
-add('glitch', 'グリッチスライス', 'Glitch slices', 'graphic', 'glitch', 'shake', 'glitch', 'glitch');
-add('triptych', '三連パネル', 'Triptych', 'graphic', 'curtain', 'still', 'curtain', 'triptych');
-add('prism', 'プリズム残像', 'Prismatic echoes', 'graphic', 'zoom', 'float', 'zoom', 'prism');
-for (const [key, ja, en] of [
-  ['wipe', 'ワイプ接続', 'Wipe transition'], ['diagonalWipe', '斜めワイプ接続', 'Diagonal wipe transition'],
-  ['clockWipe', '時計ワイプ接続', 'Clock wipe transition'], ['irisOpen', 'アイリス接続', 'Iris transition'],
-  ['pushSlide', '押し出し接続', 'Push transition'], ['cover', 'カバー接続', 'Cover transition'],
-  ['uncover', 'アンカバー接続', 'Uncover transition'], ['zoomThrough', 'ズームスルー接続', 'Zoom through transition'],
-  ['checker', 'チェッカー接続', 'Checker transition'], ['blockDissolve', 'ブロック接続', 'Block dissolve transition'],
-  ['flashCross', 'フラッシュ接続', 'Flash cross transition'],
-]) add('transition_' + key, ja, en, 'transition', 'fade', 'still', 'fade', 'none', key);
+add('dissolve', '부드러운 디졸브', 'cinema', 'fade', 'still', 'fade', 'none', 'crossfade');
+add('pushIn', '밀어 들어가기', 'cinema', 'fade', 'push', 'fade');
+add('pullOut', '빠져나오기', 'cinema', 'fade', 'pull', 'fade');
+add('drift', '표류', 'cinema', 'fade', 'float', 'fade');
+add('panorama', '파노라마', 'cinema', 'slide', 'pan', 'slide');
+add('rise', '천천히 상승', 'cinema', 'rise', 'rise', 'rise');
+add('diagonal', '대각선 트래킹', 'cinema', 'diagonal', 'diagonal', 'diagonal');
+add('rackFocus', '초점 이동', 'cinema', 'blur', 'push', 'blur');
+add('pop', '튀는 팝', 'dynamic', 'bounce', 'breathe', 'shrink');
+add('spin', '스핀 인', 'dynamic', 'spin', 'rock', 'spin');
+add('swing', '시계추 스윙', 'dynamic', 'swing', 'swing', 'swing');
+add('whip', '휩 팬', 'dynamic', 'whip', 'still', 'whip');
+add('impact', '임팩트 줌', 'dynamic', 'impact', 'shake', 'zoom');
+add('pulse', '리듬 펄스', 'dynamic', 'zoom', 'pulse', 'shrink');
+add('orbit', '궤도 회전', 'dynamic', 'fade', 'orbit', 'fade');
+add('tumble', '회전 줌', 'dynamic', 'spin', 'rotate', 'shrink');
+add('wipe', '가로 와이프', 'mask', 'wipe', 'still', 'wipe');
+add('curtain', '커튼 열기', 'mask', 'curtain', 'push', 'curtain');
+add('iris', '원형 아이리스', 'mask', 'iris', 'breathe', 'iris');
+add('diamond', '다이아몬드', 'mask', 'diamond', 'still', 'diamond');
+add('blinds', '블라인드', 'mask', 'blinds', 'pan', 'blinds');
+add('tiles', '타일 등장', 'mask', 'tiles', 'still', 'tiles');
+add('scan', '세로 스캔', 'mask', 'scan', 'rise', 'scan');
+add('split', '스플릿 오픈', 'mask', 'split', 'pull', 'split');
+add('noir', '필름 누아르', 'texture', 'fade', 'push', 'fade', 'mono');
+add('sepia', '세피아 추억', 'texture', 'blur', 'float', 'fade', 'sepia');
+add('vivid', '비비드 팝', 'texture', 'bounce', 'pulse', 'shrink', 'vivid');
+add('dream', '드림 글로우', 'texture', 'blur', 'breathe', 'blur', 'glow');
+add('duotone', '차가운 대비', 'texture', 'wipe', 'pan', 'wipe', 'cool');
+add('warm', '따뜻한 필름', 'texture', 'fade', 'pull', 'fade', 'warm');
+add('invert', '네거티브 반전', 'texture', 'scan', 'still', 'scan', 'invert');
+add('poster', '포스터라이즈', 'texture', 'tiles', 'still', 'tiles', 'poster');
+add('echo', '모션 잔상', 'graphic', 'slide', 'pan', 'slide', 'echo');
+add('glitch', '글리치 슬라이스', 'graphic', 'glitch', 'shake', 'glitch', 'glitch');
+add('triptych', '3단 패널', 'graphic', 'curtain', 'still', 'curtain', 'triptych');
+add('prism', '프리즘 잔상', 'graphic', 'zoom', 'float', 'zoom', 'prism');
+for (const [key, name] of [
+  ['wipe', '와이프 전환'], ['diagonalWipe', '대각선 와이프 전환'],
+  ['clockWipe', '시계 와이프 전환'], ['irisOpen', '아이리스 전환'],
+  ['pushSlide', '밀어내기 전환'], ['cover', '커버 전환'],
+  ['uncover', '언커버 전환'], ['zoomThrough', '줌 스루 전환'],
+  ['checker', '체커 전환'], ['blockDissolve', '블록 디졸브 전환'],
+  ['flashCross', '플래시 전환'],
+]) add('transition_' + key, name, 'transition', 'fade', 'still', 'fade', 'none', key);
 J.mediaEffectSettings = (p, layer = 'media') => {
   // Projects saved before the layer split have one shared mediaEffects object.
   const settings = Object.assign({ motion: 1, treatment: 1, duration: 0.45, autoPlacement: true, sizeMin: 75, sizeMax: 125, enabled: {} }, p[layer]?.effects || p.mediaEffects || {});
@@ -88,7 +86,7 @@ J.mediaTechnique = (project, ov, rng, layer = 'media') => {
   const { name, ...recipe } = J.MEDIA_TECH[key] || {};
   return Object.assign({ technique: key, effectSettings: settings, layout: 'contain', enter: 'cut', hold: 'still', exit: 'cut', treat: 'none', trans: 'none' }, recipe);
 };
-J.mediaTechniqueName = cut => cut.technique === 'legacy' ? label('従来の設定', 'Legacy settings') : J.MEDIA_TECH[cut.technique]?.name || label('演出無し', 'No effects');
+J.mediaTechniqueName = cut => cut.technique === 'legacy' ? '기존 설정' : J.MEDIA_TECH[cut.technique]?.name || '효과 없음';
 
 J.paintMediaEffect = (ctx, source, fit, cut, p, fade, out) => {
   // Also synchronize old projects and manually selected legacy hold names.

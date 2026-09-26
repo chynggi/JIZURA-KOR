@@ -429,7 +429,7 @@ J.plan = (project, audio) => {
     let textOffset = 0;
     units.forEach((u, k) => {
       const cs = bounds[k], ce = bounds[k + 1], dur = ce - cs;
-      const halves = zones && !u.text.includes('\n') ? splitHalf(u.text, plan.lang) : null;               // 中央を空ける: 「花が」｜「咲いた」
+      const halves = zones && !u.text.includes('\n') ? splitHalf(u.text, plan.lang) : null;               // 가운데 비우기: 「꽃이」｜「피었다」
       const txt = halves ? halves[0] : u.text;
       const nn = Math.max(...(halves || [u.text]).map(t => [...t.replace(/\s+/g, '')].length));
       // *강조* / ~약하게~ spans (counted over this cut's own characters)
