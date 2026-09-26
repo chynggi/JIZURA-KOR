@@ -17,10 +17,16 @@ J.decideSuggest = async (project, signal) => {
   if (!lines.length) throw new Error('가사를 입력하세요');
   const userDirection = String(project.aiPrompt || '').trim().slice(0, 1000);
   const directionRule = userDirection ? '가사와 사용자의 추가 지시를 모두 고려한다.' : '가사를 고려한다.';
-  const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
+  // same rule as 자동(J.omakase): a mood tied to a part set (호러) is offered only while that set's switch is on
+  const moodOk = k => !J.MOODS[k].set || (J.setOn && J.setOn(project, J.MOODS[k].set));
+  // with themes chosen, offer only what those themes allow (J.omakase then keeps the choice); never leave a question empty
+  const themes = J.themeIds ? J.themeIds(project).map(id => ({ theme: J.THEMES[id], pools: J.themeCandidates(project, id) })) : [];
+  const inTheme = (g, k) => !themes.length || themes.some(({ theme, pools }) => g === 'mood' ? theme.moods.includes(k) : g === 'style' ? pools.styles.includes(k) : pools.lyrics[g].includes(k));
+  const themed = (g, keys) => { const inside = keys.filter(k => inTheme(g, k)); return inside.length ? inside : keys; };
+  const moodOptions = criteria(themed('mood', Object.keys(J.MOODS).filter(k => k !== 'chaos' && moodOk(k))), J.MOODS);
   const allowed = (g, k) => !J.randomOk || J.randomOk(project, g, k);
-  const styleOptions = Object.fromEntries(J.STYLE_ORDER.filter(k => allowed('style', k)).map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
-  const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(keys.filter(k => allowed(g, k)), J.registry(g))]));
+  const styleOptions = Object.fromEntries(themed('style', J.STYLE_ORDER.filter(k => allowed('style', k))).map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
+  const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(themed(g, keys.filter(k => allowed(g, k))), J.registry(g))]));
   const selections = { lines: {} };
   // Keep each request bounded; later batches use the globally chosen look as context.
   for (let start = 0; start < lines.length; start += 12) {

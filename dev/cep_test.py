@@ -1,10 +1,25 @@
 """Test the After Effects CEP panel in a browser: the panel page (www/cepx = a copy of the built extension) runs with a mocked
 CEP bridge whose evalScript executes host.jsx + jizura_core.jsx on the emulated AE object model (dev/aeom.js).
-usage: python3 build_cep.py && rm -rf dev/www/cepx && cp -r build/com.852wa.jizura dev/www/cepx && python3 dev/cep_test.py <outdir>"""
-import asyncio, base64, json, os, sys
+usage: python3 build_cep.py && rm -rf dev/www/cepx && cp -r build/com.852wa.jizura dev/www/cepx && python3 dev/cep_test.py <outdir>
+dev/www must also hold acorn.js, aeom.js, aerender.js and cepx_song.wav (the mock loads them from the site root).
+The test serves dev/www itself on PORT (8765 is the user's own server: never used here)."""
+import asyncio, base64, contextlib, http.server, json, os, sys, threading
+from functools import partial
 from playwright.async_api import async_playwright
+PORT = 8769
+WWW = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'www')
+BASE = f'http://localhost:{PORT}'
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'shots/cep'
 os.makedirs(OUT, exist_ok=True)
+
+@contextlib.contextmanager
+def serve():
+    class H(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a): pass
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', PORT), partial(H, directory=WWW))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try: yield
+    finally: srv.shutdown()
 
 MOCK = r"""
 window.__H = { vfs: {}, links: [], log: [], errors: [] };
@@ -67,6 +82,12 @@ async def wait_status(pg, text, timeout=90000):
     return await pg.evaluate("() => document.querySelector('.ae-status').textContent")
 
 async def main():
+    missing = [f for f in ['acorn.js', 'aeom.js', 'aerender.js', 'cepx_song.wav', 'cepx/index.html'] if not os.path.exists(os.path.join(WWW, f))]
+    if missing: sys.exit('cep_test: dev/www is missing ' + ', '.join(missing))
+    with serve():
+        await run()
+
+async def run():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         # ---- A: with Node (temp-file path), pro mode
@@ -75,8 +96,8 @@ async def main():
         await ctx.add_init_script(MOCK)
         pg = await ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
-        await pg.goto('http://localhost:8765/cepx/index.html')
-        print('connect:', await wait_status(pg, '接続しました'))
+        await pg.goto(BASE + '/cepx/index.html')
+        print('connect:', await wait_status(pg, '연결했습니다'))
         await pg.evaluate(SCENE)
         await pg.click('#aeAudio')
         await pg.wait_for_function("() => /BPM/.test(document.getElementById('audioName').textContent)", timeout=60000)
@@ -85,12 +106,16 @@ async def main():
         print('lineTimes:', await pg.evaluate("() => J.ui.project.timing.lineTimes"))
         await pg.click('.tabs button[data-tab=out]')
         await pg.screenshot(path=f'{OUT}/pro_out.png')
-        await pg.click('#btnAE')
-        print('build:', await wait_status(pg, '作成しました', 180000))
+        # 「AE에서 컴포 생성」(#btnAE)은 헤더의 「내보내기」 드롭다운 안에 있다. CEP는 이 버튼을 바로 만들기로 바꾸지만,
+        # 바뀌지 않았다면(웹판 동작) 파일 이름 대화상자가 뜨므로 그때는 저장을 누른다.
+        await pg.click('#outputMenu summary'); await pg.click('#btnAE')
+        if await pg.evaluate("() => !!document.getElementById('filenameDlg')?.open"):
+            await pg.click('#filenameDlg button[value="save"]')
+        print('build:', await wait_status(pg, '만들었습니다', 180000))
         r = await pg.evaluate(RENDER, [1.0, 3.0, 5.0, 7.5])
         print('comp:', r['name'], len(r['layers']), 'layers; last:', r['layers'][-1], '| expr errors', r['errors'])
         for i, u in enumerate(r['urls']): open(f'{OUT}/ae_frame{i}.png', 'wb').write(base64.b64decode(u.split(',')[1]))
-        await pg.click('#btnSave'); await pg.wait_for_timeout(500)
+        await pg.click('#projectMenu summary'); await pg.click('#btnSave'); await pg.wait_for_timeout(500)
         print('saved files:', await pg.evaluate("() => Object.keys(__H.vfs).filter(k => k.startsWith('/out/'))"))
         print('temp files left:', await pg.evaluate("() => Object.keys(__H.vfs).filter(k => k.startsWith('/tmp/'))"))
         await pg.evaluate("() => document.querySelector('.terms-open').click()"); await pg.wait_for_timeout(200)
@@ -106,10 +131,10 @@ async def main():
         await ctx.add_init_script(MOCK)
         pg = await ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
-        await pg.goto('http://localhost:8765/cepx/index.html')
-        await wait_status(pg, '接続しました')
+        await pg.goto(BASE + '/cepx/index.html')
+        await wait_status(pg, '연결했습니다')
         await pg.click('#eAEBuild')
-        print('build (no node):', await wait_status(pg, '作成しました', 180000))
+        print('build (no node):', await wait_status(pg, '만들었습니다', 180000))
         el = await pg.query_selector('#eAEBuild'); await el.scroll_into_view_if_needed()
         await pg.screenshot(path=f'{OUT}/easy_narrow.png')
         print('host errors:', await pg.evaluate("() => __H.errors"), '| page errors:', errs[:5])

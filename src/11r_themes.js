@@ -62,9 +62,11 @@ const unrestricted = J.omakase;
 J.omakase = (project,rnd=Math.random,choices={}) => {
   const ids = J.themeIds(project); if (!ids.length) return {...unrestricted(project,rnd,choices),appliedTheme:null};
   const pick = a=>a[Math.min(a.length-1,Math.floor(rnd()*a.length))];
-  const key = pick(ids), theme = presets[key], pools = J.themeCandidates(project,key);
-  const mood = pick(theme.moods), styles = pools.styles.filter(id=>id!==project.style);
-  const look = unrestricted(project,rnd,{mood,style:pick(styles.length ? styles : pools.styles)});
+  // A mood/style chosen by 「AI로 고르기」 is kept when a selected theme allows it.
+  const fits = id => (!choices.mood || presets[id].moods.includes(choices.mood)) && (!choices.style || J.themeCandidates(project,id).styles.includes(choices.style));
+  const fitting = ids.filter(fits), key = pick(fitting.length ? fitting : ids), theme = presets[key], pools = J.themeCandidates(project,key);
+  const mood = theme.moods.includes(choices.mood) ? choices.mood : pick(theme.moods), styles = pools.styles.filter(id=>id!==project.style);
+  const look = unrestricted(project,rnd,{mood,style:pools.styles.includes(choices.style) ? choices.style : pick(styles.length ? styles : pools.styles)});
   // No out-of-theme "sprinkle" or random palette/font override.
   look.fonts = {}; look.colors = {...project.colors,enabled:false,accentOn:false};
   look.fx.flash = theme.flash && rnd()<.5;

@@ -620,6 +620,11 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
 .media-effects-panel {max-height:calc(100vh - 190px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
 
 .theme-settings { margin: 12px 0; }
+.look-pick-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; align-items: start; }
+.look-pick-grid .theme-settings { margin: 0; }
+.look-pick-grid .hint { margin: 6px 0 0; }
+.look-pick-ai { display: grid; gap: 6px; }
+@media (max-width: 560px) { .look-pick-grid { grid-template-columns: minmax(0, 1fr); } }
 #themeLabels { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; font-size: 11px; }
 .theme-label { padding: 3px 7px; border: 1px solid var(--amber); border-radius: 12px; color: var(--amber); }
 #themeChoices { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }

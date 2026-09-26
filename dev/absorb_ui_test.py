@@ -269,6 +269,46 @@ http.server.HTTPServer(("127.0.0.1", 8799), H).serve_forever()
         assert state['style'] == expected_style, (state['style'], expected_style)
         overs = state['overrides'] or {}
         assert any(o and o.get('layout') == expected_layout for o in overs.values()), (overs, expected_layout)
+
+        # 결정 모델에 보내는 선택지도 세트 스위치·테마를 따른다(자동과 같은 규칙).
+        # 업스트림 호러 분위기 키는 src/08b_omakase.js의 J.MOODS.horror(set: 'horror').
+        set_keys = await pg.evaluate('''() => { const out = {}; for (const set of J.SET_ORDER) {
+          out[set] = { style: J.STYLE_ORDER.filter(k => J.STYLES[k].set === set) };
+          for (const g of ['layout', 'enter', 'exit']) out[set][g] = J.order(g).filter(k => J.setOf(g, k) === set); } return out; }''')
+        assert set_keys['horror']['style'] and set_keys['typo']['layout'], set_keys
+        def opts(body, q): return set(body['questions'][q]['criteria'])
+        def line_opts(body, g): return set().union(*(v['criteria'] for q, v in body['questions'].items() if q.startswith(g + '_')))
+        # 기본값: 호러 끔 → 호러 분위기·호러 배색 없음
+        assert 'horror' not in opts(sent, 'mood') and not opts(sent, 'style') & set(set_keys['horror']['style']), sent['questions']['mood']
+        async def pick_again():
+            open(capture_path, 'w').close()
+            await pg.click('#btnAiPick')
+            await pg.wait_for_function("!document.querySelector('#btnAiPick').disabled", timeout=8000)
+            with open(capture_path, encoding='utf-8') as f:
+                return json.load(f)
+        # 호러 켬 + 타이포 끔: 호러 분위기·배색이 선택지에 들어오고, 꺼진 타이포 세트의 키는 어느 선택지에도 없다
+        await pg.evaluate("document.querySelector('.horror-toggle').click(); document.querySelector('.typo-toggle').click()")
+        assert await pg.evaluate("J.ui.project.horror === true && J.ui.project.typo === false")
+        sent = await pick_again()
+        assert 'horror' in opts(sent, 'mood'), opts(sent, 'mood')
+        assert set(set_keys['horror']['style']) <= opts(sent, 'style'), opts(sent, 'style')
+        for g in ['layout', 'enter', 'exit']:
+            assert not line_opts(sent, g) & set(set_keys['typo'][g]), g
+        # 호러를 다시 끄면 그 세트의 키(분위기·배색·행 선택지)가 빠진다
+        await pg.evaluate("document.querySelector('.horror-toggle').click()")
+        sent = await pick_again()
+        assert 'horror' not in opts(sent, 'mood') and not opts(sent, 'style') & set(set_keys['horror']['style'])
+        for g in ['layout', 'enter', 'exit']:
+            assert not line_opts(sent, g) & set(set_keys['horror'][g] + set_keys['typo'][g]), g
+        # 테마와 공존: 테마를 고르면 선택지는 그 테마 안, 고른 분위기·스타일이 그대로 적용된다
+        await pg.click('#btnThemes'); await pg.locator('[data-theme="ballad"]').check(); await pg.click('#btnApplyThemes')
+        sent = await pick_again()
+        ballad = await pg.evaluate("({ moods: J.THEMES.ballad.moods, pools: J.themeCandidates(J.ui.project, 'ballad') })")
+        assert opts(sent, 'mood') <= set(ballad['moods']) and opts(sent, 'style') <= set(ballad['pools']['styles']), sent['questions']['mood']
+        for g in ['layout', 'enter', 'exit']:
+            assert line_opts(sent, g) <= set(ballad['pools']['lyrics'][g]), g
+        got = await pg.evaluate("({ mood: J.ui.project.mood, style: J.ui.project.style, theme: J.ui.project.appliedTheme })")
+        assert got == {'mood': list(sent['questions']['mood']['criteria'])[0], 'style': list(sent['questions']['style']['criteria'])[0], 'theme': 'ballad'}, got
         assert not errs, errs
         await pg.close()
     finally:
@@ -677,4 +717,5 @@ async def main():
             for t in TESTS: await t(b, url)
             await b.close()
     print('ABSORB UI OK')
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())

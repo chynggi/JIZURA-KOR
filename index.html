@@ -637,6 +637,11 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
 .media-effects-panel {max-height:calc(100vh - 190px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
 
 .theme-settings { margin: 12px 0; }
+.look-pick-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; align-items: start; }
+.look-pick-grid .theme-settings { margin: 0; }
+.look-pick-grid .hint { margin: 6px 0 0; }
+.look-pick-ai { display: grid; gap: 6px; }
+@media (max-width: 560px) { .look-pick-grid { grid-template-columns: minmax(0, 1fr); } }
 #themeLabels { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; font-size: 11px; }
 .theme-label { padding: 3px 7px; border: 1px solid var(--amber); border-radius: 12px; color: var(--amber); }
 #themeChoices { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
@@ -733,9 +738,6 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
-        <label class="ai-prompt-label" for="aiPrompt">AI에게 추가 지시(선택)</label>
-        <textarea id="aiPrompt" rows="2" maxlength="1000" placeholder="예: 밤거리 같은 조용한 분위기. 사비는 대담하게." aria-label="AI에게 추가 지시"></textarea>
-        <div class="hint">'AI로 고르기'를 실행할 때만 가사와 함께 전송합니다. 기존 스타일·기법 중에서 고릅니다.</div>
         <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option><option value="en">English</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
@@ -777,6 +779,24 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
         </div>
       </div>
 
+      <!-- 테마와 AI로 고르기: 일반·간편 모드 모두 이 한 곳에서 나란히 -->
+      <div class="sec look-pick" id="lookPick">
+        <div class="sec-h"><h2>테마와 AI로 고르기</h2></div>
+        <div class="look-pick-grid">
+          <div class="look-pick-theme theme-settings">
+            <button id="btnThemes" type="button">테마 설정</button>
+            <div id="themeLabels" aria-live="polite"></div>
+            <p class="hint">「자동」과 「AI로 고르기」는 고른 테마 안에서만 고릅니다.</p>
+          </div>
+          <div class="look-pick-ai">
+            <span class="ai-action"><button id="btnAiPick" class="primary" title="PC에서 실행 중인 결정 모델(Laya·Kev·Tev1 등)이 가사에 맞는 분위기·스타일·행별 연출을 고릅니다">AI로 고르기(β)</button><a class="ai-guide" href="https://github.com/chynggi/JIZURA-KOR/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">가이드</a></span>
+            <label class="ai-prompt-label" for="aiPrompt">AI에게 추가 지시(선택)</label>
+            <textarea id="aiPrompt" rows="2" maxlength="1000" placeholder="예: 밤거리 같은 조용한 분위기. 사비는 대담하게." aria-label="AI에게 추가 지시"></textarea>
+            <p class="hint">가사와 추가 지시를 이 PC에서 실행 중인 로컬 결정 서버(decision_server.py)로 보내, 기존 스타일·기법 중에서 고릅니다.</p>
+          </div>
+        </div>
+      </div>
+
       <div class="sec" id="audioTimingSection">
         <div class="sec-h"><h2>곡과 타이밍</h2></div>
         <div id="audioName" class="muted audio-name">곡 없음(불러오면 박을 감지해 컷을 맞춥니다)</div>
@@ -786,7 +806,6 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
           <button id="btnTap" title="곡을 재생하며 각 행 시작 지점에서 탭">탭으로 동기화</button>
           <button id="btnDraft" title="곡의 보컬 대역 음량 변화로 각 행의 시작을 추정합니다(초안. 어긋난 행은 탭이나 타임라인으로 고치세요)">곡에서 초안</button>
         </div>
-        <div class="theme-settings"><button id="btnThemes" type="button">테마 설정</button><div id="themeLabels" aria-live="polite"></div></div>
         <div class="fields pro-only">
           <label class="field">BPM<input id="bpm" type="number" min="0" max="300" step="0.1" placeholder="자동"></label>
           <label class="field">시작(초)<input id="offset" type="number" min="0" step="0.05"></label>
@@ -828,7 +847,6 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
         </span>
         <button id="btnShuffle" class="accent" title="설정은 그대로 구조만 다시 뽑기(잠긴 행 유지)">셔플</button>
         <button id="btnOmakase" class="primary" title="스타일·분위기·연출·색 배합을 통째로 무작위(키 R)">자동</button>
-        <span class="ai-action"><button id="btnAiPick" title="PC에서 실행 중인 결정 모델(Laya·Kev·Tev1 등)이 가사에 맞는 분위기·스타일·행별 연출을 고릅니다">AI로 고르기(β)</button><a class="ai-guide" href="https://github.com/chynggi/JIZURA-KOR/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">가이드</a></span>
       </div>
       <div class="tl-bar">
         <span class="tl-hint muted">행 구분(위쪽 눈금)은 드래그로 옮길 수 있습니다. <span class="kbd">Shift</span>를 누르면 비트에 맞추지 않음</span>
@@ -872,7 +890,7 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">자동으로 만들기</button>
           <div class="ai-action"><button id="btnAiPickBig" class="primary">AI로 고르기(β)</button><a class="ai-guide" href="https://github.com/chynggi/JIZURA-KOR/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">가이드</a></div>
-          <p class="hint">AI로 고르기를 사용하면 가사를 이 PC에서 실행 중인 로컬 결정 서버로 보내 스타일·분위기·행별 레이아웃과 동작을 고릅니다. decision_server.py 실행이 필요합니다.</p>
+          <p class="hint">AI로 고르기를 사용하면 가사를 이 PC에서 실행 중인 로컬 결정 서버로 보내 스타일·분위기·행별 레이아웃과 동작을 고릅니다. decision_server.py 실행이 필요합니다. 테마와 추가 지시는 「테마와 AI로 고르기」 칸에서 정합니다.</p>
           <p class="hint">누를 때마다 스타일·분위기·움직임·색 배합·구성이 통째로 바뀝니다. 키보드 <span class="kbd">R</span> 로도 실행할 수 있습니다.</p>
           <div class="hist-row">
             <button id="btnPrev2" class="ghost">◀ 이전 안</button>
@@ -5250,10 +5268,16 @@ J.decideSuggest = async (project, signal) => {
   if (!lines.length) throw new Error('가사를 입력하세요');
   const userDirection = String(project.aiPrompt || '').trim().slice(0, 1000);
   const directionRule = userDirection ? '가사와 사용자의 추가 지시를 모두 고려한다.' : '가사를 고려한다.';
-  const moodOptions = criteria(Object.keys(J.MOODS).filter(k => k !== 'chaos'), J.MOODS);
+  // same rule as 자동(J.omakase): a mood tied to a part set (호러) is offered only while that set's switch is on
+  const moodOk = k => !J.MOODS[k].set || (J.setOn && J.setOn(project, J.MOODS[k].set));
+  // with themes chosen, offer only what those themes allow (J.omakase then keeps the choice); never leave a question empty
+  const themes = J.themeIds ? J.themeIds(project).map(id => ({ theme: J.THEMES[id], pools: J.themeCandidates(project, id) })) : [];
+  const inTheme = (g, k) => !themes.length || themes.some(({ theme, pools }) => g === 'mood' ? theme.moods.includes(k) : g === 'style' ? pools.styles.includes(k) : pools.lyrics[g].includes(k));
+  const themed = (g, keys) => { const inside = keys.filter(k => inTheme(g, k)); return inside.length ? inside : keys; };
+  const moodOptions = criteria(themed('mood', Object.keys(J.MOODS).filter(k => k !== 'chaos' && moodOk(k))), J.MOODS);
   const allowed = (g, k) => !J.randomOk || J.randomOk(project, g, k);
-  const styleOptions = Object.fromEntries(J.STYLE_ORDER.filter(k => allowed('style', k)).map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
-  const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(keys.filter(k => allowed(g, k)), J.registry(g))]));
+  const styleOptions = Object.fromEntries(themed('style', J.STYLE_ORDER.filter(k => allowed('style', k))).map(k => [k, `${J.STYLES[k].name}：${J.STYLES[k].desc}`]));
+  const options = Object.fromEntries(Object.entries(CORE).map(([g, keys]) => [g, criteria(themed(g, keys.filter(k => allowed(g, k))), J.registry(g))]));
   const selections = { lines: {} };
   // Keep each request bounded; later batches use the globally chosen look as context.
   for (let start = 0; start < lines.length; start += 12) {
@@ -38394,9 +38418,11 @@ const unrestricted = J.omakase;
 J.omakase = (project,rnd=Math.random,choices={}) => {
   const ids = J.themeIds(project); if (!ids.length) return {...unrestricted(project,rnd,choices),appliedTheme:null};
   const pick = a=>a[Math.min(a.length-1,Math.floor(rnd()*a.length))];
-  const key = pick(ids), theme = presets[key], pools = J.themeCandidates(project,key);
-  const mood = pick(theme.moods), styles = pools.styles.filter(id=>id!==project.style);
-  const look = unrestricted(project,rnd,{mood,style:pick(styles.length ? styles : pools.styles)});
+  // A mood/style chosen by 「AI로 고르기」 is kept when a selected theme allows it.
+  const fits = id => (!choices.mood || presets[id].moods.includes(choices.mood)) && (!choices.style || J.themeCandidates(project,id).styles.includes(choices.style));
+  const fitting = ids.filter(fits), key = pick(fitting.length ? fitting : ids), theme = presets[key], pools = J.themeCandidates(project,key);
+  const mood = theme.moods.includes(choices.mood) ? choices.mood : pick(theme.moods), styles = pools.styles.filter(id=>id!==project.style);
+  const look = unrestricted(project,rnd,{mood,style:pools.styles.includes(choices.style) ? choices.style : pick(styles.length ? styles : pools.styles)});
   // No out-of-theme "sprinkle" or random palette/font override.
   look.fonts = {}; look.colors = {...project.colors,enabled:false,accentOn:false};
   look.fx.flash = theme.flash && rnd()<.5;
