@@ -98,13 +98,6 @@ IDB.open = () => IDB.db || (IDB.db = new Promise((res, rej) => {
   r.onupgradeneeded = () => { r.result.createObjectStore('files'); };
   r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
 }));
-J.saveSong = async (file) => {
-  try {
-    const db = await IDB.open(), data = await file.arrayBuffer();
-    await new Promise((res, rej) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put({ name: file.name, type: file.type, data }, 'song'); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
-    return true;
-  } catch (e) { return false; }
-};
 J.loadSong = async () => {
   try {
     const db = await IDB.open();

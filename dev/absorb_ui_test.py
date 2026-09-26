@@ -70,37 +70,42 @@ async def test_layer_order(pg):
     assert near(px['front'], (0, 0, 255)), f'소재 뒤 < 소재 앞 순서가 틀렸습니다(x=60% 표본이 파랑이어야 함): {px["front"]}'
     assert near(px['fg'], (255, 255, 0)), f'소재 앞 < 전경 컷 순서가 틀렸습니다(x=85% 표본이 노랑이어야 함): {px["fg"]}'
 
-async def test_bundle_roundtrip(b, url):
+async def test_binary_bundle_roundtrip(b, url):
     pg, errs = await open_app(b, url)
-    saved = await pg.evaluate('''async (png) => {
+    r = await pg.evaluate('''async (png) => {
       const bytes = Uint8Array.from(atob(png), c => c.charCodeAt(0));
       const file = new File([bytes], 'bg.png', { type: 'image/png' });
       const item = { id: 'bgtest', name: 'bg.png', type: 'image', size: file.size };
-      await J.storeMedia(item.id, file);
-      J.ui.project.media.items.push(item);
-      let text = null; const orig = J.saveFile;
-      J.saveFile = async (name, t) => { text = t; };
+      await J.storeMedia(item.id, file); J.ui.project.media.items.push(item);
+      const a = await J.assetAdd(new File([bytes], 's.png', { type: 'image/png' }));
+      J.ui.project.assets.push(a);
+      await J.idbPut('mask:' + a.id, { name: 'm.png', type: 'image/png', data: bytes.buffer.slice(0) });
+      let saved = null, savedName = ''; const orig = J.saveFile;
+      J.saveFile = async (name, data) => { saved = data; savedName = name; };
       try { await J.uiApi.saveBundle(); } finally { J.saveFile = orig; }
-      await J.removeMedia(item.id);
-      return text;
+      const head = new TextDecoder().decode(new Uint8Array(await saved.slice(0, 8).arrayBuffer()));
+      await J.removeMedia(item.id); await J.idbDel('asset:' + a.id); await J.idbDel('mask:' + a.id);
+      await J.uiApi.openFile(new File([saved], savedName));
+      const m = await J.loadMedia('bgtest'), s = await J.idbGet('asset:' + a.id), k = await J.idbGet('mask:' + a.id);
+      // 포크 확장자(.jizuraichi)로 된 같은 바이너리도 열린다
+      await J.idbDel('mask:' + a.id);
+      await J.uiApi.openFile(new File([saved], 'old.jizuraichi'));
+      const k2 = await J.idbGet('mask:' + a.id);
+      return { head, savedName, isBlob: saved instanceof Blob, media: m && m.size, asset: !!s, mask: !!k, ichi: !!k2,
+               items: J.ui.project.media.items.length, assets: J.ui.project.assets.length };
     }''', base64.b64encode(PNG).decode())
-    assert saved, 'saveBundle produced nothing'
-    doc = json.loads(saved)
-    assert doc['bundle']['version'] == 2, doc.get('bundle')
-    assert 'bgtest' in doc['bundle']['mediaFiles'], 'background file missing from bundle'
-    assert doc['media']['items'][0]['id'] == 'bgtest', 'background settings must stay in project.media'
-    restored = await pg.evaluate('''async (text) => {
-      await J.uiApi.openProject(JSON.parse(text));
-      const f = await J.loadMedia('bgtest');
-      return { size: f && f.size, items: J.ui.project.media.items.length, hasBundle: 'bundle' in J.ui.project };
-    }''', saved)
-    assert restored == {'size': len(PNG), 'items': 1, 'hasBundle': False}, restored
-    # 구형 v1 번들(p.media = {version:1, files})도 열린다
+    assert r['head'] == 'JIZURA01' and r['isBlob'] and r['savedName'].endswith('.jizura'), r
+    assert r['media'] == len(PNG) and r['asset'] and r['mask'], r
+    assert r['items'] == 1 and r['assets'] == 1, r
+    assert r['ichi'], r
+    # 구형 JSON 번들 v2도 열린다
     legacy = await pg.evaluate('''async () => {
-      await J.uiApi.openProject(Object.assign(JSON.parse(JSON.stringify(J.ui.project)), { media: { version: 1, files: {} } }));
-      return Array.isArray(J.ui.project.media.items);
+      const p = JSON.parse(JSON.stringify(J.ui.project)); p.bundle = { version: 2, files: {}, mediaFiles: {} };
+      await J.uiApi.openFile(new File([JSON.stringify(p)], 'old_all.jizura.json', { type: 'application/json' }));
+      return Array.isArray(J.ui.project.media.items) && !('bundle' in J.ui.project);
     }''')
-    assert legacy, 'legacy bundle broke project.media'
+    assert legacy
+    assert await pg.evaluate("document.querySelector('#fileProject').getAttribute('accept')") == '.jizura,.jizuraichi,.json'
     assert not errs, errs
     await pg.close()
 
@@ -537,7 +542,7 @@ async def main():
             b = await p.chromium.launch()
             pg, errs = await open_app(b, url)
             await test_layer_order(pg); assert not errs, errs; await pg.close()
-            await test_bundle_roundtrip(b, url)
+            await test_binary_bundle_roundtrip(b, url)
             for t in TESTS: await t(b, url)
             await b.close()
     print('ABSORB UI OK')
