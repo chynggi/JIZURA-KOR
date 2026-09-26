@@ -6,7 +6,7 @@
 - **자동**: 상세 → 전경/배경에서 각각 활성화한 기법 중에서 고릅니다.
 - **기법 이름**: 유지 중 모션·가공·전환을 고정합니다. 등장·퇴장은 따로 지정할 수 있습니다.
 
-등장 41종·퇴장 41종과 유지 중 기법 64종을 고를 수 있습니다. 상세 카테고리는 「등장」「퇴장」「시네마·카메라」「다이내믹 모션」「BPM 동기화」「색·질감」「분할·잔상·글리치」「컷 간 전환」입니다. 기존 마스크·출현 카테고리와 등장용 연출은 등장·퇴장으로 정리했습니다. 각 「자동」은 해당 카테고리의 활성화된 후보 중에서만 고르며, 후보가 없으면 즉시 표시가 됩니다. 상세 탭에서는 움직임 강도, 가공 강도, 등장·퇴장 시간(초)과 자동 선정에 포함할 기법을 설정할 수 있습니다. 상세의 「전경」「배경」 탭에서 각각 따로 설정할 수 있습니다. 자동 배치의 켜기·끄기도 따로 지정할 수 있습니다. 이전의 공통 설정은 두 레이어에 그대로 이어집니다.
+등장 41종·퇴장 41종과 유지 중 기법 76종을 고를 수 있습니다. 상세 카테고리는 「등장」「퇴장」「시네마·카메라」「다이내믹 모션」「BPM 동기화」「색·질감」「분할·잔상·글리치」「컷 간 전환」입니다. 기존 마스크·출현 카테고리와 등장용 연출은 등장·퇴장으로 정리했습니다. 각 「자동」은 해당 카테고리의 활성화된 후보 중에서만 고르며, 후보가 없으면 즉시 표시가 됩니다. 상세 탭에서는 움직임 강도, 가공 강도, 등장·퇴장 시간(초)과 자동 선정에 포함할 기법을 설정할 수 있습니다. 상세의 「전경」「배경」 탭에서 각각 따로 설정할 수 있습니다. 자동 배치의 켜기·끄기도 따로 지정할 수 있습니다. 이전의 공통 설정은 두 레이어에 그대로 이어집니다.
 
 상세의 각 카테고리는 제목을 클릭해 접고 펼 수 있습니다. 제목에는 활성화된 기법 수／전체 수를 표시하며, 카테고리별로 「모두 켜기」「모두 끄기」「반전」으로 한꺼번에 바꿀 수 있습니다.
 
@@ -45,7 +45,7 @@ Click a category heading in Details to expand or collapse it. Headings show the 
 
 **Randomize** chooses a random set of checked techniques independently for foreground and background. It preserves motion/treatment intensity, entrance/exit duration, and automatic placement settings. The selections support Undo/Redo, Previous/Next variation, and project saving. **Shuffle** keeps the checked set and rerolls the automatic cuts within it.
 
-**Details → Foreground / Background** contains 41 entrances, 41 exits, and 64 main techniques. Categories are Entrance, Exit, Cinema/camera, Dynamic motion, BPM sync, Color/texture, Panels/echoes/glitch, and Cut transitions. Existing reveal effects have moved into the phase categories. Adjust motion and treatment intensity, entrance/exit duration, and the techniques included in Auto. Each layer has its own settings, including automatic placement. Previously shared settings are copied to both layers when an older project is opened.
+**Details → Foreground / Background** contains 41 entrances, 41 exits, and 76 main techniques. Categories are Entrance, Exit, Cinema/camera, Dynamic motion, BPM sync, Color/texture, Panels/echoes/glitch, and Cut transitions. Existing reveal effects have moved into the phase categories. Adjust motion and treatment intensity, entrance/exit duration, and the techniques included in Auto. Each layer has its own settings, including automatic placement. Previously shared settings are copied to both layers when an older project is opened.
 
 **Shuffle foreground** and **Shuffle background** reroll automatic cuts only in the corresponding layer. The main Shuffle button still rerolls both layers. Explicit selections and locked cuts are preserved. A cut's dice button switches it to Auto and rerolls it. Existing projects keep their individual settings as **Legacy settings** until a new technique is selected. With automatic placement enabled, effect cuts without manual placement vary their position and size on shuffle, preserving the source aspect ratio. Automatic background size stays between 100% and 135% of the full-fit size, with position shifts limited to the available crop on enlarged axes. Manual placement and locked cuts stay fixed. Use Reset automatic placement to return a manually placed cut to automatic composition. Disable Vary position and size automatically in Details to keep automatic cuts centered at full fit. No effects and Legacy settings retain their original framing. Video looping, chroma key, and timing remain independent of technique selection. Transitions apply between adjacent media cuts.
 

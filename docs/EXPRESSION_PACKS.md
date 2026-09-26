@@ -200,9 +200,10 @@ Map에 캐시), 무한 루프 금지(개수 상한). `bb === null`, 빈 텍스�
 ## 테스트 루프(모든 항목에 이것을 하세요)
 ```
 python3 dev/build_test.py <pack> src/11p_<pack>.js          # builds dev/www/t_<pack>.html (core + your pack only)
-(cd dev/www && python3 -m http.server 8765 &)                 # once
+(cd dev/www && python3 -m http.server 8768 &)                 # 8765는 결정 서버 기본 포트라 피하고 8768을 씁니다
 python3 dev/pack_sheet.py --page t_<pack> --group layout --ids key1,key2 --out out/<pack>
 ```
+`dev/pack_sheet.py`·`dev/overview.py`·`dev/cost_scan.py`는 접속 포트가 소스에 `localhost:8765`로 박혀 있으므로, 8768로 돌리려면 소스의 `localhost:8765`를 `localhost:8768`로 바꿔 실행하세요.
 요구 사항: `playwright`(Chromium)와 `Pillow`가 있는 Python 3.
 시트 도구는 항목별 콘솔 문제(0이어야 함)와 가장 느린 프레임을 출력하고, id마다 컨택트 시트 PNG 하나를 씁니다
 (레이아웃: 텍스트 4개 × 16:9/9:16/4:3/1:1 + 타임라인 행; 등장/퇴장/유지: 4개 레이아웃에 걸친 동작의 프레임; 장식: 세팅 4개 × 시간).
