@@ -290,6 +290,13 @@ class Renderer {
       this.drawMorph(ctx, L, e, allowFilter);
     }
     if (assetsOn && layer !== 'back') J.drawAssets(ctx, plan, 'front');   // 소재 over the lyrics (and a photo's subject)
+    // 소재 앞: a 강조(frontmost) lyric must stay above the front 소재 in every path, not only over a 전경 컷
+    // (the foreground branch redraws it above the cut at line 80). Mirror that here, skipping the sub-passes
+    // that already draw it (noForeground/noAssets/lyricLayer 'above') so it is never drawn twice.
+    if (assetsOn && layer !== 'back' && !opt.noForeground && !opt.noAssets && opt.lyricLayer !== 'above'
+      && !opt.noLyrics && J.lyricCutsAt(plan, tq).some(c => c.frontmost)) {
+      this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true, noMedia: true, noAssets: true, transparent: true, preserveCanvas: true, noHud: true, noPost: true, lyricLayer: 'above' }));
+    }
     // ---------- cut-to-cut transition: composite the previous cut's resting frame with this one ----------
     if (!opt.noTrans && mainCut && visible(mainCut) && mainCut.trans && J.TRANS[mainCut.trans] && mainCut.index > 0) {
       const lt = tq - mainCut.start, dur = mainCut.transDur || 0.35;

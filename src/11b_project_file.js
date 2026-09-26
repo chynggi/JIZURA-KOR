@@ -7,7 +7,7 @@ const fail = () => new Error('프로젝트 파일이 올바르지 않거나 지�
 J.packProject = async (project, audioFile) => {
   const entries = [], parts = []; let offset = 0;
   const add = (kind, id, file, name) => {
-    if (!(file instanceof Blob)) throw new Error('소재를 찾을 수 없습니다. 다시 불러와 주세요: ' + name);
+    if (!(file instanceof Blob)) throw new Error((kind === 'font' ? '글꼴을' : '소재를') + ' 찾을 수 없습니다. 다시 불러와 주세요: ' + name);
     entries.push({kind,id,name:name || file.name || id,type:file.type,offset,size:file.size});
     parts.push(file); offset += file.size;
   };

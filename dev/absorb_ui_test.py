@@ -555,6 +555,46 @@ async def test_blank_cut_keeps_assets(b, url):
     assert not errs, errs
     await pg.close()
 
+async def test_frontmost_above_assets(b, url):
+    # 강조(frontmost) 가사는 전경 컷이 없어도 앞 소재 위에 보여야 한다(R13). 전경 컷 분기(09_render.js:80)만
+    # 강조 가사를 소재 위에 다시 그렸는데, 정상 경로도 소재 앞에서 다시 그리도록 맞췄다.
+    # 앞 소재 = 화면 전체 파랑, 가사 = 가운데 초록. 두 겹이 겹치는 중앙 픽셀의 색으로 순서를 본다.
+    pg, errs = await open_app(b, url)
+    r = await pg.evaluate('''() => {
+      const da = J.drawAssets, dc = J.Renderer.prototype.drawCut;
+      J.drawAssets = (ctx, plan, layer) => { if (layer === 'front') { ctx.fillStyle = '#0000ff'; ctx.fillRect(0, 0, plan.W, plan.H); } };
+      J.Renderer.prototype.drawCut = env => { env.rect(env.W * 0.4, env.H * 0.4, env.W * 0.2, env.H * 0.2, '#00ff00'); };
+      const project = J.defaultProject();
+      project.title = ''; project.durationOverride = 4;
+      project.fx = { ...project.fx, koma: 0, chroma: 0, texture: 0, hud: 'off' };
+      project.overrides = { 0: { single: true } };
+      project.lyrics = '[00:00]*강조*';
+      project.assets = [{ id: 'front-asset', kind: 'overlay', layer: 'front' }];
+      const plan = J.plan(project); plan.media = J.planMedia(project, plan); plan.foreground = J.planMedia(project, plan, null, 'foreground');
+      plan.events = []; plan.hud = false;
+      for (const cut of plan.cuts) Object.assign(cut, { cam: 'none', decor: [], trans: null, enter: 'cut', exit: 'cut', hold: 'still', groupExit: 'cut', groupOutDur: 0 });
+      const cv = document.createElement('canvas'); cv.width = 320; cv.height = 180;
+      const ctx = cv.getContext('2d'), renderer = new J.Renderer();
+      const opts = { scale: cv.width / plan.W, noPost: true, noGhost: true, noHud: true };
+      const center = () => Array.from(ctx.getImageData(160, 90, 1, 1).data);
+      const out = { frontmost: plan.cuts[0].frontmost };
+      try {
+        renderer.frame(ctx, plan, .5, opts); out.normal = center();
+        renderer.frame(ctx, plan, .5, Object.assign({}, opts, { transparent: true, layer: 'front' })); out.frontLayer = center();
+        for (const cut of plan.cuts) cut.frontmost = false;
+        renderer.frame(ctx, plan, .5, opts); out.control = center();
+      } finally { J.drawAssets = da; J.Renderer.prototype.drawCut = dc; }
+      return out;
+    }''')
+    def near(rgba, rgb, tol=30):
+        return rgba[3] > 200 and all(abs(rgba[i] - rgb[i]) <= tol for i in range(3))
+    assert r['frontmost'], r
+    assert near(r['normal'], (0, 255, 0)), f'전경 컷이 없을 때 강조 가사가 앞 소재에 가립니다: {r}'
+    assert near(r['frontLayer'], (0, 255, 0)), f'앞 레이어에서 강조 가사가 소재 위에 오지 않습니다: {r}'
+    assert near(r['control'], (0, 0, 255)), f'강조가 아니면 앞 소재가 가사 위에 와야 합니다(대조): {r}'
+    assert not errs, errs
+    await pg.close()
+
 async def test_line_start_change_is_one_undo_step(b, url):
     # 행 시작을 바꾸면(곡에서 초안 / 시각 입력란 / 한 행 탭) 안에서 replan()이 두 번 돈다(새 시작 → 컷 경계가
     # 따라옴). 이 둘이 실행 취소 2단계로 남으면 Ctrl+Z 한 번이 중간 상태(새 시작 + 옛 경계)로만 돌아간다.
@@ -705,7 +745,7 @@ async def test_cut_panel_unified(b, url):
     await pg.close()
 
 TESTS = [test_legacy_song_migration, test_cut_times_follow_line, test_layered_export_media, test_blank_cut_keeps_assets,
-         test_line_start_change_is_one_undo_step,
+         test_frontmost_above_assets, test_line_start_change_is_one_undo_step,
          test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end, test_fork_features, test_cut_panel_unified]
 async def main():
     with serve() as url:

@@ -25,12 +25,11 @@ const ICON = {
 const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: 'all', loopHold: null, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], blankEls: new Map(), mediaLineEls: [], sourceTab: 'lyrics', curLine: -2, timelineZoom: 1 };
 const LOOP_CYCLE = ['all', 'line', 'cut', false];
 const LOOP_COPY = {
-  all:  { ja: '반복', en: 'Loop', titleJa: '전체 반복', titleEn: 'Loop the whole piece' },
-  line: { ja: '행 반복', en: 'Line loop', titleJa: '이 행 반복', titleEn: 'Loop this line' },
-  cut:  { ja: '컷 반복', en: 'Cut loop', titleJa: '이 컷 반복', titleEn: 'Loop this cut' },
-  off:  { ja: '반복', en: 'Loop', titleJa: '반복 안 함', titleEn: 'No loop' },
+  all:  { ko: '반복', titleKo: '전체 반복' },
+  line: { ko: '행 반복', titleKo: '이 행 반복' },
+  cut:  { ko: '컷 반복', titleKo: '이 컷 반복' },
+  off:  { ko: '반복', titleKo: '반복 안 함' },
 };
-const isEn = () => document.documentElement.lang === 'en';
 function cutAround(t) {
   const c = J.cutAt(S.plan, t);
   if (c) return c;
@@ -66,9 +65,8 @@ function syncLoopBtn() {
   const b = $('btnLoop'); if (!b) return;
   const key = S.loop || 'off';
   const copy = LOOP_COPY[key] || LOOP_COPY.off;
-  const en = isEn();
-  b.textContent = en ? copy.en : copy.ja;
-  b.title = en ? copy.titleEn : copy.titleJa;
+  b.textContent = copy.ko;
+  b.title = copy.titleKo;
   b.setAttribute('aria-pressed', String(!!S.loop));
   b.dataset.mode = key;
   refreshLoopHold();

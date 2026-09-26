@@ -3,3 +3,5 @@ dev/
 __pycache__/
 build/
 *.pyc
+# 세션 대화 내보내기(루트에 떨어지는 원문 기록) — 커밋하지 않는다
+2026-*-hirazisora-httpsgithubco.txt
