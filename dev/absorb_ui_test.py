@@ -636,6 +636,31 @@ async def test_cut_panel_unified(b, url):
     await md.click()
     assert await pg.locator('#cutDetailsDialog').count() == 1
     await pg.locator('#cutDetailsDialog').get_by_role('button', name='취소', exact=True).click()
+    # 데스크톱: ②·③은 늘 펼쳐져 있고 「컷 편집」 요약 줄은 숨는다
+    assert await pg.evaluate("document.querySelector('#cutMore').open") is True
+    assert not await pg.locator('#cutMore > summary').is_visible()
+    # 접근 가능한 이름: 후보 버튼은 보이는 글자를 포함, 상세 버튼은 컷 번호를 말한다
+    await pg.locator('#sourceLyrics').click(); await pg.evaluate("J.uiApi.selectCut(1)")
+    assert '후보 6개' in await panel.locator('[data-cut-section="line"] .cand').get_attribute('aria-label')
+    assert '2번 컷' in await panel.locator('[data-cut-section="layer"] [data-cut-ctl="details"]').get_attribute('aria-label')
+    # 다시 그려도(replan) 포커스가 같은 컨트롤로 돌아온다
+    await panel.locator('[data-cut-ctl="uta"]').focus()
+    await pg.evaluate("J.uiApi.replan(); J.uiApi.selectCut(1)")
+    assert await pg.evaluate("document.activeElement && document.activeElement.dataset.cutCtl") == 'uta'
+    # 스마트폰: ②·③은 접힌 「컷 편집」 안 — 고정 무대는 이 태스크 전(②·③ 없음)보다 48px 넘게 커지지 않는다
+    for vw, vh in [(390, 844), (360, 740)]:
+        await pg.set_viewport_size({'width': vw, 'height': vh})
+        await pg.click('#modeMobile'); await pg.evaluate("J.uiApi.selectCut(1)")
+        assert await pg.evaluate("document.querySelector('#cutMore').open") is False
+        h = await pg.evaluate('''() => { const st = document.querySelector('.col-stage'), m = document.querySelector('#cutMore');
+          const closed = st.getBoundingClientRect().height; m.style.display = 'none';
+          const without = st.getBoundingClientRect().height; m.style.display = ''; return [closed, without]; }''')
+        assert h[0] - h[1] <= 48, (vw, h)
+        await pg.locator('#cutMore > summary').click()
+        assert await panel.locator('[data-cut-section="line"] .cand').is_visible()
+        await pg.evaluate("J.uiApi.selectCut(2)")   # 다른 컷으로 가도 이 세션 동안 펼침 유지
+        assert await pg.evaluate("document.querySelector('#cutMore').open") is True
+        await pg.locator('#cutMore > summary').click()
     assert not errs, errs
     await pg.close()
 

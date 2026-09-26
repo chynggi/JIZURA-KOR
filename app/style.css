@@ -286,6 +286,10 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 .cut-sec[hidden] { display: none !important; }
 .cut-sec-layer, .cut-sec-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding-top: 6px; border-top: 1px dashed var(--line); }
 .cut-sec-h { font-size: 11px; color: var(--muted); }
+.cut-more[hidden] { display: none !important; }
+.cut-more { display: flex; flex-direction: column; gap: 6px; }
+.cut-more > summary { cursor: pointer; font-size: 12px; color: var(--muted); padding: 2px 0; }
+#app:not(.is-mobile) .cut-more > summary { display: none; }
 .cut-sec-media { display: inline-flex; align-items: center; gap: 4px; }
 .cut-sec-layer .lyric-cut-compositing { width: auto; align-items: center; }
 .cut-sec-layer .lyric-cut-compositing label { flex-direction: row; align-items: center; gap: 4px; font-size: 11px; }

@@ -182,8 +182,12 @@
             <div id="cutPickGrid" class="tech-grid checks"></div>
           </div>
         </div>
-        <div id="cutLayer" class="cut-sec cut-sec-layer" data-cut-section="layer" hidden></div>
-        <div id="cutLine" class="cut-sec cut-sec-line" data-cut-section="line" hidden></div>
+        <!-- ②·③: 스마트폰에서는 고정된 무대가 길어지지 않게 접어 둔다(데스크톱에서는 늘 펼침, 요약 줄 숨김) -->
+        <details id="cutMore" class="cut-more" hidden>
+          <summary>컷 편집</summary>
+          <div id="cutLayer" class="cut-sec cut-sec-layer" data-cut-section="layer" hidden></div>
+          <div id="cutLine" class="cut-sec cut-sec-line" data-cut-section="line" hidden></div>
+        </details>
       </div>
     </section>
 

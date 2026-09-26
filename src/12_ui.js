@@ -1190,6 +1190,8 @@ function updateCutInfo() {
   if (idx === lastCutIdx) return;
   lastCutIdx = idx;
   const el = $('cutInfo');
+  const refocus = cutPanelFocusKey();
+  if (refocus) queueMicrotask(() => { const again = $('cutPanel') && $('cutPanel').querySelector(refocus); if (again && !again.disabled) again.focus(); });
   renderCutPanel(cut, mc, fc);
   if (!cut && !mc && !fc) { el.innerHTML = '<span class="hint">이 위치에는 컷이 없습니다</span>'; if (cutPick.g) closeCutPick(); return; }
   const chip = (cls, k, v) => `<span class="chip ${cls}"><b>${k}</b>${v}</span>`;
@@ -1227,9 +1229,18 @@ function updateCutInfo() {
 }
 // 컷 패널의 ②(레이어 상세)·③(이 행의 후보·우타하메). ①은 위의 #cutInfo/#cutPick.
 // 컨트롤과 핸들러는 행 목록·배경 목록에 있던 것을 그대로 옮겨 왔다(저장 필드·로직 함수는 같음).
+// 패널을 다시 그려도 포커스가 같은 컨트롤로 돌아오게: 포커스가 패널 안이면 그 컨트롤의 data-* 선택자
+function cutPanelFocusKey() {
+  const a = document.activeElement, panel = $('cutPanel');
+  if (!a || !panel || !panel.contains(a)) return '';
+  for (const attr of ['data-cut-ctl', 'data-g', 'data-roll']) if (a.hasAttribute(attr)) return `[${attr}="${a.getAttribute(attr)}"]`;
+  return '';
+}
+let cutMoreOpen = false;   // 스마트폰에서 「컷 편집」을 펼쳤는지(이 페이지를 연 동안만 기억)
 function renderCutPanel(cut, mc, fc) {
-  const sec = $('cutLayer'), lineSec = $('cutLine');
-  if (!sec || !lineSec) return;
+  const sec = $('cutLayer'), lineSec = $('cutLine'), more = $('cutMore');
+  if (!sec || !lineSec || !more) return;
+  if (!more.dataset.wired) { more.dataset.wired = '1'; more.addEventListener('click', e => { if (S.mode === 'mobile' && e.target.closest('summary')) cutMoreOpen = !more.open; }); }   // 요약 줄 클릭(키보드 포함)은 곧 open을 뒤집는다: toggle 이벤트는 비동기라 바로 뒤의 다시 그리기보다 늦다
   sec.replaceChildren(); lineSec.replaceChildren();
   const head = text => { const h = document.createElement('span'); h.className = 'cut-sec-h'; h.textContent = text; return h; };
   const c = cut && !cut.blank && cut.line >= 0 && J.LAYOUTS[cut.layout] && !J.LAYOUTS[cut.layout].special ? cut : null;
@@ -1240,6 +1251,7 @@ function renderCutPanel(cut, mc, fc) {
     input.disabled = !!c.emphasis;
     if (c.emphasis) label.title = emphasisFrontmostHint();
     input.setAttribute('aria-label', `${i + 1}행 ${c.part + 1}컷을 맨 앞에 표시`);
+    input.dataset.cutCtl = 'frontmost';
     input.addEventListener('change', () => toggleLyricCutFrontmost(i, c.part));
     label.append(input, document.createTextNode('맨 앞에 표시'));
     const settings = J.lyricEffectSettings(S.project);
@@ -1248,6 +1260,7 @@ function renderCutPanel(cut, mc, fc) {
     const controls = document.createElement('div'); controls.className = 'lyric-cut-compositing';
     controls.innerHTML = `<label>합성 방법<select class="lyric-cut-blend" aria-label="이 컷의 합성 방법"><option value="">자동 (${modes[c.blend]})</option>${Object.entries(modes).map(([key, text]) => `<option value="${key}">${text}</option>`).join('')}</select></label><label>불투명도(%)<input class="lyric-cut-opacity" type="number" min="0" max="100" step="1" aria-label="이 컷의 불투명도(%)" value="${c.opacity}"></label><button type="button" class="ghost small lyric-composite-auto" title="이 컷의 합성 방법·불투명도를 자동으로 되돌리기">자동으로 되돌리기</button>`;
     const blend = controls.querySelector('select'), opacity = controls.querySelector('input'), reset = controls.querySelector('button');
+    blend.dataset.cutCtl = 'blend'; opacity.dataset.cutCtl = 'opacity'; reset.dataset.cutCtl = 'composite-auto';
     blend.value = options.blend || (settings.randomBlend ? '' : c.blend);
     opacity.title = settings.randomOpacity && options.opacity == null ? '자동으로 선택된 불투명도입니다. 값을 입력하면 직접 지정됩니다.' : '';
     opacity.classList.toggle('automatic', settings.randomOpacity && options.opacity == null);
@@ -1255,14 +1268,18 @@ function renderCutPanel(cut, mc, fc) {
     blend.addEventListener('change', e => setLyricCutComposite(i, c.part, { blend: e.target.value || undefined }));
     opacity.addEventListener('change', e => setLyricCutComposite(i, c.part, { opacity: e.target.value === '' ? undefined : J.clamp(+e.target.value || 0, 0, 100) }));
     reset.addEventListener('click', () => setLyricCutComposite(i, c.part, { blend: undefined, opacity: undefined }));
-    sec.append(head(`가사 ${i + 1}행 ${c.part + 1}컷`), detailButton(() => openCutDetails('lyrics', i, c.part)), label, controls);
+    const details = detailButton(() => openCutDetails('lyrics', i, c.part));
+    details.dataset.cutCtl = 'details'; details.setAttribute('aria-label', `${c.index + 1}번 컷(가사 ${i + 1}행 ${c.part + 1}컷) 상세 편집`);
+    sec.append(head(`가사 ${i + 1}행 ${c.part + 1}컷`), details, label, controls);
   } else if (cut && cut.blank) {
-    sec.append(head('무표시 컷'), detailButton(() => openCutDetails('lyrics', cut.index, 'blank')));
+    const details = detailButton(() => openCutDetails('lyrics', cut.index, 'blank'));
+    details.dataset.cutCtl = 'details'; details.setAttribute('aria-label', `${cut.index + 1}번 컷(무표시) 상세 편집`);
+    sec.append(head('무표시 컷'), details);
   }
   [[mc, 'media', '배경'], [fc, 'foreground', '전경']].forEach(([mediaCut, layer, name]) => {
     if (!mediaCut) return;
     const b = detailButton(() => openCutDetails(layer, mediaCut.index));
-    b.dataset.mediaDetails = layer; b.title = `${name} ${mediaCut.index + 1}컷 상세 편집`; b.setAttribute('aria-label', b.title);
+    b.dataset.mediaDetails = layer; b.dataset.cutCtl = 'details-' + layer; b.title = `${name} ${mediaCut.index + 1}컷 상세 편집`; b.setAttribute('aria-label', b.title);
     const wrap = document.createElement('span'); wrap.className = 'cut-sec-media';
     wrap.append(head(`${name} ${mediaCut.index + 1}컷`), b); sec.append(wrap);
   });
@@ -1271,12 +1288,15 @@ function renderCutPanel(cut, mc, fc) {
   if (ln && !ln.interlude) {
     const i = cut.line, o = S.project.overrides[i] || {};
     lineSec.innerHTML = `<span class="cut-sec-h">가사 ${i + 1}행</span>
-      <button type="button" class="ghost small cand" title="이 행의 후보 6개 중에서 고르기" aria-label="${i + 1}행 후보 고르기">${ICON.cand}<span>후보 6개</span></button>
-      <button type="button" class="ghost small uta" title="우타하메: 노래에 맞춰 한 글자씩 표시(단어 시각이 있으면 그 시각에 맞춤)" aria-pressed="${o.utahame ? 'true' : 'false'}" aria-label="${i + 1}행 우타하메">♪ 우타하메</button>`;
+      <button type="button" class="ghost small cand" data-cut-ctl="cand" title="이 행의 후보 6개 중에서 고르기" aria-label="후보 6개 — ${i + 1}행">${ICON.cand}<span>후보 6개</span></button>
+      <button type="button" class="ghost small uta" data-cut-ctl="uta" title="우타하메: 노래에 맞춰 한 글자씩 표시(단어 시각이 있으면 그 시각에 맞춤)" aria-pressed="${o.utahame ? 'true' : 'false'}" aria-label="${i + 1}행 우타하메">♪ 우타하메</button>`;
     lineSec.querySelector('.cand').addEventListener('click', () => openCandidates(i));
     lineSec.querySelector('.uta').addEventListener('click', () => { const cur = S.project.overrides[i] || {}; remember(); setOv(i, { utahame: !cur.utahame }); replan(); commit(); seek(ln.start + 0.001); });
   }
   lineSec.hidden = !lineSec.childElementCount;
+  more.hidden = sec.hidden && lineSec.hidden;
+  const wantOpen = S.mode !== 'mobile' || cutMoreOpen;
+  if (more.open !== wantOpen) more.open = wantOpen;
 }
 // 컷 고르기 = 그 컷으로 재생 위치를 옮기고 패널을 곧바로 그 컷으로 채운다(행 목록의 컷 이름 버튼과 같은 위치)
 function selectCut(index) {
