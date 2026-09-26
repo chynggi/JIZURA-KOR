@@ -2476,6 +2476,9 @@ const previewR = new J.Renderer();
 const previewPlans = new Map();
 const previewLive = new Set();
 let previewObs = null, previewRaf = 0, previewLast = 0;
+/* 미리보기 재생: 기본 끔(켜 두면 기법 그룹 접기/펼치기가 무거워진다) */
+let previewPlay = false;
+try { previewPlay = localStorage.getItem('jizura.techPreviewPlay') === '1'; } catch (e) {}
 function previewCacheKey(g, k) {
   const p = S.project;
   return [p.style, p.aspect, g, k, p.colors && p.colors.enabled ? JSON.stringify(p.colors) : '', JSON.stringify(p.fonts || {})].join('|');
@@ -2499,6 +2502,15 @@ function previewTime(plan, g, now) {
   const span = Math.max(1.6, c.dur * 0.96);
   return c.start + ((u % span) / span) * (c.dur * 0.96);
 }
+/* 미리보기 재생이 꺼져 있을 때 보여 줄 정지 화면 시각(기법이 드러나는 순간) */
+function previewStillTime(plan, g) {
+  const c = plan.cuts[plan.cuts.length - 1];
+  if (g === 'enter') return c.start + Math.max(0.3, c.inDur) * 0.7;
+  if (g === 'exit') { const od = Math.max(0.3, c.outDur || 0.5); return c.end - od * 0.7; }
+  if (g === 'trans') return c.start + (c.transDur || 0.35) * 0.5;
+  if (g === 'fx') return 0.5;
+  return c.start + c.dur * 0.48;
+}
 function paintTechCanvas(cv, g, k, t) {
   const plan = getPreviewPlan(g, k);
   const ctx = cv.getContext('2d');
@@ -2517,7 +2529,13 @@ function techPaneOpen() {
 function ensurePreviewObs() {
   if (previewObs) return previewObs;
   previewObs = new IntersectionObserver((ents) => {
-    ents.forEach(e => { if (e.isIntersecting && e.intersectionRatio > 0) previewLive.add(e.target); else previewLive.delete(e.target); });
+    ents.forEach(e => {
+      const cv = e.target;
+      if (!(e.isIntersecting && e.intersectionRatio > 0)) { previewLive.delete(cv); return; }
+      previewLive.add(cv);
+      /* 재생이 꺼져 있으면 처음 보일 때 정지 화면을 한 번만 그린다(펼칠 때 전부 그리지 않음) */
+      if (!previewPlay && !cv.dataset.ready && cv.dataset.g && cv.dataset.k) paintTechCanvas(cv, cv.dataset.g, cv.dataset.k, previewStillTime(getPreviewPlan(cv.dataset.g, cv.dataset.k), cv.dataset.g));
+    });
     kickPreviewLoop();
   }, { root: null, rootMargin: '40px 0px', threshold: [0, 0.12, 0.4] });
   return previewObs;
@@ -2528,10 +2546,10 @@ function resetPreviewWatch() {
 }
 function watchThumb(cv) { ensurePreviewObs().observe(cv); }
 function kickPreviewLoop() {
-  if (previewRaf) return;
+  if (previewRaf || !previewPlay) return;
   const tick = (now) => {
     previewRaf = 0;
-    if (document.hidden || S.exporting || !techPaneOpen() || !previewLive.size) return;
+    if (!previewPlay || document.hidden || S.exporting || !techPaneOpen() || !previewLive.size) return;
     if (now - previewLast >= 70) {
       previewLast = now;
       for (const cv of previewLive) {
@@ -2548,14 +2566,21 @@ function kickPreviewLoop() {
 function queueThumbs(list) {
   const now = performance.now();
   [...list.querySelectorAll('canvas[data-g]')].forEach(cv => {
-    previewLive.add(cv);
     watchThumb(cv);
+    if (!previewPlay) return;
+    previewLive.add(cv);
     const g = cv.dataset.g, k = cv.dataset.k;
     if (g && k) paintTechCanvas(cv, g, k, previewTime(getPreviewPlan(g, k), g, now));
   });
   kickPreviewLoop();
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) kickPreviewLoop(); });
+$('techPreviewPlay').checked = previewPlay;
+$('techPreviewPlay').addEventListener('change', e => {
+  previewPlay = e.target.checked;
+  try { localStorage.setItem('jizura.techPreviewPlay', previewPlay ? '1' : '0'); } catch (e2) {}
+  kickPreviewLoop();
+});
 
 function renderTech() {
   resetPreviewWatch();
