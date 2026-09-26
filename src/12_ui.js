@@ -134,7 +134,6 @@ function mergeProject(p) {
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
   o.lyricEffects = J.lyricEffectSettings(o);
   o.themes = J.themeIds(o);
-  delete o.jevPrompt;
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
   o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
