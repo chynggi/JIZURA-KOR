@@ -23,7 +23,7 @@ J.register('layout', 'myKey', { name: '한글 이름', tags: ['pop', 'graphic'],
 ```
 `J.register(group, key, def, pack)`는 항목을 레지스트리와 순서 배열에 추가합니다. key는 고유한 camelCase여야 하며
 기존 key와 충돌하면 안 됩니다(`J.order(group)`으로 확인하세요). `name`(한국어, 짧게 2–7자)은 UI에 표시됩니다.
-`tags` = 어울리는 분위기로 다음 중 아무거나: `glitch calm pop graphic editorial emotional`. `w` = 기본 선택 가중치(1 = 보통;
+`tags` = 어울리는 분위기로 다음 중 아무거나: `glitch calm pop graphic editorial emotional horror`(`horror`는 호러 세트 전용). `w` = 기본 선택 가중치(1 = 보통;
 0.4–0.7 = 기발하거나 아주 특정한 룩; 1.2–1.5 = 강한 범용).
 
 ## 설계 공간 & 환경
@@ -180,6 +180,12 @@ Black Han Sans / Noto Serif KR / IBM Plex Sans KR)가 있습니다.
 (등롱, 쇼지, 부채, 가문, 세이가이하 …)를 중심으로 만든 항목은 `J.WA`에 목록되거나 `wa: true`를 달아야 「일본풍 연출도 사용」
 스위치가 끌 수 있습니다(일본풍 항목, 뱃지 「일본풍」). 새 스타일은 `J.BASE_STYLES`에 목록되지 않는 한 추가 항목이고, 새 글꼴은
 `J.EXTRA_FONTS`에 넣으세요.
+
+### 자체 스위치가 있는 부품 세트 (문자 PV / 키네틱 / 호러)
+팩 이름이 `typo`·`kinetic`·`horror`인 항목(또는 `set: '<name>'`을 가진 항목)은 추가 연출이 아니라 자체 스위치를 가진 세트에 속합니다
+(`project.typo`·`project.kinetic`은 기본 켬, `project.horror`는 기본 끔). 스타일도 `set: '<name>'`으로 세트에 넣습니다.
+호러 분위기(`J.MOODS.horror`)는 호러 스위치가 켜져 있을 때만 자동 생성에 나오며, 호러 항목은 그 분위기에서만 쓰입니다.
+key에는 세트 접두사(`ty`, `kn`, `hr`)를 붙이고, 새 세트는 `J.SETS`(src/11q_sets.js)에 항목과 UI 스위치가 필요합니다.
 
 ### 중복 피하기
 설계하기 전에 그룹에 이미 무엇이 있는지 나열하세요: 시각물에는 `node -e`만으로는 부족합니다 —

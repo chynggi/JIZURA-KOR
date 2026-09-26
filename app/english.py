@@ -1,6 +1,19 @@
 """English copy for the browser edition. The Japanese source stays authoritative."""
 
 BODY = {
+    '文字PV系の部品を使う': 'Use typographic parts',
+    'キネティックの部品を使う': 'Use kinetic parts',
+    'ホラーの演出も使う': 'Include horror effects',
+    '<small>線・数字・字組みだけで見せる、文字PVらしい部品（約50）</small>': '<small>About 50 parts that work with lines, numbers and type alone, in the spirit of lyric videos</small>',
+    '<small>語ごとに動く・跳ねる・積み上がる、動き重視の部品（約50）</small>': '<small>About 50 motion-first parts: words move, bounce and stack one by one</small>',
+    '<small>不気味な雰囲気の部品（約50）と配色セット3。オンにすると、おまかせの雰囲気に「ホラー」が加わります</small>': '<small>About 50 eerie parts and 3 styles. When on, Randomize adds a Horror mood</small>',
+    '<small>「文」印の手法。オフにすると、おまかせやシャッフルでは選ばれません</small>': '<small>Techniques marked T. When off, Randomize and Shuffle skip them</small>',
+    '<small>「キ」印の手法。オフにすると、おまかせやシャッフルでは選ばれません</small>': '<small>Techniques marked K. When off, Randomize and Shuffle skip them</small>',
+    '<small>「ホ」印の手法とスタイル。おまかせでは雰囲気が「ホラー」のときだけ使います</small>': '<small>Techniques and styles marked H. Randomize uses them only in the Horror mood</small>',
+    'title="スタイル・雰囲気・演出・配色をまるごとランダムに">おまかせ</button>': 'title="Randomize style, mood, effects and palette">Randomize</button>',
+    'aria-controls="appMenu">メニュー</button>': 'aria-controls="appMenu">Menu</button>',
+    'title="スマホ向けの画面（おまかせを上に固定、行はたたんで表示）">スマホ</button>': 'title="Phone layout (Randomize pinned at the top, lines folded)">Phone</button>',
+    '<button class="exp-share primary" hidden>共有して保存</button>': '<button class="exp-share primary" hidden>Share / save</button>',
     '<label class="row center-dir" hidden>縦長のとき<select class="centerDirSel" aria-label="縦長の画面での分け方"><option value="tb">上下に分ける</option><option value="lr">左右に分ける</option></select></label>': '<label class="row center-dir" hidden>On tall frames<select class="centerDirSel" aria-label="Split on tall frames"><option value="tb">Top / bottom</option><option value="lr">Left / right</option></select></label>',
     '<span>統一感</span>': '<span>Unified look</span>',
     '<span>文字整列</span>': '<span>Typesetting</span>',
@@ -69,6 +82,11 @@ BODY = {
     '拍にスナップ': 'Snap to beat', '手動タイミングを消す': 'Clear manual timing',
     '曲に合わせて、各行が始まる瞬間に': 'Press', 'かボタンを押してください。': 'or the button as each line starts.',
     '次:': 'Next:', '終了する': 'Finish', '行とカット': 'Lines and cuts',
+ 'このカットだけ差し替え': 'Replace on this cut only',
+ 'このカットだけ構成を再抽選': 'Reshuffle this cut only',
+ 'このカットだけ手法をランダムに': 'Randomize this cut only',
+ 'このカットをシャッフル': 'Shuffled this cut',
+ 'このカットをおまかせ': 'Randomized this cut',
     '再生位置': 'Playback position', 'タイムライン（クリックで移動）': 'Timeline (click to seek)',
     '前の案に戻る': 'Previous variation', '次の案へ進む': 'Next variation',
     '設定はそのままで構成だけ再抽選（ロックした行は維持）': 'Shuffle the arrangement, keeping locked lines',
@@ -99,6 +117,7 @@ BODY = {
     'スタイル次第': 'Auto (by style)', '常に表示': 'Always show', '表示しない': 'Hide',
     '同じシードなら同じ構成になります。行ごとの「再抽選」「ロック」は左の行リストから。': 'The same seed produces the same arrangement. Reroll or lock individual lines in the list on the left.',
     '手法を名前で絞り込み': 'Filter techniques by name',
+    '画面に見えているプレビューは自動でループします。': 'Previews on screen loop automatically.',
     'グリーンバック／ブラックバックにすると、白い文字と演出だけを単色の背景の上に描きます（背景の模様・紙の質感・粒子・周辺減光は入りません）。プレビューにもそのまま反映されます。グリーンバックは動画編集ソフトのクロマキーで、ブラックバックは「スクリーン」合成や輝度キーで抜いて、別の映像の上に重ねられます。': 'Green screen and black background render white text and effects over a solid color, without background patterns, paper texture, particles or vignette. The preview shows the export. Use a chroma key for green or Screen blending / a luma key for black to composite over footage.',
     '曲を動画に含める': 'Include audio in video', '連番PNG（ZIP）': 'PNG sequence (ZIP)',
     '透過PNG（ZIP・背景なし）': 'Transparent PNG (ZIP)',
@@ -121,9 +140,41 @@ BODY = {
     '追加': 'New', '和': 'JP', '演出': 'Effects', '手法': 'Techniques',
     'コマ打ち': 'Frame stepping', 'フラッシュ': 'Flash', 'シード': 'Seed', '新しいシード': 'New seed',
     '標準': 'Standard', '最高': 'Maximum', '高': 'High', '中止': 'Cancel',
+    '行ループ': 'Line loop', 'カットループ': 'Cut loop',
+    '全体を繰り返し': 'Loop the whole piece', 'この行を繰り返し': 'Loop this line',
+    'このカットを繰り返し': 'Loop this cut', '繰り返しなし': 'No loop',
+
+
+
+
+
+
+
+    'このカットだけ差し替え': 'Replace only this cut',
+    'このカットだけ構成を再抽選': 'Re-roll the composition of only this cut',
+    'このカットだけ手法をランダムに': 'Randomize the technique of only this cut',
+    'このカットをシャッフル': 'Shuffle this cut',
+    'このカットをおまかせ': 'Randomise this cut',
+    'このカットをおまかせ': 'Randomize this cut',
+
+
 }
 
 UI = {
+    "'文字PV系の部品：使う'": "'Typographic parts: on'",
+    "'文字PV系の部品：使わない（おまかせ・シャッフルで選ばれません）'": "'Typographic parts: off (not picked by Randomize or Shuffle)'",
+    "'キネティックの部品：使う'": "'Kinetic parts: on'",
+    "'キネティックの部品：使わない（おまかせ・シャッフルで選ばれません）'": "'Kinetic parts: off (not picked by Randomize or Shuffle)'",
+    "'ホラーの演出：使う（おまかせの雰囲気に「ホラー」が加わります）'": "'Horror effects: on (Randomize adds a Horror mood)'",
+    "'ホラーの演出：使わない'": "'Horror effects: off'",
+    "'（このセットがオフのため、おまかせでは選ばれません）'": "' (this set is off for automatic picks)'",
+    "'（このセットがオフのため、自動では選ばれません）'": "' (this set is off for automatic picks)'",
+    "{ name: 'ホラー', badge: 'ホ' }": "{ name: 'Horror', badge: 'H' }",
+    "{ name: '文字PV系', badge: '文' }": "{ name: 'Typographic', badge: 'T' }",
+    "{ name: 'キネティック', badge: 'キ' }": "{ name: 'Kinetic', badge: 'K' }",
+    "'スマホの画面では 1080p で書き出します'": "'In the Phone layout the export is 1080p at most'",
+    "`読み込んだ書体（${[...new Set(lost)].join('・')}）がこのブラウザにないため、書き出しを止めました。「フォント」から同じファイルを読み込み直すか、別の書体を選んでください`": "`The uploaded font (${[...new Set(lost)].join(', ')}) is not in this browser, so the export was stopped. Load the same file again under Fonts, or pick another font`",
+    "`読み込んだ書体（${missing.join('・')}）がこのブラウザにありません。「フォント」から同じファイルを読み込み直してください（それまでは近い書体で表示します）`": "`The uploaded font (${missing.join(', ')}) is not in this browser. Load the same file again under Fonts (a similar font is used until then)`",
     "'縦長の画面：左右に分けます'": "'Tall frames: split left / right'",
     "'縦長の画面：上下に分けます'": "'Tall frames: split top / bottom'",
     "'（最初の方法では失敗したため、別のエンコーダーで書き出しました）'": "' (the first method failed, so another encoder was used)'",
@@ -223,6 +274,31 @@ UI = {
     '解析中…': 'Analyzing audio…', '読み込めませんでした: ': 'Could not load: ',
     '約': 'about ', '（PC）': ' (installed)',
     '字面': 'JIZURA', '追加': 'New', '和': 'JP',
+    'ループ': 'Loop',
+    '行ループ': 'Line loop', 'カットループ': 'Cut loop',
+    '全体を繰り返し': 'Loop the whole piece', 'この行を繰り返し': 'Loop this line',
+    'このカットを繰り返し': 'Loop this cut', '繰り返しなし': 'No loop',
+    # ロック（スライダー／手法の組／部品セット）
+    "'おまかせでON／OFFを変えないようにロック'": "'Lock so Randomize keeps this group’s ON/OFF selection'",
+    "'おまかせ／シャッフルで変えないようにロック'": "'Lock so Randomize / Shuffle leave this alone'",
+    "'ロック中。クリックで解除'": "'Locked — click to unlock'",
+    "'ロック：'": "'Locked: '",
+    "'ロック解除：'": "'Unlocked: '",
+
+
+
+
+
+
+
+    'この位置のカットは抽選できません': 'No cut at this position to re-roll',
+    '`${i + 1}行目 カット${k + 1}のレイアウト`': '`Layout of cut ${k + 1} on line ${i + 1}`',
+    'このカットだけ構成を再抽選': 'Re-roll the composition of only this cut',
+    'このカットだけ手法をランダムに': 'Randomize the technique of only this cut',
+    'このカットをシャッフル': 'Shuffle this cut',
+    'このカットをおまかせ': 'Randomize this cut',
+    'おまかせ': 'Randomize',
+    'シャッフル': 'Shuffle',
 }
 
 EXPORT = {
@@ -244,6 +320,11 @@ EXPORT = {
 }
 
 AE_UI = {
+    "'文字PV系の部品を使う'": "'Use typographic parts'", "'キネティックの部品を使う'": "'Use kinetic parts'", "'ホラーの演出も使う'": "'Include horror effects'",
+    "'線・数字・字組みだけで見せる、文字PVらしい部品（約50）'": "'About 50 parts that work with lines, numbers and type alone'",
+    "'語ごとに動く・跳ねる・積み上がる、動き重視の部品（約50）'": "'About 50 motion-first parts: words move, bounce and stack one by one'",
+    "'不気味な雰囲気の部品（約50）と配色セット3。オンにすると、おまかせの雰囲気に「ホラー」が加わります（ホラーの部品は雰囲気が「ホラー」のときだけ使います）'": "'About 50 eerie parts and 3 styles. When on, Randomize adds a Horror mood (horror parts are used only in that mood)'",
+    "'  〔ホ〕'": "'  [H]'",
     "'\u3000縦長のとき'": "'  On tall frames'",
     "'上下に分ける'": "'Top / bottom'",
     "'左右に分ける'": "'Left / right'",
@@ -305,7 +386,7 @@ AE_UI = {
     ' 箇所あり、近い表現に置き換えました。': ' unsupported techniques; similar ones were substituted.',
     ' 箇所を、近い表現で作りました': ' instances were replaced by similar techniques',
     'ブラウザ版より古いパネルを使っている可能性があります。最新の JIZURA_AE.jsx（v': 'This panel may be older than the browser edition. Install the latest JIZURA_AE_en.jsx (v',
-    '・707 部品）に差し替えて、After Effects を再起動してください。': ', 707 techniques) and restart After Effects.',
+    '・860 部品）に差し替えて、After Effects を再起動してください。': ', 860 techniques) and restart After Effects.',
     '先にコンポを作ってください（このパネルで最後に作ったコンポを調べます）': 'Create a composition first; diagnostics inspect the last one created here.',
     '最後に作ったコンポが見つかりません（削除された可能性があります）': 'The last composition could not be found (it may have been deleted).',
     '診断中…（数十秒かかることがあります）': 'Diagnosing… (this can take a few seconds)',

@@ -26,14 +26,20 @@ function jzUI(thisObj) {
     cExtra.helpTip = '끄면 최초 공개판의 연출(356개 부품·스타일 12종)만 사용합니다. 켜면 나중에 추가된 연출·스타일·서체도 후보가 됩니다';
     var cWa = gSw.add('checkbox', undefined, '일본풍 연출도 사용'); cWa.value = jzGet('wa', '1') === '1';
     cWa.helpTip = '초롱·엽서·장지문·부채·가문(家紋)·세이가이하 물결·벚꽃잎 등의 일본풍 그래픽과 일본풍 스타일. 끄면 자동으로 선택되지 않습니다(추가분 판정 이후에 적용)';
+    var cTypo = gSw.add('checkbox', undefined, '文字PV系の部品を使う'); cTypo.value = jzGet('typo', '1') === '1';
+    cTypo.helpTip = '線・数字・字組みだけで見せる、文字PVらしい部品（約50）';
+    var cKin = gSw.add('checkbox', undefined, 'キネティックの部品を使う'); cKin.value = jzGet('kinetic', '1') === '1';
+    cKin.helpTip = '語ごとに動く・跳ねる・積み上がる、動き重視の部品（約50）';
+    var cHor = gSw.add('checkbox', undefined, 'ホラーの演出も使う'); cHor.value = jzGet('horror', '0') === '1';
+    cHor.helpTip = '不気味な雰囲気の部品（約50）と配色セット3。オンにすると、おまかせの雰囲気に「ホラー」が加わります（ホラーの部品は雰囲気が「ホラー」のときだけ使います）';
     var gLang = gSw.add('group'); gLang.spacing = 4; gLang.add('statictext', undefined, '가사 언어');
     var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en'];
     var ddLang = gLang.add('dropdownlist', undefined, ['자동 판정', '日本語', '繁體中文', '简体中文', '한국어', 'English']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
     ddLang.helpTip = '중국어(번체·간체)나 한국어 가사는 그 문자를 가진 서체로 조판합니다(각 스타일 서체의 분위기에 가까운 것으로 대체). 자동 판정은 가나·한글·번체/간체 고유 글자로 판단합니다';
-    function switches() { return { extra: cExtra.value, wa: cWa.value, lang: JZ_LANG_KEYS[ddLang.selection ? ddLang.selection.index : 0] }; }
+    function switches() { return { extra: cExtra.value, wa: cWa.value, typo: cTypo.value, kinetic: cKin.value, horror: cHor.value, lang: JZ_LANG_KEYS[ddLang.selection ? ddLang.selection.index : 0] }; }
     var gS = t1.add('group'); gS.add('statictext', undefined, '스타일');
     var styleNames = [], i;
-    for (i = 0; i < JZ_DATA.styleOrder.length; i++) { var stI = JZ_DATA.styles[JZ_DATA.styleOrder[i]]; styleNames.push(stI.name + (stI.extra || stI.wa ? '  〔' + (stI.extra ? '추가' : '') + (stI.extra && stI.wa ? '·' : '') + (stI.wa ? '일본풍' : '') + '〕' : '')); }
+    for (i = 0; i < JZ_DATA.styleOrder.length; i++) { var stI = JZ_DATA.styles[JZ_DATA.styleOrder[i]]; styleNames.push(stI.name + (stI.extra || stI.wa ? '  〔' + (stI.extra ? '추가' : '') + (stI.extra && stI.wa ? '·' : '') + (stI.wa ? '일본풍' : '') + '〕' : '') + (stI.set === 'horror' ? '  〔ホ〕' : '')); }
     var ddStyle = gS.add('dropdownlist', undefined, styleNames); ddStyle.selection = parseInt(jzGet('style', '0'), 10) || 0;
     var gC = t1.add('group'); gC.add('statictext', undefined, '크기');
     var sizes = ['활성 컴포와 같게', '1920×1080', '1080×1920', '1080×1080', '3840×2160', '1280×720', '1440×1080 (4:3)', '1080×1440 (3:4)'];
@@ -224,7 +230,7 @@ function jzUI(thisObj) {
         jzPut('size', ddSize.selection.index); jzPut('fps', ddFps.selection.index); jzPut('timing', rLayer.value ? 'layer' : rComp.value ? 'comp' : 'auto');
         jzPut('bpm', eBpm.text); jzPut('lineScale', eScale.text); jzPut('audio', cAudio.value ? '1' : '0'); jzPut('seed', eSeed.text);
         jzPut('twos', cTwos.value ? '1' : '0'); jzPut('flash', cFlash.value ? '1' : '0'); jzPut('hud', ddHud.selection.index); jzPut('interCount', ddInter.selection.index); jzPut('interCredit', cCredit.value ? '1' : '0');
-        jzPut('extra', cExtra.value ? '1' : '0'); jzPut('wa', cWa.value ? '1' : '0'); jzPut('key', ddKey.selection.index); jzPut('center', cCenter.value ? '1' : '0'); jzPut('centerDir', ddCDir.selection ? ddCDir.selection.index : 0); jzPut('light', cLight.value ? '1' : '0'); jzPut('lang', ddLang.selection ? ddLang.selection.index : 0);
+        jzPut('extra', cExtra.value ? '1' : '0'); jzPut('wa', cWa.value ? '1' : '0'); jzPut('typo', cTypo.value ? '1' : '0'); jzPut('kinetic', cKin.value ? '1' : '0'); jzPut('horror', cHor.value ? '1' : '0'); jzPut('key', ddKey.selection.index); jzPut('center', cCenter.value ? '1' : '0'); jzPut('centerDir', ddCDir.selection ? ddCDir.selection.index : 0); jzPut('light', cLight.value ? '1' : '0'); jzPut('lang', ddLang.selection ? ddLang.selection.index : 0);
         var sl = [sMotion, sGlitch, sChroma, sDecor, sDensity, sTexture, sBg]; for (var k = 0; k < sl.length; k++) jzPut(sl[k].key, sl[k].value);
         var active = app.project.activeItem, W = 1920, H = 1080, fps = [24, 30, 60][ddFps.selection.index], dur = null;
         var sz = ddSize.selection.index;
@@ -247,7 +253,7 @@ function jzUI(thisObj) {
             lyrics: lyr.text, title: eTitle.text, artist: eArtist.text, style: JZ_DATA.styleOrder[ddStyle.selection.index], seed: parseInt(eSeed.text, 10) || 1,
             fx: { motion: sMotion.value / 100, glitch: sGlitch.value / 100, chroma: sChroma.value / 100, decor: sDecor.value / 100, density: sDensity.value / 100, texture: sTexture.value / 100, bgSwitch: sBg.value / 100, onTwos: cTwos.value, flash: cFlash.value, hud: false, interCount: ['auto', 'on', 'off'][ddInter.selection.index], interCredit: cCredit.value },
             width: W, height: H, fps: fps, bpm: parseFloat(eBpm.text) || 0, starts: starts, enabled: en, offset: 0.4, lineScale: parseFloat(eScale.text) || 1, duration: dur,
-            extra: sw.extra, wa: sw.wa, lang: sw.lang, centerFree: cCenter.value, centerDir: ddCDir.selection && ddCDir.selection.index === 1 ? 'lr' : 'tb'
+            extra: sw.extra, wa: sw.wa, typo: sw.typo, kinetic: sw.kinetic, horror: sw.horror, lang: sw.lang, centerFree: cCenter.value, centerDir: ddCDir.selection && ddCDir.selection.index === 1 ? 'lr' : 'tb'
         };
         var st = JZ_DATA.styles[o.style];
         o.fx.hud = ddHud.selection.index === 1 ? true : ddHud.selection.index === 2 ? false : !!st.hud;
@@ -301,7 +307,7 @@ function jzUI(thisObj) {
             if (JZ_FALLBACKS > 0) {
                 note = (note ? note + ' / ' : '') + '이 패널에 없는 표현 ' + JZ_FALLBACKS + '곳을 비슷한 표현으로 만들었습니다';
                 alert('JIZURA: 이 JSON에는 이 패널이 만들 수 없는 표현이 ' + JZ_FALLBACKS + '곳 있어 비슷한 표현으로 바꿨습니다.\n\n' + JZ_FALLBACK_KEYS.slice(0, 12).join(', ') +
-                    '\n\n브라우저 버전보다 오래된 패널을 쓰고 있을 수 있습니다. 최신 JIZURA_AE.jsx(v' + JZ_PANEL_VERSION + '·707개 부품)로 교체한 뒤 After Effects를 다시 시작해 주세요.');
+                    '\n\n브라우저 버전보다 오래된 패널을 쓰고 있을 수 있습니다. 최신 JIZURA_AE.jsx(v' + JZ_PANEL_VERSION + '·860개 부품)로 교체한 뒤 After Effects를 다시 시작해 주세요.');
             }
             report(comp, t0, jobLabel(note ? '교체 있음' : '', job));
             if (note) status.helpTip = note;

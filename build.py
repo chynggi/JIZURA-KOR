@@ -1,6 +1,6 @@
 """Build the Korean single-file browser edition from src/, app/ and vendor/.
 This fork's sources are Korean, so the other editions (app/english.py and app/i18n*.py translate the Japanese source)
-are not rebuilt here; en/, zh-hant/, zh-hans/, id/ and ko/ index.html are kept as shipped upstream.
+are not rebuilt here; en/, zh-hant/, zh-hans/, id/, ko/ and vi/ index.html are kept as shipped upstream.
 usage: python3 build.py            -> index.html (GitHub Pages)
        python3 build.py --dev      -> also dev/www/jizura.js + dev/www/test.html for the test tools"""
 import glob, os, sys
@@ -8,6 +8,7 @@ from app.english import localize_body, localize_js
 ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(ROOT)
 read = lambda p: open(p, encoding='utf-8').read()
+VERSION = read('VERSION').strip()
 sources = sorted(glob.glob('src/*.js'))
 js = '\n'.join(read(f) for f in sources)
 mux = '/*! mp4-muxer v5.2.2 | MIT License | (c) 2023 Vanilagy | see THIRD_PARTY_NOTICES.md */\n' + read('vendor/mp4-muxer.min.js')
@@ -18,12 +19,14 @@ def build(lang):
     canonical = 'https://852wa.github.io/JIZURA/en/' if english else 'https://852wa.github.io/JIZURA/'
     # language menu: this Korean edition, the upstream Japanese original, and the other editions kept as shipped upstream
     editions = [('index.html', 'ko', '한국어'), ('https://852wa.github.io/JIZURA/', 'ja', '日本語'), ('en/index.html', 'en', 'English'),
-                ('zh-hant/index.html', 'zh-Hant', '繁體中文'), ('zh-hans/index.html', 'zh-Hans', '简体中文'), ('id/index.html', 'id-ID', 'Bahasa Indonesia')]
+                ('zh-hant/index.html', 'zh-Hant', '繁體中文'), ('zh-hans/index.html', 'zh-Hans', '简体中文'), ('id/index.html', 'id-ID', 'Bahasa Indonesia'),
+                ('vi/index.html', 'vi', 'Tiếng Việt')]
     language_nav = ('<label class="lang-switch"><span class="sr-only">언어</span><select aria-label="언어" onchange="if(this.value)location.href=this.value">'
                     + ''.join(f'<option value="{href}" lang="{hl}"{" selected" if hl == "ko" else ""}>{name}</option>' for href, hl, name in editions) + '</select></label>')
-    body = read('app/body.html').replace('    <div class="acts">', '    ' + language_nav + '\n    <div class="acts">', 1)
+    body = read('app/body.html').replace('@VERSION@', VERSION).replace('    <div class="acts">', '    ' + language_nav + '\n    <div class="acts">', 1)
     if english: body = localize_body(body)
     script = '\n'.join(localize_js(read(f), f) for f in sources) if english else js
+    script = script.replace('@VERSION@', VERSION)
     if english:
         marker = '/* ============================================================\n   JIZURA — editor UI'
         if marker not in script: raise ValueError('Could not find browser UI entry point')

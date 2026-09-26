@@ -18,6 +18,9 @@ J.defaultProject = () => ({
   style: 'noir', mood: null,
   extra: false,                   // random picks may use the parts added after the first version (追加分)
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
+  horror: false,                  // parts sets (independent of 'extra'): ホラー (also enables the ホラー mood)
+  typo: true,                     // 文字PV系 typographic parts
+  kinetic: true,                  // キネティック parts
   lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' — picks the faces each font key is drawn with
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
   unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
@@ -36,6 +39,7 @@ J.defaultProject = () => ({
   timelineLinks: [],
   media: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
   foreground: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
+  locks: { tech: {}, params: {} },   // groups and values Randomize / Shuffle must not change (UI side only)
   colors: { enabled: false },
   fonts: {},
 });
@@ -242,6 +246,12 @@ J.lyricArea = area => {
     lockAspect: area.lockAspect !== false };
 };
 
+function cutTechOf(ov, k) {
+  const t = (ov.cutTech && (ov.cutTech[k] || ov.cutTech[String(k)])) || {};
+  const fromLay = ov.cutLayouts && (ov.cutLayouts[k] || ov.cutLayouts[String(k)]);
+  return fromLay && !t.layout ? Object.assign({}, t, { layout: fromLay }) : t;
+}
+
 J.plan = (project, audio) => {
   const st = J.resolveStyle(project);
   const fx = Object.assign({}, J.defaultProject().fx, project.fx || {});
@@ -274,7 +284,7 @@ J.plan = (project, audio) => {
   const zoneOf = () => (zones ? Object.assign({}, zones[0]) : null);
   if (zones && en.bg) en.bg.bigChar = false;               // the one background that draws the lyric itself (big, centred)
   const plan = {
-    version: 1, generator: 'JIZURA', title, artist, W, H, fps: project.fps || 24,
+    version: 1, generator: 'JIZURA', appVersion: '@VERSION@', title, artist, W, H, fps: project.fps || 24,
     duration: tm.duration, styleKey: project.style, style: st, fx, seed: project.seed,
     lines: [], cuts: [], events: [], beats: audio && audio.beats ? audio.beats.slice() : [],
     hud: fx.hud === 'on' ? true : fx.hud === 'off' ? false : !!st.hud,
@@ -355,7 +365,7 @@ J.plan = (project, audio) => {
     let nC = Math.round(D / L);
     const maxC = chunks.length + (chunks.length >= 2 && D > 2.0 ? 1 : 0);
     nC = J.clamp(nC, 1, Math.max(1, maxC));
-    const ovAny = Object.keys(ov).some(k2 => !['lock', 'lockedSeed', 'seed', 'utahame'].includes(k2));
+    const ovAny = Object.keys(ov).some(k2 => !['lock', 'lockedSeed', 'seed', 'utahame', 'cutTech', 'cutLayouts', 'cutQuiet'].includes(k2));
     const kime = !!(U && U.kime.has(li) && !ov.cuts);
     if (ov.single || kime) nC = 1;
     if (zones) nC = Math.max(1, Math.min(nC, Math.floor(chunks.length / 2)));   // 中央を空ける: each cut is split in two, so keep ≥ 2 words per cut
@@ -369,9 +379,16 @@ J.plan = (project, audio) => {
     if (nG <= 1) groups = [ln.text];
     else groups = partition(chunks2, nG).map(g => g.join(/[A-Za-z]/.test(g.join('')) ? ' ' : ''));
     const recap = !mk && !fixedN && nC > groups.length && groups.length >= 2;
-    const units = groups.map(g => ({ text: g, w: [...g].length + 1.6 }));
+    let units = groups.map(g => ({ text: g, w: [...g].length + 1.6 }));
     if (recap) units.push({ text: ln.text, w: (units.reduce((a, u) => a + u.w, 0) / units.length) * 1.25, recap: true });
+    // a locked line keeps its own cuts too (the cut count would otherwise follow the 細かさ slider or おまかせ)
+    if (ov.lock && Array.isArray(ov.lockedCuts) && ov.lockedCuts.length && ov.lockedCuts.every(c => c && typeof c.utext === 'string' && ln.text.includes(c.utext.trim())))
+      units = ov.lockedCuts.map(c => ({ text: c.utext, w: [...c.utext].length + 1.6, recap: !!c.recap }));
     const tot = units.reduce((a, u) => a + u.w, 0);
+    // ロック: a locked line keeps exactly what it showed when it was locked (layouts, motion, decorations, colours,
+    // accents) — rerolling other lines changes the shared "recently used" state, so the seed alone is not enough
+    const lockSpecs = ov.lock && Array.isArray(ov.lockedCuts) && ov.lockedCuts.length === units.length
+      && ov.lockedCuts.every((c, k2) => c && c.utext === units[k2].text && J.LAYOUTS[c.layout]) ? ov.lockedCuts : null;
     let acc = s; const bounds = [s];
     units.forEach((u, k) => { acc += D * u.w / tot; bounds.push(k === units.length - 1 ? visEnd : acc); });
     // with word times each cut starts when its first word is sung
@@ -396,6 +413,7 @@ J.plan = (project, audio) => {
       const emph = kime || ln.impact && (k === 0 || u.recap) || ln.emph.some(w => u.text.includes(w));
       const Z = zoneOf(li), LW = Z ? Z.w : layoutW, LH = Z ? Z.h : layoutH;       // the frame this cut is laid out in (band / 표시 영역 / whole)
       const UU = U && !ovAny ? U : null;                              // per-line settings always win over 統一感
+      const tech = cutTechOf(ov, k);                                  // このカットだけの指定
       let layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, LH > LW);
       if (UU) layout = UU.layout(li, layout, { nn, dur, emph, kime, rng, portrait: LH > LW, recap: u.recap });
       // 우타하메 (per line): the characters come in with the singing, so the lyric may only be drawn once
@@ -448,14 +466,67 @@ J.plan = (project, audio) => {
         if (again.bg && again.bg !== 'none') { bg = again.bg; lineBgP = again.bgP; lineBg = bg; }
         [inDur, outDur] = durs(enter, exit);
       }
+      const LS = lockSpecs ? lockSpecs[k] : null;
+      if (LS) {
+        ({ layout, enter, exit, hold, params, decor, treat, treatP, cam, camP } = LS);
+        if (!J.ENTER[enter]) enter = 'blur'; if (!J.EXIT[exit]) exit = 'blur'; if (!J.HOLD[hold]) hold = 'still';
+        if (!J.TREAT[treat]) { treat = 'none'; treatP = {}; } if (!J.CAMERA[cam]) { cam = 'push'; camP = {}; }
+        decor = (decor || []).filter(d => J.DECOR[d.id]);
+        weightGrow = !!LS.weightGrow; sch = LS.scheme | 0; cutSeed = LS.seed; LD = J.LAYOUTS[layout];
+        bg = LS.bg && J.BG[LS.bg] ? LS.bg : 'none'; if (bg !== 'none') { lineBg = bg; lineBgP = LS.bgP || {}; }
+        inDur = LS.inDur; outDur = LS.outDur;
+      }
+      // このカットだけの指定: applied on top of the draw with its own random stream, so changing one cut never
+      // shifts the other cuts (history below keeps what was drawn, as if nothing had been changed here)
+      const drawn = { layout, enter, exit, hold, treat, cam, decor: decor.map(d => d.id) };
+      let techBgP = null;
+      if (tech.layout && J.LAYOUTS[tech.layout] && !J.LAYOUTS[tech.layout].special) {
+        layout = tech.layout; LD = J.LAYOUTS[layout];
+        try { params = LD.plan(J.rng(J.h(lineSeed, k, 91)), { text: txt, n: nn, W: LW, H: LH, dur }, st); } catch (e) {}
+      }
+      if (tech.enter && J.ENTER[tech.enter]) enter = tech.enter;
+      if (tech.exit && J.EXIT[tech.exit]) exit = tech.exit;
+      if (tech.hold && J.HOLD[tech.hold]) hold = tech.hold;
+      if (tech.decor !== undefined) {
+        if (!tech.decor || tech.decor === 'none' || !J.DECOR[tech.decor]) decor = [];
+        else decor = [decorParams(J.rng(J.h(lineSeed, k, 92)), tech.decor)];
+      }
+      if (tech.treat && J.TREAT[tech.treat]) {
+        treat = tech.treat;
+        treatP = J.TREAT[treat].plan ? J.TREAT[treat].plan(J.rng(J.h(lineSeed, k, 93)), st) : {};
+      }
+      if (tech.bg && J.BG[tech.bg]) {
+        bg = tech.bg;
+        techBgP = J.BG[bg].plan ? J.BG[bg].plan(J.rng(J.h(lineSeed, k, 94)), st) : {};
+      }
+      if (tech.cam && J.CAMERA[tech.cam]) {
+        cam = tech.cam;
+        camP = J.CAMERA[cam].plan ? J.CAMERA[cam].plan(J.rng(J.h(lineSeed, k, 95)), st) : {};
+      }
+      if (tech.enter || tech.exit) {               // keep the (locked) durations unless the motions changed
+        const [i2, o2] = durs(enter, exit);
+        if (tech.enter && J.ENTER[tech.enter]) inDur = i2;
+        if (tech.exit && J.EXIT[tech.exit]) outDur = o2;
+      }
       // cut-to-cut transition (replaces the previous cut's exit and this cut's entrance)
       const prevCut = plan.cuts[plan.cuts.length - 1];
       let trans = null, transP = {}, transDur = 0, morph = null;
-      const canTrans = prevCut && Math.abs(prevCut.end - cs) < 0.06 && prevCut.layout !== 'interlude' && dur > 0.5;
+      const joinSaved = { enter, inDur, prevExit: prevCut && prevCut.exit, prevOut: prevCut && prevCut.outDur };
+      // a locked line keeps its own exit: the next (unlocked) line may not replace it with a transition / morph
+      const prevLockedOther = prevCut && prevCut.line !== li && !LS && ((project.overrides || {})[prevCut.line] || {}).lock;
+      const canTrans = prevCut && Math.abs(prevCut.end - cs) < 0.06 && prevCut.layout !== 'interlude' && dur > 0.5 && !prevLockedOther;
       // 統一感: モーフ — the next part of the same line grows out of this one (shared characters glide, the rest melts)
-      if (canTrans && UU && k > 0 && !kime && (again ? again.morph : rng.chance(u.recap ? 0.85 : 0.4))) {
+      if (LS) {                                       // locked: the same join as before, when the cuts still touch
+        if (canTrans && LS.morph) { morph = { dur: LS.morph.dur }; prevCut.exit = 'cut'; prevCut.outDur = 0; }
+        else if (canTrans && LS.trans && J.TRANS[LS.trans]) { trans = LS.trans; transP = LS.transP || {}; transDur = LS.transDur; prevCut.exit = 'cut'; prevCut.outDur = 0; }
+      } else if (canTrans && UU && k > 0 && !kime && (again ? again.morph : rng.chance(u.recap ? 0.85 : 0.4))) {
         morph = { dur: J.clamp(dur * 0.45, 0.28, 0.6) };
         enter = 'cut'; inDur = 0.12; prevCut.exit = 'cut'; prevCut.outDur = 0;
+      } else if (canTrans && again && !ov.trans) {    // 統一感: a repeated line joins its cuts the same way as the first time
+        if (again.trans && J.TRANS[again.trans]) {
+          trans = again.trans; transP = again.transP || {}; transDur = again.transDur;
+          enter = 'cut'; inDur = 0.12; prevCut.exit = 'cut'; prevCut.outDur = 0;
+        }
       } else if (canTrans) {
         trans = ov.trans && J.TRANS[ov.trans] ? ov.trans : pickTrans(rng, st, en, fx, emph, history);
         if (trans && UU) trans = UU.trans(li, trans, { rng });
@@ -467,25 +538,43 @@ J.plan = (project, audio) => {
           prevCut.exit = 'cut'; prevCut.outDur = 0;
         }
       }
+      drawn.trans = trans;
+      if (tech.trans === 'none') {                  // このカットだけ「つなぎなし」: undo the join
+        if (trans || morph) { enter = joinSaved.enter; inDur = joinSaved.inDur; if (prevCut) { prevCut.exit = joinSaved.prevExit; prevCut.outDur = joinSaved.prevOut; } }
+        trans = null; transP = {}; transDur = 0; morph = null;
+      } else if (tech.trans && J.TRANS[tech.trans] && canTrans) {
+        morph = null;
+        trans = tech.trans;
+        const TD = J.TRANS[trans];
+        transDur = J.clamp(TD.dur || 0.35, 0.12, Math.min(0.6, dur * 0.45));
+        transP = TD.plan ? TD.plan(J.rng(J.h(lineSeed, k, 96)), st) : {};
+      }
+      if (trans && canTrans) {
+        enter = 'cut'; inDur = 0.12;
+        prevCut.exit = 'cut'; prevCut.outDur = 0;
+      }
       if (uta) { enter = 'cut'; inDur = 0.12; }                       // 우타하메: no entrance (see J.mainDraw)
       const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, part: k, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: cutSeed, area, frontmost: !!((project.lyricCutOptions || {})[`${li}:${k}`] || {}).frontmost, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
-        treat, treatP, bg, bgP: bg === lineBg ? lineBgP : {}, cam, camP, trans, transP, transDur, zone: Z });
+        treat, treatP, bg, bgP: techBgP || (bg === lineBg ? lineBgP : {}), cam, camP, trans, transP, transDur, zone: Z, utext: u.text });
       // karaoke sync: [time since cut start, share of this cut's text already sung]
       if (uci && !u.recap) {
         const N = [...ln.text].length, c0 = uci[k], c1 = k + 1 < units.length ? uci[k + 1] : N, span = Math.max(1, c1 - c0);
         cut.sync = [[markTime(mk, c0, N, visEnd) - cs, 0]].concat(mk.filter(q => q.ci > c0 && q.ci < c1).map(q => [q.t - cs, (q.ci - c0) / span]), [[markTime(mk, c1, N, visEnd) - cs, 1]]);
       }
       if (uta) cut.utahame = true;
-      if (kime) cut.kime = true;
+      if (kime || (LS && LS.kime)) cut.kime = true;
       if (weightGrow) cut.weightGrow = true;
       if (morph) cut.morph = morph;
       if (UU) UU.remember(li, k, txt, cut);
-      if (zones) splitCut(cut, halves, zones, st, dur);
+      if (zones) splitCut(cut, halves, zones, st, dur, LS);
       // 文字整列: effects don't pile up — one decoration, no text treatment on top of it
       if (plan.typeset) { cut.decor = cut.decor.slice(0, 1); if (cut.decor.length && cut.treat !== 'none') { cut.treat = 'none'; cut.treatP = {}; } }
       plan.cuts.push(cut);
       const evMark = plan.events.length;
-      history.push({ layout, enter, exit, hold, treat, cam, trans, decor: decor.map(d => d.id) });
+      // history = what the draw gave (with the usual join), so a per-cut pick never shifts the later cuts
+      const hist = { layout, enter, exit, hold, treat, cam, trans, decor: decor.map(d => d.id) };
+      for (const g of Object.keys(hist)) if (tech[g] !== undefined && drawn[g] !== undefined) hist[g] = g === 'enter' && drawn.trans ? 'cut' : drawn[g];
+      history.push(hist);
       // events at cut start
       // events at cut start — durations are on a 24fps timebase so every output rate looks the same
       const g = fx.glitch * (st.glitchBoost || 1);
@@ -510,8 +599,9 @@ J.plan = (project, audio) => {
         if (pick) { const D2 = J.FXE[pick]; const d = (D2.dur || 4) * F; addEvent(cs - (D2.pre ? D2.pre * F : 0), pick, (D2.amp || 1) * (0.7 + 0.5 * g + (emph ? 0.3 : 0)), d); fxHistory.push(pick); }
       }
       if (dur > 1.1) { const pick = pickFx(rng, st, en, fx, emph, fxHistory, 'mid'); if (pick) { const D2 = J.FXE[pick]; addEvent(cs + rng.range(0.4, 0.75) * dur, pick, (D2.amp || 1) * (0.5 + 0.4 * g), (D2.dur || 3) * F); } }
+      if (LS && Array.isArray(LS.events)) { plan.events.splice(evMark); for (const e of LS.events) plan.events.push({ t: cs + e.dt, type: e.type, amp: e.amp, dur: e.dur }); }
       // 文字整列: at most one screen effect per cut besides the colour split (the キメ line keeps its accents)
-      if (plan.typeset && !cut.kime) {
+      if (plan.typeset && !cut.kime && !LS) {
         const mine = plan.events.splice(evMark);
         let extra = 0;
         for (const e of mine) if (e.type === 'chroma' || e.type === 'shake' && emph || extra++ < 1) plan.events.push(e);
@@ -696,7 +786,8 @@ function makeUnify(lines, C) {
     remember(i, k, txt, cut) {
       if (!specs.has(i)) specs.set(i, []);
       specs.get(i)[k] = { text: txt, layout: cut.layout, enter: cut.enter, exit: cut.exit, hold: cut.hold, params: cut.params, decor: cut.decor, treat: cut.treat, treatP: cut.treatP,
-        cam: cut.cam, camP: cut.camP, scheme: cut.scheme, seed: cut.seed, bg: cut.bg, bgP: cut.bgP, weightGrow: !!cut.weightGrow, morph: !!cut.morph };
+        cam: cut.cam, camP: cut.camP, scheme: cut.scheme, seed: cut.seed, bg: cut.bg, bgP: cut.bgP, weightGrow: !!cut.weightGrow, morph: !!cut.morph,
+        trans: cut.trans || null, transP: cut.transP, transDur: cut.transDur };
     },
   };
 }
@@ -726,17 +817,34 @@ function splitHalf(text, lang) {
   return [a, b];
 }
 const HEAD_BAD = /[、。，．,.!?！？…・ーっッゃゅょャュョぁぃぅぇぉァィゥェォをがはにでとのへもやよね」』）)]/;
-function splitCut(cut, halves, zones, st, dur) {
+function splitCut(cut, halves, zones, st, dur, LS) {
   const LD = J.LAYOUTS[cut.layout], seed = J.h(cut.seed, 23);
   const planFor = (text, z) => LD.plan(J.rng(seed), { text, n: [...text.replace(/\s+/g, '')].length, W: z.w, H: z.h, dur }, st);
   cut.text = halves[0]; cut.lineText = halves[0]; cut.words = J.chunkText(halves[0]); cut.zone = Object.assign({}, zones[0]);
-  cut.params = planFor(halves[0], zones[0]);
+  cut.params = LS && LS.params && LS.twinParams ? LS.params : planFor(halves[0], zones[0]);   // a locked line keeps its own
   const delay = Math.min(0.12, dur * 0.08);
-  const twin = Object.assign({}, cut, { text: halves[1], lineText: halves[1], words: J.chunkText(halves[1]), zone: Object.assign({}, zones[1]), params: planFor(halves[1], zones[1]),
+  const twin = Object.assign({}, cut, { text: halves[1], lineText: halves[1], words: J.chunkText(halves[1]), zone: Object.assign({}, zones[1]), params: LS && LS.twinParams ? LS.twinParams : planFor(halves[1], zones[1]),
     start: cut.start + delay, bg: 'none', bgP: {}, companion: true, trans: null, transP: {}, transDur: 0, morph: cut.morph });
   twin.dur = twin.end - twin.start;
   delete twin.companion_; cut.companion = twin;
 }
+
+/* ロック: what a line shows, so it can be kept as it is (stored in project.overrides[line].lockedCuts) */
+J.lineSnapshot = (plan, li) => {
+  const cuts = plan.cuts.filter(c => c.line === li && c.utext != null);
+  if (!cuts.length) return null;
+  const S = JSON.parse(JSON.stringify(cuts.map(c => ({ utext: c.utext, layout: c.layout, enter: c.enter, exit: c.exit, hold: c.hold, inDur: c.inDur, outDur: c.outDur,
+    params: c.params, decor: c.decor, treat: c.treat, treatP: c.treatP, bg: c.bg, bgP: c.bgP, cam: c.cam, camP: c.camP, scheme: c.scheme, seed: c.seed,
+    trans: c.trans, transP: c.transP, transDur: c.transDur, morph: c.morph || null, weightGrow: !!c.weightGrow, kime: !!c.kime, recap: !!c.recap, twinParams: c.companion ? c.companion.params : null, events: [] }))));
+  // each accent belongs to the cut it plays in (the ones just before a cut start belong to that cut)
+  for (const e of plan.events) {
+    let k = -1;
+    // [start − 0.25, next start − 0.25): an accent just before the following cut belongs to that cut
+    for (let j = 0; j < cuts.length; j++) { const until = j < cuts.length - 1 ? cuts[j + 1].start - 0.25 : cuts[j].end - 0.3; if (e.t >= cuts[j].start - 0.25 && e.t < until) k = j; }
+    if (k >= 0) S[k].events.push({ dt: +(e.t - cuts[k].start).toFixed(4), type: e.type, amp: e.amp, dur: e.dur });
+  }
+  return S;
+};
 
 /* side bands for 中央を空ける: [a, b] in design pixels. Wide frames: left / right thirds (a little narrower on 21:9);
    tall frames: top / bottom; square-ish frames count as wide. */
@@ -934,6 +1042,90 @@ function pickFx(rng, st, en, fx, emph, fxHist, kind) {
     .map(k => { const D = J.FXE[k]; let w = wkey(st.bias && st.bias.fx, k, D.w ?? 1) * (last.includes(k) ? 0.2 : 1); if (D.glitchy) w *= 0.3 + g * 1.4; return [k, w]; });
   return cands.length ? rng.wpick(cands) : null;
 }
+
+/* one-cut (or two-cut, for transitions) plan used by the 手法 tab thumbnails */
+J.previewPlan = (project, group, key) => {
+  const enUI = typeof document !== 'undefined' && document.documentElement && document.documentElement.lang === 'en';
+  const st = J.resolveStyle(project);
+  const fx = Object.assign({}, J.defaultProject().fx, project.fx || {}, {
+    glitch: group === 'fx' ? 0.85 : 0,
+    chroma: group === 'fx' ? 0.9 : 0.22,
+    flash: false, hud: 'off', texture: 0.3, bgSwitch: 0, motion: 0.75,
+    decor: group === 'decor' ? 1 : 0,
+  });
+  const [W, H] = J.designSize(project.aspect || '16:9');
+  const rng = J.rng(J.h(J.sid(String(group) + ':' + String(key)), 11, 22));
+  let text = enUI ? 'Lyric' : '字面';
+  if (group === 'layout') {
+    const L0 = J.LAYOUTS[key];
+    const n2 = [...text.replace(/\s+/g, '')].length;
+    if (L0 && L0.fits && !L0.fits(n2)) text = enUI ? 'color of dawn' : '夜明けの色を';
+    if (L0 && L0.fits && !L0.fits([...text.replace(/\s+/g, '')].length)) text = enUI ? 'I remember the color of dawn' : '夜明けの色を覚えてる';
+  }
+  const nn = [...text.replace(/\s+/g, '')].length;
+  const dur = 2.4;
+  let layout = group === 'layout' ? key : 'center';
+  if (!J.LAYOUTS[layout] || J.LAYOUTS[layout].special) layout = 'center';
+  let enter = group === 'enter' ? key : 'cut';
+  let exit = group === 'exit' ? key : 'cut';
+  let hold = group === 'hold' ? key : 'still';
+  if (!J.ENTER[enter]) enter = 'cut';
+  if (!J.EXIT[exit]) exit = 'cut';
+  if (!J.HOLD[hold]) hold = 'still';
+  if (group === 'layout' || group === 'decor' || group === 'treat' || group === 'bg') {
+    if (enter === 'cut' && J.ENTER.pop) enter = 'pop';
+    if (hold === 'still' && J.HOLD.breathe) hold = 'breathe';
+    else if (hold === 'still' && J.HOLD.drift) hold = 'drift';
+  }
+  const LD = J.LAYOUTS[layout];
+  let params = {};
+  try { params = LD.plan(rng, { text, n: nn, W, H, dur }, st) || {}; } catch (e) { params = {}; }
+  let inDur = enter === 'cut' ? 0.12 : 0.5;
+  if (J.ENTER[enter] && J.ENTER[enter].inDur) try { inDur = J.ENTER[enter].inDur(dur, nn); } catch (e) {}
+  let outDur = exit === 'cut' ? 0 : 0.5;
+  if (J.EXIT[exit] && J.EXIT[exit].outDur) try { outDur = J.EXIT[exit].outDur(dur, nn); } catch (e) {}
+  if (inDur + outDur > dur * 0.85) { const f = dur * 0.85 / Math.max(0.2, inDur + outDur); inDur *= f; outDur *= f; }
+  const decor = (group === 'decor' && J.DECOR[key]) ? [decorParams(rng, key)] : [];
+  let treat = group === 'treat' ? key : 'none';
+  if (!J.TREAT[treat]) treat = 'none';
+  const treatP = (J.TREAT[treat] && J.TREAT[treat].plan) ? (J.TREAT[treat].plan(rng, st) || {}) : {};
+  let bg = group === 'bg' ? key : 'none';
+  if (!J.BG[bg]) bg = 'none';
+  const bgP = (J.BG[bg] && J.BG[bg].plan) ? (J.BG[bg].plan(rng, st) || {}) : {};
+  let cam = group === 'cam' ? key : 'push';
+  if (!J.CAMERA[cam]) cam = 'push';
+  const camP = (J.CAMERA[cam] && J.CAMERA[cam].plan) ? (J.CAMERA[cam].plan(rng, st) || {}) : {};
+  const events = [];
+  if (group === 'fx' && J.FXE[key]) {
+    const D2 = J.FXE[key];
+    events.push({ t: 0.04, type: key, amp: (D2.amp || 1.15) * 1.2, dur: ((D2.dur || 6) / 24) });
+  }
+  const cuts = [];
+  if (group === 'trans' && J.TRANS[key]) {
+    const TD = J.TRANS[key];
+    const transDur = J.clamp(TD.dur || 0.35, 0.18, 0.7);
+    const transP = TD.plan ? (TD.plan(rng, st) || {}) : {};
+    const tA = enUI ? 'BEFORE' : '前のカット';
+    const tB = enUI ? 'AFTER' : '字面';
+    let pA = {}, pB = {};
+    try { pA = J.LAYOUTS.center.plan(rng, { text: tA, n: [...tA].length, W, H, dur: 1.2 }, st) || {}; } catch (e) {}
+    try { pB = J.LAYOUTS.center.plan(rng, { text: tB, n: [...tB].length, W, H, dur: 1.2 }, st) || {}; } catch (e) {}
+    cuts.push(makeCut({ text: tA, lineText: tA, line: 0, start: 0, end: 1.2, layout: 'center', enter: 'cut', exit: 'cut', hold: 'still', inDur: 0.12, outDur: 0, params: pA, decor: [], scheme: 0, seed: 1, words: J.chunkText(tA) }));
+    cuts.push(makeCut({ text: tB, lineText: tB, line: 1, start: 1.2, end: 2.4, layout: 'center', enter: 'cut', exit: 'cut', hold: 'still', inDur: 0.12, outDur: 0, params: pB, decor: [], scheme: Math.min(1, st.schemes.length - 1), seed: 2, words: J.chunkText(tB), trans: key, transP, transDur }));
+  } else {
+    cuts.push(makeCut({
+      text, lineText: text, line: 0, start: 0, end: dur, layout, enter, exit, hold, inDur, outDur,
+      params, decor, scheme: 0, seed: J.h(J.sid(String(key)), 9), words: J.chunkText(text),
+      treat, treatP, bg, bgP, cam, camP, stagger: 0.04,
+    }));
+  }
+  cuts.forEach((c, i) => { c.index = i; });
+  return {
+    version: 1, generator: 'JIZURA-preview', title: '', artist: '', W, H, fps: 24,
+    duration: cuts[cuts.length - 1].end, styleKey: project.style, style: st, fx,
+    lines: [], cuts, events, beats: [], hud: false, keyBg: null,
+  };
+};
 
 J.designSize = (input) => {
   const project = typeof input === 'object' && input ? input : null;

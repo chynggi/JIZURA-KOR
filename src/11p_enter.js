@@ -142,7 +142,6 @@ function masked(g, fx, fy, isx, isy) {
 }
 const glyphPos = (g, isx, isy) => [(g.x + g.vx) * isx, (g.y + g.vy) * isy];
 
-const SIGNS = '가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호구누두루무부수우주추쿠투푸후그느드르므브스으즈츠크트프히＃＊＋＝／＜＞※◇◆□△○01';
 
 /* ================================================================ */
 const DEFS = {
@@ -740,7 +739,7 @@ const DEFS = {
       glyphs(it, (i) => {
         if (i < front) return f - i - 1 < 0.6 ? { color: hi } : null;
         if (i === front) return HIDE;
-        if (i <= front + 4) return { ch: SIGNS[J.h(seed, i, step, 51) % SIGNS.length], a: 0.5, color: dim };
+        if (i <= front + 4) return { ch: J.pool('signs')[J.h(seed, i, step, 51) % J.pool('signs').length], a: 0.5, color: dim };
         return HIDE;
       });
       if (front < N) {

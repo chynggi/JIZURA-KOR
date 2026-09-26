@@ -97,33 +97,52 @@ J.saveFontFile = async (key, file) => {
     });
   } finally { db.close(); }
 };
-J.restoreFontFiles = async userFonts => {
-  const files = (userFonts || []).filter(font => font.file);
-  if (!files.length) return;
+const readFontFile = async key => {
   const db = await fontDatabase();
   try {
-    for (const font of files) {
-      const blob = await new Promise((resolve, reject) => {
-        const tx = db.transaction('files'); const request = tx.objectStore('files').get(font.key);
-        request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
-      });
-      if (!blob) continue;
-      const face = new FontFace(font.family, await blob.arrayBuffer());
-      await face.load(); document.fonts.add(face);
-    }
-    J.glyphs.clear(); J.metrics.clear();
+    const blob = await new Promise((resolve, reject) => {
+      const tx = db.transaction('files'); const request = tx.objectStore('files').get(key);
+      request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+    });
+    return blob ? blob.arrayBuffer() : null;
   } finally { db.close(); }
 };
+/* only plain keys / family names ever reach the page (project files are untrusted input) */
+J.SAFE_FONT_KEY = /^user_[A-Za-z0-9_-]{1,80}$/;
+J.safeFamily = s => String(s || '').replace(/[^\w\- ]/g, '_').slice(0, 80);
+/* PC faces (local_…) keep the installed family name: only what could break out of the CSS / HTML is dropped */
+J.SAFE_LOCAL_FONT_KEY = /^local_[^\s"'<>&\\]{1,200}$/u;
+J.safeLocalFamily = s => String(s || '').replace(/["'<>&;{}\\]/g, '').slice(0, 120);
 J.loadFontFile = async (file) => {
   const buf = await file.arrayBuffer();
-  const fam = 'UF_' + file.name.replace(/\.[^.]+$/, '').replace(/[^\w]/g, '_');
+  const fam = 'UF_' + file.name.replace(/\.[^.]+$/, '').replace(/[^\w]/g, '_').slice(0, 60);
   const ff = new FontFace(fam, buf);
   await ff.load(); document.fonts.add(ff);
-  const key = 'user_' + fam;
-  J.addUserFont(key, file.name.replace(/\.[^.]+$/, ''), fam, 400, 'custom');
-  await J.saveFontFile(key, file).catch(() => {});
-  return key;
+  const key = 'user_' + fam, label = file.name.replace(/\.[^.]+$/, '').slice(0, 80);
+  J.addUserFont(key, label, fam, 400, 'custom');
+  J.FONTS[key].loaded = true;
+  await J.saveFontFile(key, file).catch(() => {});      // kept in this browser, so a reload keeps the face
+  return { key, label, family: fam, weight: 400, file: true };
 };
+/* uploaded faces of a project: register them from this browser's copy; returns the labels that are not available */
+J.restoreUserFonts = async (list) => {
+  const missing = [];
+  for (const uf of list || []) {
+    const f = J.FONTS[uf.key];
+    if (f && f.loaded) continue;
+    let ok = false;
+    try {
+      if (!J.SAFE_FONT_KEY.test(uf.key)) continue;                   // PC faces are the system's own
+      const buf = await readFontFile(uf.key).catch(() => null) || (J.loadFontData ? await J.loadFontData(uf.key) : null);
+      if (buf) { const ff = new FontFace(J.safeFamily(uf.family), buf); await ff.load(); document.fonts.add(ff); ok = true; }
+    } catch (e) { ok = false; }
+    if (ok && J.FONTS[uf.key]) { J.FONTS[uf.key].loaded = true; J.glyphs.clear(); J.metrics.clear(); }
+    else missing.push(uf.label || uf.family || uf.key);
+  }
+  return missing;
+};
+/* uploaded faces the plan draws with but this page does not have */
+J.missingUserFonts = (keys) => (keys || []).filter(k => J.SAFE_FONT_KEY.test(k) && J.FONTS[k] && J.FONTS[k].user && !J.FONTS[k].loaded).map(k => J.FONTS[k].label);
 
 J.fontCSS = (key, px, ch) => {
   if (ch != null) key = J.fontForChar(key, ch);

@@ -46,10 +46,15 @@ const vcfg = (c, w, h, fps, bitrate, hw) => {
   return cfg;
 };
 async function supported(cfg) { try { const s = await VideoEncoder.isConfigSupported(cfg); return !!(s && s.supported); } catch (e) { return false; } }
-J.pickVideoCodec = async (w, h, fps, bitrate) => {
-  if (typeof VideoEncoder === 'undefined') return null;
-  for (const c of VIDEO_CANDS) { const cfg = vcfg(c, w, h, fps, bitrate); if (await supported(cfg)) return Object.assign({}, c, { cfg }); }
-  return null;
+const codecMemo = new Map();   // the answer never changes for a page load; asking the browser again costs ~100 ms
+J.pickVideoCodec = (w, h, fps, bitrate) => {
+  const key = [w, h, fps, bitrate].join('/');
+  if (!codecMemo.has(key)) codecMemo.set(key, (async () => {
+    if (typeof VideoEncoder === 'undefined') return null;
+    for (const c of VIDEO_CANDS) { const cfg = vcfg(c, w, h, fps, bitrate); if (await supported(cfg)) return Object.assign({}, c, { cfg }); }
+    return null;
+  })());
+  return codecMemo.get(key).then(vc => vc && Object.assign({}, vc, { cfg: Object.assign({}, vc.cfg) }));
 };
 /* the encoders to try, best first: the browser's choice, then the same codec in software (GPU encoders are the usual
    reason an export fails every time on one PC), then a simpler profile / lower bitrate in software, then VP9 */
@@ -180,8 +185,9 @@ async function encodeMP4({ plan, project, audio, onProgress, signal, range, file
           R.frame(ctx, plan, span.t0 + i / fps, { scale });
           const vf = new VideoFrame(canvas, { timestamp: Math.round(i * frameUs), duration: Math.round(frameUs) });
           try { venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0 }); } finally { vf.close(); }
-          const deadline = Date.now() + 30000;
-          while (venc.encodeQueueSize > 4 && !err) { await waitDequeue(venc); if (Date.now() > deadline) throw new Error('인코더가 응답하지 않습니다'); }
+          let deadline = Date.now() + 30000;
+          // (time in the background doesn't count: a phone pauses the encoder while the page is hidden)
+          while (venc.encodeQueueSize > 4 && !err) { await waitDequeue(venc); if (document.hidden) deadline = Date.now() + 30000; if (Date.now() > deadline) throw new Error('인코더가 응답하지 않습니다'); }
           // an encoder that accepts frames but never returns any has failed silently (seen with some GPU drivers)
           if (i === Math.min(total - 1, fps * 3) && outFrames === 0) { await venc.flush(); if (!outFrames) throw new Error('인코더가 출력을 반환하지 않습니다'); }
           if (i % 3 === 0) { onProgress && onProgress(i / total, `프레임 ${i + 1}/${total}${note || ''}`); await yieldTask(); }
@@ -314,6 +320,7 @@ J.planForAE = (plan, project, range) => {
   clean.version = 2;
   clean.width = J.outputSize(project)[0]; clean.height = J.outputSize(project)[1];
   clean.extra = project.extra === true; clean.wa = project.wa !== false;
+  if (J.setOn) for (const s of J.SET_ORDER) clean[s] = J.setOn(project, s);
   clean.fonts = {};
   for (const [role, keys] of Object.entries(plan.style.fonts)) clean.fonts[role] = keys.map(k => J.FONTS[k] ? J.FONTS[k].label : k);
   clean.fontTable = Object.fromEntries(Object.entries(J.FONTS).map(([k, f]) => [k, { label: f.label, family: f.family.replace(/"/g, ''), weight: f.weight, kind: f.kind }]));

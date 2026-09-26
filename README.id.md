@@ -2,11 +2,12 @@
 
 Buat video lirik bergerak langsung di browser. JIZURA menggabungkan layout, animasi masuk, gerakan saat teks bertahan, animasi keluar, dekorasi, efek teks, latar, gerakan kamera, efek, dan transisi. Ganti seed atau tekan **Buat variasi** untuk mencoba susunan lain.
 
-**[Buka aplikasi Bahasa Indonesia](https://852wa.github.io/JIZURA/id/)** · [日本語](README.md) · [English](README.en.md) · [繁體中文](https://852wa.github.io/JIZURA/zh-hant/) · [简体中文](https://852wa.github.io/JIZURA/zh-hans/) · [한국어](https://852wa.github.io/JIZURA/ko/)
+**[Buka aplikasi Bahasa Indonesia](https://852wa.github.io/JIZURA/id/)** · [Tiếng Việt](https://852wa.github.io/JIZURA/vi/) · [日本語](README.md) · [English](README.en.md) · [繁體中文](https://852wa.github.io/JIZURA/zh-hant/) · [简体中文](https://852wa.github.io/JIZURA/zh-hans/) · [한국어](https://852wa.github.io/JIZURA/ko/)
 
 Edisi Indonesia dan Jepang memakai format proyek serta data browser yang sama. Gunakan menu bahasa di bagian atas editor untuk berpindah edisi tanpa mengubah lirik atau pengaturan.
 
-## Mulai cepat
+<details>
+<summary><h2>Mulai cepat</h2></summary>
 
 1. Tempelkan lirik di panel kiri, satu frasa per baris. Contoh lirik bawaan muncul saat aplikasi pertama kali dibuka.
 2. Impor audio jika perlu. JIZURA mendeteksi ketukan dan dapat menyesuaikan batas cut ke ketukan tersebut. Gunakan **Sinkronkan ke ketukan** untuk menandai awal setiap baris dengan menekan Spasi saat lagu diputar.
@@ -23,8 +24,13 @@ Penggeser volume di sebelah tombol putar hanya mengatur volume pratinjau; video 
 
 Gunakan **Simpan** dan **Buka** untuk proyek `.jizura.json`. **Ekspor untuk AE** membuat data susunan yang bisa diimpor ke panel After Effects. Video dan gambar yang dibuat menjadi milik pembuatnya; hak atas musik dan lirik tetap berada pada pemegang hak masing-masing. File proyek, lirik, dan audio diproses di browser. Google Fonts dimuat sesuai kebutuhan. Aplikasi ini dirilis di bawah lisensi MIT; lihat [LICENSE](LICENSE) dan [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## Build dan publikasi
+</details>
 
-Jalankan `python3 build.py` dari root repository. Perintah ini membuat edisi `index.html`, `en/`, `zh-hant/`, `zh-hans/`, `ko/`, dan `id/` (terjemahan browser berada di `app/english.py` dan `app/i18n_*.py`), semuanya berupa halaman mandiri untuk GitHub Pages. Jalankan `python3 build_ae.py --lang en` untuk membangun panel After Effects Inggris, atau `python3 build_cep.py --lang en --out dist` untuk paket CEP Inggris. Commit halaman hasil build, panel, dan sumber terjemahan bersama-sama. Publikasikan dari root repository di GitHub Pages; edisi Indonesia tersedia di `/JIZURA/id/`. File HTML juga bisa dibuka langsung secara lokal untuk penggunaan offline, dengan font terpasang sebagai fallback.
+<details>
+<summary><h2>Build dan publikasi</h2></summary>
+
+Jalankan `python3 build.py` dari root repository. Perintah ini membuat edisi `index.html`, `en/`, `zh-hant/`, `zh-hans/`, `ko/`, `id/`, dan `vi/` (terjemahan browser berada di `app/english.py` dan `app/i18n_*.py`), semuanya berupa halaman mandiri untuk GitHub Pages. Jalankan `python3 build_ae.py --lang en` untuk membangun panel After Effects Inggris, atau `python3 build_cep.py --lang en --out dist` untuk paket CEP Inggris. Commit halaman hasil build, panel, dan sumber terjemahan bersama-sama. Publikasikan dari root repository di GitHub Pages; edisi Indonesia tersedia di `/JIZURA/id/`. File HTML juga bisa dibuka langsung secara lokal untuk penggunaan offline, dengan font terpasang sebagai fallback.
 
 Panel After Effects memerlukan After Effects untuk memverifikasi gerakan dan hasil ekspor; pengujian otomatis memakai mock AE.
+
+</details>

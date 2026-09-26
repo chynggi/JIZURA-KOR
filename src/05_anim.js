@@ -7,7 +7,6 @@
 'use strict';
 const E = J.E;
 
-const SCRAMBLE_POOL = '가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호구누두루무부수우주추쿠투푸후그느드르므브스으즈츠크트프히빛꿈소리마음별바다눈물사랑죄신이름울음새벽섬불바람파도그림자시간영혼길열기★◆▲●■※＃＄％＆01234567ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 /* bands helper: horizontal slices covering the item's vertical extent */
 J.itemBands = (env, it, n, dxFn) => {
@@ -171,7 +170,7 @@ J.ENTER = {
         const settle = 0.25 + 0.75 * (n > 1 ? i / (n - 1) : 1);
         if (p >= settle) return null;
         if (p < settle * 0.25 && J.r(seed, i, step, 2) < 0.5) return { hide: true };
-        const ch = SCRAMBLE_POOL[Math.floor(J.r(seed, i, step) * SCRAMBLE_POOL.length)];
+        const ch = J.pool('scramble')[Math.floor(J.r(seed, i, step) * J.pool('scramble').length)];
         return { ch, a: 0.85 };
       });
     },

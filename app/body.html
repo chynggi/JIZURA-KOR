@@ -9,12 +9,15 @@
 </div>
 <div id="app">
   <header class="bar">
-    <div class="brand"><span class="mark" aria-hidden="true">字面</span><span class="word">JIZURA</span><span class="tag">lyric motion engine</span></div>
+    <div class="brand"><span class="mark" aria-hidden="true">字面</span><span class="word">JIZURA</span><span class="tag">lyric motion engine</span><span class="ver">v@VERSION@</span></div>
     <div class="proj">
       <input id="songTitle" type="text" placeholder="곡명(타이틀 카드·HUD에 표시)" aria-label="곡명">
       <input id="songArtist" type="text" placeholder="아티스트" aria-label="아티스트">
     </div>
+    <button id="btnOmakaseTop" class="primary omk-top" title="スタイル・雰囲気・演出・配色をまるごとランダムに">おまかせ</button>
+    <button id="btnMenu" class="ghost menu-btn" aria-expanded="false" aria-controls="appMenu">メニュー</button>
     <div class="modes" role="group" aria-label="편집 모드">
+      <button id="modeMobile" class="mode-mobile" aria-pressed="false" title="スマホ向けの画面（おまかせを上に固定、行はたたんで表示）">スマホ</button>
       <button id="modeEasy" aria-pressed="false" title="자동 생성 중심의 간단한 화면">간단</button>
       <button id="modePro" aria-pressed="true" title="모든 설정 표시">고급</button>
       <button id="btnTour" class="ghost tour-btn" title="간단 모드 사용법을 안내합니다" aria-label="사용법 안내">？</button>
@@ -32,6 +35,13 @@
   <main class="work">
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="가사와 타이밍">
+      <div id="tapPanel" class="tapbox" hidden>
+        <div class="hint" id="tapHint">음원에 맞춰 각 행이 시작되는 순간 <span class="kbd">Space</span> 또는 버튼을 누르세요. 잘못 눌렀다면 <span class="kbd">Backspace</span> 또는 ‘한 번 되돌리기’. 중간 행부터 다시 하려면 행 목록의 ◎를 누르세요.</div>
+        <div class="next">다음: <b id="tapLine">—</b></div>
+        <button id="tapBtn" class="tap">TAP</button>
+        <button id="tapBack" class="ghost">한 번 되돌리기</button>
+        <button id="tapStop" class="ghost">종료</button>
+      </div>
       <nav class="source-tabs" role="tablist" aria-label="가사·배경·전경"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
@@ -92,13 +102,6 @@
           <label class="row" style="gap:6px"><input id="snap" type="checkbox"> 박에 스냅</label>
           <button id="btnResetTimes" class="ghost small">수동 타이밍 지우기</button>
         </div>
-        <div id="tapPanel" class="tapbox" hidden>
-          <div class="hint" id="tapHint">음원에 맞춰 각 행이 시작되는 순간 <span class="kbd">Space</span> 또는 버튼을 누르세요. 잘못 눌렀다면 <span class="kbd">Backspace</span> 또는 ‘한 번 되돌리기’. 중간 행부터 다시 하려면 행 목록의 ◎를 누르세요.</div>
-          <div class="next">다음: <b id="tapLine">—</b></div>
-          <button id="tapBtn" class="tap">TAP</button>
-          <button id="tapBack" class="ghost">한 번 되돌리기</button>
-          <button id="tapStop" class="ghost">종료</button>
-        </div>
       </div>
 
       <div class="sec">
@@ -122,7 +125,7 @@
         <button id="btnPlay" class="play" aria-label="재생">▶</button>
         <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><button id="timeDur" class="tc muted duration-value" type="button" title="동영상 전체 길이 입력(비워두면 자동)" aria-label="동영상 전체 길이 입력">00:00.00</button><input id="timeDurInput" class="tc duration-input" type="text" inputmode="decimal" aria-label="동영상 전체 길이(초 또는 분:초, 비워두면 자동)" hidden>
         <input id="scrub" type="range" min="0" max="10000" value="0" aria-label="재생 위치">
-        <button id="btnLoop" class="ghost small" aria-pressed="true">반복</button>
+        <button id="btnLoop" class="ghost small" aria-pressed="true" title="전체 반복">반복</button>
         <span class="vol"><button id="btnMute" class="ghost small" aria-pressed="false" title="클릭하여 음소거/해제 (미리보기 전용이며 내보내기 음량은 바뀌지 않습니다)">음량</button><input id="vol" type="range" min="0" max="100" value="80" aria-label="미리보기 음량"></span>
         <span class="undo-btns"><button id="btnUndo" class="ghost small" type="button" title="실행 취소(Ctrl+Z)" disabled>↶ 실행 취소</button><button id="btnRedo" class="ghost small" type="button" title="다시 실행(Ctrl+Shift+Z)" disabled>↷ 다시 실행</button></span>
         <span class="hist-btns">
@@ -146,6 +149,15 @@
       </div></div>
       <p class="hint timeline-link-hint">끝의 ◀▶를 드래그하면 전체 길이를 바꿀 수 있습니다. 재생 시간의 분모를 클릭하면 직접 입력할 수 있습니다. 사슬 표시를 다른 타임라인의 사슬로 드래그하면 연결됩니다. ×로 해제합니다.</p>
       <div class="cutinfo" id="cutInfo"></div>
+      <div id="cutPick" class="cut-pick pro-only" hidden>
+        <div class="cut-pick-h">
+          <strong id="cutPickTitle">手法</strong>
+          <span class="muted" id="cutPickHint">このカットだけ差し替え</span>
+          <button type="button" id="cutPickAuto" class="ghost small">自動</button>
+          <button type="button" id="cutPickClose" class="ghost small" aria-label="閉じる">✕</button>
+        </div>
+        <div id="cutPickGrid" class="tech-grid checks"></div>
+      </div>
     </section>
 
     <!-- ================= right: look & output ================= -->
@@ -164,6 +176,9 @@
           <div class="pick-sets">
             <label class="check"><input id="eExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>첫 공개 이후 추가된 약 350개 연출, 12개 스타일, 6개 글꼴도 자동 생성과 셔플 후보에 포함합니다. 끄면 초기 공개판의 연출만 사용합니다.</small></span></label>
             <label class="check"><input id="eWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>초롱, 엽서, 쇼지, 부채, 가문 문양, 세이가이하, 벚꽃잎 등의 일본풍 그래픽입니다. 끄면 자동 생성과 셔플에서 선택되지 않습니다.</small></span></label>
+            <label class="check"><input class="typo-toggle" type="checkbox" checked><span>文字PV系の部品を使う<small>線・数字・字組みだけで見せる、文字PVらしい部品（約50）</small></span></label>
+            <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>キネティックの部品を使う<small>語ごとに動く・跳ねる・積み上がる、動き重視の部品（約50）</small></span></label>
+            <label class="check"><input class="horror-toggle" type="checkbox"><span>ホラーの演出も使う<small>不気味な雰囲気の部品（約50）と配色セット3。オンにすると、おまかせの雰囲気に「ホラー」が加わります</small></span></label>
             <label class="check"><input class="unify-toggle" type="checkbox"><span>통일감</span></label>
             <label class="check"><input class="typeset-toggle" type="checkbox"><span>문자 정렬</span></label>
           </div>
@@ -197,6 +212,7 @@
           <div class="outbtns"><button id="eMP4" class="primary">MP4 내보내기</button><button id="eMP4File" class="ghost mp4file" hidden title="저장할 파일을 먼저 고르고 거기에 바로 기록합니다. 긴 곡이나 1080p 이상에서 브라우저 메모리가 부족해 실패할 때 사용하세요(Chrome / Edge)">큰 동영상용(파일에 바로 저장)</button></div>
           <button class="terms-open linkish">내보낸 동영상의 권리</button>
           <div class="exp-box" hidden>
+            <button class="exp-share primary" hidden>共有して保存</button>
             <div class="progress"><i class="exp-bar"></i></div>
             <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">중지</button></div>
           </div>
@@ -256,8 +272,12 @@
         <div class="pick-sets">
           <label class="check"><input id="tExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>「추가」 표시가 있는 기법·스타일·서체. 끄면 자동/셔플에서 첫 공개 버전의 연출만 사용합니다</small></span></label>
           <label class="check"><input id="tWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>「일본풍」 표시가 있는 기법과 스타일. 끄면 자동/셔플에서는 선택되지 않습니다(추가 분류 판정 이후 적용. 행마다 수동 지정한 경우에는 사용할 수 있습니다)</small></span></label>
+          <label class="check"><input class="typo-toggle" type="checkbox" checked><span>文字PV系の部品を使う<small>「文」印の手法。オフにすると、おまかせやシャッフルでは選ばれません</small></span></label>
+          <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>キネティックの部品を使う<small>「キ」印の手法。オフにすると、おまかせやシャッフルでは選ばれません</small></span></label>
+          <label class="check"><input class="horror-toggle" type="checkbox"><span>ホラーの演出も使う<small>「ホ」印の手法とスタイル。おまかせでは雰囲気が「ホラー」のときだけ使います</small></span></label>
         </div>
         <div class="row" style="margin-bottom:10px"><input id="techFilter" type="text" placeholder="기법 이름으로 검색" style="flex:1" aria-label="기법 이름으로 검색"><span id="techTotal" class="muted mono"></span></div>
+        <p class="note">画面に見えているプレビューは自動でループします。</p>
         <div id="techLists"></div>
       </div>
 
@@ -284,6 +304,7 @@
           <button id="btnPNGL" title="후경(배경 그래픽과 가사 뒤 장식)과 전경(가사, 장식, 고스트)을 각각 back / front 폴더에 투명 PNG로 내보냅니다. 화면 전체 효과는 양쪽에 적용되므로 전경을 후경 위에 겹치면 일반 화면과 같은 모습이 됩니다.">투명 PNG 전경/후경 (ZIP)</button>
         </div>
         <div class="exp-box" hidden style="margin-top:12px">
+          <button class="exp-share primary" hidden>共有して保存</button>
           <div class="progress"><i class="exp-bar"></i></div>
           <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">중지</button></div>
         </div>
