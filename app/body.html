@@ -168,15 +168,22 @@
         <button id="timelineDurationHandle" class="timeline-duration-handle" type="button" title="드래그하여 동영상 전체 길이 변경" aria-label="동영상 전체 길이를 드래그하여 변경"><span aria-hidden="true">◀▶</span></button>
       </div></div>
       <p class="hint timeline-link-hint">끝의 ◀▶를 드래그하면 전체 길이를 바꿀 수 있습니다. 재생 시간의 분모를 클릭하면 직접 입력할 수 있습니다. 사슬 표시를 다른 타임라인의 사슬로 드래그하면 연결됩니다. ×로 해제합니다.</p>
-      <div class="cutinfo" id="cutInfo"></div>
-      <div id="cutPick" class="cut-pick pro-only" hidden>
-        <div class="cut-pick-h">
-          <strong id="cutPickTitle">기법</strong>
-          <span class="muted" id="cutPickHint">이 컷만 교체</span>
-          <button type="button" id="cutPickAuto" class="ghost small">자동</button>
-          <button type="button" id="cutPickClose" class="ghost small" aria-label="닫기">✕</button>
+      <!-- 컷 패널: 재생 위치(또는 고른 컷) 하나를 편집하는 곳 — ① 컷별 기법 교체 ② 레이어 상세 ③ 이 행의 후보·우타하메 -->
+      <div id="cutPanel" class="cut-panel" aria-label="컷 편집">
+        <div class="cut-sec cut-sec-pick" data-cut-section="pick">
+          <div class="cutinfo" id="cutInfo"></div>
+          <div id="cutPick" class="cut-pick pro-only" hidden>
+            <div class="cut-pick-h">
+              <strong id="cutPickTitle">기법</strong>
+              <span class="muted" id="cutPickHint">이 컷만 교체</span>
+              <button type="button" id="cutPickAuto" class="ghost small">자동</button>
+              <button type="button" id="cutPickClose" class="ghost small" aria-label="닫기">✕</button>
+            </div>
+            <div id="cutPickGrid" class="tech-grid checks"></div>
+          </div>
         </div>
-        <div id="cutPickGrid" class="tech-grid checks"></div>
+        <div id="cutLayer" class="cut-sec cut-sec-layer" data-cut-section="layer" hidden></div>
+        <div id="cutLine" class="cut-sec cut-sec-line" data-cut-section="line" hidden></div>
       </div>
     </section>
 

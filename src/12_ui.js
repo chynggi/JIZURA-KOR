@@ -1190,6 +1190,7 @@ function updateCutInfo() {
   if (idx === lastCutIdx) return;
   lastCutIdx = idx;
   const el = $('cutInfo');
+  renderCutPanel(cut, mc, fc);
   if (!cut && !mc && !fc) { el.innerHTML = '<span class="hint">이 위치에는 컷이 없습니다</span>'; if (cutPick.g) closeCutPick(); return; }
   const chip = (cls, k, v) => `<span class="chip ${cls}"><b>${k}</b>${v}</span>`;
   const n = (tbl, k) => (tbl[k] ? tbl[k].name : k);
@@ -1213,7 +1214,7 @@ function updateCutInfo() {
   const bits = [`<span class="chip mono">#${String(cut.index + 1).padStart(2, '0')}</span>`];
   CHIP_GROUPS.forEach(([g, cls, label]) => {
     const forced = slot[g] != null && slot[g] !== '' && !quiet[g];
-    bits.push(`<button type="button" class="chip ${cls}${forced ? ' is-forced' : ''}" data-g="${g}" aria-pressed="${cutPick.g === g ? 'true' : 'false'}" ${k < 0 ? 'disabled' : ''}><b>${label}</b>${escapeHtml(groupName(g, cutGroupVal(cut, g)))}</button>`);
+    bits.push(`<button type="button" class="chip ${cls}${forced ? ' is-forced' : ''}" data-g="${g}"${g === 'layout' ? ' data-cut-layout' : ''} aria-pressed="${cutPick.g === g ? 'true' : 'false'}" ${k < 0 ? 'disabled' : ''}><b>${label}</b>${escapeHtml(groupName(g, cutGroupVal(cut, g)))}</button>`);
   });
   bits.push(`<button type="button" class="ghost small cut-roll" data-roll="shuffle" ${k < 0 ? 'disabled' : ''} title="이 컷만 구성을 다시 뽑기">섞기</button>`);
   bits.push(`<button type="button" class="ghost small cut-roll accent" data-roll="omakase" ${k < 0 ? 'disabled' : ''} title="이 컷만 기법을 무작위로">자동</button>`);
@@ -1223,6 +1224,66 @@ function updateCutInfo() {
     el.querySelectorAll('button.cut-roll').forEach(b => b.addEventListener('click', () => rerollCurrentCut(b.dataset.roll)));
   }
   followCutPick(cut, k);
+}
+// 컷 패널의 ②(레이어 상세)·③(이 행의 후보·우타하메). ①은 위의 #cutInfo/#cutPick.
+// 컨트롤과 핸들러는 행 목록·배경 목록에 있던 것을 그대로 옮겨 왔다(저장 필드·로직 함수는 같음).
+function renderCutPanel(cut, mc, fc) {
+  const sec = $('cutLayer'), lineSec = $('cutLine');
+  if (!sec || !lineSec) return;
+  sec.replaceChildren(); lineSec.replaceChildren();
+  const head = text => { const h = document.createElement('span'); h.className = 'cut-sec-h'; h.textContent = text; return h; };
+  const c = cut && !cut.blank && cut.line >= 0 && J.LAYOUTS[cut.layout] && !J.LAYOUTS[cut.layout].special ? cut : null;
+  if (c) {
+    const i = c.line;
+    const label = document.createElement('label'); label.className = 'lyric-frontmost';
+    const input = document.createElement('input'); input.type = 'checkbox'; input.checked = !!c.frontmost;
+    input.disabled = !!c.emphasis;
+    if (c.emphasis) label.title = emphasisFrontmostHint();
+    input.setAttribute('aria-label', `${i + 1}행 ${c.part + 1}컷을 맨 앞에 표시`);
+    input.addEventListener('change', () => toggleLyricCutFrontmost(i, c.part));
+    label.append(input, document.createTextNode('맨 앞에 표시'));
+    const settings = J.lyricEffectSettings(S.project);
+    const options = S.project.lyricCutOptions[`${i}:${c.part}`] || {};
+    const modes = { normal: '표준', multiply: '곱하기', screen: '스크린', overlay: '오버레이' };
+    const controls = document.createElement('div'); controls.className = 'lyric-cut-compositing';
+    controls.innerHTML = `<label>합성 방법<select class="lyric-cut-blend" aria-label="이 컷의 합성 방법"><option value="">자동 (${modes[c.blend]})</option>${Object.entries(modes).map(([key, text]) => `<option value="${key}">${text}</option>`).join('')}</select></label><label>불투명도(%)<input class="lyric-cut-opacity" type="number" min="0" max="100" step="1" aria-label="이 컷의 불투명도(%)" value="${c.opacity}"></label><button type="button" class="ghost small lyric-composite-auto" title="이 컷의 합성 방법·불투명도를 자동으로 되돌리기">자동으로 되돌리기</button>`;
+    const blend = controls.querySelector('select'), opacity = controls.querySelector('input'), reset = controls.querySelector('button');
+    blend.value = options.blend || (settings.randomBlend ? '' : c.blend);
+    opacity.title = settings.randomOpacity && options.opacity == null ? '자동으로 선택된 불투명도입니다. 값을 입력하면 직접 지정됩니다.' : '';
+    opacity.classList.toggle('automatic', settings.randomOpacity && options.opacity == null);
+    reset.hidden = options.blend == null && options.opacity == null;
+    blend.addEventListener('change', e => setLyricCutComposite(i, c.part, { blend: e.target.value || undefined }));
+    opacity.addEventListener('change', e => setLyricCutComposite(i, c.part, { opacity: e.target.value === '' ? undefined : J.clamp(+e.target.value || 0, 0, 100) }));
+    reset.addEventListener('click', () => setLyricCutComposite(i, c.part, { blend: undefined, opacity: undefined }));
+    sec.append(head(`가사 ${i + 1}행 ${c.part + 1}컷`), detailButton(() => openCutDetails('lyrics', i, c.part)), label, controls);
+  } else if (cut && cut.blank) {
+    sec.append(head('무표시 컷'), detailButton(() => openCutDetails('lyrics', cut.index, 'blank')));
+  }
+  [[mc, 'media', '배경'], [fc, 'foreground', '전경']].forEach(([mediaCut, layer, name]) => {
+    if (!mediaCut) return;
+    const b = detailButton(() => openCutDetails(layer, mediaCut.index));
+    b.dataset.mediaDetails = layer; b.title = `${name} ${mediaCut.index + 1}컷 상세 편집`; b.setAttribute('aria-label', b.title);
+    const wrap = document.createElement('span'); wrap.className = 'cut-sec-media';
+    wrap.append(head(`${name} ${mediaCut.index + 1}컷`), b); sec.append(wrap);
+  });
+  sec.hidden = !sec.childElementCount;
+  const ln = cut && !cut.blank && cut.line >= 0 ? S.plan.lines[cut.line] : null;
+  if (ln && !ln.interlude) {
+    const i = cut.line, o = S.project.overrides[i] || {};
+    lineSec.innerHTML = `<span class="cut-sec-h">가사 ${i + 1}행</span>
+      <button type="button" class="ghost small cand" title="이 행의 후보 6개 중에서 고르기" aria-label="${i + 1}행 후보 고르기">${ICON.cand}<span>후보 6개</span></button>
+      <button type="button" class="ghost small uta" title="우타하메: 노래에 맞춰 한 글자씩 표시(단어 시각이 있으면 그 시각에 맞춤)" aria-pressed="${o.utahame ? 'true' : 'false'}" aria-label="${i + 1}행 우타하메">♪ 우타하메</button>`;
+    lineSec.querySelector('.cand').addEventListener('click', () => openCandidates(i));
+    lineSec.querySelector('.uta').addEventListener('click', () => { const cur = S.project.overrides[i] || {}; remember(); setOv(i, { utahame: !cur.utahame }); replan(); commit(); seek(ln.start + 0.001); });
+  }
+  lineSec.hidden = !lineSec.childElementCount;
+}
+// 컷 고르기 = 그 컷으로 재생 위치를 옮기고 패널을 곧바로 그 컷으로 채운다(행 목록의 컷 이름 버튼과 같은 위치)
+function selectCut(index) {
+  const c = S.plan && S.plan.cuts[index];
+  if (!c) return;
+  seek(c.start + Math.min((c.end - c.start) * 0.5, (c.inDur || 0) + 0.05));
+  lastCutIdx = -2; updateCutInfo();
 }
 function followCutPick(cut, k) {
   if (S.mode !== 'pro' || !cutPick.g) return;
@@ -1418,7 +1479,6 @@ function renderLines() {
       li.querySelector('.time').addEventListener('change', e => { const blank = S.project.lyricBlankCuts.find(b => b.id === row.blankId); if (blank) blank.start = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
       li.querySelector('.txt').addEventListener('click', () => seek(row.start + 0.001));
       li.querySelector('.remove-blank').addEventListener('click', () => { S.project.lyricBlankCuts = S.project.lyricBlankCuts.filter(b => b.id !== row.blankId); replan(); });
-      li.querySelector('.tools').appendChild(detailButton(()=>openCutDetails('lyrics',S.plan.cuts.find(c=>c.blankId===row.blankId).index,'blank')));
       ol.appendChild(li); S.blankEls.set(row.blankId, li);
       return;
     }
@@ -1441,8 +1501,6 @@ function renderLines() {
         <button class="icon ghost tapfrom" title="이 행부터 탭으로 동기화 다시 하기(Shift+클릭: 이 행만)" aria-label="${i + 1}행부터 탭">${ICON.tap}</button>
         <button class="icon ghost rng" title="내보낼 범위로 지정(Shift+클릭으로 범위 확장)" aria-pressed="${R && i >= R.from && i <= R.to ? 'true' : 'false'}" aria-label="${i + 1}행을 내보낼 범위로">${ICON.range}</button>
         ${ln.interlude ? '' : `<button class="icon ghost dice" title="이 행 다시 뽑기">${ICON.dice}</button>`}
-        ${ln.interlude ? '' : `<button class="icon ghost cand" title="이 행의 후보 6개 중에서 고르기" aria-label="${i + 1}행 후보 고르기">${ICON.cand}</button>`}
-        ${ln.interlude ? '' : `<button class="icon ghost uta" title="우타하메: 노래에 맞춰 한 글자씩 표시(단어 시각이 있으면 그 시각에 맞춤)" aria-pressed="${o.utahame ? 'true' : 'false'}" aria-label="${i + 1}행 우타하메">♪</button>`}
         ${ln.interlude ? '' : `<button class="icon ghost lock" title="이 행의 구성 잠금" aria-pressed="${o.lock ? 'true' : 'false'}">${ICON.lock}</button>`}
       </span></div>`;
     const q = sel => li.querySelector(sel);
@@ -1458,11 +1516,9 @@ function renderLines() {
     q('.tapfrom').addEventListener('click', e => startTap(i, e.shiftKey));
     q('.rng').addEventListener('click', e => setExportRange(i, e.shiftKey));
     if (q('.dice')) q('.dice').addEventListener('click', () => rerollLyricLine(i));
-    if (q('.cand')) q('.cand').addEventListener('click', () => openCandidates(i));
-    if (q('.uta')) q('.uta').addEventListener('click', () => { const cur = ov[i] || {}; remember(); setOv(i, { utahame: !cur.utahame }); replan(); commit(); seek(ln.start + 0.001); });
     if (q('.lock')) q('.lock').addEventListener('click', () => toggleLyricLineLock(i));
     const cutsEl = q('.cuts');
-    S.plan.cuts.filter(c => c.line === i && J.LAYOUTS[c.layout] && !J.LAYOUTS[c.layout].special).forEach((c, k) => {
+    S.plan.cuts.filter(c => c.line === i && J.LAYOUTS[c.layout] && !J.LAYOUTS[c.layout].special).forEach(c => {
       const cutOption = document.createElement('span'); cutOption.className = 'lyric-cut-option';
       cutOption.dataset.line = i; cutOption.dataset.part = c.part;
       cutOption.style.borderColor = `hsla(${layoutHue(c.layout)},70%,58%,0.7)`;
@@ -1470,37 +1526,7 @@ function renderLines() {
       name.textContent = `${c.part + 1}: ${J.LAYOUTS[c.layout].name}`;
       name.title = `${c.text}｜${J.ENTER[c.enter].name} → ${J.EXIT[c.exit].name}`;
       name.addEventListener('click', () => seek(c.start + Math.min(c.dur * 0.5, c.inDur + 0.05)));
-      // per-cut layout (detailed mode)
-      const forced = o.cutLayouts && o.cutLayouts[k];
-      const sel = document.createElement('select');
-      sel.className = 'cut-lay pro-only' + (forced ? ' is-forced' : '');
-      sel.innerHTML = layoutOpts;
-      sel.value = forced || c.layout;
-      sel.title = `${c.text}｜${J.ENTER[c.enter].name} → ${J.EXIT[c.exit].name}`;
-      sel.setAttribute('aria-label', `${i + 1}행 ${k + 1}컷 레이아웃`);
-      sel.addEventListener('pointerdown', () => seek(c.start + Math.min(c.dur * 0.5, c.inDur + 0.05)));
-      sel.addEventListener('change', e => { setCutLayout(i, k, e.target.value); replan(); seek(c.start + Math.min(c.dur * 0.5, c.inDur + 0.05)); });
-      const label = document.createElement('label'); label.className = 'lyric-frontmost';
-      const input = document.createElement('input'); input.type = 'checkbox'; input.checked = !!c.frontmost;
-      input.disabled = !!c.emphasis;
-      if (c.emphasis) label.title = emphasisFrontmostHint();
-      input.setAttribute('aria-label', `${i + 1}행 ${c.part + 1}컷을 맨 앞에 표시`);
-      input.addEventListener('change', () => toggleLyricCutFrontmost(i, c.part));
-      label.append(input, document.createTextNode('맨 앞에 표시'));
-      const settings = J.lyricEffectSettings(S.project);
-      const options = S.project.lyricCutOptions[`${i}:${c.part}`] || {};
-      const modes = { normal: '표준', multiply: '곱하기', screen: '스크린', overlay: '오버레이' };
-      const controls = document.createElement('div'); controls.className = 'lyric-cut-compositing';
-      controls.innerHTML = `<label>합성 방법<select class="lyric-cut-blend" aria-label="이 컷의 합성 방법"><option value="">자동 (${modes[c.blend]})</option>${Object.entries(modes).map(([key, text]) => `<option value="${key}">${text}</option>`).join('')}</select></label><label>불투명도(%)<input class="lyric-cut-opacity" type="number" min="0" max="100" step="1" aria-label="이 컷의 불투명도(%)" value="${c.opacity}"></label><button type="button" class="ghost small lyric-composite-auto" title="이 컷의 합성 방법·불투명도를 자동으로 되돌리기">자동으로 되돌리기</button>`;
-      const blend = controls.querySelector('select'), opacity = controls.querySelector('input'), reset = controls.querySelector('button');
-      blend.value = options.blend || (settings.randomBlend ? '' : c.blend);
-      opacity.title = settings.randomOpacity && options.opacity == null ? '자동으로 선택된 불투명도입니다. 값을 입력하면 직접 지정됩니다.' : '';
-      opacity.classList.toggle('automatic', settings.randomOpacity && options.opacity == null);
-      reset.hidden = options.blend == null && options.opacity == null;
-      blend.addEventListener('change', e => setLyricCutComposite(i, c.part, { blend: e.target.value || undefined }));
-      opacity.addEventListener('change', e => setLyricCutComposite(i, c.part, { opacity: e.target.value === '' ? undefined : J.clamp(+e.target.value || 0, 0, 100) }));
-      reset.addEventListener('click', () => setLyricCutComposite(i, c.part, { blend: undefined, opacity: undefined }));
-      cutOption.append(name, detailButton(() => openCutDetails('lyrics',i,c.part)), sel, label, controls); cutsEl.appendChild(cutOption);
+      cutOption.append(name); cutsEl.appendChild(cutOption);
     });
     // スマホ: a row is one line of text; tapping it opens its tools (and jumps there)
     if (S.openLine === i) li.classList.add('open');
@@ -1997,7 +2023,6 @@ function renderMediaLines() {
       li.querySelector('.media-chroma-color').addEventListener('change', e => { mediaOv(i, { chromaColor: e.target.value }); replan(); });
     }
     li.querySelector('.dice').addEventListener('click', () => rerollMediaCut(layer, i));
-    li.querySelector('.tools').insertBefore(detailButton(() => openCutDetails(layer,i)), li.querySelector('.remove-media-cut'));
     li.querySelector('.lock').addEventListener('click', () => toggleMediaCutLock(layer, i));
     li.querySelector('.remove-media-cut').addEventListener('click', () => removeMediaCut(i, layer));
     ol.appendChild(li); S.mediaLineEls.push(li);
@@ -2025,7 +2050,6 @@ function setOv(i, patch) {
   for (const k of Object.keys(cur)) if (cur[k] === undefined || cur[k] === false || cur[k] === '') delete cur[k];
   if (Object.keys(cur).length) S.project.overrides[i] = cur; else delete S.project.overrides[i];
 }
-function setCutLayout(i, k, layout) { setCutTech(i, k, 'layout', layout); }
 function setCutTech(i, k, group, key) {
   if (i == null || i < 0 || k == null || k < 0) return;
   const cur = Object.assign({}, S.project.overrides[i] || {});
@@ -3935,5 +3959,6 @@ function boot() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;
 // hooks for hosts that embed the app (the After Effects CEP panel)
-J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines, saveBundle, openProject, openFile, removeAsset, setLineStart, startTap };
+J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines, saveBundle, openProject, openFile, removeAsset, setLineStart, startTap,
+  selectCut, cutPanelSelector: '#cutPanel', cutPanelSections: ['[data-cut-section="pick"]', '[data-cut-section="layer"]', '[data-cut-section="line"]'] };
 })();

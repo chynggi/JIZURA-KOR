@@ -573,9 +573,75 @@ async def test_line_start_change_is_one_undo_step(b, url):
     assert not errs, errs
     await pg.close()
 
+async def test_cut_panel_unified(b, url):
+    pg, errs = await open_app(b, url)
+    await pg.click('#modePro')
+    await pg.fill('#lyrics', '하나\n둘\n셋'); await pg.wait_for_function("J.ui.plan && J.ui.plan.cuts.length >= 3")
+    await pg.evaluate("J.uiApi.selectCut(1)")
+    panel = pg.locator(await pg.evaluate("J.uiApi.cutPanelSelector"))
+    assert await panel.count() == 1
+    # 세 절이 모두 같은 패널 안에 있다
+    for sel in await pg.evaluate("J.uiApi.cutPanelSections"):
+        assert await panel.locator(sel).count() >= 1, sel
+    # 레이아웃 선택 컨트롤은 화면 전체에서 이 컷에 대해 하나
+    assert await pg.locator('[data-cut-layout]').count() == 1
+    # 옮긴 컨트롤은 행 목록에 더는 없다(중복 제거)
+    for sel in ['.cut-lay', '.cand', '.uta', '.lyric-cut-compositing', '.lyric-frontmost', '.cut-details-open']:
+        assert await pg.locator('#lineList ' + sel).count() == 0, sel
+    line = await pg.evaluate("J.ui.plan.cuts[1].line")
+    # 회귀 1: 패널의 후보 버튼 → 후보 하나 고르기 → 그 행 override에 후보 필드(seed)가 생기고 area는 남는다
+    await pg.evaluate("(i) => { J.ui.project.overrides[i] = Object.assign({}, J.ui.project.overrides[i], { area: { x: 0.1, y: 0.2, w: 0.5, h: 0.5 } }); J.uiApi.replan(); J.uiApi.selectCut(1); }", line)
+    await panel.locator('[data-cut-section="line"] .cand').click()
+    await pg.locator('#candDlg .cand-item').nth(2).click()
+    ov = await pg.evaluate("(i) => J.ui.project.overrides[i]", line)
+    assert ov.get('seed') is not None, ov
+    assert ov.get('area') == {'x': 0.1, 'y': 0.2, 'w': 0.5, 'h': 0.5}, ov
+    # 우타하메 토글도 패널에서: 다른 필드는 남는다
+    await pg.evaluate("J.uiApi.selectCut(1)")
+    await panel.locator('[data-cut-section="line"] .uta').click()
+    ov = await pg.evaluate("(i) => J.ui.project.overrides[i]", line)
+    assert ov.get('utahame') is True and ov.get('area') and ov.get('seed') is not None, ov
+    # 회귀 2: 「이 컷만 섞기」 → 그 컷만 바뀐다(다른 행 override·컷 구성은 그대로, 이 행의 다른 필드도 그대로)
+    await pg.evaluate("J.uiApi.selectCut(1)")
+    snap = """() => ({ ov: JSON.parse(JSON.stringify(J.ui.project.overrides)),
+      cuts: J.ui.plan.cuts.map(c => [c.line, c.layout].join('/')) })"""
+    before = await pg.evaluate(snap)
+    await pg.locator('#cutInfo button.cut-roll[data-roll="shuffle"]').click()
+    after = await pg.evaluate(snap)
+    for k, v in before['ov'].items():
+        if k != str(line): assert after['ov'].get(k) == v, (k, v, after['ov'].get(k))
+    mine = after['ov'][str(line)]
+    k = await pg.evaluate("(() => { const c = J.ui.plan.cuts[1]; return J.ui.plan.cuts.filter(x => x.line === c.line && x.index < c.index && J.LAYOUTS[x.layout] && !J.LAYOUTS[x.layout].special).length; })()")
+    assert list(mine.get('cutTech', {}).keys()) == [str(k)], mine   # 이 컷의 슬롯에만 썼다
+    for f in ['area', 'seed', 'utahame']: assert mine.get(f) == before['ov'][str(line)].get(f), (f, mine)
+    # 다른 컷의 레이아웃은 그대로(이웃 컷의 퇴장은 다음 컷에 맞춰 플래너가 다시 고를 수 있으므로 비교하지 않는다)
+    for n, (x, y) in enumerate(zip(before['cuts'], after['cuts'])):
+        if n != 1: assert x == y, (n, x, y)
+    # 레이어 상세(②): 패널의 합성 방법을 바꾸면 그 컷의 lyricCutOptions에 병합된다
+    await pg.evaluate("J.uiApi.selectCut(1)")
+    part = await pg.evaluate("J.ui.plan.cuts[1].part")
+    await panel.locator('[data-cut-section="layer"] .lyric-cut-blend').select_option('screen')
+    opt = await pg.evaluate(f"J.ui.project.lyricCutOptions['{line}:{part}']")
+    assert opt and opt.get('blend') == 'screen', opt
+    # 배경 컷(미디어): ②에 그 컷의 상세 편집 버튼이 붙는다(①·③은 가사 컷 전용)
+    await pg.locator('#sourceMedia').click()
+    await pg.locator('#mediaFiles').set_input_files([{'name': 'bg.svg', 'mimeType': 'image/svg+xml',
+        'buffer': b'<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="red"/></svg>'}])
+    await pg.wait_for_function("J.ui.plan.media && J.ui.plan.media.cuts.length >= 1")
+    await pg.evaluate("J.uiApi.selectCut(1)")
+    assert await pg.evaluate("!!J.mediaAt(J.ui.plan, J.ui.t)")
+    md = panel.locator('[data-cut-section="layer"] [data-media-details="media"]')
+    assert await md.count() == 1
+    assert await pg.locator('#mediaLineList .cut-details-open').count() == 0
+    await md.click()
+    assert await pg.locator('#cutDetailsDialog').count() == 1
+    await pg.locator('#cutDetailsDialog').get_by_role('button', name='취소', exact=True).click()
+    assert not errs, errs
+    await pg.close()
+
 TESTS = [test_legacy_song_migration, test_cut_times_follow_line, test_layered_export_media, test_blank_cut_keeps_assets,
          test_line_start_change_is_one_undo_step,
-         test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end, test_fork_features]
+         test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end, test_fork_features, test_cut_panel_unified]
 async def main():
     with serve() as url:
         async with async_playwright() as p:

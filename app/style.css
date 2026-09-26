@@ -185,8 +185,6 @@ button.remove-media-cut:hover, button.remove-media-cut:focus-visible { color: #f
 .lyric-cut-name { padding: 0 2px; border: 0; background: transparent; color: var(--muted); font-size: 10px; }
 .lyric-frontmost { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; color: var(--muted); font-size: 10px; cursor: pointer; }
 .lyric-frontmost input { margin: 0; accent-color: var(--amber); }
-.ln .cuts select.cut-lay { font-size: 10px; padding: 1px 4px; max-width: 112px; border: 1px solid var(--line2); border-radius: 2px; background: var(--raised); color: var(--text); }
-.ln .cuts select.cut-lay.is-forced { border-color: var(--amber); color: var(--text); }
 
 /* ---------- stage ---------- */
 .col-stage { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; min-width: 0; }
@@ -252,7 +250,7 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 #mediaTimeline { width: 100%; height: 52px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 #foregroundTimeline { width: 100%; height: 52px; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; touch-action: none; }
 .timeline-stack { position: relative; display: grid; gap: 6px; min-width: 0; }
-.timeline-scroll { width: 100%; min-width: 0; overflow-x: auto; overflow-y: hidden; padding-right: 8px; padding-bottom: 6px; }
+.timeline-scroll { flex: none; width: 100%; min-width: 0; overflow-x: auto; overflow-y: hidden; padding-right: 8px; padding-bottom: 6px; }
 .timeline-zoom { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font: 11px var(--mono); color: var(--muted); }
 .timeline-zoom button { min-width: 27px; min-height: 25px; padding: 2px 6px; }
 .timeline-zoom span { min-width: 44px; text-align: center; }
@@ -284,6 +282,15 @@ button.play { width: 40px; height: 34px; padding: 0; font-size: 14px; }
 .timeline-link-hint { margin: 1px 0 0; }
 .cutinfo { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 26px; flex: none; }
 .cutinfo .cut-roll { margin-left: 2px; }
+.cut-panel { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.cut-sec[hidden] { display: none !important; }
+.cut-sec-layer, .cut-sec-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.cut-sec-h { font-size: 11px; color: var(--muted); }
+.cut-sec-media { display: inline-flex; align-items: center; gap: 4px; }
+.cut-sec-layer .lyric-cut-compositing { width: auto; align-items: center; }
+.cut-sec-layer .lyric-cut-compositing label { flex-direction: row; align-items: center; gap: 4px; font-size: 11px; }
+.cut-sec-line .cand { display: inline-flex; align-items: center; gap: 4px; }
+.cut-sec-line .cand svg { width: 14px; height: 14px; }
 .chip { font-size: 11px; padding: 2px 8px; border-radius: 2px; border: 1px solid var(--line2); color: var(--text); background: var(--raised); }
 .chip b { font-weight: 500; color: var(--muted); margin-right: 5px; }
 button.chip { cursor: pointer; font: inherit; }
@@ -521,8 +528,7 @@ dialog.cand-dlg { width: min(860px, calc(100vw - 32px)); }
 .cand-item { display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--raised); border: 1px solid var(--line2); border-radius: var(--r); color: var(--muted); font-size: 11px; text-align: left; cursor: pointer; }
 .cand-item:hover, .cand-item:focus-visible { border-color: var(--amber); color: var(--text); }
 .cand-item canvas { display: block; width: 100%; height: auto; background: #000; }
-.ln .tools .uta { font-size: 13px; line-height: 1; }
-.ln .tools .uta[aria-pressed=true] { color: var(--amber); }
+.cut-sec .uta[aria-pressed=true] { color: var(--amber); border-color: var(--amber); }
 .asset-note { margin: 0 0 8px; }
 .asset-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .asset { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 6px; border: 1px solid var(--line2); border-radius: var(--r); }
