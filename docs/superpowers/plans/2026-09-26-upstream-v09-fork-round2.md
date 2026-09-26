@@ -17,6 +17,7 @@
 - 받지 않는 것: 포크 사이트 이름 「JIZURA ONE STOP EDITION」/「字面一」, hirazisora.github.io 링크, 포크의 Jev 제거로 생긴 「AI로 고르기」 삭제(우리 것은 유지), 포크 `.jizuraichi` 확장자로 저장(열기만 지원).
 - 포함 저장 확장자 `.jizura`, 열기 허용 `.jizura,.jizuraichi,.json`. 바이너리 매직 `JIZURA01`.
 - `index.html`은 `python3 build.py`로만 생성. 이번에는 `en/`, `zh-hant/`, `zh-hans/`, `id/`, `ko/`, `vi/`의 index.html과 `JIZURA_AE_en.jsx`, `JIZURA_CEP_en.zip`을 **업스트림본(upstream/main)** 으로 갱신한다. `JIZURA_AE.jsx`는 `python3 build_ae.py`, `JIZURA_CEP.zip`은 `python3 build_cep.py`로 재생성.
+- `JIZURA_CEP.zip`은 `index.html`을 담으므로 `python3 build.py` **다음에** `python3 build_cep.py && cp build/JIZURA_CEP.zip JIZURA_CEP.zip`. `index.html`을 다시 빌드한 태스크는 CEP도 다시 만든다.
 - 포트 8765는 사용자 서버 — 바인딩·종료 금지. 테스트 서버는 8766(앱), 8767(결정 서버), 8768(스모크), 8799(가짜 백엔드).
 - `dev/`는 gitignore됨 → 새 dev 파일은 `git add -f`, `git ls-files dev`로 확인.
 - 테스트 훅은 `J.uiApi`(J.ui는 UI 상태 S).
@@ -76,8 +77,9 @@ grep -o 'id="[^"]*"' app/body.html | sort | uniq -d     # 출력 없음
 
 - [ ] **Step 3: 재생성과 테스트**
 ```bash
-node tools/export_ae_data.js && python3 build_ae.py && python3 build_cep.py
+node tools/export_ae_data.js && python3 build_ae.py
 python3 build.py && python3 tools/check_page_js.py index.html
+python3 build_cep.py && cp build/JIZURA_CEP.zip JIZURA_CEP.zip   # CEP는 index.html을 담으므로 반드시 build.py 뒤
 ```
 그리고 「공통 테스트 명령」 전부. 스모크에 새 부품이 포함돼야 한다(`counts` 합계가 병합 전보다 약 153 증가). 페이지 오류 검사: 8766에서 index.html을 열어 `#modePro` 클릭 후 모든 `[data-tab]` 클릭, `pageerror` 없음(1차 Task 1 Step 4의 스크립트를 포트 8766으로).
 
@@ -132,8 +134,9 @@ tools/check_fork_ko.sh 0578b12 | wc -l     # 0보다 큼(번역 전)
 - [ ] **Step 3: 검사·재생성·테스트**
 ```bash
 tools/check_fork_ko.sh 0578b12        # 출력 없음(가사 판별 데이터 등 정당한 줄은 스크립트에 주석과 함께 제외 패턴 추가)
-node tools/export_ae_data.js && python3 build_ae.py && python3 build_cep.py && node dev/ae_test.js | tail -3
+node tools/export_ae_data.js && python3 build_ae.py && node dev/ae_test.js | tail -3
 python3 build.py && python3 tools/check_page_js.py index.html
+python3 build_cep.py && cp build/JIZURA_CEP.zip JIZURA_CEP.zip   # build.py 뒤
 ```
 그리고 스모크(공통 명령).
 
