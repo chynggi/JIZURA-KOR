@@ -1,0 +1,58 @@
+# 前景・背景の演出 / Media effects
+
+前景・背景の各カットで、手法・登場・退場を独立して選択します。登場・退場の初期値は「自動」です。
+
+- **演出無し**：保持中のモーション・加工を付けません。完全な即時表示にするには、登場・退場も「即時（なし）」にします。動画そのものの再生は続きます。
+- **自動**：詳細 → 前景 / 背景で、それぞれ有効にした手法から選びます。
+- **手法名**：保持中のモーション・加工・つなぎを固定します。登場・退場は別々に指定できます。
+
+登場41種類・退場41種類と、保持中の手法64種類を選べます。詳細のカテゴリは「登場」「退場」「シネマ・カメラ」「ダイナミックモーション」「BPM同期」「色・質感」「分割・残像・グリッチ」「カット間のつなぎ」です。旧マスク・出現カテゴリと登場向けの演出は登場・退場へ整理しました。各「自動」は対応するカテゴリの有効な候補だけから選び、候補がない場合は即時表示になります。詳細タブでは、動きの強さ、加工の強さ、登場・退場の秒数と、自動選定に含める手法を設定できます。詳細の「前景」「背景」タブでそれぞれ個別に設定できます。自動配置のオン・オフも別々に指定できます。以前の共通設定は両レイヤーへ引き継ぎます。
+
+詳細の各カテゴリは見出しをクリックして折り畳み・展開できます。見出しには有効な手法数／総数を表示し、カテゴリごとに「すべてON」「すべてOFF」「反転」でまとめて変更できます。
+
+「おまかせ」は前景・背景それぞれの手法チェックを独立にランダム設定します。動き・加工の強さ、登場・退場時間、自動配置の設定は保持します。変更したチェックは「元に戻す／やり直す」「前の案／次の案」やプロジェクト保存に対応します。
+
+各タブの「前景をシャッフル」「背景をシャッフル」は対象のレイヤーだけを再抽選します。通常のシャッフルは両レイヤーの自動の素材カットを再抽選します。シャッフルでは手法チェックを保持します。明示的に選んだ手法・演出無し・ロックしたカットは維持されます。各カットのサイコロは、そのカットを自動へ切り替えて再抽選します。
+
+「ランダム順で表示」は、素材が2つ以上あれば、カット追加・削除やタップ同期の後も使えます。オンの間は素材一覧からランダムな順で割り当て、繰り返し表示します。空カットとロックしたカットは維持します。素材の個別指定はオフにすると再び使え、元の割り当てに戻ります。
+
+前景・背景の「行とカット」の上にある「歌詞に合わせて一括挿入」で、歌詞に合わせた素材カットを作り、開始フレームをリンクできます。「一括挿入の基準」で「行に合わせる」（初期値）または「カットに合わせる」を選択します。行単位では各行の先頭、カット単位では行内の分割・間奏・無表示カットを含むリンク可能な境界が対象です。自動生成のタイトルカードは対象外です。選択は前景・背景ごとに保存されます。ランダム順OFFではアップロード順、ONではランダム順で割り当てます。ループOFFでは素材数まで、ONでは素材を繰り返して対象の境界ごとに作成します（最大1000カット）。対象レイヤーの既存カットとそのリンクは置き換わり、1回の「元に戻す」で復元できます。前景・背景の両方で実行すると、歌詞を含めた3レイヤーの開始位置がリンクされます。カット数の入力欄は廃止し、個別の追加・削除、一括挿入、タップ同期でカットを作成します。
+
+旧プロジェクトで個別指定した6項目は「従来の設定」として維持します。別の手法を選ぶと新しい設定が優先されます。配置・サイズは、手動設定がなければ演出に合わせて自動選定され、シャッフルで変化します。縦横比を保ったまま、中央・左右・上下・四隅などの構図とサイズを選びます。背景の自動サイズは「全体を表示」を100％として100〜135％で選定し、拡大した範囲内で位置を変えます。手動配置とロック済みの配置は維持されます。「自動配置に戻す」で再び自動選定できます。詳細の「配置・サイズにも自動で変化を付ける」をオフにすると中央の全体表示に戻ります（手動配置・ロックを除く）。演出無しと従来の設定は従来通りの配置です。動画ループ、クロマキー、開始時刻は手法とは独立しています。つなぎは隣接する素材カットがある場合に適用されます。
+
+## BPM同期
+
+10種類（ズーム、バウンス、スウェイ、オービット、回転、シェイク、ハートビート、2拍ブリーズ、ステップ、フェード）を追加しました。「曲・タイミング」のBPMを使用し、未設定時は120 BPMです。拍の位置は動画全体の時間と拍オフセットを基準にするため、カットごとに拍がリセットされません。動画素材の再生速度は変更しません。登場・退場や手動指定は保持したまま、BPM同期の手法を選択できます。
+
+## 追加バリエーション（第2弾）
+
+33種類を追加しました。各カットの手法選択はカテゴリ別に表示されます。
+
+| カテゴリ | 追加内容 |
+| --- | --- |
+| シネマ・モーション（8種類） | アーチ移動、8の字、奥行き軌道、スパイラル着地、スリングショット、ホッピング、ジグザグ、ブーメラン |
+| マスク・出現（10種類） | 斜めスリット、扇、クロス、ハニカム、波形、ピクセル散開、同心円、交互シャッター、シェブロン、対角モザイク |
+| 分割・残像（10種類） | ウェーブスライス、ズーム残響、4分割ミラー、フィルムストリップ、万華鏡、ミラーデュオ、サテライト、ピクセルモザイク、リボン分解、RGB分離 |
+| 色・質感（5種類） | インクシルエット、グラデーション染め、ネオン輪郭、ライトスイープ、ドットプリント |
+
+透過素材・クロマキー処理後の動画にも使用できます。マスクや加工は素材の透明度を使って描画し、元動画のフレーム更新にも追従します。
+
+## English
+
+Choose a main technique, **Entrance**, and **Exit** independently on each foreground/background cut. Entrance and Exit default to **Auto**. **No effects** disables the main motion/treatment; choose **Instant (none)** for both phases too to display the file instantly. Videos continue playing normally. Each automatic phase uses only its enabled category; an empty pool means Instant. Explicit selections and locked phases survive shuffle.
+
+Click a category heading in Details to expand or collapse it. Headings show the enabled/total technique count. Each category has **Enable all**, **Disable all**, and **Invert** controls.
+
+**Randomize** chooses a random set of checked techniques independently for foreground and background. It preserves motion/treatment intensity, entrance/exit duration, and automatic placement settings. The selections support Undo/Redo, Previous/Next variation, and project saving. **Shuffle** keeps the checked set and rerolls the automatic cuts within it.
+
+**Details → Foreground / Background** contains 41 entrances, 41 exits, and 64 main techniques. Categories are Entrance, Exit, Cinema/camera, Dynamic motion, BPM sync, Color/texture, Panels/echoes/glitch, and Cut transitions. Existing reveal effects have moved into the phase categories. Adjust motion and treatment intensity, entrance/exit duration, and the techniques included in Auto. Each layer has its own settings, including automatic placement. Previously shared settings are copied to both layers when an older project is opened.
+
+**Shuffle foreground** and **Shuffle background** reroll automatic cuts only in the corresponding layer. The main Shuffle button still rerolls both layers. Explicit selections and locked cuts are preserved. A cut's dice button switches it to Auto and rerolls it. Existing projects keep their individual settings as **Legacy settings** until a new technique is selected. With automatic placement enabled, effect cuts without manual placement vary their position and size on shuffle, preserving the source aspect ratio. Automatic background size stays between 100% and 135% of the full-fit size, with position shifts limited to the available crop on enlarged axes. Manual placement and locked cuts stay fixed. Use Reset automatic placement to return a manually placed cut to automatic composition. Disable Vary position and size automatically in Details to keep automatic cuts centered at full fit. No effects and Legacy settings retain their original framing. Video looping, chroma key, and timing remain independent of technique selection. Transitions apply between adjacent media cuts.
+
+**BPM sync** adds ten motions: zoom, bounce, sway, orbit, turn, shake, double heartbeat, two-beat breathing, steps, and fade. They use the configured BPM, falling back to 120 when unset. The global timeline and beat offset keep beats aligned across cuts. Source video playback speed is unchanged.
+
+The second pack adds 33 techniques: 8 camera/motion variations, 10 masks/reveals, 10 panel/echo effects, and 5 color/texture treatments. Per-cut choices are grouped by category. New effects support transparent assets and live video frames; selection is deterministic for the same seed.
+
+Random order remains available after adding/removing cuts or tap sync when at least two files are uploaded. While enabled, media is assigned in a seeded shuffled cycle; blank and locked cuts are preserved. Turn it off to restore the underlying assignments and select files individually.
+
+Use **Insert cuts aligned to lyrics**, above **Lines and cuts** in the Foreground or Background source tab, to create linked media cuts. Choose **Lyric lines** (default) or **Lyric cuts** under **Align inserted cuts to**. Line mode uses line starts; cut mode includes inner lyric cuts, interludes, and blank cuts. Automatically generated title cards are excluded. Each layer saves its own choice. Files follow upload order or Shuffle order. With Loop cuts off, each file is used once; with it on, files repeat across the selected boundaries (up to 1000 cuts). This replaces the selected layer's cuts and links; one Undo restores them. Run it for both layers to link foreground, lyrics, and background together. The cut-count input has been removed; use individual add/remove buttons, bulk insertion, or tap sync to create cuts.

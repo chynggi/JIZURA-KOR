@@ -25,6 +25,8 @@ J.mainDraw = (env, it) => {
   const ho = J.HOLD[it.hold || cut.hold] || J.HOLD.still;
   // text treatment (outline, extrude, marker...) — layouts that paint their own plates opt out with it.plain
   if (cut.treat && !it.plain && J.TREAT && J.TREAT[cut.treat]) { try { J.TREAT[cut.treat].apply(env, it, cut.treatP || {}); } catch (e) { console.warn('treat', cut.treat, e); } }
+  const motion = cut.motionScale ?? 1;
+  const rest = motion < 1 ? { x: it.x, y: it.y, size: it.size, sx: it.sx ?? 1, sy: it.sy ?? 1, rot: it.rot || 0, skew: it.skew || 0 } : null;
   if (ltI < 0 && en === J.ENTER.cut) return null;
   // 우타하메: characters appear as they are sung — along the word times (cut.sync), else evenly over most of the cut
   if (cut.utahame) {
@@ -40,6 +42,17 @@ J.mainDraw = (env, it) => {
   if (pOut > 0 && ex !== J.EXIT.cut) ex.apply(env, it, pOut, ctx);
   it.charFn = J.combineChar(it.charFns);
   it.pieceFn = J.combinePiece(it.pieceFns);
+  if (rest) {
+    for (const key of Object.keys(rest)) if (it[key] != null) it[key] = J.lerp(rest[key], it[key], motion);
+    const damp = state => {
+      if (!state || state === J.PID) return state;
+      const next = { ...state };
+      for (const key of ['dx', 'dy', 'rot', 'skew']) if (next[key] != null) next[key] *= motion;
+      for (const key of ['s', 'sx', 'sy', 'st']) if (next[key] != null) next[key] = J.lerp(1, next[key], motion);
+      return next;
+    };
+    for (const key of ['charFn', 'pieceFn']) if (it[key]) { const fn = it[key]; it[key] = (...args) => damp(fn(...args)); }
+  }
   return J.drawFx(env, it);
 };
 
@@ -104,6 +117,7 @@ const unionBB = (a, b) => !a ? b : !b ? a : { x0: Math.min(a.x0, b.x0), y0: Math
 
 /* split long text into balanced lines, preferring script boundaries */
 J.splitLines = (text, maxPer) => {
+  if (text.includes('\n')) return text; // Explicit line breaks define the composition.
   const arr = [...text];
   if (arr.length <= maxPer) return text;
   const nLines = Math.ceil(arr.length / maxPer);

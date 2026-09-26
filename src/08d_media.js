@@ -21,15 +21,62 @@ J.mediaPlacementRect = (placement, sw, sh, w, h) => {
   const aspect = sw / sh, stageAspect = w / h;
   const defaultWidth = Math.min(1, aspect / stageAspect);
   const locked = !placement || placement.lockAspect !== false;
-  let pw = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.005, 4) : defaultWidth;
+  const limit = placement?.croppedAuto ? Infinity : 4;
+  let pw = placement && Number.isFinite(+placement.w) ? J.clamp(+placement.w, 0.005, limit) : defaultWidth;
   let ph = locked ? pw * stageAspect / aspect : placement && Number.isFinite(+placement.h) ? J.clamp(+placement.h, 0.005, 4) : pw * stageAspect / aspect;
-  if (locked && ph > 4) { ph = 4; pw = ph * aspect / stageAspect; }
+  if (locked && ph > limit) { ph = limit; pw = ph * aspect / stageAspect; }
   const cx = placement && Number.isFinite(+placement.cx) ? J.clamp(+placement.cx, 0, 1) : 0.5;
   const cy = placement && Number.isFinite(+placement.cy) ? J.clamp(+placement.cy, 0, 1) : 0.5;
   return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
 };
 J.mediaAssets = new Map();
-const defaults = () => ({ items: [], randomOrder: false, loop: false, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
+J.normalizeMediaPlacement = p => p && ['cx', 'cy', 'w'].every(k => Number.isFinite(+p[k])) ? {
+  cx: +p.cx, cy: +p.cy, w: +p.w,
+  h: p.h != null && Number.isFinite(+p.h) ? +p.h : undefined,
+  lockAspect: p.lockAspect !== false,
+  angle: p.angle != null && Number.isFinite(+p.angle) ? J.clamp(+p.angle, -180, 180) : 0,
+  ...(p.croppedAuto ? { croppedAuto: true } : {}),
+} : null;
+J.autoMediaPlacement = (project, cut, item, plan, layer) => {
+  const [W, H] = plan.W && plan.H ? [plan.W, plan.H] : J.designSize ? J.designSize(project) : [1920, 1080];
+  const source = J.mediaAssets.get(cut.itemId)?.element;
+  const sw = source && (source.videoWidth || source.naturalWidth || source.width) || item.width || W;
+  const sh = source && (source.videoHeight || source.naturalHeight || source.height) || item.height || H;
+  const fit = J.mediaPlacementRect(null, sw, sh, W, H);
+  const rng = J.rng(J.h(cut.seed, J.sid(layer), 733));
+  // Automatic framing preserves the fitted source aspect ratio.
+  const [px, py, size] = rng.pick([
+    [.5, .5, .92], [.5, .5, .7], [.27, .5, .64], [.73, .5, .64],
+    [.5, .27, .64], [.5, .73, .64], [.26, .26, .48], [.74, .26, .48],
+    [.26, .74, .48], [.74, .74, .48],
+  ]);
+  const group = J.MEDIA_TECH?.[cut.technique]?.group;
+  const dynamic = group === 'dynamic' || group === 'graphic';
+  const background = layer === 'media';
+  const settings = cut.effectSettings || J.mediaEffectSettings(project, layer);
+  const sizeScale = rng.range(settings.sizeMin ?? 75, settings.sizeMax ?? 125) / 100;
+  const baseScale = background ? rng.range(1, 1.35) : J.clamp(size * .9 * rng.range(.92, 1.08), .36, dynamic ? .72 : .94);
+  const scale = background ? Math.max(1, baseScale * sizeScale) : J.clamp(baseScale * sizeScale, .005, 4);
+  const w = fit.w * scale, h = fit.h * scale, margin = dynamic ? .07 : .03;
+  const position = (center, extent) => {
+    const target = center + rng.range(-.025, .025);
+    // Pan inside the available crop on enlarged axes; keep smaller axes in view.
+    if (background) return .5 + (J.clamp(target, 0, 1) - .5) * Math.abs(1 - extent);
+    return J.clamp(target, extent / 2 + margin, 1 - extent / 2 - margin);
+  };
+  const placement = { cx: position(px, w), cy: position(py, h), w, h, lockAspect: true, angle: 0 };
+  const edges = item.croppedEdges || {}, crop = .2;
+  if (!['left','right','top','bottom'].some(edge => edges[edge] === true)) return placement;
+  // Hide 20% of the source extent at each selected edge. Opposite edges
+  // leave the middle 60% in frame, enlarging proportionally when necessary.
+  const grow = Math.max(1, edges.left && edges.right ? 1 / ((1 - 2 * crop) * w) : 1, edges.top && edges.bottom ? 1 / ((1 - 2 * crop) * h) : 1);
+  placement.w *= grow; placement.h *= grow; placement.croppedAuto = true;
+  const anchor = (center, extent, before, after) => J.clamp(before && after ? .5 : before ? extent * (.5 - crop) : after ? 1 - extent * (.5 - crop) : center, 0, 1);
+  placement.cx = anchor(placement.cx, placement.w, edges.left, edges.right);
+  placement.cy = anchor(placement.cy, placement.h, edges.top, edges.bottom);
+  return placement;
+};
+const defaults = () => ({ items: [], randomOrder: false, loop: false, lyricInsertMode: 'line', groupLyricsAsOneCut: true, cutCount: 0, manualCuts: false, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 });
 J.normalizeMedia = m => {
   const o = Object.assign(defaults(), m || {});
   o.items = Array.isArray(o.items) ? o.items.filter(x => x && x.id && x.name && ['image', 'video'].includes(x.type)) : [];
@@ -37,6 +84,8 @@ J.normalizeMedia = m => {
   o.overrides = o.overrides || {};
   o.cutOverrides = o.cutOverrides || {};
   o.loop = !!o.loop;
+  o.lyricInsertMode = o.lyricInsertMode === 'cut' ? 'cut' : 'line';
+  o.groupLyricsAsOneCut = o.groupLyricsAsOneCut !== false;
   o.manualCuts = !!o.manualCuts;
   o.cutCount = J.clamp(Math.floor(+o.cutCount || 0), 0, 1000);
   if (!['normal', 'multiply', 'screen'].includes(o.blend)) o.blend = 'normal';
@@ -56,11 +105,19 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
   const fixedDuration = Number.isFinite(+project.durationOverride) && +project.durationOverride > 0 ? +project.durationOverride : null;
   const count = m.manualCuts ? m.cutCount : items.length ? (m.loop ? (m.cutCount || Math.min(1000, items.length * 2)) : items.length) : 0;
   const order = J.mediaOrder(project, layer);
-  const itemAt = i => {
+  const baseItems = Array.from({ length: count }, (_, i) => {
     const assigned = m.cutOverrides[i];
     if (assigned && Object.hasOwn(assigned, 'itemId')) return items.find(item => item.id === assigned.itemId) || null;
-    return order.length ? order[i % order.length] : null;
-  };
+    return items.length ? items[i % items.length] : null;
+  });
+  let randomIndex = 0;
+  const displayItems = baseItems.map((item, i) => {
+    if (!item) return null; // Explicit blank cuts never consume a shuffled slot.
+    const ov = Object.assign({}, m.overrides[item.id] || {}, m.cutOverrides[i] || {});
+    if (ov.lock) return items.find(x => x.id === (ov.lockedItemId || item.id)) || null;
+    return m.randomOrder && order.length ? order[randomIndex++ % order.length] : item;
+  });
+  const itemAt = i => displayItems[i];
   const videoDurationAt = i => {
     const item = itemAt(i);
     const setting = Object.assign({}, item && m.overrides[item.id] || {}, m.cutOverrides[i] || {}).videoDuration;
@@ -94,7 +151,7 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
     const rng = J.rng(seed), reroll = ov.seed != null;
     const videoDuration = videoDurationAt(i);
     const nextStart = i + 1 < count ? starts[i + 1] : duration;
-    return { index: i, itemId: item ? item.id : null, name: item ? item.name : '이미지 없음', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
+    return { index: i, itemId: item ? item.id : null, sourceItemId: baseItems[i]?.id || null, name: item ? item.name : '이미지 없음', type: item ? item.type : null, start: starts[i], end: videoDuration != null ? Math.min(nextStart, starts[i] + videoDuration) : nextStart, videoDuration,
       layout: ov.layout === 'stretch' ? 'cover' : J.MEDIA_LAYOUT[ov.layout] ? ov.layout : reroll ? rng.pick(Object.keys(J.MEDIA_LAYOUT)) : 'contain', enter: ov.enter || (reroll ? rng.pick(Object.keys(J.MEDIA_ENTER)) : 'cut'),
       hold: ov.hold || (reroll ? rng.pick(Object.keys(J.MEDIA_HOLD)) : 'still'), exit: ov.exit || (reroll ? rng.pick(Object.keys(J.MEDIA_EXIT)) : 'cut'),
       treat: ov.treat || (reroll ? rng.pick(Object.keys(J.MEDIA_TREAT)) : 'none'),
@@ -102,19 +159,36 @@ J.planMedia = (project, lyricPlan, audioDuration, layer = 'media') => {
       videoLoop: !!item && item.type === 'video' && ov.videoLoop !== false,
       chromaKey: !!item && item.type === 'video' && ov.chromaKey === true,
       chromaColor: /^#[0-9a-fA-F]{6}$/.test(ov.chromaColor || '') ? ov.chromaColor : '#00ff00',
-      placement: ov.placement && ['cx', 'cy', 'w'].every(k => Number.isFinite(+ov.placement[k])) ? {
-        cx: +ov.placement.cx, cy: +ov.placement.cy, w: +ov.placement.w,
-        h: Number.isFinite(+ov.placement.h) && ov.placement.h != null ? +ov.placement.h : undefined,
-        lockAspect: ov.placement.lockAspect !== false,
-        angle: ov.placement.angle != null && Number.isFinite(+ov.placement.angle) ? J.clamp(+ov.placement.angle, -180, 180) : 0,
-      } : null, seed };
+      placement: J.normalizeMediaPlacement(ov.placement), seed };
   });
+  if (J.mediaTechnique) for (const cut of cuts) {
+    const ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[cut.index] || {});
+    Object.assign(cut, J.mediaTechnique(project, ov, J.rng(J.h(cut.seed, 173)), layer));
+    if (J.applyMediaPhases) J.applyMediaPhases(project, cut, ov, layer);
+    cut.effectTransition = cut.trans;
+    delete cut.trans;
+  }
+  for (const cut of cuts) {
+    const ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[cut.index] || {});
+    cut.placementMode = cut.placement ? 'manual' : 'default';
+    if (cut.placement || !cut.itemId) continue;
+    if (ov.lock) {
+      // Old locks without a stored placement retain their original centered framing.
+      cut.placement = J.normalizeMediaPlacement(ov.lockedPlacement);
+      cut.placementMode = ov.lockedPlacementMode || (cut.placement ? 'auto' : 'default');
+    } else if (cut.technique && !['none', 'legacy'].includes(cut.technique) && cut.effectSettings?.autoPlacement !== false) {
+      cut.placement = J.autoMediaPlacement(project, cut, items.find(item => item.id === cut.itemId), lyricPlan, layer);
+      cut.placementMode = 'auto';
+    }
+  }
   for (let i = 1; i < cuts.length; i++) {
     const cut = cuts[i], prev = cuts[i - 1], ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
     if (!cut.itemId || !prev.itemId) continue;
     const rng = J.rng(J.h(cut.seed, 89));
     const registry = J.TRANS || {}, options = ['crossfade', ...J.MEDIA_TRANS_KEYS.filter(k => registry[k])];
-    const trans = ov.trans === 'none' ? null : options.includes(ov.trans) ? ov.trans : rng.chance(0.65) ? rng.pick(options) : null;
+    const selectedTrans = cut.technique && cut.technique !== 'legacy' ? cut.effectTransition : ov.trans;
+    delete cut.trans;
+    const trans = selectedTrans === 'none' ? null : options.includes(selectedTrans) ? selectedTrans : rng.chance(0.65) ? rng.pick(options) : null;
     if (trans && cut.end - cut.start > 0.2 && Math.abs(prev.end - cut.start) < 0.06) {
       cut.trans = trans;
       cut.transDur = Math.min(registry[trans] ? registry[trans].dur || 0.35 : 0.35, 0.6, (cut.end - cut.start) * 0.45);
@@ -140,25 +214,28 @@ const dbOp = async (mode, cb) => {
   const db = await dbOpen();
   try { return await new Promise((resolve, reject) => {
     const tx = db.transaction('files', mode), q = cb(tx.objectStore('files'));
-    q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error);
+    tx.oncomplete = () => resolve(q.result);
+    tx.onerror = () => reject(tx.error || q.error); tx.onabort = () => reject(tx.error || new Error('Media storage transaction aborted'));
   }); } finally { db.close(); }
 };
 J.storeMedia = (id, file) => dbOp('readwrite', s => s.put(file, id));
 J.loadMedia = id => dbOp('readonly', s => s.get(id));
 J.removeMedia = id => dbOp('readwrite', s => s.delete(id));
-J.attachMedia = (item, file) => new Promise((resolve, reject) => {
-  const previous = J.mediaAssets.get(item.id); if (previous) URL.revokeObjectURL(previous.url);
+J.attachMedia = (item, file, assets = J.mediaAssets) => new Promise((resolve, reject) => {
+  const previous = assets.get(item.id); if (previous) URL.revokeObjectURL(previous.url);
   const url = URL.createObjectURL(file);
   const el = document.createElement(item.type === 'video' ? 'video' : 'img');
   if (item.type === 'video') { el.muted = true; el.playsInline = true; el.preload = 'auto'; }
   const ready = () => {
+    item.width = el.videoWidth || el.naturalWidth;
+    item.height = el.videoHeight || el.naturalHeight;
     let poster = url;
     if (item.type === 'video') {
       try { const c = document.createElement('canvas'); c.width = 96; c.height = 54; c.getContext('2d').drawImage(el, 0, 0, 96, 54); poster = c.toDataURL('image/png'); } catch (e) {}
     }
     const posterElement = item.type === 'video' ? new Image() : null;
     if (posterElement) posterElement.src = poster;
-    J.mediaAssets.set(item.id, { url, element: el, type: item.type, poster, posterElement }); resolve(el);
+    assets.set(item.id, { url, element: el, type: item.type, poster, posterElement, file }); resolve(el);
   };
   el.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지·동영상을 불러올 수 없습니다')); };
   if (item.type === 'video') el.onloadeddata = ready; else el.onload = ready;
@@ -273,8 +350,20 @@ J.drawMediaCut = (ctx, cut, t, options = {}) => {
   const src = options.source || asset.element, sw = src.videoWidth || src.naturalWidth || src.width, sh = src.videoHeight || src.naturalHeight || src.height;
   if (!sw || !sh) return false;
   const w = ctx.canvas.width, h = ctx.canvas.height, d = Math.max(0.04, cut.end - cut.start), p = J.clamp((t - cut.start) / d, 0, 1);
-  const fade = options.noEnter ? 1 : Math.min(1, (t - cut.start) / Math.min(0.45, d * 0.3));
-  const out = options.noExit ? 1 : Math.min(1, (cut.end - t) / Math.min(0.45, d * 0.3));
+  const fade = options.noEnter ? 1 : Math.min(1, (t - cut.start) / Math.min(cut.effectSettings?.duration || 0.45, d * 0.3));
+  const out = options.noExit ? 1 : Math.min(1, (cut.end - t) / Math.min(cut.effectSettings?.duration || 0.45, d * 0.3));
+  if (cut.technique && (cut.technique !== 'legacy' || cut.independentPhases) && J.paintMediaEffect) {
+    const placement = cut.placement && J.mediaPlacementRect(cut.placement, sw, sh, w, h);
+    const scale = cut.layout === 'cover' ? Math.max(w / sw, h / sh) : Math.min(w / sw, h / sh);
+    const fit = placement ? [placement.w * w, placement.h * h] : [sw * scale, sh * scale];
+    const previewScale = options.previewEdit ? Math.min(1, w / sw, h / sh) : 1;
+    const source = cut.type === 'video' && cut.chromaKey ? J.chromaSource(src, cut, Math.max(1, Math.round(sw * previewScale)), Math.max(1, Math.round(sh * previewScale))) : src;
+    ctx.save();
+    ctx.translate(placement ? (placement.x + placement.w / 2) * w : w / 2, placement ? (placement.y + placement.h / 2) * h : h / 2);
+    ctx.rotate((cut.placement?.angle || 0) * Math.PI / 180);
+    J.paintMediaEffect(ctx, source, fit, options.previewEdit ? Object.assign({}, cut, { enter: 'cut', exit: 'cut', hold: 'still', treat: 'none' }) : cut, p, fade, out);
+    ctx.restore(); return true;
+  }
   let alpha = (cut.enter === 'fade' ? fade : 1) * (cut.exit === 'fade' ? out : 1);
   let z = (cut.zoom || 100) / 100 * (cut.hold === 'push' ? 1 + p * 0.12 : 1);
   if (cut.enter === 'zoom' && !options.noEnter) z *= 1 + (1 - fade) * 0.16;
@@ -303,7 +392,7 @@ J.drawMedia = (ctx, plan, t, owner, layer = 'media', previewEdit = false) => {
   const prev = cut.index > 0 ? plan[layer].cuts[cut.index - 1] : null;
   const next = plan[layer].cuts[cut.index + 1];
   const active = !previewEdit && prev && cut.trans && t - cut.start < cut.transDur && Math.abs(prev.end - cut.start) < 0.06 && J.mediaAssets.has(prev.itemId);
-  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !!cut.trans, noExit: !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06), previewEdit });
+  if (!active) return J.drawMediaCut(ctx, cut, t, { noEnter: !cut.independentPhases && !!cut.trans, noExit: !cut.independentPhases && !!(next && next.trans && Math.abs(next.start - cut.end) < 0.06), previewEdit });
   const w = ctx.canvas.width, h = ctx.canvas.height;
   const canvas = key => {
     const c = owner ? (owner[key] || (owner[key] = document.createElement('canvas'))) : document.createElement('canvas');
@@ -317,7 +406,7 @@ J.drawMedia = (ctx, plan, t, owner, layer = 'media', previewEdit = false) => {
   const priorAsset = J.mediaAssets.get(prev.itemId);
   const prevSource = prev.type === 'video' ? (snapshot && snapshot.plan === plan && snapshot.index === prev.index ? snapshot.canvas : prev.itemId === cut.itemId && priorAsset.posterElement && priorAsset.posterElement.complete ? priorAsset.posterElement : null) : null;
   J.drawMediaCut(clear(A), prev, Math.max(prev.start, prev.end - 0.001), { noExit: true, source: prevSource });
-  J.drawMediaCut(clear(B), cut, t, { noEnter: true });
+  J.drawMediaCut(clear(B), cut, t, { noEnter: !cut.independentPhases });
   const p = J.clamp((t - cut.start) / cut.transDur);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
   if (cut.trans === 'crossfade' || !J.TRANS || !J.TRANS[cut.trans]) {

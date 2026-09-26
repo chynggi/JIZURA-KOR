@@ -9,6 +9,10 @@ const LS_KEY = 'jizura.project.v1';
 const MEDIA_DELETE_KEY = 'jizura.media.pendingDelete.v1';
 const HUD_CHARS = '0123456789:./-_()【】 · No.LYRICRECUNTITLEDXYlinebpminterlude—─／ ';
 const ICON = {
+  details: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/><path d="M5 2v4M11 6v4M7 10v4" stroke-width="3"/></svg>',
+  area: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/><path d="M2 6h12M5 3v10"/></svg>',
+  remove: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m4 4 8 8m0-8-8 8"/></svg>',
+
   dice: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor"/><circle cx="10.5" cy="10.5" r="1" fill="currentColor"/><circle cx="10.5" cy="5.5" r="1" fill="currentColor"/><circle cx="5.5" cy="10.5" r="1" fill="currentColor"/></svg>',
   lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>',
   pen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 13l1-3.5L11 2.5l2.5 2.5L6.5 12z"/><path d="M9.5 4l2.5 2.5"/></svg>',
@@ -103,7 +107,9 @@ function initVolume() {
 const NO_AUDIO_LABEL = '곡 없음(불러오면 박을 감지해 컷을 맞춥니다)';
 function removeAudio() {
   if (!S.audio) return;
-  pause(); S.audio = null;
+  S.audioLoad = (S.audioLoad || 0) + 1;
+  pause(); S.audio = null; S.audioFile = null; delete S.project.audioAsset;
+  S.audioAssetId = null;
   $('audioFile').value = '';
   $('audioName').textContent = audioNameDefault || NO_AUDIO_LABEL;
   S.project.audioName = '';
@@ -126,6 +132,9 @@ function mergeProject(p) {
   o.aiPrompt = String((p && (p.aiPrompt ?? p.jevPrompt)) || ''); delete o.jevPrompt;
   o.overrides = (p && p.overrides) || {};
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
+  o.lyricEffects = J.lyricEffectSettings(o);
+  o.themes = J.themeIds(o);
+  delete o.jevPrompt;
   o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
   o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
@@ -156,6 +165,9 @@ function mergeProject(p) {
   J.setCompositeFonts(o.compositeFonts);
   o.fonts = {};
   for (const [role, k] of Object.entries((p && p.fonts) || {})) if (typeof k === 'string' && J.FONTS[k] && /^[\w-]+$/.test(role)) o.fonts[role] = k;
+  for (const layer of ['media', 'foreground']) o[layer].effects = J.mediaEffectSettings(o, layer);
+  delete o.mediaEffects;
+  J.migrateLyricCompositing(o);
   return o;
 }
 const SET_UI = { horror: { name: '호러', badge: '호' }, typo: { name: '타이포', badge: '타' }, kinetic: { name: '키네틱', badge: '키' } };
@@ -219,9 +231,13 @@ function undoMove(direction) {
   pause(); clearTimeout(replanTimer);
   if (S.areaEdit) cancelAreaEditor();
   S.tap = null; S.timelineDrag = null; S.linkDrag = null;
-  $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false');
+  $('tapPanel').hidden = true; syncTapButtons();
   U.restoring = true; U.i = next; U.pendingGroup = null; U.lastGroup = null;
   S.project = mergeProject(JSON.parse(U.list[next]));
+  if (S.project.audioAsset?.id !== S.audioAssetId) {
+    S.audioLoad = (S.audioLoad || 0) + 1;
+    S.audio = null; S.audioFile = null; refreshAudioName(); restoreAudioAsset();
+  }
   fontKey = ''; syncUI(); replan(); flushSave();
   U.restoring = false; updateUndoButtons();
   prepareAssets();                                // a 소재 brought back by undo is decoded again
@@ -266,6 +282,7 @@ function replan() {
   refreshLoopHold();
   const temporarilyHidden = ref => S.project.durationOverride != null && /^l:\d+:\d+$/.test(ref) && +ref.split(':')[1] < S.plan.lines.length;
   S.project.timelineLinks = S.project.timelineLinks.filter(link => link && link.a !== link.b && (boundaryCut(link.a) || temporarilyHidden(link.a)) && (boundaryCut(link.b) || temporarilyHidden(link.b)));
+  lastCutIdx = null;
   renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); drawTimelineLinks(); updateTimeUI();
   lastCutIdx = -2;
   if (typeof cutPick !== 'undefined' && cutPick.g) fillCutPick();
@@ -677,13 +694,29 @@ function rerollLyricLine(index) {
 function toggleLyricLineLock(index) {
   const line = S.plan.lines[index]; if (!line) return;
   const current = S.project.overrides[index] || {};
-  setOv(index, current.lock ? { lock: false, lockedSeed: undefined, lockedCuts: undefined } : { lock: true, lockedSeed: line.seed, lockedCuts: J.lineSnapshot(S.plan, index) || undefined });
+  const lockedAreas = Object.fromEntries(S.plan.cuts.filter(c => c.line === index && Number.isInteger(c.part)).map(c => [c.part, c.area || null]));
+  const lockedComposites = Object.fromEntries(S.plan.cuts.filter(c => c.line === index && Number.isInteger(c.part)).map(c => [c.part, { blend: c.blend, opacity: c.opacity }]));
+  setOv(index, current.lock ? { lock: false, lockedSeed: undefined, lockedCuts: undefined, lockedAreas: undefined, lockedComposites: undefined } : { lock: true, lockedSeed: line.seed, lockedCuts: J.lineSnapshot(S.plan, index) || undefined, lockedAreas, lockedComposites });
   replan();
+}
+function emphasisFrontmostHint() {
+  return J.mediaLabel('*強調*した歌詞は常に最前表示です。解除するには歌詞の * を外してください。', 'Emphasized lyrics always appear in front. Remove the * markers to turn this off.');
 }
 function toggleLyricCutFrontmost(line, part) {
   const key = `${line}:${part}`, options = S.project.lyricCutOptions;
-  if (options[key] && options[key].frontmost) delete options[key];
-  else options[key] = { frontmost: true };
+  const cut = S.plan.cuts.find(c => c.line === line && c.part === part);
+  if (cut?.emphasis) { toast(emphasisFrontmostHint()); return; }
+  options[key] = { ...options[key], frontmost: !cut?.frontmost };
+  replan();
+}
+function setLyricCutComposite(line, part, patch) {
+  const key = `${line}:${part}`, options = S.project.lyricCutOptions;
+  options[key] = { ...options[key], ...patch };
+  for (const field of ['blend', 'opacity']) if (options[key][field] === undefined) delete options[key][field];
+  if (!Object.keys(options[key]).length) delete options[key];
+  const override = S.project.overrides[line];
+  const locked = override?.lockedComposites?.[part];
+  if (locked) for (const [field, value] of Object.entries(patch)) if (value === undefined) delete locked[field];
   replan();
 }
 function mediaCutOptions(layer, index) {
@@ -694,18 +727,167 @@ function mediaCutOptions(layer, index) {
 function rerollMediaCut(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, { seed: (options.seed | 0) + 1, lock: false }, layer);
+  mediaOv(index, { technique: null, seed: (options.seed | 0) + 1, lock: false }, layer);
   replan(); seek(cut.start + 0.001);
 }
 function toggleMediaCutLock(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined } : { lock: true, lockedSeed: cut.seed }, layer);
+  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedEntrance: undefined, lockedDeparture: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedEntrance: cut.entrance, lockedDeparture: cut.departure, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
   replan();
+}
+function detailButton(onClick) {
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'icon ghost cut-details-open';
+  button.title = J.mediaLabel('カットの詳細編集','Edit cut details'); button.setAttribute('aria-label',button.title);
+  button.innerHTML = ICON.details; button.addEventListener('click',onClick); return button;
+}
+function openCutDetails(layer,index,part=0) {
+  const lyric = layer === 'lyrics', L = J.mediaLabel, clone = value => JSON.parse(JSON.stringify(value));
+  const blank = lyric && part === 'blank';
+  const cut = blank ? S.plan.cuts[index] : lyric ? S.plan.cuts.find(c=>c.line===index && c.part===part) : S.plan[layer]?.cuts[index];
+  if (!cut) return;
+  pause();
+  const key = `${index}:${part}`, original = clone(lyric ? S.project.lyricCutOptions[key] || {} : S.project[layer].cutOverrides[index] || {});
+  let draft = clone(original), current = clone(cut), start = cut.start;
+  let locked = !!(lyric ? S.project.overrides[index]?.lock : original.lock);
+  const initialLock = locked;
+  const dialog = document.createElement('dialog'); dialog.id='cutDetailsDialog'; dialog.className='cut-details-dialog';
+  dialog.setAttribute('aria-label',L('カットの詳細編集','Edit cut details'));
+  document.body.appendChild(dialog);
+  const names = {
+    text:['歌詞','Lyrics'],layout:['レイアウト','Layout'],enter:['登場','Entrance'],hold:['保持・モーション','Hold / motion'],exit:['退場','Exit'],
+    inDur:['登場時間（秒）','Entrance duration (s)'],outDur:['退場時間（秒）','Exit duration (s)'],stagger:['文字の時間差（秒）','Character delay (s)'],
+    decor:['装飾','Decoration'],scheme:['配色','Palette'],params:['レイアウト詳細','Layout parameters'],treat:['加工','Treatment'],treatP:['加工の詳細','Treatment parameters'],
+    bg:['背景演出','Background effect'],bgP:['背景演出の詳細','Background parameters'],cam:['カメラ','Camera'],camP:['カメラ詳細','Camera parameters'],
+    trans:['カット間のつなぎ','Transition'],transP:['つなぎの詳細','Transition parameters'],transDur:['つなぎ時間（秒）','Transition duration (s)'],
+    area:['表示範囲（画面比率）','Display area (stage ratios)'],placement:['配置・サイズ（画面比率）','Placement / size (stage ratios)'],
+    motionScale:['動きの倍率','Motion scale'],contentScale:['文字サイズ倍率','Text scale'],effectSettings:['演出パラメータ','Effect parameters'],
+    motion:['動きの強さ','Motion amount'],treatment:['加工の強さ','Treatment amount'],duration:['登場・退場時間（秒）','Entrance / exit duration (s)'],bpm:['BPM','BPM'],beatOffset:['拍の開始位置（秒）','Beat offset (s)'],x:['左位置','Left'],y:['上位置','Top'],cx:['中心 X','Center X'],cy:['中心 Y','Center Y'],w:['幅','Width'],h:['高さ','Height'],angle:['角度（度）','Angle (degrees)'],lockAspect:['縦横比を固定','Lock aspect ratio'],
+    technique:['手法','Technique'],entrance:['登場','Entrance'],departure:['退場','Exit'],itemId:['素材','Asset'],frontmost:['最前に表示','Frontmost'],blend:['合成方法','Blend mode'],opacity:['不透明度（％）','Opacity (%)'],videoLoop:['動画をループ再生','Loop video'],videoDuration:['動画の長さ（秒）','Video duration (s)'],chromaKey:['クロマキー合成','Chroma key'],chromaColor:['クロマキー色','Key color'],
+    font:['フォント','Font'],size:['サイズ','Size'],scale:['倍率','Scale'],rotation:['回転','Rotation'],color:['色','Color'],alpha:['不透明度','Opacity'],seed:['乱数シード','Random seed'],n:['個数','Count'],id:['種類','Type'],sx:['横方向倍率','Horizontal scale'],sy:['縦方向倍率','Vertical scale'],
+  };
+  const label = key => names[key] ? L(...names[key]) : key;
+  const nativeKeys = blank ? [] : lyric ? ['frontmost','blend','opacity'] : ['itemId','technique','entrance','departure','placement','videoLoop','videoDuration','chromaKey','chromaColor'];
+  function preview() {
+    const project = clone(S.project);
+    if (lyric) project.lyricCutOptions[key]=draft; else project[layer].cutOverrides[index]=draft;
+    const plan=J.plan(project,audioLike());
+    current=lyric ? plan.cuts.find(c=>c.line===index&&c.part===part) : J.planMedia(project,plan,S.audio?.duration,layer).cuts[index];
+    render();
+  }
+  function write(field,value,native) {
+    if (!lyric && native && ['technique','entrance','departure','itemId'].includes(field)) {
+      draft.lock = false; locked = false;
+    }
+    if(native) draft[field]=value; else { draft.details ||= {}; draft.details[field]=value; }
+  }
+  function options(field) {
+    if(field==='blend') return ['normal','multiply','screen','overlay'].map((v,i)=>[v,[L('通常','Normal'),L('乗算','Multiply'),L('スクリーン','Screen'),L('オーバーレイ','Overlay')][i]]);
+    if(field==='itemId') return [['',L('画像無し','No image')],...S.project[layer].items.map(a=>[a.id,a.name])];
+    if(field==='scheme') return S.plan.style.schemes.map((_,i)=>[String(i),String(i+1)]);
+    if(field==='technique') return [['',L('自動','Auto')],['none',L('演出無し','No effects')],...Object.entries(J.MEDIA_TECH).filter(([,d])=>!d.stage).map(([id,d])=>[id,d.name])];
+    if(field==='entrance'||field==='departure') return [['',L('自動','Auto')],['none',L('即時（なし）','Instant (none)')],...J.mediaPhaseOptions(field==='entrance'?'enter':'exit').map(([id,d])=>[id,d.name])];
+    if(!lyric && ['layout','hold','treat'].includes(field)) {
+      const registry=J['MEDIA_'+field.toUpperCase()] || {}, entries=Object.entries(registry).map(([id,d])=>[id,typeof d==='string'?d:d.name||id]);
+      for(const def of Object.values(J.MEDIA_TECH)) if(def[field]&&!entries.some(([id])=>id===def[field])) entries.push([def[field],def.name+' / '+def[field]]);
+      return entries;
+    }
+    const reg={layout:J.LAYOUTS,enter:J.ENTER,hold:J.HOLD,exit:J.EXIT,treat:J.TREAT,bg:J.BG,cam:J.CAMERA,trans:J.TRANS,font:J.FONTS,id:J.DECOR}[field];
+    return reg ? [...(field==='trans'?[['none',L('なし','None')]]:[]),...Object.entries(reg).map(([id,d])=>[id,d.name||id])] : null;
+  }
+  function fieldEditor(parent,field,value,onChange,path=field) {
+    if(value && typeof value==='object') {
+      const section=document.createElement('details'); section.open=['area','placement'].includes(field);
+      const title=document.createElement('summary'); title.textContent=label(field); section.append(title);
+      const grid=document.createElement('div'); grid.className='cut-details-grid';section.append(grid);parent.append(section);
+      for(const [child,v] of Object.entries(value)) {
+        // Random candidate pools belong to the layer; this editor changes the resolved cut.
+        if(['enabled','randomize','autoPlacement','sizeMin','sizeMax'].includes(child)) continue;
+        fieldEditor(grid,child,v,next=>{
+          if (value.lockAspect && ['w','h'].includes(child) && value[child]>0) {
+            const other=child==='w'?'h':'w'; value[other]*=next/value[child];
+            const input=grid.querySelector(`[data-detail-field="${path}.${other}"]`);if(input)input.value=value[other];
+          }
+          value[child]=next;onChange(clone(value));
+        },`${path}.${child}`);
+      }
+      if(field==='decor') {
+        const add=document.createElement('button');add.type='button';add.textContent=L('装飾を追加','Add decoration');
+        add.onclick=()=>{value.push({id:Object.keys(J.DECOR)[0],seed:cut.seed,n:1});onChange(clone(value));preview();};section.append(add);
+      }
+      if(Array.isArray(value)) value.forEach((_,i)=>{const del=document.createElement('button');del.type='button';del.textContent=L(`${i+1} を削除`,`Remove ${i+1}`);del.onclick=()=>{value.splice(i,1);onChange(clone(value));preview();};section.append(del);});
+      return;
+    }
+    const row=document.createElement('label');row.className='cut-detail-field';const text=document.createElement('span');text.textContent=label(field);row.append(text);
+    const choices=options(field); const input=document.createElement(choices?'select':field==='text'?'textarea':'input');input.dataset.detailField=path;
+    if(choices) { for(const [v,n] of choices) input.add(new Option(n,v));if(value!=null&&!choices.some(([v])=>String(v)===String(value))) input.add(new Option(String(value),String(value)));input.value=value??''; }
+    else if(typeof value==='boolean'){input.type='checkbox';input.checked=value;}
+    else if(typeof value==='number'){input.type='number';input.step='any';input.value=value; if(['w','h','n','inDur','outDur','transDur','stagger','motionScale','contentScale','videoDuration','opacity'].includes(field)) input.min=field==='videoDuration'?.04:0; if(field==='opacity')input.max=100;}
+    else {if(field!=='text')input.type=/^#[0-9a-f]{6}$/i.test(value||'')?'color':'text';input.value=value??'';}
+    if(lyric && field==='frontmost' && cut.emphasis){input.disabled=true;input.title=emphasisFrontmostHint();}
+    input.addEventListener('change',()=>{
+      const v=typeof value==='boolean'?input.checked:typeof value==='number'?Number(input.value):input.value;
+      if(typeof v==='number'&&!Number.isFinite(v))return;
+      onChange(v);
+      if(choices && !path.includes('.')) {
+        const param={layout:'params',treat:'treatP',bg:'bgP',cam:'camP',trans:'transP'}[field];
+        if(param&&draft.details)delete draft.details[param];
+        if(field==='technique'&&draft.details)for(const key of ['hold','treat','trans','transP'])delete draft.details[key];
+        preview();
+      }
+    });
+    row.append(input);parent.append(row);
+  }
+  function render() {
+    dialog.replaceChildren();const form=document.createElement('form');dialog.append(form);
+    const heading=document.createElement('h2');heading.textContent=L('カットの詳細編集','Edit cut details')+' — '+(lyric?L('歌詞','Lyrics'):layer==='foreground'?L('前景','Foreground'):L('背景','Background'))+` ${index+1}${lyric?` / ${part+1}`:''}`;form.append(heading);
+    const hint=document.createElement('p');hint.className='hint';hint.textContent=L('変更は「適用」で確定します。数値は現在のカットの値です。表示範囲の 1 は画面全体の幅・高さに相当します。','Changes are saved with Apply. Values describe this cut. A display-area ratio of 1 equals the full stage width or height.');form.append(hint);
+    const grid=document.createElement('div');grid.className='cut-details-grid';form.append(grid);
+    const group=boundaryGroupLimits(boundaryRef(layer,cut));
+    fieldEditor(grid,'start',start,v=>{start=v;});
+    const time=grid.querySelector('input');time.previousSibling.textContent=L('開始位置（秒・リンク先も移動）','Start (s; linked cuts move together)');time.min=group?.min??0;time.max=group?.max??S.plan.duration;time.disabled=!group;
+    if(!blank) {
+      fieldEditor(grid,'lock',locked,v=>{locked=v;});
+      grid.lastChild.querySelector('span').textContent=lyric?L('行の構成をロック','Lock line composition'):L('カットをロック','Lock cut');
+    }
+    for(const field of nativeKeys) {
+      if(['videoLoop','videoDuration','chromaKey','chromaColor'].includes(field)&&current.type!=='video')continue;
+      let value=draft[field]??current[field];
+      if(['technique','entrance','departure'].includes(field)&&Object.hasOwn(draft,field))value=draft[field]??'';
+      if(field==='placement')value ||= {cx:.5,cy:.5,w:1,h:1,angle:0,lockAspect:true};
+      if(field==='videoDuration')value=Number(value)||current.end-current.start;
+      fieldEditor(grid,field,clone(value??(field==='opacity'?100:'')),v=>write(field,['itemId','technique','entrance','departure'].includes(field)&&v===''?null:v,true));
+    }
+    for(const field of blank ? [] : J.cutDetailKeys[lyric?'lyrics':'media']) {
+      let value=current[field];
+      if(field==='area')value ||= {x:0,y:0,w:1,h:1,angle:0,lockAspect:true};
+      if(field==='trans')value ||= 'none';
+      if(value===undefined)continue;
+      fieldEditor(grid,field,clone(value),v=>write(field,field==='scheme'?+v:v,false));
+    }
+    const buttons=document.createElement('div');buttons.className='cut-details-actions';form.append(buttons);
+    const reset=document.createElement('button');reset.type='button';reset.textContent=L('詳細編集をリセット','Reset detail overrides');reset.onclick=()=>{delete draft.details;preview();};
+    const cancel=document.createElement('button');cancel.type='button';cancel.textContent=L('キャンセル','Cancel');cancel.onclick=()=>dialog.close();
+    const apply=document.createElement('button');apply.type='submit';apply.textContent=L('適用','Apply');buttons.append(reset,cancel,apply);
+    form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;
+      if(!blank) { if(lyric) S.project.lyricCutOptions[key]=draft; else S.project[layer].cutOverrides[index]=draft; }
+      if(!blank && (locked !== initialLock || !lyric)) {
+        if(lyric) setOv(index,locked ? {lock:true,lockedSeed:S.plan.lines[index].seed,
+          lockedAreas:Object.fromEntries(S.plan.cuts.filter(c=>c.line===index&&Number.isInteger(c.part)).map(c=>[c.part,c.area||null])),
+          lockedComposites:Object.fromEntries(S.plan.cuts.filter(c=>c.line===index&&Number.isInteger(c.part)).map(c=>[c.part,{blend:c.blend,opacity:c.opacity}]))
+        } : {lock:false,lockedSeed:undefined,lockedAreas:undefined,lockedComposites:undefined});
+        else mediaOv(index,locked ? {lock:true,lockedSeed:current.seed,lockedTechnique:current.technique,lockedEntrance:current.entrance,lockedDeparture:current.departure,lockedPlacement:draft.placement||current.placement,lockedPlacementMode:current.placementMode,lockedItemId:current.itemId} : {lock:false},layer);
+      }
+      if(group&&start!==cut.start) for(const member of group.members)setTimelineBoundaryTime(member,J.clamp(start,group.min,group.max));
+      replan();dialog.close();
+    };
+  }
+  dialog.addEventListener('close',()=>dialog.remove());render();dialog.showModal();
 }
 function performTimelineAction(control) {
   const layer = control.dataset.layer, index = +control.dataset.index;
   if (!Number.isInteger(index) || index < 0) return;
+  if (control.dataset.action === 'details') { openCutDetails(layer,index,control.dataset.part === 'blank' ? 'blank' : +control.dataset.part || 0); return; }
   if (control.dataset.action === 'area') {
     if (layer === 'lyrics') openAreaEditor(index);
     else if (layer === 'foreground' || layer === 'media') openMediaEditor(index, layer);
@@ -720,6 +902,7 @@ function performTimelineAction(control) {
     else toggleLyricLineLock(index);
   } else if (layer === 'foreground' || layer === 'media') {
     if (control.dataset.action === 'dice') rerollMediaCut(layer, index);
+    else if (control.dataset.action === 'remove') removeMediaCut(index, layer);
     else toggleMediaCutLock(layer, index);
   }
 }
@@ -748,14 +931,15 @@ function drawTimelineLinks() {
   const action = (layer, cut, index, locked) => {
     const canvas = $(layer === 'lyrics' ? 'timeline' : layer === 'foreground' ? 'foregroundTimeline' : 'mediaTimeline');
     const startX = canvas.offsetLeft + cut.start / Math.max(0.001, S.plan.duration) * canvas.clientWidth;
-    const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 63);
     const y = canvas.offsetTop + 11;
-    const areaIcon = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/><path d="M2 6h12M5 3v10"/></svg>';
     const actions = [['dice', false, layer === 'lyrics' ? '이 행 다시 뽑기' : '이 컷 다시 뽑기', ICON.dice], ['lock', locked, layer === 'lyrics' ? '이 행의 구성 잠금' : '이 컷 잠금', ICON.lock]];
-    if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? '이 행의 표시 영역을 편집' : '이 컷의 배치·크기 편집', areaIcon]);
+    if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? '이 행의 표시 영역을 편집' : '이 컷의 배치·크기 편집', ICON.area]);
+    if (layer !== 'lyrics') actions.push(['details', false, J.mediaLabel('カットの詳細編集','Edit cut details'), ICON.details]);
+    if (layer !== 'lyrics') actions.push(['remove', false, '이 컷 삭제', ICON.remove]);
+    const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - (actions.length - 1) * 20 - 23);
     return actions.map(([name, active, label, icon], n) => {
       const x = left + n * 20, graphic = icon.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
-      return `<g class="timeline-action ${active ? 'locked' : ''}" data-action="${name}" data-layer="${layer}" data-index="${index}" role="button" tabindex="0" aria-label="${label}" ${name === 'lock' ? `aria-pressed="${active}"` : ''} transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
+      return `<g class="timeline-action ${active ? 'locked' : ''}" data-action="${name}" data-layer="${layer}" data-index="${index}" role="button" tabindex="0" aria-label="${label}" ${name === 'lock' ? `aria-pressed="${active}"` : ''} transform="translate(${x} ${y})"><title>${label}</title><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
     }).join('');
   };
   const lyricActions = S.plan.lines.map(line => {
@@ -767,10 +951,14 @@ function drawTimelineLinks() {
     const x = J.clamp(startX + 10, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 9);
     const y = canvas.offsetTop + 33, active = !!cut.frontmost;
     const graphic = ICON.frontmost.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
-    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}행 ${cut.part + 1}컷을 맨 앞에 표시" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
+    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}행 ${cut.part + 1}컷을 맨 앞에 표시" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g><g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${J.mediaLabel('カットの詳細編集','Edit cut details')}" transform="translate(${Math.min(x + 20,canvas.offsetLeft + canvas.clientWidth - 9)} ${y})"><title>${J.mediaLabel('カットの詳細編集','Edit cut details')}</title><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
+  }).join('');
+  const blankActions = S.plan.cuts.filter(c=>c.blank).map(c=> {
+    const canvas=$('timeline'), x=canvas.offsetLeft+c.start/S.plan.duration*canvas.clientWidth+10;
+    return `<g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${c.index}" data-part="blank" role="button" tabindex="0" aria-label="${J.mediaLabel('カットの詳細編集','Edit cut details')}" transform="translate(${x} ${canvas.offsetTop+33})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
   }).join('');
   const mediaActions = ['foreground', 'media'].map(layer => S.plan[layer].cuts.map(cut => action(layer, cut, cut.index, !!mediaCutOptions(layer, cut.index).lock)).join('')).join('');
-  svg.innerHTML = links + preview + handles + lyricActions + frontmostActions + mediaActions;
+  svg.innerHTML = links + preview + handles + lyricActions + frontmostActions + blankActions + mediaActions;
 }
 function markerNear(clientX, clientY, sourceLayer) {
   const rect = $('timelineStack').getBoundingClientRect(), x = clientX - rect.left, y = clientY - rect.top;
@@ -989,7 +1177,7 @@ function updateCutInfo() {
   if (!cut && !mc && !fc) { el.innerHTML = '<span class="hint">이 위치에는 컷이 없습니다</span>'; if (cutPick.g) closeCutPick(); return; }
   const chip = (cls, k, v) => `<span class="chip ${cls}"><b>${k}</b>${v}</span>`;
   const n = (tbl, k) => (tbl[k] ? tbl[k].name : k);
-  const mediaChips = [].concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '전경' : '배경', escapeHtml(mediaCut.name)), chip('l', '표시', J.MEDIA_LAYOUT[mediaCut.layout]), chip('e', '등장', J.MEDIA_ENTER[mediaCut.enter]), chip('h', '유지', J.MEDIA_HOLD[mediaCut.hold]), chip('x', '퇴장', J.MEDIA_EXIT[mediaCut.exit]), chip('t', '가공', J.MEDIA_TREAT[mediaCut.treat]), mediaCut.trans ? chip('c', '전환', J.mediaTransOptions()[mediaCut.trans]) : '', mediaCut.placement && mediaCut.placement.angle ? chip('c', '각도', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', '크로마키', mediaCut.chromaColor) : ''] : [])).join('');
+  const mediaChips = [].concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '전경' : '배경', escapeHtml(mediaCut.name)), chip('l', J.mediaLabel('手法', 'Technique'), J.mediaTechniqueName(mediaCut)), mediaCut.placement && mediaCut.placement.angle ? chip('c', '각도', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', '크로마키', mediaCut.chromaColor) : ''] : [])).join('');
   if (S.mode !== 'pro' || !cut || cut.blank) {          // 간단/스마트폰, 또는 가사 컷이 아닌 곳: 정적 칩 표시
     if (cutPick.g) closeCutPick();
     el.innerHTML = (cut && cut.blank ? [chip('l', '가사', '무표시')] : cut ? [
@@ -1214,6 +1402,7 @@ function renderLines() {
       li.querySelector('.time').addEventListener('change', e => { const blank = S.project.lyricBlankCuts.find(b => b.id === row.blankId); if (blank) blank.start = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
       li.querySelector('.txt').addEventListener('click', () => seek(row.start + 0.001));
       li.querySelector('.remove-blank').addEventListener('click', () => { S.project.lyricBlankCuts = S.project.lyricBlankCuts.filter(b => b.id !== row.blankId); replan(); });
+      li.querySelector('.tools').appendChild(detailButton(()=>openCutDetails('lyrics',S.plan.cuts.find(c=>c.blankId===row.blankId).index,'blank')));
       ol.appendChild(li); S.blankEls.set(row.blankId, li);
       return;
     }
@@ -1223,7 +1412,7 @@ function renderLines() {
     const li = document.createElement('li'); li.className = 'ln lyric-ln' + (ln.interlude ? ' is-inter' : '') + (R && i >= R.from && i <= R.to ? ' in-range' : '') + (fast ? ' fast' : '');
     const manual = S.project.timing.lineTimes && S.project.timing.lineTimes[i] != null;
     const label = ln.interlude ? `[간주${ln.secs ? ' ' + ln.secs + '초' : ''}]` : ln.text;
-    const area = J.lyricArea(o.area) || { x: 0, y: 0, w: 1, h: 1 };
+    const area = J.lyricArea(o.area) || S.plan.cuts.find(c => c.line === i && c.part === 0)?.area || { x: 0, y: 0, w: 1, h: 1 };
     li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}${fast ? `<i class="warn" title="빠름: 초당 ${rate.toFixed(1)}자(기준 ${lim}자). 다 읽기 전에 지나갈 수 있습니다. 시간을 늘리거나 행을 나눠 보세요">!</i>` : ''}</span>
       <input class="time mono" type="number" step="0.01" min="0" value="${ln.start.toFixed(2)}" title="시작(초)${manual ? ' · 수동' : ' · 자동'}" aria-label="${i + 1}행 시작(초)" style="${manual ? 'border-color:var(--cyan)' : ''}">
       <span class="txt" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
@@ -1265,6 +1454,7 @@ function renderLines() {
     const cutsEl = q('.cuts');
     S.plan.cuts.filter(c => c.line === i && J.LAYOUTS[c.layout] && !J.LAYOUTS[c.layout].special).forEach((c, k) => {
       const cutOption = document.createElement('span'); cutOption.className = 'lyric-cut-option';
+      cutOption.dataset.line = i; cutOption.dataset.part = c.part;
       cutOption.style.borderColor = `hsla(${layoutHue(c.layout)},70%,58%,0.7)`;
       const name = document.createElement('button'); name.type = 'button'; name.className = 'lyric-cut-name';
       name.textContent = `${c.part + 1}: ${J.LAYOUTS[c.layout].name}`;
@@ -1282,10 +1472,25 @@ function renderLines() {
       sel.addEventListener('change', e => { setCutLayout(i, k, e.target.value); replan(); seek(c.start + Math.min(c.dur * 0.5, c.inDur + 0.05)); });
       const label = document.createElement('label'); label.className = 'lyric-frontmost';
       const input = document.createElement('input'); input.type = 'checkbox'; input.checked = !!c.frontmost;
+      input.disabled = !!c.emphasis;
+      if (c.emphasis) label.title = emphasisFrontmostHint();
       input.setAttribute('aria-label', `${i + 1}행 ${c.part + 1}컷을 맨 앞에 표시`);
       input.addEventListener('change', () => toggleLyricCutFrontmost(i, c.part));
       label.append(input, document.createTextNode('맨 앞에 표시'));
-      cutOption.append(name, sel, label); cutsEl.appendChild(cutOption);
+      const L = J.mediaLabel, settings = J.lyricEffectSettings(S.project);
+      const options = S.project.lyricCutOptions[`${i}:${c.part}`] || {};
+      const modes = { normal: L('通常', 'Normal'), multiply: L('乗算', 'Multiply'), screen: L('スクリーン', 'Screen'), overlay: L('オーバーレイ', 'Overlay') };
+      const controls = document.createElement('div'); controls.className = 'lyric-cut-compositing';
+      controls.innerHTML = `<label>${L('合成方法', 'Blend')}<select class="lyric-cut-blend" aria-label="${L('このカットの合成方法', 'This cut blend mode')}"><option value="">${L('自動', 'Auto')} (${modes[c.blend]})</option>${Object.entries(modes).map(([key, text]) => `<option value="${key}">${text}</option>`).join('')}</select></label><label>${L('不透明度（％）', 'Opacity (%)')}<input class="lyric-cut-opacity" type="number" min="0" max="100" step="1" aria-label="${L('このカットの不透明度（％）', 'This cut opacity (%)')}" value="${c.opacity}"></label><button type="button" class="ghost small lyric-composite-auto" title="${L('このカットの合成方法・不透明度を自動に戻す', 'Reset this cut blend and opacity to automatic')}">${L('自動に戻す', 'Reset to auto')}</button>`;
+      const blend = controls.querySelector('select'), opacity = controls.querySelector('input'), reset = controls.querySelector('button');
+      blend.value = options.blend || (settings.randomBlend ? '' : c.blend);
+      opacity.title = settings.randomOpacity && options.opacity == null ? L('自動で選ばれた不透明度。入力すると手動指定になります。', 'Random opacity. Enter a value to set it manually.') : '';
+      opacity.classList.toggle('automatic', settings.randomOpacity && options.opacity == null);
+      reset.hidden = options.blend == null && options.opacity == null;
+      blend.addEventListener('change', e => setLyricCutComposite(i, c.part, { blend: e.target.value || undefined }));
+      opacity.addEventListener('change', e => setLyricCutComposite(i, c.part, { opacity: e.target.value === '' ? undefined : J.clamp(+e.target.value || 0, 0, 100) }));
+      reset.addEventListener('click', () => setLyricCutComposite(i, c.part, { blend: undefined, opacity: undefined }));
+      cutOption.append(name, detailButton(() => openCutDetails('lyrics',i,c.part)), sel, label, controls); cutsEl.appendChild(cutOption);
     });
     // スマホ: a row is one line of text; tapping it opens its tools (and jumps there)
     if (S.openLine === i) li.classList.add('open');
@@ -1348,7 +1553,7 @@ async function resetAll() {
   // 배경·전경 files go too (reset also drops the undo history that could bring them back)
   for (const id of [...S.project.media.items, ...S.project.foreground.items].map(item => item.id).concat([...J.mediaAssets.keys()])) queueMediaDeletion(id);
   S.project = mergeProject(null); S.project.lyrics = '';
-  S.audio = null; if ($('audioFile')) $('audioFile').value = '';
+  S.audioLoad = (S.audioLoad || 0) + 1; S.audio = null; S.audioFile = null; S.audioAssetId = null; if ($('audioFile')) $('audioFile').value = '';
   if (J.forgetSong) await J.forgetSong();
   for (const id of [...J.ASSETS.keys()]) await J.assetForget(id);
   await cleanupDeletedMedia();
@@ -1422,6 +1627,7 @@ function showAreaDraft() {
   $('mediaAreaAngleField').hidden = !edit;
   if (edit) $('mediaAreaAngle').value = String(edit.angle);
   $('areaResetFull').hidden = !edit || media;
+  $('areaResetAuto').hidden = !edit || media;
   $('areaApplyOne').textContent = media ? '이 컷에만 적용' : '이 행에만 적용';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
@@ -1433,7 +1639,7 @@ function openAreaEditor(index) {
   const line = S.plan.lines[index]; if (!line) return;
   pause();
   clearTimeout(warmTimer); ++warmJob;
-  const saved = J.lyricArea((S.project.overrides[index] || {}).area);
+  const saved = J.lyricArea((S.project.overrides[index] || {}).area) || S.plan.cuts.find(c => c.line === index && c.part === 0)?.area;
   S.areaEdit = { kind: 'lyric', index, oldTime: S.t, draft: saved || { x: 0, y: 0, w: 1, h: 1 }, ratio: saved ? saved.h / saved.w : 1, lockAspect: saved ? saved.lockAspect : true, angle: saved ? saved.angle : 0, drag: null };
   const cut = S.plan.cuts.find(c => c.line === index);
   seek(cut ? cut.start + Math.min(cut.dur * 0.6, cut.inDur + 0.25) : line.start);
@@ -1472,8 +1678,9 @@ function applyAreaEditor(following) {
       mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect, angle: S.areaEdit.angle }, zoom: undefined, focus: undefined }, kind);
     }
   } else {
-    const full = draft.x === 0 && draft.y === 0 && draft.w === 1 && draft.h === 1 && S.areaEdit.angle === 0;
-    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: full ? undefined : J.lyricArea({ ...draft, angle: S.areaEdit.angle, lockAspect: S.areaEdit.lockAspect }) });
+    const area = J.lyricArea({ ...draft, angle: S.areaEdit.angle, lockAspect: S.areaEdit.lockAspect });
+    const automatic = S.areaEdit.autoDraft === JSON.stringify(area);
+    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: automatic ? undefined : area, lockedAreas: undefined });
   }
   S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
   replan(); commit();
@@ -1538,17 +1745,66 @@ function syncSourceTab() {
   $('sourceForeground').setAttribute('aria-selected', String(layer === 'foreground'));
   $('lyricsPane').hidden = media; $('mediaPane').hidden = !media;
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
+  $('cutsHeading').textContent = media ? '컷' : '행과 컷';
   $('mediaPaneTitle').textContent = layer === 'foreground' ? '전경' : '배경';
   $('foregroundBlendFields').hidden = layer !== 'foreground';
-  $('lyricBlend').value = S.project.media.blend;
-  $('lyricOpacity').value = S.project.media.opacity;
   $('linesInfo').textContent = media ? `파일 ${m.items.length} / 컷 ${S.plan[layer].cuts.length}` : `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
-  $('mediaRandom').disabled = !media || m.items.length < 2 || m.manualCuts;
-  $('mediaRandom').title = media && m.manualCuts ? '수동으로 추가한 컷에서는 파일을 개별로 지정합니다' : '';
+  $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
+  $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? J.mediaLabel('素材を2つ以上追加すると選択できます', 'Add at least two files to enable random order') : '';
   $('mediaLoop').disabled = !media || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
-  $('mediaCutCountField').hidden = !media || !m.loop || (m.items.length === 0 && S.plan[layer].cuts.length === 0);
+  $('mediaGroupLyrics').checked = !media || m.groupLyricsAsOneCut !== false;
+  $('audioTimingSection').hidden = media;
+  const targets = mediaLyricTargets(layer);
+  $('mediaLyricInsertMode').value = media && m.lyricInsertMode === 'cut' ? 'cut' : 'line';
+  $('btnMediaFromLyrics').disabled = !targets.length;
+  $('mediaLyricInsertHint').textContent = !media || !m.items.length
+    ? J.mediaLabel('画像・動画を追加すると使用できます。', 'Add images or videos to use this feature.')
+    : !targets.length
+      ? J.mediaLabel('対象となる歌詞の行・カットがありません。', 'There are no lyric lines or cuts to align to.')
+      : '';
 }
 function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
+function mediaLyricTargets(layer) {
+  const m = layer && S.project[layer];
+  if (!m || !m.items.length) return [];
+  // Cut mode includes every linkable lyric boundary, including blanks/interludes.
+  let targets = S.plan.cuts.filter(cut => m.lyricInsertMode === 'cut' ? cut.line >= 0 || cut.blank : cut.line >= 0 && cut.part === 0);
+  if (m.groupLyricsAsOneCut !== false) {
+    const seen = new Set();
+    targets = targets.filter(cut => {
+      const group = cut.line >= 0 ? S.plan.lines[cut.line]?.group : null;
+      if (group == null) return true;
+      if (seen.has(group)) return false;
+      seen.add(group); return true;
+    });
+  }
+  return targets.slice(0, m.loop ? 1000 : Math.min(1000, m.items.length));
+}
+function insertMediaFromLyrics() {
+  const layer = activeMediaLayer();
+  if (!layer || S.exporting || S.tap) return;
+  pause(); cancelAreaEditor();
+  clearTimeout(replanTimer); replan();
+  const targets = mediaLyricTargets(layer), m = S.project[layer];
+  if (!targets.length) return;
+  const prefix = layer === 'foreground' ? 'f:' : 'm:';
+  // Replace this layer's cuts and links as one undoable edit.
+  m.manualCuts = true;
+  m.cutCount = targets.length;
+  m.cutOverrides = {};
+  m.timing.lineTimes = {};
+  S.project.timelineLinks = S.project.timelineLinks.filter(link => !link.a.startsWith(prefix) && !link.b.startsWith(prefix));
+  targets.forEach((cut, index) => {
+    // Keep upload order as the base assignment; the planner applies random order.
+    m.cutOverrides[index] = { itemId: m.items[index % m.items.length].id, technique: null };
+    m.timing.lineTimes[index] = cut.start;
+    // Keep linked inner boundaries fixed when the line start is moved later.
+    if (m.lyricInsertMode === 'cut' && cut.line >= 0 && cut.part !== 0) S.project.timing.cutTimes[`${cut.line}:${cut.part}`] = cut.start;
+    S.project.timelineLinks.push({ a: prefix + index, b: boundaryRef('lyrics', cut) });
+  });
+  replan(); seek(targets[0].start);
+  toast(J.mediaLabel(`${targets.length}カットを歌詞に合わせて挿入しました`, `Inserted ${targets.length} cuts aligned to lyrics`));
+}
 function mediaThumb(item, cls = '') {
   if (!item) return `<span class="missing media-ln-thumb" aria-hidden="true">—</span>`;
   const asset = J.mediaAssets.get(item.id);
@@ -1561,10 +1817,17 @@ function renderMediaList() {
   m.items.forEach((item, i) => {
     const row = document.createElement('div'); row.className = 'media-item'; row.dataset.id = item.id;
     row.innerHTML = `${mediaThumb(item)}<span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span><button class="ghost small" aria-label="${escapeHtml(item.name)} 삭제">×</button>`;
+    const edges = document.createElement('fieldset'); edges.className = 'media-cropped-edges';
+    edges.innerHTML = `<legend>${J.mediaLabel('見切れている辺（自動配置）','Cropped edges (auto placement)')}</legend>` + [['left','左','Left'],['right','右','Right'],['top','上','Top'],['bottom','下','Bottom']].map(([key,ja,en]) => `<label><input type="checkbox" data-cropped-edge="${key}" ${item.croppedEdges?.[key] ? 'checked' : ''}>${J.mediaLabel(ja,en)}</label>`).join('');
+    edges.addEventListener('change', e => {
+      const edge = e.target.dataset.croppedEdge; if (!edge) return;
+      item.croppedEdges = { ...item.croppedEdges, [edge]: e.target.checked }; replan();
+    });
+    row.appendChild(edges);
     row.querySelector('button').addEventListener('click', () => {
       freezeMediaCuts(layer);
       m.items.splice(i, 1);
-      for (const cut of S.plan[layer].cuts) if (cut.itemId === item.id) mediaOv(cut.index, { itemId: null }, layer);
+      for (const cut of S.plan[layer].cuts) if (cut.sourceItemId === item.id || m.cutOverrides[cut.index]?.lockedItemId === item.id) mediaOv(cut.index, { itemId: null, lockedItemId: undefined }, layer);
       delete m.overrides[item.id];
       // Keep the file until this session's undo history is no longer available.
       queueMediaDeletion(item.id);
@@ -1574,8 +1837,6 @@ function renderMediaList() {
   });
   $('mediaRandom').checked = !!m.randomOrder;
   $('mediaLoop').checked = !!m.loop;
-  $('mediaCutCount').min = '0';
-  $('mediaCutCount').value = String(m.manualCuts ? m.cutCount : m.cutCount || m.items.length * 2 || 1);
   $('mediaBlend').value = m.blend;
   $('mediaOpacity').value = m.opacity;
 }
@@ -1587,7 +1848,7 @@ function mediaOv(index, patch, layer = activeMediaLayer() || 'media') {
 }
 function freezeMediaCuts(layer) {
   const m = S.project[layer], cuts = S.plan[layer].cuts;
-  cuts.forEach((cut, i) => { m.cutOverrides[i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.itemId }); });
+  cuts.forEach((cut, i) => { m.cutOverrides[i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId }); });
   m.manualCuts = true;
   m.cutCount = cuts.length;
 }
@@ -1597,9 +1858,9 @@ function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   const starts = cuts.map(cut => cut.start);
   const overrides = {};
   cuts.forEach((cut, i) => {
-    overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.itemId });
+    overrides[i >= index ? i + 1 : i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId });
   });
-  overrides[index] = { itemId: null };
+  overrides[index] = { itemId: null, technique: null };
   let start;
   if (!cuts.length) start = 0;
   else if (index === 0) {
@@ -1630,7 +1891,7 @@ function removeMediaCut(index, layer = activeMediaLayer() || 'media') {
   cuts.forEach((cut, oldIndex) => {
     if (oldIndex === index) return;
     const newIndex = oldIndex > index ? oldIndex - 1 : oldIndex;
-    overrides[newIndex] = Object.assign({}, m.cutOverrides[oldIndex] || {}, { itemId: cut.itemId });
+    overrides[newIndex] = Object.assign({}, m.cutOverrides[oldIndex] || {}, { itemId: cut.sourceItemId });
     times[newIndex] = +cut.start.toFixed(3);
   });
   m.manualCuts = true;
@@ -1661,16 +1922,30 @@ async function addMediaFiles(files, layer) {
       const el = await J.attachMedia(item, file);
       el.addEventListener('seeked', () => { S.need = true; });
       if (type === 'video') item.duration = el.duration || 0;
-      if (!existing) m.items.push(item);
+      if (!existing) {
+        m.items.push(item);
+        m.overrides[item.id] = { ...(m.overrides[item.id] || {}), technique: null };
+      }
       await J.storeMedia(item.id, file);
     } catch (err) { toast(`${file.name}: 불러올 수 없습니다`); }
   }
   replan();
 }
+const MEDIA_EFFECT_GROUPS = {
+  enter: J.mediaLabel('登場', 'Entrance'), exit: J.mediaLabel('退場', 'Exit'),
+  cinema: J.mediaLabel('シネマ・カメラ', 'Cinema / camera'), dynamic: J.mediaLabel('ダイナミックモーション', 'Dynamic motion'),
+  bpm: J.mediaLabel('BPM同期', 'BPM sync'), texture: J.mediaLabel('色・質感', 'Color / texture'),
+  graphic: J.mediaLabel('分割・残像・グリッチ', 'Panels / echoes / glitch'), transition: J.mediaLabel('カット間のつなぎ', 'Cut transitions'),
+};
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const select = (key, obj, val) => `<select aria-label="${key}"><option value="">자동</option>${Object.entries(obj).map(([k, label]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
+  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('画像・動画の手法', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('演出無し', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('従来の設定', 'Legacy settings')}</option>` : ''}${J.MEDIA_TECH[cut.technique]?.stage ? `<option value="${cut.technique}" selected>${J.mediaTechniqueName(cut)} (${J.mediaLabel('従来の設定', 'Legacy settings')})</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).filter(([group]) => !['enter', 'exit'].includes(group)).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group && !def.stage).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  const selectPhase = (ov, cut, stage, field) => {
+    const value = ov[field] ?? '', title = MEDIA_EFFECT_GROUPS[stage];
+    return `<label>${title}<select class="media-phase" data-media-phase="${field}" aria-label="${title}"><option value="" ${!value ? 'selected' : ''}>${J.mediaLabel('自動', 'Auto')}</option><option value="none" ${value === 'none' ? 'selected' : ''}>${J.mediaLabel('即時（なし）', 'Instant (none)')}</option>${J.mediaPhaseOptions(stage).map(([key, def]) => `<option value="${key}" ${value === key ? 'selected' : ''}>${def.name}</option>`).join('')}</select></label>`;
+
+  };
   const addButton = index => {
     const row = document.createElement('li'); row.className = 'media-cut-insert';
     row.innerHTML = `<button class="ghost small" type="button" aria-label="${index + 1}번째에 컷 추가">＋ 컷 추가</button>`;
@@ -1680,20 +1955,23 @@ function renderMediaLines() {
   S.plan[layer].cuts.forEach((cut, i) => {
     addButton(i);
     const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
-    const fileSelect = `<select class="media-cut-file" aria-label="${i + 1}컷 파일"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
+    const fileSelect = `<select class="media-cut-file" ${m.randomOrder ? `disabled title="${J.mediaLabel('素材を指定するにはランダム順をオフにしてください', 'Turn off random order to select a file')}"` : ''} aria-label="${i + 1}컷 파일"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (ov[key] === undefined) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
     const sw = source && (source.videoWidth || source.naturalWidth), sh = source && (source.videoHeight || source.naturalHeight);
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
-    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}컷 배치와 크기 편집"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>배치·크기 편집</button>${cut.placement ? '<button class="foreground-placement-reset ghost" type="button">자동 배치로 되돌리기</button>' : ''}</span>`;
+    const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}컷 배치와 크기 편집"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>배치·크기 편집</button>${cut.placementMode === 'auto' ? `<span class="tagl">${J.mediaLabel('自動配置', 'Auto placement')}</span>` : ''}${cut.placementMode === 'manual' ? '<button class="foreground-placement-reset ghost" type="button">자동 배치로 되돌리기</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}컷 시작 초">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.MEDIA_LAYOUT[cut.layout]}</span><span>${J.MEDIA_ENTER[cut.enter]} → ${J.MEDIA_EXIT[cut.exit]}</span>${cut.trans ? `<span>${J.mediaTransOptions()[cut.trans]}</span>` : ''}</span><span class="tools">${select('표시 방법', J.MEDIA_LAYOUT, ov.layout)}${select('등장', J.MEDIA_ENTER, ov.enter)}${select('유지', J.MEDIA_HOLD, ov.hold)}${select('퇴장', J.MEDIA_EXIT, ov.exit)}${select('가공', J.MEDIA_TREAT, ov.treat)}${select('전환', J.mediaTransOptions(), ov.trans)}<button class="icon ghost dice" title="이 컷 다시 뽑기">${ICON.dice}</button><button class="icon ghost lock" title="이 컷 잠금" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}컷 삭제">삭제</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>동영상 반복 재생</label><label class="media-video-duration">동영상 길이(초)<input type="number" min="0.04" max="3600" step="0.01" placeholder="자동" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}컷 동영상 길이(초)"></label>` : ''}</div>`;
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}컷 시작 초">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.mediaTechniqueName(cut)}</span></span><span class="tools">${selectTechnique(ov, cut)}<button class="icon ghost dice" title="이 컷 다시 뽑기">${ICON.dice}</button><button class="icon ghost lock" title="이 컷 잠금" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}컷 삭제">삭제</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>동영상 반복 재생</label><label class="media-video-duration">동영상 길이(초)<input type="number" min="0.04" max="3600" step="0.01" placeholder="자동" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}컷 동영상 길이(초)"></label>` : ''}</div>`;
     if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>크로마키 합성</label><label>색<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}컷 크로마키 색" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
+    li.querySelector('.foreground-placement-controls').insertAdjacentHTML('beforebegin', `<div class="media-phase-controls">${selectPhase(ov, cut, 'enter', 'entrance')}${selectPhase(ov, cut, 'exit', 'departure')}</div>`);
+    li.querySelectorAll('[data-media-phase]').forEach(select => select.addEventListener('change', e => {
+      mediaOv(i, { [select.dataset.mediaPhase]: e.target.value || null, lock: false }, layer); replan();
+    }));
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
     li.querySelector('.media-cut-file').addEventListener('change', e => { mediaOv(i, { itemId: e.target.value || null }, layer); replan(); });
-    ['layout', 'enter', 'hold', 'exit', 'treat', 'trans'].forEach((key, n) => li.querySelectorAll('.tools select')[n].addEventListener('change', e => { mediaOv(i, { [key]: e.target.value || null }, layer); replan(); }));
-    if (i === 0) li.querySelector('select[aria-label="전환"]').disabled = true;
+    li.querySelector('.media-technique').addEventListener('change', e => { if (e.target.value !== 'legacy') { mediaOv(i, { technique: e.target.value || null, lock: false, lockedTechnique: undefined }, layer); replan(); } });
     const videoLoop = li.querySelector('.media-video-loop input');
     if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
     const videoDuration = li.querySelector('.media-video-duration input');
@@ -1701,13 +1979,14 @@ function renderMediaLines() {
     const placementOpen = li.querySelector('.foreground-placement-open');
     if (placementOpen) placementOpen.addEventListener('click', () => openMediaEditor(i, layer));
     const placementReset = li.querySelector('.foreground-placement-reset');
-    if (placementReset) placementReset.addEventListener('click', () => { mediaOv(i, { placement: undefined }); replan(); });
+    if (placementReset) placementReset.addEventListener('click', () => { mediaOv(i, { placement: null, lock: false, lockedPlacement: undefined, lockedPlacementMode: undefined }); replan(); });
     const chroma = li.querySelector('.media-chroma-toggle');
     if (chroma) {
       chroma.addEventListener('change', e => { mediaOv(i, { chromaKey: e.target.checked }); replan(); });
       li.querySelector('.media-chroma-color').addEventListener('change', e => { mediaOv(i, { chromaColor: e.target.value }); replan(); });
     }
     li.querySelector('.dice').addEventListener('click', () => rerollMediaCut(layer, i));
+    li.querySelector('.tools').insertBefore(detailButton(() => openCutDetails(layer,i)), li.querySelector('.remove-media-cut'));
     li.querySelector('.lock').addEventListener('click', () => toggleMediaCutLock(layer, i));
     li.querySelector('.remove-media-cut').addEventListener('click', () => removeMediaCut(i, layer));
     ol.appendChild(li); S.mediaLineEls.push(li);
@@ -1723,6 +2002,14 @@ async function restoreMediaAssets() {
   replan();
 }
 function setOv(i, patch) {
+  // A later line-wide selection supersedes the corresponding per-cut edit.
+  for (const [key, options] of Object.entries(S.project.lyricCutOptions || {})) if (key.startsWith(`${i}:`) && options.details) {
+    for (const field of Object.keys(patch)) if (J.cutDetailKeys.lyrics.includes(field)) {
+      delete options.details[field];
+      const params={layout:'params',treat:'treatP',bg:'bgP',cam:'camP',trans:'transP'}[field];
+      if(params)delete options.details[params];
+    }
+  }
   const cur = Object.assign({}, S.project.overrides[i] || {}, patch);
   for (const k of Object.keys(cur)) if (cur[k] === undefined || cur[k] === false || cur[k] === '') delete cur[k];
   if (Object.keys(cur).length) S.project.overrides[i] = cur; else delete S.project.overrides[i];
@@ -1857,7 +2144,17 @@ function randomPalette() {
 // only the "look" is tracked — lyrics, timing and output settings are never rolled back
 const HKEYS = ['style', 'mood', 'seed', 'fx', 'enabled', 'fonts', 'colors', 'overrides', 'locks'];
 const H = { list: [], i: -1 };
-const lookSnap = () => JSON.stringify(Object.fromEntries(HKEYS.map(k => [k, S.project[k] ?? null])));
+const lookSnap = () => {
+  // Undo/import fills in missing enabled keys. Normalize them here too so that
+  // restoring a look does not create a duplicate history stop on the next click.
+  const enabled = J.defaultProject().enabled;
+  for (const group of J.GROUP_KEYS) Object.assign(enabled[group], S.project.enabled[group] || {});
+  return JSON.stringify({
+    ...Object.fromEntries(HKEYS.map(k => [k, S.project[k] ?? null])), enabled,
+    lyricEffects: J.lyricEffectSettings(S.project),
+    mediaEffects: Object.fromEntries(['foreground', 'media'].map(layer => [layer, J.mediaEffectSettings(S.project, layer)])),
+  });
+};
 function remember() {            // call before changing the look: makes sure the current look is on the stack
   const s = lookSnap();
   if (H.i >= 0 && H.list[H.i] === s) return;
@@ -1874,7 +2171,7 @@ function histGo(d) {
   remember();                    // hand edits made since the last step become a stop of their own
   const j = H.i + d; if (j < 0 || j >= H.list.length) return;
   H.i = j;
-  const snap = JSON.parse(H.list[j]);
+  const { mediaEffects, ...snap } = JSON.parse(H.list[j]);
   // 표시 영역 is not part of a look: keep the rows' current areas (as おまかせ does)
   if (snap.overrides) {
     const ov = {};
@@ -1883,6 +2180,7 @@ function histGo(d) {
     snap.overrides = ov;
   }
   Object.assign(S.project, snap);
+  if (mediaEffects) for (const layer of ['foreground', 'media']) S.project[layer].effects = mediaEffects[layer];
   fontKey = ''; syncUI(); replan(); updateHist();
   toast(`${j + 1} / ${H.list.length}번째 안`);
   restartPreview();
@@ -2027,6 +2325,7 @@ function rerollPart(part) {
     restoreEnabled(keepE); restoreParams(keepP);
     msg = `분위기: ${J.MOODS[r.mood].name}`;
   } else if (part === 'cut') {
+    shuffleMediaEffects();
     P.seed = (Math.random() * 1e9) | 0;
     msg = '구성: 레이아웃과 움직임 다시 뽑기';
   }
@@ -2207,6 +2506,24 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) kick
 
 function renderTech() {
   resetPreviewWatch();
+  const lyricEffects = J.lyricEffectSettings(S.project);
+  $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
+  $('lyricAutoSizeRange').hidden = !lyricEffects.autoPlacement;
+  $('lyricAutoSizeMin').value = lyricEffects.sizeMin;
+  $('lyricAutoSizeMax').value = lyricEffects.sizeMax;
+  $('lyricAutoSizeMinValue').textContent = `${lyricEffects.sizeMin}%`;
+  $('lyricAutoSizeMaxValue').textContent = `${lyricEffects.sizeMax}%`;
+  $('lyricAutoSizeSlider').style.setProperty('--range-min', `${lyricEffects.sizeMin / 5}%`);
+  $('lyricAutoSizeSlider').style.setProperty('--range-max', `${lyricEffects.sizeMax / 5}%`);
+  $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
+  $('lyricAvoidanceStrength').value = lyricEffects.avoidanceStrength;
+  $('lyricAvoidanceStrengthValue').textContent = lyricEffects.avoidanceStrength.toFixed(2);
+  $('lyricAvoidanceStrength').disabled = !lyricEffects.autoPlacement || !lyricEffects.avoidForeground;
+  $('lyricRandomBlend').checked = lyricEffects.randomBlend;
+  $('lyricRandomOpacity').checked = lyricEffects.randomOpacity;
+  $('lyricOpacityRange').hidden = !lyricEffects.randomOpacity;
+  $('lyricOpacityMin').value = lyricEffects.opacityMin;
+  $('lyricOpacityMax').value = lyricEffects.opacityMax;
   const box = $('techLists'); box.innerHTML = '';
   const q = ($('techFilter').value || '').trim().toLowerCase();
   let total = 0, onAll = 0;
@@ -2291,13 +2608,45 @@ async function codecNote() {
   if (!vc) $('eMP4').title = '이 브라우저에서는 MP4 내보내기를 사용할 수 없습니다 (Chrome / Edge 권장)';
 }
 const EXP_BTNS = ['btnMP4', 'btnPNG', 'btnPNGA', 'btnPNGL', 'eMP4', 'btnMP4File', 'eMP4File'];
+function openExportDialog(kind) {
+  if (S.exporting) return;
+  pause();
+  const mp4 = kind === 'mp4';
+  S.exportKind = kind;
+  $('exportFilename').value = baseName() + rangeSuffix() + (mp4 ? '.mp4' : kind === 'pnga' ? '_alpha_png.zip' : '_png.zip');
+  $('exportDlgTitle').textContent = J.mediaLabel(mp4 ? 'MP4 を書き出す' : kind === 'pnga' ? '透過PNG（ZIP・背景なし）' : '連番PNG（ZIP）', mp4 ? 'Export MP4' : kind === 'pnga' ? 'Transparent PNG (ZIP)' : 'PNG sequence (ZIP)');
+  $('exportDialogContent').appendChild($('exportSettings'));
+  for (const [id,type] of [['btnMP4','mp4'],['btnPNG','png'],['btnPNGA','pnga'],['btnPNGL','pnga']]) $(id).hidden = kind !== type;
+  $('outQuality').closest('label').hidden = !mp4;
+  $('outAudio').closest('label').hidden = !mp4;
+  $('outKey').closest('label').hidden = kind === 'pnga';
+  $('exportSettings').querySelector('.key-note').hidden = kind === 'pnga';
+  $('codecNote').hidden = !mp4;
+  syncOut(); Promise.resolve(codecNote()).then(() => { if (!mp4) $('btnMP4File').hidden = true; }); $('exportDlg').showModal();
+}
+function restoreExportSettings() {
+  $('exportSettingsHome').appendChild($('exportSettings'));
+  for (const id of ['btnMP4','btnPNG','btnPNGA','btnPNGL','codecNote']) $(id).hidden = false;
+  for (const id of ['outQuality','outAudio','outKey']) $(id).closest('label').hidden = false;
+  $('exportSettings').querySelector('.key-note').hidden = false;
+  codecNote();
+}
 function baseName() {
   const k = J.keyMode(S.project);
   return ((S.project.title || 'jizura').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'jizura') + (k ? (k === 'green' ? '_greenback' : '_blackback') : '');
 }
+function requestFilename(kind) {
+  const dlg = $('filenameDlg'), project = kind === 'project';
+  $('filenameDlgTitle').textContent = J.mediaLabel(project ? 'プロジェクトを保存' : 'AE用に書き出し', project ? 'Save project' : 'Export for AE');
+  $('saveFilename').value = baseName() + (project ? '.jizuraichi' : rangeSuffix() + '_ae.json');
+  dlg.returnValue = ''; dlg.showModal(); $('saveFilename').select();
+  return new Promise(resolve=>dlg.addEventListener('close',()=>resolve(dlg.returnValue === 'save' ? J.exportFilename($('saveFilename').value,project ? '.jizuraichi' : '.json',baseName()) : null),{once:true}));
+}
 const canPickFile = () => typeof window.showSaveFilePicker === 'function' && !document.documentElement.classList.contains('cep') && typeof VideoEncoder !== 'undefined';
 async function runExport(kind) {
   if (S.exporting) return;
+  // 出力 menu: the dialog's file name wins (the 내보내기 tab / easy panel keep the automatic name)
+  const dialogName = ext => $('exportDlg').open && (S.exportKind === kind || kind === 'mp4file' && S.exportKind === 'mp4' || kind === 'pngl' && S.exportKind === 'pnga') ? J.exportFilename($('exportFilename').value, ext, baseName()) : null;
   // 大きな動画用: the save dialog must open straight from the click (before anything is awaited)
   let file = null, fileName = '';
   if (kind === 'mp4file') {
@@ -2308,6 +2657,8 @@ async function runExport(kind) {
   }
   pause();
   const ac = new AbortController(); S.exporting = ac;
+  const settingsInputs = [...$('exportSettings').querySelectorAll('input,select'),$('exportFilename')].map(el=>[el,el.disabled]);
+  settingsInputs.forEach(([el])=>{el.disabled=true;}); $('btnCloseExport').disabled = true;
   const boxes = [...document.querySelectorAll('.exp-box')];
   const setText = m => boxes.forEach(b => { b.querySelector('.exp-text').textContent = m; });
   const txt = { set textContent(m) { setText(m); }, get textContent() { return boxes[0].querySelector('.exp-text').textContent; } };
@@ -2332,7 +2683,7 @@ async function runExport(kind) {
       file = null;
       txt.textContent = `완료 ${r.blob ? (r.blob.size / 1048576).toFixed(1) + 'MB · ' : ''}${r.codec}${r.audio ? ' + ' + r.audio.toUpperCase() : ''} · ${((performance.now() - t0) / 1000).toFixed(0)}초`;
       if (r.blob) {
-        const name = baseName() + rangeSuffix() + '.mp4';
+        const name = dialogName('.mp4') || baseName() + rangeSuffix() + '.mp4';
         const res = await J.saveFile(name, r.blob);
         if (res === 'declined') txt.textContent += ' (저장이 취소됨)';
         offerShare(boxes, r.blob, name);
@@ -2346,7 +2697,7 @@ async function runExport(kind) {
     } else {
       const blob = await J.exportPNGZip({ plan: S.plan, project: proj, transparent: kind === 'pnga', layers: kind === 'pngl', onProgress, signal: ac.signal, range: exportRange() });
       txt.textContent = `완료 ${(blob.size / 1048576).toFixed(1)}MB`;
-      await J.saveFile(baseName() + rangeSuffix() + (kind === 'pnga' ? '_alpha' : kind === 'pngl' ? '_layers' : '') + '_png.zip', blob);
+      await J.saveFile((kind !== 'pngl' && dialogName('.zip')) || baseName() + rangeSuffix() + (kind === 'pnga' ? '_alpha' : kind === 'pngl' ? '_layers' : '') + '_png.zip', blob);
     }
   } catch (e) {
     txt.textContent = '오류: ' + (e && e.message ? e.message : e);
@@ -2354,6 +2705,7 @@ async function runExport(kind) {
     if (file) { try { await file.abort(); } catch (e2) {} }
   } finally {
     S.exporting = null; S.need = true;
+    settingsInputs.forEach(([el,disabled])=>{el.disabled=disabled;}); $('btnCloseExport').disabled = false;
     EXP_BTNS.forEach(id => { $(id).disabled = false; });
     try { if (wake) await wake.release(); } catch (e) {}
     codecNote();
@@ -2605,7 +2957,7 @@ async function openProject(p) {
   }
   const mediaIds = P => [...P.media.items, ...P.foreground.items].map(item => item.id);
   const old = S.project.assets.map(a => a.id), oldMedia = mediaIds(S.project);
-  S.project = mergeProject(p); syncUI(); replan();
+  S.project = mergeProject(p); S.audioAssetId = S.audio ? S.project.audioAsset?.id : null; syncUI(); replan();
   const keep = new Set(S.project.assets.map(a => a.id)), keepMedia = new Set(mediaIds(S.project));
   for (const id of old) if (!keep.has(id)) queueAssetDeletion(id);
   for (const id of oldMedia) if (!keepMedia.has(id)) queueMediaDeletion(id);
@@ -2670,7 +3022,7 @@ function startTap(from = 0, single = false) {
   S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop, base: layer ? null : lineShiftBase() };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
   $('tapHint').textContent = S.tap.append ? '탭할 때마다 배경·전경 파일을 순환하며 컷을 추가합니다. 종료할 때까지 계속할 수 있습니다.' : '곡에 맞춰 각 행·컷이 시작되는 순간 Space나 버튼을 누르세요.';
-  $('tapPanel').hidden = false; $('btnTap').setAttribute('aria-pressed', 'true');
+  $('tapPanel').hidden = false; syncTapButtons();
   $('tapPanel').classList.remove('compact');
   let t0 = 0;
   if (!layer && from > 0) {
@@ -2690,8 +3042,7 @@ function tapNow() {
     const m = S.project[S.tap.layer];
     if (i === 0) { m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true; }
     m.cutCount = i + 1;
-    const order = J.mediaOrder(S.project, S.tap.layer);
-    m.cutOverrides[i] = { itemId: order.length ? order[i % order.length].id : null };
+    m.cutOverrides[i] = { itemId: m.items.length ? m.items[i % m.items.length].id : null, technique: null };
     m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();
@@ -2716,7 +3067,10 @@ function tapBack() {                    // 1つ戻る: undo the last tap and jum
   S.tap.i = d.i; replan(); followLineStarts(S.tap.base); updateTap();
   seek(Math.max(0, S.t - 3)); if (!S.playing) play();
 }
-function stopTap() { const base = S.tap && S.tap.base; S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); followLineStarts(base); flushSave(); }
+function stopTap() { const base = S.tap && S.tap.base; S.tap = null; $('tapPanel').hidden = true; syncTapButtons(); replan(); followLineStarts(base); flushSave(); }
+function syncTapButtons() {
+  for (const id of ['btnTap', 'btnTapMedia']) $(id).setAttribute('aria-pressed', String(!!S.tap));
+}
 function updateTap() {
   const bb = $('tapBack'); if (bb) bb.disabled = !S.tap.done.length;
   $('tapPanel').classList.toggle('compact', S.tap.done.length > 0);   // 처음 몇 번이 끝나면 설명을 접어서, 고정해도 방해되지 않도록
@@ -2728,8 +3082,89 @@ function updateTap() {
   $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.layer ? ln.name : ln.interlude ? '[간주]' : ln.text}${S.tap.single ? ' (이 행만)' : ''}` : '—';
 }
 
+function shuffleMediaEffects(layers = ['media', 'foreground']) {
+  for (const layer of layers) for (const cut of S.plan[layer].cuts) {
+    const ov = mediaCutOptions(layer, cut.index);
+    if (!ov.lock && (ov.technique == null)) mediaOv(cut.index, { technique: null }, layer);
+  }
+}
+const openMediaGroups = { foreground: new Set(), media: new Set() };
+function renderMediaEffects(layer) {
+  if (!layer) { for (const target of ['foreground', 'media']) renderMediaEffects(target); return; }
+  const box = $(layer + 'EffectsPanel'); if (!box) return;
+  const settings = J.mediaEffectSettings(S.project, layer), L = J.mediaLabel;
+  const layerNote = layer === 'foreground' ? L('前景の画像・動画に適用します。', 'Applies to foreground images and videos.') : L('背景の画像・動画に適用します。', 'Applies to background images and videos.');
+  const shuffleLabel = layer === 'foreground' ? L('前景をシャッフル', 'Shuffle foreground') : L('背景をシャッフル', 'Shuffle background');
+  const setting = key => box.querySelector(`[data-media-setting="${key}"]`);
+  const action = key => box.querySelector(`[data-media-action="${key}"]`);
+  box.innerHTML = `<p class="note">${layerNote} ${L('チェックした手法を「自動」とシャッフルで使用します。手動指定した手法とロック済みカットは維持されます。', 'Checked techniques are used by Auto and Shuffle. Explicit selections and locked cuts are preserved.')}</p><label class="check"><input data-media-setting="autoPlacement" type="checkbox" ${settings.autoPlacement !== false ? 'checked' : ''}><span>${L('配置・サイズにも自動で変化を付ける', 'Vary position and size automatically')}<small>${L('手動配置とロックは維持します。演出無しは中央に全体表示します。', 'Manual placement and locks are preserved. No effects keeps the centered full view.')}</small></span></label><div class="media-auto-size-range" data-media-size-range ${settings.autoPlacement !== false ? '' : 'hidden'}><div class="range-title">${L('最小・最大サイズ倍率（％）', 'Minimum / maximum area scale (%)')}</div><div class="range-pair" data-media-size-slider><input type="range" min="0" max="500" step="5" value="${settings.sizeMin}" data-media-size="min" aria-label="${L('自動サイズの最小倍率', 'Minimum automatic size scale')}"><input type="range" min="0" max="500" step="5" value="${settings.sizeMax}" data-media-size="max" aria-label="${L('自動サイズの最大倍率', 'Maximum automatic size scale')}"></div><div class="range-pair-values"><span>${L('最小 ', 'Min ')}<output data-media-size-value="min">${settings.sizeMin}%</output></span><span>${L('最大 ', 'Max ')}<output data-media-size-value="max">${settings.sizeMax}%</output></span></div></div><div class="media-effect-sliders"></div><div class="row"><button type="button" data-media-action="shuffle">${shuffleLabel}</button><button type="button" data-media-action="enable">${L('全て有効', 'Enable all')}</button><button type="button" data-media-action="disable">${L('全て無効', 'Disable all')}</button></div>`;
+  const randomNote = document.createElement('p'); randomNote.className = 'note';
+  randomNote.textContent = L('「おまかせ」では前景・背景それぞれの手法チェックをランダムに設定します。', 'Randomize selects a random set of checked techniques independently for foreground and background.');
+  box.appendChild(randomNote);
+  const beatNote = document.createElement('p'); beatNote.className = 'note';
+  beatNote.textContent = L('登場・退場はカットごとに独立して設定できます（初期値：自動）。BPM同期は「曲・タイミング」のBPMを使用し、未設定時は120 BPMで動きます。', 'Set entrance and exit independently for each cut (default: Auto). BPM sync uses the BPM in Audio and timing, or 120 BPM when unset.');
+  box.appendChild(beatNote);
+  for (const [key, name, max, step] of [['motion', L('動きの強さ', 'Motion intensity'), 2, .05], ['treatment', L('加工の強さ', 'Treatment intensity'), 1, .05], ['duration', L('登場・退場時間', 'Entrance / exit (s)'), 1.5, .05]]) {
+    const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input data-media-setting="${key}" type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
+    row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project, layer); next[key] = +e.target.value; S.project[layer].effects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + layer + ':' + key); replanSoon(100); }); box.querySelector('.media-effect-sliders').appendChild(row);
+  }
+  const groups = MEDIA_EFFECT_GROUPS;
+  for (const [group, name] of Object.entries(groups)) {
+    const items = Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group);
+    const count = enabled => `${items.filter(([key]) => enabled[key] !== false).length}/${items.length}`;
+    const section = document.createElement('details'); section.className = 'tgroup media-tech-group'; section.dataset.mediaGroup = group;
+    section.open = openMediaGroups[layer].has(group);
+    section.addEventListener('toggle', () => {
+      if (!section.isConnected) return;
+      if (section.open) openMediaGroups[layer].add(group); else openMediaGroups[layer].delete(group);
+    });
+    section.innerHTML = `<summary><span class="tg-name">${name}</span><span class="tg-cnt mono">${count(settings.enabled)}</span></summary><div class="tg-tools"><button type="button" class="ghost small" data-media-group-action="on">${L('すべてON', 'Enable all')}</button><button type="button" class="ghost small" data-media-group-action="off">${L('すべてOFF', 'Disable all')}</button><button type="button" class="ghost small" data-media-group-action="flip">${L('反転', 'Invert')}</button></div>`;
+    const list = document.createElement('div'); list.className = 'checks';
+    for (const [key, def] of items) {
+      const row = document.createElement('label'); row.innerHTML = `<input type="checkbox" data-media-tech="${key}" ${settings.enabled[key] !== false ? 'checked' : ''}><span>${def.name}</span>`;
+      row.querySelector('input').addEventListener('change', e => {
+        const next = J.mediaEffectSettings(S.project, layer); next.enabled[key] = e.target.checked; S.project[layer].effects = next;
+        section.querySelector('.tg-cnt').textContent = count(next.enabled); replan();
+      }); list.appendChild(row);
+    }
+    section.querySelectorAll('[data-media-group-action]').forEach(button => button.addEventListener('click', () => {
+      const next = J.mediaEffectSettings(S.project, layer), action = button.dataset.mediaGroupAction;
+      for (const [key] of items) next.enabled[key] = action === 'on' ? true : action === 'off' ? false : next.enabled[key] === false;
+      S.project[layer].effects = next; openMediaGroups[layer].add(group); renderMediaEffects(layer); replan();
+    }));
+    section.appendChild(list);
+    box.appendChild(section);
+  }
+  setting('autoPlacement').onchange = e => { const next = J.mediaEffectSettings(S.project, layer); next.autoPlacement = e.target.checked; S.project[layer].effects = next; renderMediaEffects(layer); replan(); };
+  const sizeRange = box.querySelector('[data-media-size-range]');
+  const sizeSlider = sizeRange.querySelector('[data-media-size-slider]');
+  const syncSizeSlider = (min, max) => {
+    sizeSlider.style.setProperty('--range-min', `${min / 5}%`); sizeSlider.style.setProperty('--range-max', `${max / 5}%`);
+    sizeRange.querySelector('[data-media-size-value="min"]').textContent = `${min}%`;
+    sizeRange.querySelector('[data-media-size-value="max"]').textContent = `${max}%`;
+  };
+  sizeSlider.querySelectorAll('[data-media-size]').forEach(input => input.addEventListener('input', () => {
+    const changed = input.dataset.mediaSize;
+    let min = +sizeSlider.querySelector('[data-media-size="min"]').value, max = +sizeSlider.querySelector('[data-media-size="max"]').value;
+    if (changed === 'min' && min > max) max = min;
+    if (changed === 'max' && max < min) min = max;
+    const next = J.mediaEffectSettings(S.project, layer); next.sizeMin = min; next.sizeMax = max; S.project[layer].effects = next;
+    sizeSlider.querySelector('[data-media-size="min"]').value = min; sizeSlider.querySelector('[data-media-size="max"]').value = max;
+    syncSizeSlider(min, max); markUndoGroup(`mediaEffects:${layer}:size`); replanSoon(100);
+  }));
+  syncSizeSlider(settings.sizeMin, settings.sizeMax);
+  action('shuffle').onclick = () => { shuffleMediaEffects([layer]); S.project[layer].seed++; replan(); };
+  const all = value => { const next = J.mediaEffectSettings(S.project, layer); next.enabled = Object.fromEntries(Object.keys(J.MEDIA_TECH).map(key => [key, value])); S.project[layer].effects = next; renderMediaEffects(layer); replan(); };
+  action('enable').onclick = () => all(true); action('disable').onclick = () => all(false);
+}
+
 /* ---------------- sync all inputs from project ---------------- */
+function renderThemes() {
+  const ids = J.themeIds(S.project);
+  $('themeLabels').innerHTML = ids.length ? ids.map(id=>`<span class="theme-label">${J.THEMES[id].name}</span>`).join('') : `<span class="muted">${J.mediaLabel('未選択：すべてのテーマ','Not selected: unrestricted')}</span>`;
+}
 function syncUI() {
+  renderThemes();
   $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
   $('lyrics').value = S.project.lyrics;
   $('aiPrompt').value = S.project.aiPrompt || '';
@@ -2744,17 +3179,97 @@ function syncUI() {
   document.querySelectorAll('.unify-toggle').forEach(el => { el.checked = S.project.unify === true; });
   document.querySelectorAll('.typeset-toggle').forEach(el => { el.checked = S.project.typeset === true; });
   $('lyricLang').value = J.LANG_LABEL[S.project.lang] ? S.project.lang : 'auto'; langNote();
-  renderFontRoles(); renderColors(); renderFx(); renderTech(); syncOut(); drawStyleGrid();
+  renderFontRoles(); renderColors(); renderFx(); renderTech(); renderMediaEffects(); syncOut(); drawStyleGrid();
 }
 
 /* ---------------- wiring ---------------- */
 function bind() {
+  $('timelineLegend').innerHTML = [
+    [ICON.dice,'再抽選','Reroll',''],
+    [ICON.lock,'ロック','Lock',''],
+    [ICON.area,'表示範囲','Display area',''],
+    [ICON.details,'詳細編集','Edit details',''],
+    [ICON.remove,'削除','Delete','remove'],
+    [ICON.frontmost,'最前表示','Show in front',''],
+    ['🔗','開始位置をリンク','Link start positions','link'],
+    ['×','リンク解除','Unlink','unlink'],
+  ].map(([icon,ja,en,cls])=>`<span class="timeline-legend-item"><span class="timeline-legend-icon ${cls}" aria-hidden="true">${icon}</span><span>${J.mediaLabel(ja,en)}</span></span>`).join('');
+
+  $('saveFilename').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('filenameDlg').querySelector('button[value="save"]').click();}});
+  const menus = [...document.querySelectorAll('.header-menu')];
+  menus.forEach(menu => {
+    menu.addEventListener('toggle', () => { if (menu.open) menus.forEach(other=>{if(other!==menu)other.open=false;}); });
+    menu.addEventListener('click', e => { if (e.target.closest('button')) menu.open=false; });
+  });
+  document.addEventListener('click', e => menus.forEach(menu=>{if(!menu.contains(e.target))menu.open=false;}));
+  document.addEventListener('keydown', e => {if(e.key==='Escape')menus.forEach(menu=>{menu.open=false;});});
+  $('fileProject').closest('label').addEventListener('keydown', e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();$('fileProject').click();}});
+  $('fileProject').addEventListener('change',()=>{$('projectMenu').open=false;});
+  document.querySelectorAll('[data-export-dialog]').forEach(button=>button.addEventListener('click',()=>openExportDialog(button.dataset.exportDialog)));
+  $('btnCloseExport').addEventListener('click',()=>{if(!S.exporting)$('exportDlg').close();});
+  $('exportDlg').addEventListener('cancel',e=>{if(S.exporting)e.preventDefault();});
+  $('exportDlg').addEventListener('close',restoreExportSettings);
+  $('btnThemes').addEventListener('click', () => {
+    const selected = new Set(J.themeIds(S.project));
+    $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${J.mediaLabel(category === 'genre' ? '曲ジャンル' : 'テイスト',category === 'genre' ? 'Music genre' : 'Taste')}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');
+    $('themesDlg').showModal();
+  });
+  $('btnApplyThemes').addEventListener('click', () => {
+    S.project.themes = [...$('themeChoices').querySelectorAll('input:checked')].map(el=>el.dataset.theme);
+    renderThemes(); autosave(); $('themesDlg').close();
+  });
+  $('btnClearThemes').addEventListener('click', () => $('themeChoices').querySelectorAll('input').forEach(el=>el.checked=false));
+
+  $('lyricAvoidanceStrength').addEventListener('input', e => {
+    S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), avoidanceStrength: +e.target.value };
+    $('lyricAvoidanceStrengthValue').textContent = (+e.target.value).toFixed(2);
+    markUndoGroup('lyricAvoidanceStrength'); replanSoon(100);
+  });
+  for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground'], ['lyricRandomBlend', 'randomBlend'], ['lyricRandomOpacity', 'randomOpacity']]) {
+    $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; renderTech(); replan(); });
+  }
+  const updateAutoLyricSize = changed => {
+    let min = +$('lyricAutoSizeMin').value, max = +$('lyricAutoSizeMax').value;
+    if (changed === 'min' && min > max) max = min;
+    if (changed === 'max' && max < min) min = max;
+    const settings = { ...J.lyricEffectSettings(S.project), sizeMin: min, sizeMax: max };
+    S.project.lyricEffects = settings;
+    $('lyricAutoSizeMin').value = min; $('lyricAutoSizeMax').value = max;
+    $('lyricAutoSizeMinValue').textContent = `${min}%`; $('lyricAutoSizeMaxValue').textContent = `${max}%`;
+    $('lyricAutoSizeSlider').style.setProperty('--range-min', `${min / 5}%`);
+    $('lyricAutoSizeSlider').style.setProperty('--range-max', `${max / 5}%`);
+    markUndoGroup('lyricAutoSize'); replanSoon(100);
+  };
+  $('lyricAutoSizeMin').addEventListener('input', () => updateAutoLyricSize('min'));
+  $('lyricAutoSizeMax').addEventListener('input', () => updateAutoLyricSize('max'));
+  for (const [id, key] of [['lyricOpacityMin', 'opacityMin'], ['lyricOpacityMax', 'opacityMax']]) {
+    $(id).addEventListener('change', e => {
+      const settings = J.lyricEffectSettings(S.project);
+      if (e.target.value !== '' && Number.isFinite(+e.target.value)) {
+        settings[key] = J.clamp(+e.target.value, 0, 100);
+        if (key === 'opacityMin') settings.opacityMax = Math.max(settings.opacityMin, settings.opacityMax);
+        else settings.opacityMin = Math.min(settings.opacityMin, settings.opacityMax);
+      }
+      S.project.lyricEffects = settings; renderTech(); replan();
+    });
+  }
   $('timelineZoomOut').addEventListener('click', () => setTimelineZoom(S.timelineZoom / 1.5));
   $('timelineZoomIn').addEventListener('click', () => setTimelineZoom(S.timelineZoom * 1.5));
   $('timelineZoomOut').disabled = true;
   $('sourceLyrics').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'lyrics'; syncSourceTab(); });
   $('sourceMedia').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'media'; renderMediaList(); renderMediaLines(); });
   $('sourceForeground').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'foreground'; renderMediaList(); renderMediaLines(); });
+  $('btnMediaFromLyrics').addEventListener('click', insertMediaFromLyrics);
+  $('mediaLyricInsertMode').addEventListener('change', e => {
+    const layer = activeMediaLayer(); if (!layer) return;
+    S.project[layer].lyricInsertMode = e.target.value;
+    syncSourceTab(); autosave();
+  });
+  $('mediaGroupLyrics').addEventListener('change', e => {
+    const layer = activeMediaLayer(); if (!layer) return;
+    S.project[layer].groupLyricsAsOneCut = e.target.checked;
+    syncSourceTab(); autosave();
+  });
   const areaOverlay = $('areaEditOverlay');
   areaOverlay.addEventListener('pointerdown', e => {
     if (!S.areaEdit) return;
@@ -2782,7 +3297,15 @@ function bind() {
   $('mediaAreaWidth').addEventListener('change', e => { if (!S.areaEdit) return; const w = J.clamp(+e.target.value / 100, 0.005, S.areaEdit.kind === 'lyric' ? 1 : 4); setMediaDraftSize(w, S.areaEdit.lockAspect ? w * S.areaEdit.ratio : S.areaEdit.draft.h); });
   $('mediaAreaHeight').addEventListener('change', e => { if (!S.areaEdit) return; const h = J.clamp(+e.target.value / 100, 0.005, S.areaEdit.kind === 'lyric' ? 1 : 4); setMediaDraftSize(S.areaEdit.lockAspect ? h / S.areaEdit.ratio : S.areaEdit.draft.w, h); });
   $('mediaAreaAngle').addEventListener('input', e => { if (!S.areaEdit || e.target.value === '') return; S.areaEdit.angle = J.clamp(+e.target.value || 0, -180, 180); showAreaDraft(); });
-  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; S.areaEdit.ratio = 1; S.areaEdit.angle = 0; showAreaDraft(); });
+  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.autoDraft = null; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; S.areaEdit.ratio = 1; S.areaEdit.angle = 0; showAreaDraft(); });
+  $('areaResetAuto').addEventListener('click', () => {
+    const edit = S.areaEdit; if (!edit || edit.kind !== 'lyric') return;
+    const project = { ...S.project, overrides: { ...S.project.overrides, [edit.index]: { ...S.project.overrides[edit.index], area: undefined, lockedAreas: undefined } } };
+    const area = J.plan(project, audioLike()).cuts.find(c => c.line === edit.index && c.part === 0)?.area || { x: 0, y: 0, w: 1, h: 1, angle: 0, lockAspect: true };
+    edit.draft = { ...area }; edit.ratio = area.h / area.w; edit.angle = area.angle; edit.lockAspect = area.lockAspect;
+    edit.autoDraft = JSON.stringify(J.lyricArea(area));
+    showAreaDraft();
+  });
   $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);
@@ -2803,19 +3326,6 @@ function bind() {
     if (e.target.checked && !m.cutCount) m.cutCount = Math.min(1000, m.items.length * 2);
     replan();
   });
-  $('mediaCutCount').addEventListener('change', e => {
-    const layer = activeMediaLayer(), m = S.project[layer], count = J.clamp(Math.floor(+e.target.value || 0), 0, 1000);
-    if (count !== S.plan[layer].cuts.length) {
-      freezeMediaCuts(layer);
-      for (let i = m.cutCount; i < count; i++) m.cutOverrides[i] = { itemId: null };
-      for (const key of Object.keys(m.cutOverrides)) if (+key >= count) delete m.cutOverrides[key];
-      for (const key of Object.keys(m.timing.lineTimes)) if (+key >= count) delete m.timing.lineTimes[key];
-    }
-    m.cutCount = count;
-    replan();
-  });
-  $('lyricBlend').addEventListener('change', e => { S.project.media.blend = e.target.value; replan(); });
-  $('lyricOpacity').addEventListener('change', e => { S.project.media.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('mediaBlend').addEventListener('change', e => { S.project.foreground.blend = e.target.value; replan(); });
   $('mediaOpacity').addEventListener('change', e => { S.project.foreground.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
   $('lyrics').addEventListener('input', e => {
@@ -2845,6 +3355,7 @@ function bind() {
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('btnDraft').addEventListener('click', draftFromSong);
   $('assetFile').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) addAssetFiles(fs); });
+  $('btnTapMedia').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
   $('btnPlay').addEventListener('click', () => (S.playing ? pause() : play()));
@@ -2862,7 +3373,7 @@ function bind() {
     S.loop = LOOP_CYCLE[(i < 0 ? 0 : i + 1) % LOOP_CYCLE.length];
     syncLoopBtn(); S.need = true;
   });
-  $('btnShuffle').addEventListener('click', () => { remember(); S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); commit(); });
+  $('btnShuffle').addEventListener('click', () => { remember(); shuffleMediaEffects(); S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); commit(); });
   const sc = $('scrub');
   sc.addEventListener('input', () => { S.scrubbing = true; seek(sc.value / 10000 * S.plan.duration); });
   sc.addEventListener('change', () => { S.scrubbing = false; });
@@ -3166,7 +3677,27 @@ function bind() {
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });   // click on the backdrop
   $('btnSave').addEventListener('click', () => J.saveFile(baseName() + '.jizura.json', JSON.stringify(Object.assign({}, S.project, { appVersion: '@VERSION@' }), null, 1)));
   $('btnSaveAll').addEventListener('click', saveBundle);
-  $('btnAE').addEventListener('click', () => J.saveFile(baseName() + rangeSuffix() + '_ae.json', JSON.stringify(J.planForAE(S.plan, S.project, exportRange()), null, 1)));
+  // 휴대용 프로젝트(.jizuraichi): the project plus its 배경·전경 files, song and uploaded fonts in one binary file
+  $('btnSavePortable').addEventListener('click', async () => {
+    if (S.projectBusy) return;
+    const filename = await requestFilename('project'); if (!filename) return;
+    S.projectBusy = true; $('btnSavePortable').disabled = true;
+    const project = JSON.parse(JSON.stringify(S.project)), audio = S.audioFile;
+    try { await J.saveFile(filename, await J.packProject(project, audio)); }
+    catch (err) { toast(J.mediaLabel('保存できませんでした：', 'Could not save: ') + err.message); }
+    finally { S.projectBusy = false; $('btnSavePortable').disabled = false; }
+  });
+  $('btnAE').addEventListener('click', async () => {
+    if (S.projectBusy || S.exporting) return;
+    const filename = await requestFilename('ae'); if (!filename) return;
+    try { await J.saveFile(filename, JSON.stringify(J.planForAE(S.plan, S.project, exportRange()), null, 1)); }
+    catch (err) { toast(J.mediaLabel('保存できませんでした：','Could not save: ') + err.message); }
+  });
+  $('btnNew').addEventListener('click', () => { if (!S.exporting && !S.projectBusy) $('newProjectDlg').showModal(); });
+  $('btnCreateProject').addEventListener('click', () => {
+    const project = J.defaultProject(); project.lyrics = ''; project.aspect = $('newProjectAspect').value;
+    replaceProject(project, null, null, new Map()); $('newProjectDlg').close();
+  });
   audioNameDefault = $('audioName').textContent;
   $('btnClearLyrics').addEventListener('click', clearLyrics);
   $('btnReset').addEventListener('click', () => {
@@ -3177,8 +3708,13 @@ function bind() {
   $('resetDlg').addEventListener('close', () => { if ($('resetDlg').returnValue === 'reset') resetAll(); });
   $('fileProject').addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    try { await openProject(JSON.parse(await f.text())); }
+    if (S.exporting || S.projectBusy) { e.target.value = ''; return; }
+    // .jizuraichi (binary, 'JIZURA01') → the portable project reader; .json (plain or 곡·소재 포함) → openProject
+    const portable = new TextDecoder().decode(new Uint8Array(await f.slice(0, 8).arrayBuffer())) === 'JIZURA01';
+    S.projectBusy = true;
+    try { if (portable) await openProjectFile(f); else await openProject(JSON.parse(await f.text())); }
     catch (err) { showMsg('프로젝트를 불러올 수 없습니다'); setTimeout(() => showMsg(null), 2500); }
+    finally { S.projectBusy = false; }
     e.target.value = '';
   });
   document.addEventListener('keydown', e => {
@@ -3189,7 +3725,7 @@ function bind() {
     if (S.tap && (e.code === 'Space' || e.code === 'Enter') && !typing) { e.preventDefault(); tapNow(); return; }
     if (S.tap && e.code === 'Escape') { pause(); stopTap(); return; }
     if (S.tap && e.code === 'Backspace' && !typing) { e.preventDefault(); tapBack(); return; }
-    if (typing || $('termsDlg').open || $('resetDlg').open) return;
+    if (typing || document.querySelector('dialog[open]')) return;
     if (e.code === 'Space') { e.preventDefault(); S.playing ? pause() : play(); }
     else if (e.code === 'ArrowRight') seek(S.t + (e.shiftKey ? 1 : 1 / S.plan.fps));
     else if (e.code === 'ArrowLeft') seek(S.t - (e.shiftKey ? 1 : 1 / S.plan.fps));
@@ -3204,13 +3740,22 @@ function bind() {
 /* song file -> beat analysis (file input, or a host such as the After Effects panel) */
 let audioSeq = 0;
 async function loadAudioFile(f, restored) {
-  const my = ++audioSeq;                      // only the latest choice may win (an earlier, slower analysis is dropped)
+  // only the latest choice may win (an earlier, slower analysis is dropped; a project switch / 곡 삭제 cancels it too)
+  const my = ++audioSeq, project = S.project, request = S.audioLoad = (S.audioLoad || 0) + 1;
+  const stale = () => my !== audioSeq || S.project !== project || S.audioLoad !== request;
   $('audioName').textContent = '분석 중…';
   try {
     pause();
     const a = await J.analyzeAudio(f);
-    if (my !== audioSeq) return false;
-    S.audio = a;
+    if (stale()) return false;
+    S.audio = a; S.audioFile = f;
+    // the portable project file (.jizuraichi) takes the song from here
+    if (!restored || !S.project.audioAsset) {
+      S.project.audioAsset = { id: 'audio_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)), name: f.name, type: f.type };
+      await J.storeMedia(S.project.audioAsset.id, f).catch(() => {});
+      if (stale()) return false;
+    }
+    S.audioAssetId = S.project.audioAsset.id;
     $('audioName').textContent = `${f.name} (${J.fmtTime(S.audio.duration)} · 약 ${S.audio.bpm}BPM)` + (restored ? ' · 지난번 음원' : '');
     S.project.audioName = f.name;
     if (!restored && J.saveSong) J.saveSong(f);             // kept in this browser: a reload does not drop the song from exports
@@ -3218,7 +3763,7 @@ async function loadAudioFile(f, restored) {
     S.project.timing.snap = true;
     syncUI(); replan();
     return true;
-  } catch (err) { if (my !== audioSeq) return false; $('audioName').textContent = '불러올 수 없습니다: ' + err.message; S.audio = null; $('btnRemoveAudio').hidden = true; return false; }
+  } catch (err) { if (stale()) return false; $('audioName').textContent = '불러올 수 없습니다: ' + err.message; S.audio = null; S.audioFile = null; $('btnRemoveAudio').hidden = true; return false; }
 }
 
 /* ---------------- かんたんモードの案内ツアー ---------------- */
@@ -3292,6 +3837,71 @@ async function restoreFonts() {
   if (missing.length) toast(`불러온 서체(${missing.join('·')})가 이 브라우저에 없습니다. 「글꼴」에서 같은 파일을 다시 불러와 주세요(그동안은 비슷한 서체로 표시합니다)`);
 }
 
+function releaseProjectAssets(assets) {
+  for (const asset of assets.values()) {
+    if (asset.type === 'video') { asset.element.pause(); asset.element.removeAttribute('src'); asset.element.load(); }
+    URL.revokeObjectURL(asset.url);
+  }
+  assets.clear();
+}
+function refreshAudioName() {
+  S.audioAssetId = S.audio ? S.project.audioAsset?.id : null;
+  $('audioFile').value = '';
+  $('audioName').textContent = S.audio ? `${S.project.audioAsset?.name || S.project.audioName || ''} (${J.fmtTime(S.audio.duration)} · 약 ${S.audio.bpm}BPM)` : audioNameDefault || NO_AUDIO_LABEL;
+  $('btnRemoveAudio').hidden = !S.audio;
+}
+function replaceProject(project, audio, audioFile, assets) {
+  S.audioLoad = (S.audioLoad || 0) + 1;
+  pause(); clearTimeout(replanTimer); clearTimeout(saveTimer);
+  if (S.areaEdit) cancelAreaEditor();
+  S.tap = null; S.timelineDrag = null; S.linkDrag = null; S.scrubbing = false;
+  $('tapPanel').hidden = true; syncTapButtons();
+  releaseProjectAssets(J.mediaAssets);
+  for (const [id,asset] of assets) { J.mediaAssets.set(id,asset); asset.element.addEventListener('seeked',()=>{S.need=true}); }
+  for (const font of S.project.userFonts || []) delete J.FONTS[font.key];
+  S.project = mergeProject(project); S.audio = audio; S.audioFile = audioFile;
+  S.t = 0; S.sourceTab = 'lyrics'; S.timelineZoom = 1; S.loop = LOOP_CYCLE[0];
+  syncLoopBtn(); $('mediaFiles').value = '';
+  J.mediaTransitionFrame = null; J.foregroundTransitionFrame = null;
+  H.list = []; H.i = -1; fontKey = ''; initUndo();
+  refreshAudioName(); syncUI(); replan(); setTimelineZoom(1); commit(); flushSave(); ensureFonts(); prepareAssets();
+}
+async function restoreAudioAsset() {
+  const project = S.project, info = project.audioAsset;
+  if (!info) return;
+  try {
+    const file = await J.loadMedia(info.id);
+    if (!file) return;
+    const audio = await J.analyzeAudio(file);
+    if (S.project !== project || S.project.audioAsset !== info) return;
+    if (S.audio) return;
+    S.audio = audio; S.audioFile = file; S.project.audioName = S.project.audioName || info.name; refreshAudioName(); syncUI(); replan();
+  } catch (err) { toast(J.mediaLabel('曲を復元できませんでした：','Could not restore audio: ') + err.message); }
+}
+async function openProjectFile(file) {
+  const loaded = await J.unpackProject(file), project = loaded.project, assets = new Map();
+  let audio = null, audioFile = null;
+  try {
+    const files = new Map(loaded.files.map(entry=>[entry.kind+':'+entry.id,entry.file]));
+    for (const item of [...(project.media?.items || []),...(project.foreground?.items || [])]) {
+      if (assets.has(item.id)) continue;
+      const blob = files.get('media:'+item.id) || await J.loadMedia(item.id);
+      if (blob) await J.attachMedia(item,blob,assets);
+    }
+    if (project.audioAsset) {
+      audioFile = files.get('audio:'+project.audioAsset.id) || await J.loadMedia(project.audioAsset.id);
+      if (audioFile) audio = await J.analyzeAudio(audioFile);
+    }
+    // Decode everything first: malformed projects leave the current edit intact.
+    for (const entry of loaded.files) {
+      if (entry.kind === 'font') await J.saveFontFile(entry.id,entry.file);
+      else await J.storeMedia(entry.id,entry.file);
+    }
+    replaceProject(project,audio,audioFile,assets);
+    await restoreFonts();
+  } catch (err) { releaseProjectAssets(assets); throw err; }
+}
+
 /* ---------------- boot ---------------- */
 function boot() {
   S.project = loadLocal();
@@ -3301,6 +3911,7 @@ function boot() {
   bind(); initVolume(); syncUI(); syncLoopBtn(); replan();
   restoreMediaAssets();
   restoreFonts();
+  if (S.project.audioAsset) restoreAudioAsset();   // the song of this project, kept with its 배경·전경 files
   // first visit on a phone: スマホ mode
   let mode = window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 'mobile' : 'easy';
   try { mode = localStorage.getItem('jizura.mode') || mode; } catch (e) {}
@@ -3313,7 +3924,7 @@ function boot() {
   if (c0) seek(c0.start + Math.min(c0.dur * 0.6, c0.inDur + 0.25));
   requestAnimationFrame(tick);
   // the song used last time (same name as the saved project's) comes back after a reload
-  if (J.loadSong && S.project.audioName) J.loadSong().then(f => { if (f && f.name === S.project.audioName && !S.audio) loadAudioFile(f, true); });
+  if (J.loadSong && S.project.audioName && !S.project.audioAsset) J.loadSong().then(f => { if (f && f.name === S.project.audioName && !S.audio) loadAudioFile(f, true); });
   prepareAssets();                                         // 소재 images come back from this browser's storage
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

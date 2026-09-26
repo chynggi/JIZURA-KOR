@@ -15,6 +15,7 @@ J.defaultProject = () => ({
   durationOverride: null,         // null = automatic; otherwise total video length in seconds
   lyrics: J.SAMPLE_LYRICS,
   aiPrompt: '',
+  themes: [],
   style: 'noir', mood: null,
   extra: false,                   // random picks may use the parts added after the first version (追加分)
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
@@ -35,6 +36,7 @@ J.defaultProject = () => ({
   overrides: {},
   assets: [],                  // 소재 settings (see 10b_assets)
   lyricCutOptions: {},
+  lyricEffects: { autoPlacement: false, avoidForeground: true, avoidanceStrength: 1, randomBlend: false, randomOpacity: false, opacityMin: 0, opacityMax: 100 },
   lyricBlankCuts: [],
   timelineLinks: [],
   media: { items: [], randomOrder: false, loop: false, cutCount: 0, seed: 1, timing: { lineTimes: {} }, overrides: {}, cutOverrides: {}, blend: 'normal', opacity: 100 },
@@ -52,16 +54,16 @@ J.komaOf = fx => (fx.koma != null ? +fx.koma : (fx.onTwos === false ? 0 : 12));
 J.stepDur = (fx, fps) => { const k = J.komaOf(fx); return k > 0 ? 1 / k : 1 / (fps || 24); };
 
 /* ---------------- lyric parsing ---------------- */
-const lyricEscapes = { '\\': '\uE000', '#': '\uE001', '[': '\uE002', ']': '\uE003', '|': '\uE004', '!': '\uE005', '！': '\uE006', '*': '\uE007', '/': '\uE008' };
+const lyricEscapes = { '\\': '\uE000', '#': '\uE001', '[': '\uE002', ']': '\uE003', '|': '\uE004', '!': '\uE005', '！': '\uE006', '*': '\uE007', '/': '\uE008', '{': '\uE009', '}': '\uE00A', '~': '\uE00B' };
 const lyricUnescapes = Object.fromEntries(Object.entries(lyricEscapes).map(([literal, token]) => [token, literal]));
-const protectLyricEscapes = s => s.replace(/\\([\\#\[\]|!！*\/])/g, (_, literal) => lyricEscapes[literal]);
-const restoreLyricEscapes = s => String(s).replace(/[\uE000-\uE008]/g, token => lyricUnescapes[token]);
+const protectLyricEscapes = s => s.replace(/\\([\\#\[\]|!！*\/{}~n])/g, (_, literal) => literal === 'n' ? '\n' : lyricEscapes[literal]);
+const restoreLyricEscapes = s => String(s).replace(/[\uE000-\uE00B]/g, token => lyricUnescapes[token]);
 J.parseLyrics = (raw) => {
   const lines = []; const meta = {};
-  let pendingGap = false, pendingBreak = null, outro = null;
+  let pendingGap = false, pendingBreak = null, outro = null, group = null, nextGroup = 0;
   const rows = String(raw || '').replace(/\r/g, '').split('\n');
   for (let ri = 0; ri < rows.length; ri++) {
-    const s0 = protectLyricEscapes(rows[ri].trim());
+    let s0 = protectLyricEscapes(rows[ri].trim());
     if (!s0) { if (lines.length) pendingGap = true; continue; }
     if (s0.startsWith('#')) continue;
     const mm = s0.match(/^\[(ti|ar|al|by|offset):(.*)\]$/i);
@@ -74,10 +76,14 @@ J.parseLyrics = (raw) => {
     // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
     const om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
     if (om) { outro = { at: om[1] != null ? +om[1] * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] != null ? +om[3] : null }; continue; }
+    if (s0.startsWith('{')) { group = nextGroup++; s0 = s0.slice(1).trim(); }
     let s = s0; const times = [];
     let m;
     while ((m = s.match(/^\[(\d+):(\d+(?:[.:]\d+)?)\]/))) { times.push(+m[1] * 60 + parseFloat(m[2].replace(':', '.'))); s = s.slice(m[0].length); }
     s = s.trim();
+    if (s.startsWith('{')) { group = nextGroup++; s = s.slice(1).trim(); }
+    const closeGroup = s.endsWith('}');
+    if (closeGroup) s = s.slice(0, -1).trim();
     let note = null;
     const bar = s.indexOf('|');
     if (bar >= 0) { note = restoreLyricEscapes(s.slice(bar + 1).trim()) || null; s = s.slice(0, bar).trim(); }
@@ -89,8 +95,19 @@ J.parseLyrics = (raw) => {
     if (wtail) s = s.slice(0, s.length - wtail.length);
     let impact = false;
     if (/[!！]$/.test(s) && s.length > 1 && /!$/.test(s)) { impact = true; s = s.slice(0, -1).trim(); }
-    const emph = [];
-    s = s.replace(/\*([^*]+)\*/g, (_, w) => { emph.push(restoreLyricEscapes(w)); return w; });
+    const emph = [], soft = [], strengthSpans = [];
+    let plain = '', pos = 0;
+    const count = text => [...text.replace(/[\s/\u0001]/g, '')].length;
+    s.replace(/\*([^*]+)\*|~([^~]+)~/g, (match, strong, quiet, offset) => {
+      plain += s.slice(pos, offset);
+      const word = strong ?? quiet, start = count(plain);
+      plain += word;
+      strengthSpans.push({ start, end: count(plain), strong: strong != null });
+      (strong != null ? emph : soft).push(restoreLyricEscapes(word));
+      pos = offset + match.length;
+      return match;
+    });
+    s = plain + s.slice(pos);
     let manual = null;
     if (s.includes('/')) {
       manual = s.split('/').map(x => restoreLyricEscapes(x.trim())).filter(Boolean);
@@ -103,12 +120,14 @@ J.parseLyrics = (raw) => {
       marks = []; let ci = 0, q = 0;
       for (const ch of s) { if (ch === '\u0001') marks.push({ t: wt[q++], ci }); else ci++; }
       const strip = x => x.replace(/\u0001/g, '');
-      s = strip(s).trim(); if (manual) manual = manual.map(strip).filter(Boolean); emph.forEach((w, i) => { emph[i] = strip(w); });
+      s = strip(s).trim(); if (manual) manual = manual.map(strip).filter(Boolean); emph.forEach((w, i) => { emph[i] = strip(w); }); soft.forEach((w, i) => { soft[i] = strip(w); });
       if (!times.length && marks.length) times.push(marks[0].t);
     }
+    const lineGroup = group;
+    if (closeGroup) group = null;
     if (!s) continue;
     outro = null; // [마무리] only counts after the last line
-    const base = { text: restoreLyricEscapes(s), note, impact, emph, manual, gapBefore: pendingGap, breakBefore: pendingBreak, src: ri };
+    const base = { text: restoreLyricEscapes(s), note, impact, emph, soft, strengthSpans, manual, group: lineGroup, gapBefore: pendingGap, breakBefore: pendingBreak, src: ri };
     pendingGap = false; pendingBreak = null;
     // a repeated line ([00:10][00:40]…) reuses its word times shifted to each start
     if (times.length) times.forEach(t => lines.push(Object.assign({}, base, { lrc: t }, marks ? { marks: marks.map(k => ({ t: k.t + t - times[0], ci: k.ci })) } : {})));
@@ -358,8 +377,9 @@ J.plan = (project, audio) => {
     // a hand-set interlude start (timeline drag) wins
     if (interludeTime != null && Number.isFinite(+interludeTime) && e - s > 1.81) visEnd = J.clamp(+interludeTime, s + 0.5, e - 1.31);
     const D = visEnd - s;
-    plan.lines.push({ index: li, src: ln.src, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed });
-    const chunks = ln.manual || (plan.lang === 'en' ? J.phraseChunks(J.chunkText(ln.text)) : J.chunkText(ln.text));
+    plan.lines.push({ index: li, src: ln.src, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, soft: ln.soft, group: ln.group, chunks: null, seed: lineSeed });
+    const multiline = ln.text.includes('\n');
+    const chunks = ln.manual || (multiline ? [ln.text] : plan.lang === 'en' ? J.phraseChunks(J.chunkText(ln.text)) : J.chunkText(ln.text));
     plan.lines[li].chunks = chunks;
     const L = J.lerp(1.3, 0.5, fx.density);
     let nC = Math.round(D / L);
@@ -376,9 +396,10 @@ J.plan = (project, audio) => {
     // groups of chunks
     let groups;
     const nG = Math.min(nC, chunks2.length);
-    if (nG <= 1) groups = [ln.text];
+    if (multiline && !ov.single) groups = chunks2;
+    else if (nG <= 1) groups = [ln.text];
     else groups = partition(chunks2, nG).map(g => g.join(/[A-Za-z]/.test(g.join('')) ? ' ' : ''));
-    const recap = !mk && !fixedN && nC > groups.length && groups.length >= 2;
+    const recap = !multiline && !mk && !fixedN && nC > groups.length && groups.length >= 2;
     let units = groups.map(g => ({ text: g, w: [...g].length + 1.6 }));
     if (recap) units.push({ text: ln.text, w: (units.reduce((a, u) => a + u.w, 0) / units.length) * 1.25, recap: true });
     // a locked line keeps its own cuts too (the cut count would otherwise follow the 細かさ slider or おまかせ)
@@ -405,20 +426,30 @@ J.plan = (project, audio) => {
     let lineBg = ov.bg && J.BG[ov.bg] ? ov.bg : pickBg(rng, st, en, fx, bgHistory);
     bgHistory.push(lineBg);
     let lineBgP = J.BG[lineBg] && J.BG[lineBg].plan ? J.BG[lineBg].plan(rng, st) : {};
+    let textOffset = 0;
     units.forEach((u, k) => {
       const cs = bounds[k], ce = bounds[k + 1], dur = ce - cs;
-      const halves = zones ? splitHalf(u.text, plan.lang) : null;               // 中央を空ける: 「花が」｜「咲いた」
+      const halves = zones && !u.text.includes('\n') ? splitHalf(u.text, plan.lang) : null;               // 中央を空ける: 「花が」｜「咲いた」
       const txt = halves ? halves[0] : u.text;
       const nn = Math.max(...(halves || [u.text]).map(t => [...t.replace(/\s+/g, '')].length));
-      const emph = kime || ln.impact && (k === 0 || u.recap) || ln.emph.some(w => u.text.includes(w));
+      // *강조* / ~약하게~ spans (counted over this cut's own characters)
+      const un = [...u.text.replace(/\s+/g, '')].length;
+      const begin = u.recap ? 0 : textOffset;
+      const spans = (ln.strengthSpans || []).filter(span => span.start < begin + un && span.end > begin);
+      const emphasis = spans.some(span => span.strong), suppressed = !emphasis && spans.some(span => !span.strong);
+      textOffset += un;
+      const emph = kime || ln.impact && (k === 0 || u.recap) || emphasis;
+      const fx = suppressed ? Object.assign({}, plan.fx, { motion: plan.fx.motion * 0.25, glitch: plan.fx.glitch * 0.25, decor: plan.fx.decor * 0.4 }) : plan.fx;
+      const eventStart = plan.events.length;
       const Z = zoneOf(li), LW = Z ? Z.w : layoutW, LH = Z ? Z.h : layoutH;       // the frame this cut is laid out in (band / 표시 영역 / whole)
       const UU = U && !ovAny ? U : null;                              // per-line settings always win over 統一感
       const tech = cutTechOf(ov, k);                                  // 이 컷만의 지정
-      let layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, LH > LW);
-      if (UU) layout = UU.layout(li, layout, { nn, dur, emph, kime, rng, portrait: LH > LW, recap: u.recap });
+      const multi = txt.includes('\n');                              // explicit line breaks: one centred block
+      let layout = multi ? 'center' : ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, LH > LW);
+      if (UU && !multi) layout = UU.layout(li, layout, { nn, dur, emph, kime, rng, portrait: LH > LW, recap: u.recap });
       // 우타하메 (per line): the characters come in with the singing, so the lyric may only be drawn once
       const uta = !!ov.utahame && !u.recap;
-      if (uta && !ov.layout && !UTA_LAYOUTS.includes(layout)) { const pool = UTA_LAYOUTS.filter(k2 => en.layout[k2] !== false); layout = rng.pick(pool.length ? pool : UTA_LAYOUTS); }
+      if (uta && !multi && !ov.layout && !UTA_LAYOUTS.includes(layout)) { const pool = UTA_LAYOUTS.filter(k2 => en.layout[k2] !== false); layout = rng.pick(pool.length ? pool : UTA_LAYOUTS); }
       let enter = ov.enter && J.ENTER[ov.enter] ? ov.enter : pickEnter(rng, st, en, layout, dur, history, emph, nn);
       let exit = ov.exit && J.EXIT[ov.exit] ? ov.exit : pickExit(rng, st, en, layout, dur, k === units.length - 1, history);
       let hold = ov.hold && J.HOLD[ov.hold] ? ov.hold : pickHold(rng, en, fx, history);
@@ -447,6 +478,7 @@ J.plan = (project, audio) => {
       if (!U && nSchemes > 1 && k > 0 && rng.chance(0.12 * fx.bgSwitch)) sch = (schemeIdx + 1) % nSchemes;
       let LD = J.LAYOUTS[layout];
       let params = LD.plan(rng, { text: txt, n: nn, W: LW, H: LH, dur }, st);
+      if (multi) params.sx = 1;
       let decor = Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, fx, layout, history);
       let treat = ov.treat && J.TREAT[ov.treat] ? ov.treat : pickTreat(rng, st, en, fx, LD, emph, history, !!mk);
       if (UU) { decor = UU.decor(li, decor, { layout, kime, rng }); treat = UU.treat(li, treat, { kime, rng, LD }); }
@@ -514,7 +546,9 @@ J.plan = (project, audio) => {
       const joinSaved = { enter, inDur, prevExit: prevCut && prevCut.exit, prevOut: prevCut && prevCut.outDur };
       // a locked line keeps its own exit: the next (unlocked) line may not replace it with a transition / morph
       const prevLockedOther = prevCut && prevCut.line !== li && !LS && ((project.overrides || {})[prevCut.line] || {}).lock;
-      const canTrans = prevCut && Math.abs(prevCut.end - cs) < 0.06 && prevCut.layout !== 'interlude' && dur > 0.5 && !prevLockedOther;
+      // Emphasis is a lyric directive, including when an older cut saved OFF.
+      const frontmost = emphasis || !!((project.lyricCutOptions || {})[`${li}:${k}`] || {}).frontmost;
+      const canTrans = prevCut && ln.group == null && prevCut.group == null && !!prevCut.frontmost === frontmost && Math.abs(prevCut.end - cs) < 0.06 && prevCut.layout !== 'interlude' && dur > 0.5 && !prevLockedOther;
       // 統一感: モーフ — the next part of the same line grows out of this one (shared characters glide, the rest melts)
       if (LS) {                                       // locked: the same join as before, when the cuts still touch
         if (canTrans && LS.morph) { morph = { dur: LS.morph.dur }; prevCut.exit = 'cut'; prevCut.outDur = 0; }
@@ -554,7 +588,7 @@ J.plan = (project, audio) => {
         prevCut.exit = 'cut'; prevCut.outDur = 0;
       }
       if (uta) { enter = 'cut'; inDur = 0.12; }                       // 우타하메: no entrance (see J.mainDraw)
-      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, part: k, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: cutSeed, area, frontmost: !!((project.lyricCutOptions || {})[`${li}:${k}`] || {}).frontmost, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
+      const cut = makeCut({ text: txt, lineText: ln.text, note: ln.note, line: li, part: k, group: ln.group, start: cs, end: ce, layout, enter, exit, hold, inDur, outDur, params, decor, scheme: sch, seed: cutSeed, area, frontmost: !!frontmost, emphasis, suppressed, motionScale: suppressed ? 0.25 : 1, contentScale: suppressed ? 0.7 : 1, emph, recap: !!u.recap, words: J.chunkText(txt), stagger: rng.range(0.025, 0.06),
         treat, treatP, bg, bgP: techBgP || (bg === lineBg ? lineBgP : {}), cam, camP, trans, transP, transDur, zone: Z, utext: u.text });
       // karaoke sync: [time since cut start, share of this cut's text already sung]
       if (uci && !u.recap) {
@@ -606,6 +640,7 @@ J.plan = (project, audio) => {
         let extra = 0;
         for (const e of mine) if (e.type === 'chroma' || e.type === 'shake' && emph || extra++ < 1) plan.events.push(e);
       }
+      if (suppressed) for (let j = eventStart; j < plan.events.length; j++) plan.events[j].amp *= 0.25;
     });
     // interlude in long gaps, or wherever the lyrics mark one with [간주]
     const nextStart = li < parsed.lines.length - 1 ? tm.starts[li + 1] : null;
@@ -685,6 +720,7 @@ J.plan = (project, audio) => {
   plan.events.sort((a, b) => a.t - b.t);
   plan.energy = audio && audio.energy ? audio.energy : null;
   plan.energyRate = audio && audio.energyRate ? audio.energyRate : 0;
+  if (J.finishLyricPlan) J.finishLyricPlan(project, plan, audio);
   return plan;
 };
 

@@ -97,6 +97,13 @@ J.saveFontFile = async (key, file) => {
     });
   } finally { db.close(); }
 };
+J.readFontFile = async key => {
+  const db = await fontDatabase();
+  try { return await new Promise((resolve,reject) => {
+    const q = db.transaction('files').objectStore('files').get(key);
+    q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error);
+  }); } finally { db.close(); }
+};
 const readFontFile = async key => {
   const db = await fontDatabase();
   try {

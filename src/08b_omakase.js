@@ -103,6 +103,10 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
     if (o.lock) overrides[i] = Object.assign({}, o);
     else if (o.area) overrides[i] = { area: o.area };
   }
-  return { mood, style, fx, enabled, fonts, colors, overrides, seed: Math.floor(rnd() * 1e9) };
+  const look = { mood, style, fx, enabled, fonts, colors, overrides, seed: Math.floor(rnd() * 1e9) };
+  if (J.randomMediaEffectSettings) for (const layer of ['foreground', 'media']) {
+    look[layer] = Object.assign({}, project[layer], { effects: J.randomMediaEffectSettings(project, layer, rnd) });
+  }
+  return look;
 };
 })();

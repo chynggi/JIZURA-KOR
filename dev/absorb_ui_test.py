@@ -318,7 +318,7 @@ async def test_fork_features(b, url):
 
     await pg.locator('#sourceMedia').click()
     await pg.locator('#mediaFiles').set_input_files([svg_img('one.svg'), svg_img('two.svg'), svg_img('three.svg')])
-    await pg.locator('#mediaRandom').check(); await pg.locator('#mediaLoop').check(); await pg.locator('#btnTap').click()
+    await pg.locator('#mediaRandom').check(); await pg.locator('#mediaLoop').check(); await pg.locator('#btnTapMedia').click()  # 포크: 배경·전경 탭에서는 곡·타이밍 섹션이 숨고 이 버튼을 쓴다
     for i in range(5):
         await pg.evaluate("(t) => { J.ui.t = t; document.querySelector('#tapBtn').click(); }", i + 0.3)
     order_ok = await pg.evaluate('''() => {
@@ -340,7 +340,7 @@ async def test_fork_features(b, url):
 
     await pg.locator('#sourceForeground').click()
     await pg.locator('#mediaFiles').set_input_files([svg_img('front-one.svg'), svg_img('front-two.svg')])
-    await pg.locator('#mediaLoop').check(); await pg.locator('#btnTap').click()
+    await pg.locator('#mediaLoop').check(); await pg.locator('#btnTapMedia').click()
     for i in range(3):
         await pg.evaluate("(t) => { J.ui.t = t; document.querySelector('#tapBtn').click(); }", i + 0.4)
     order_ok2 = await pg.evaluate('''() => {
