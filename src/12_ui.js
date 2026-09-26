@@ -158,7 +158,7 @@ function mergeProject(p) {
   for (const [role, k] of Object.entries((p && p.fonts) || {})) if (typeof k === 'string' && J.FONTS[k] && /^[\w-]+$/.test(role)) o.fonts[role] = k;
   return o;
 }
-const SET_UI = { horror: { name: 'ホラー', badge: 'ホ' }, typo: { name: '文字PV系', badge: '文' }, kinetic: { name: 'キネティック', badge: 'キ' } };
+const SET_UI = { horror: { name: '호러', badge: '호' }, typo: { name: '타이포', badge: '타' }, kinetic: { name: '키네틱', badge: '키' } };
 function setBadges(d) {
   return (d && d.extra ? '<span class="set-badge ex" title="첫 공개 버전 이후 추가">추가</span>' : '') + (d && d.wa ? '<span class="set-badge" title="일본풍 연출">일본풍</span>' : '')
     + (d && d.set && SET_UI[d.set] ? `<span class="set-badge set-${d.set}" title="${SET_UI[d.set].name}">${SET_UI[d.set].badge}</span>` : '');
@@ -625,7 +625,7 @@ function followLine(li) {
   if (performance.now() - listTouched < 2500) return;                       // the user is scrolling the list
   const el = S.lineEls[li], col = el && el.closest('.col-left');
   if (!el || !col || col.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-  const tp = $('tapPanel'), pad = tp && !tp.hidden ? tp.offsetHeight + 12 : 8;   // 固定表示中のタップboxの下に隠れないように
+  const tp = $('tapPanel'), pad = tp && !tp.hidden ? tp.offsetHeight + 12 : 8;   // 고정 표시 중인 tapBox 아래에 가려지지 않도록
   const r = el.getBoundingClientRect(), c = col.getBoundingClientRect();
   if (r.top >= c.top + pad && r.bottom <= c.bottom - 8) return;
   col.scrollTo({ top: col.scrollTop + (r.top - c.top) - Math.max(c.height * 0.3, pad + 24), behavior: 'smooth' });
@@ -875,8 +875,8 @@ function connectTimelineBoundaries(source, target) {
 
 /* ---------------- cut info ---------------- */
 const CHIP_GROUPS = [
-  ['layout', 'l', 'レイアウト'], ['enter', 'e', '登場'], ['hold', 'h', '保持'], ['exit', 'x', '退場'],
-  ['decor', '', '装飾'], ['treat', 't', '加工'], ['bg', 'b', '背景'], ['cam', 'c', 'カメラ'], ['trans', 'c', 'つなぎ'],
+  ['layout', 'l', '레이아웃'], ['enter', 'e', '등장'], ['hold', 'h', '유지'], ['exit', 'x', '퇴장'],
+  ['decor', '', '장식'], ['treat', 't', '글자 가공'], ['bg', 'b', '배경'], ['cam', 'c', '카메라'], ['trans', 'c', '컷 간 전환'],
 ];
 const cutPick = { g: null, line: -1, k: -1 };
 let lastCutIdx = -2;
@@ -926,7 +926,7 @@ function cutGroupVal(cut, g) {
   return '';
 }
 function groupName(g, k) {
-  if (!k) return 'なし';
+  if (!k) return '없음';
   const tbl = J.registry(g);
   return (tbl && tbl[k] && tbl[k].name) || k;
 }
@@ -954,7 +954,7 @@ function rerollCurrentCut(kind) {
   if (S.exporting || S.tap) return;
   const cut = J.cutAt(S.plan, S.t);
   const k = lyricCutK(cut);
-  if (!cut || k < 0) { toast('この位置のカットは抽選できません'); return; }
+  if (!cut || k < 0) { toast('이 위치의 컷은 다시 뽑을 수 없습니다'); return; }
   remember();
   const n = [...String(cut.text || '').replace(/\s+/g, '')].length;
   const groups = kind === 'omakase'
@@ -971,7 +971,7 @@ function rerollCurrentCut(kind) {
   replan();
   commit();
   seek(t0);
-  toast(kind === 'omakase' ? 'このカットをおまかせ' : 'このカットをシャッフル');
+  toast(kind === 'omakase' ? '이 컷만 자동으로 만들기' : '이 컷만 섞기');
 }
 function updateCutInfo() {
   const cut = J.cutAt(S.plan, S.t);
@@ -1011,8 +1011,8 @@ function updateCutInfo() {
     const forced = slot[g] != null && slot[g] !== '' && !quiet[g];
     bits.push(`<button type="button" class="chip ${cls}${forced ? ' is-forced' : ''}" data-g="${g}" aria-pressed="${cutPick.g === g ? 'true' : 'false'}" ${k < 0 ? 'disabled' : ''}><b>${label}</b>${escapeHtml(groupName(g, cutGroupVal(cut, g)))}</button>`);
   });
-  bits.push(`<button type="button" class="ghost small cut-roll" data-roll="shuffle" ${k < 0 ? 'disabled' : ''} title="このカットだけ構成を再抽選">シャッフル</button>`);
-  bits.push(`<button type="button" class="ghost small cut-roll accent" data-roll="omakase" ${k < 0 ? 'disabled' : ''} title="このカットだけ手法をランダムに">おまかせ</button>`);
+  bits.push(`<button type="button" class="ghost small cut-roll" data-roll="shuffle" ${k < 0 ? 'disabled' : ''} title="이 컷만 구성을 다시 뽑기">섞기</button>`);
+  bits.push(`<button type="button" class="ghost small cut-roll accent" data-roll="omakase" ${k < 0 ? 'disabled' : ''} title="이 컷만 기법을 무작위로">자동</button>`);
   el.innerHTML = bits.join('') + mediaChips;
   if (k >= 0) {
     el.querySelectorAll('button.chip[data-g]').forEach(b => b.addEventListener('click', () => toggleCutPick(b.dataset.g, cut, k)));
@@ -1060,7 +1060,7 @@ function fillCutPick() {
     const none = document.createElement('button');
     none.type = 'button';
     none.className = 'tcard' + (forced === 'none' ? ' is-on' : '');
-    none.innerHTML = '<span class="tcard-name" style="padding:16px 6px"><span>なし</span></span>';
+    none.innerHTML = '<span class="tcard-name" style="padding:16px 6px"><span>없음</span></span>';
     none.addEventListener('click', () => { setCutTech(cutPick.line, cutPick.k, g, 'none'); replan(); });
     grid.appendChild(none);
   }
@@ -1901,9 +1901,9 @@ function updateHist() {
            this does not pin one technique in place.
    params: freezes the current value of the effects sliders, on-twos and flash.
    Neither goes into J.plan: they only bracket the places that rewrite the look (Randomize, mood reroll). */
-const LOCK_TITLE_ON = 'おまかせ／シャッフルで変えないようにロック';
-const TECH_LOCK_ON = 'おまかせでON／OFFを変えないようにロック';
-const LOCK_TITLE_OFF = 'ロック中。クリックで解除';
+const LOCK_TITLE_ON = '자동으로 만들기/셔플에서 바뀌지 않도록 잠금';
+const TECH_LOCK_ON = '자동으로 만들기에서 ON/OFF가 바뀌지 않도록 잠금';
+const LOCK_TITLE_OFF = '잠금 중. 클릭하면 해제';
 function locksOf() {
   const P = S.project;
   if (!P.locks) P.locks = { tech: {}, params: {} };
@@ -1920,15 +1920,15 @@ function groupLabel(g) { const m = GROUPS.find(x => x[0] === g); return m ? m[1]
 function toggleTechLock(g) {
   const L = locksOf();
   remember();
-  if (L.tech[g]) { delete L.tech[g]; toast('ロック解除：' + groupLabel(g)); }
-  else { L.tech[g] = true; toast('ロック：' + groupLabel(g)); }
+  if (L.tech[g]) { delete L.tech[g]; toast('잠금 해제: ' + groupLabel(g)); }
+  else { L.tech[g] = true; toast('잠금: ' + groupLabel(g)); }
   commit(); autosave(); renderTech();
 }
 function toggleParamLock(k) {
   const L = locksOf();
   remember();
-  if (L.params[k]) { delete L.params[k]; toast('ロック解除：' + lockName(k)); }
-  else { L.params[k] = true; toast('ロック：' + lockName(k)); }
+  if (L.params[k]) { delete L.params[k]; toast('잠금 해제: ' + lockName(k)); }
+  else { L.params[k] = true; toast('잠금: ' + lockName(k)); }
   commit(); autosave(); renderFx();
 }
 function lockedEnabled() {                        // ON/OFF selection of every locked group, as it is now
@@ -2062,7 +2062,7 @@ function toast(m, cols) {
 /* ---------------- かんたん / 詳細 ---------------- */
 function setMode(m) {
   S.mode = m === 'easy' ? 'easy' : m === 'mobile' ? 'mobile' : 'pro';
-  const mobile = S.mode === 'mobile', easy = S.mode === 'easy' || mobile;   // スマホ = the かんたん panel, laid out for a phone
+  const mobile = S.mode === 'mobile', easy = S.mode === 'easy' || mobile;   // 스마트폰 = the 간단 panel, laid out for a phone
   $('app').classList.toggle('is-easy', easy);
   $('app').classList.toggle('is-mobile', mobile);
   $('app').classList.remove('menu-open'); $('btnMenu').setAttribute('aria-expanded', 'false');
@@ -2321,11 +2321,11 @@ async function runExport(kind) {
   let wake = null; try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) { wake = null; }
   // スマホ: at most 1080p (phones run out of memory / encoder time at 1440p and 4K)
   const proj = S.mode === 'mobile' && (S.project.res || 1080) > 1080 ? Object.assign({}, S.project, { res: 1080 }) : S.project;
-  if (proj !== S.project) toast('スマホの画面では 1080p で書き出します');
+  if (proj !== S.project) toast('스마트폰 화면에서는 1080p로 내보냅니다');
   try {
     await J.ensureFonts(S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS, J.fontsOfPlan(S.plan));
     const lost = J.missingUserFonts(J.fontsOfPlan(S.plan).concat(Object.values(S.project.fonts || {})));
-    if (lost.length) throw new Error(`読み込んだ書体（${[...new Set(lost)].join('・')}）がこのブラウザにないため、書き出しを止めました。「フォント」から同じファイルを読み込み直すか、別の書体を選んでください`);
+    if (lost.length) throw new Error(`불러온 서체(${[...new Set(lost)].join('·')})가 이 브라우저에 없어 내보내기를 멈췄습니다. 「글꼴」에서 같은 파일을 다시 불러오거나 다른 서체를 선택해 주세요`);
     if (kind === 'mp4' || kind === 'mp4file') {
       const plan = S.plan, range = exportRange(), span = J.exportSpan(plan, range);
       const r = await J.exportMP4({ plan, project: proj, audio: S.project.includeAudio !== false ? S.audio : null, quality: S.project.quality || 'high', onProgress, signal: ac.signal, range, file });
@@ -2719,7 +2719,7 @@ function tapBack() {                    // 1つ戻る: undo the last tap and jum
 function stopTap() { const base = S.tap && S.tap.base; S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); followLineStarts(base); flushSave(); }
 function updateTap() {
   const bb = $('tapBack'); if (bb) bb.disabled = !S.tap.done.length;
-  $('tapPanel').classList.toggle('compact', S.tap.done.length > 0);   // 最初の数回が終わったら説明を畳んで、固定しても邪魔にならないように
+  $('tapPanel').classList.toggle('compact', S.tap.done.length > 0);   // 처음 몇 번이 끝나면 설명을 접어서, 고정해도 방해되지 않도록
   if (S.tap.append) {
     const order = J.mediaOrder(S.project, S.tap.layer);
     $('tapLine').textContent = `${S.tap.i + 1}. ${order.length ? order[S.tap.i % order.length].name : '이미지 없음'}`; return;
@@ -3020,9 +3020,9 @@ function bind() {
   }));
   setSwitch('extra-toggle', 'extra', true, '추가 연출: 사용', '추가 연출: 사용 안 함 (초기 공개판 연출만)');
   setSwitch('wa-toggle', 'wa', true, '일본풍 연출: 사용', '일본풍 연출: 사용 안 함 (자동 생성·셔플에서 제외)');
-  setSwitch('typo-toggle', 'typo', true, '文字PV系の部品：使う', '文字PV系の部品：使わない（おまかせ・シャッフルで選ばれません）');
-  setSwitch('kinetic-toggle', 'kinetic', true, 'キネティックの部品：使う', 'キネティックの部品：使わない（おまかせ・シャッフルで選ばれません）');
-  setSwitch('horror-toggle', 'horror', true, 'ホラーの演出：使う（おまかせの雰囲気に「ホラー」が加わります）', 'ホラーの演出：使わない');
+  setSwitch('typo-toggle', 'typo', true, '타이포 부품: 사용', '타이포 부품: 사용 안 함(자동으로 만들기·셔플에서 선택되지 않습니다)');
+  setSwitch('kinetic-toggle', 'kinetic', true, '키네틱 부품: 사용', '키네틱 부품: 사용 안 함(자동으로 만들기·셔플에서 선택되지 않습니다)');
+  setSwitch('horror-toggle', 'horror', true, '호러 연출: 사용(자동으로 만들기의 분위기에 「호러」가 추가됩니다)', '호러 연출: 사용 안 함');
   setSwitch('unify-toggle', 'unify', true, '통일감: 켬(파트별로 맞추고 킬링 파트·모프·굵기도 사용)', '통일감: 끔');
   setSwitch('typeset-toggle', 'typeset', true, '문자 정렬: 켬(자간·조사·영문·0.2초 먼저·효과 절제)', '문자 정렬: 끔');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
@@ -3289,7 +3289,7 @@ async function restoreFonts() {
   if (!list.length) return;
   const missing = await J.restoreUserFonts(list);
   fontKey = ''; renderFontRoles(); replan();
-  if (missing.length) toast(`読み込んだ書体（${missing.join('・')}）がこのブラウザにありません。「フォント」から同じファイルを読み込み直してください（それまでは近い書体で表示します）`);
+  if (missing.length) toast(`불러온 서체(${missing.join('·')})가 이 브라우저에 없습니다. 「글꼴」에서 같은 파일을 다시 불러와 주세요(그동안은 비슷한 서체로 표시합니다)`);
 }
 
 /* ---------------- boot ---------------- */

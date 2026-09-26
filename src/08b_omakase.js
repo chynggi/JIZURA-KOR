@@ -21,7 +21,7 @@ J.MOODS = {
   emotional: { name: '감성', fx: { motion: [0.55, 0.85], glitch: [0.3, 0.6], chroma: [0.5, 0.85], decor: [0.3, 0.6], density: [0.4, 0.7], texture: [0.6, 1], bgSwitch: [0.2, 0.5], react: [0.3, 0.7] },
     layout: ['huge', 'center', 'vcols', 'stack', 'condensed', 'mixed', 'circle'], enter: ['assemble', 'blur', 'zoom', 'wipe', 'slice'], exit: ['drift', 'explode', 'fall', 'blur'], styles: ['noir', 'paper', 'hud', 'mono', 'crimson'] },
   // ホラー: only offered when the project's ホラー switch is on (the horror set's parts come with it)
-  horror:    { name: 'ホラー', set: 'horror', fx: { motion: [0.35, 0.65], glitch: [0.3, 0.7], chroma: [0.2, 0.5], decor: [0.3, 0.6], density: [0.3, 0.55], texture: [0.7, 1], bgSwitch: [0.1, 0.3] },
+  horror:    { name: '호러', set: 'horror', fx: { motion: [0.35, 0.65], glitch: [0.3, 0.7], chroma: [0.2, 0.5], decor: [0.3, 0.6], density: [0.3, 0.55], texture: [0.7, 1], bgSwitch: [0.1, 0.3] },
     layout: ['center', 'vcols', 'stack', 'huge', 'type'], enter: ['flicker', 'blur', 'type', 'scramble'], exit: ['blur', 'glitch', 'fall', 'drift'], styles: ['noir', 'mono', 'crimson'], noHold: ['wave'], sprinkle: 0.1 },
   chaos:     { name: '전부 넣기', fx: { motion: [0.5, 1], glitch: [0.3, 1], chroma: [0.4, 1], decor: [0.4, 1], density: [0.45, 0.9], texture: [0.3, 1], bgSwitch: [0.3, 0.9], react: [0.3, 1] },
     layout: null, enter: null, exit: null, styles: null },

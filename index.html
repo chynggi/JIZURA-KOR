@@ -610,10 +610,10 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
       <input id="songTitle" type="text" placeholder="곡명(타이틀 카드·HUD에 표시)" aria-label="곡명">
       <input id="songArtist" type="text" placeholder="아티스트" aria-label="아티스트">
     </div>
-    <button id="btnOmakaseTop" class="primary omk-top" title="スタイル・雰囲気・演出・配色をまるごとランダムに">おまかせ</button>
-    <button id="btnMenu" class="ghost menu-btn" aria-expanded="false" aria-controls="appMenu">メニュー</button>
+    <button id="btnOmakaseTop" class="primary omk-top" title="스타일·분위기·연출·색 배합을 통째로 무작위로">자동</button>
+    <button id="btnMenu" class="ghost menu-btn" aria-expanded="false" aria-controls="appMenu">메뉴</button>
     <div class="modes" role="group" aria-label="편집 모드">
-      <button id="modeMobile" class="mode-mobile" aria-pressed="false" title="スマホ向けの画面（おまかせを上に固定、行はたたんで表示）">スマホ</button>
+      <button id="modeMobile" class="mode-mobile" aria-pressed="false" title="스마트폰용 화면(자동 버튼을 위에 고정, 행은 접어서 표시)">스마트폰</button>
       <button id="modeEasy" aria-pressed="false" title="자동 생성 중심의 간단한 화면">간단</button>
       <button id="modePro" aria-pressed="true" title="모든 설정 표시">고급</button>
       <button id="btnTour" class="ghost tour-btn" title="간단 모드 사용법을 안내합니다" aria-label="사용법 안내">？</button>
@@ -748,10 +748,10 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
       <div class="cutinfo" id="cutInfo"></div>
       <div id="cutPick" class="cut-pick pro-only" hidden>
         <div class="cut-pick-h">
-          <strong id="cutPickTitle">手法</strong>
-          <span class="muted" id="cutPickHint">このカットだけ差し替え</span>
-          <button type="button" id="cutPickAuto" class="ghost small">自動</button>
-          <button type="button" id="cutPickClose" class="ghost small" aria-label="閉じる">✕</button>
+          <strong id="cutPickTitle">기법</strong>
+          <span class="muted" id="cutPickHint">이 컷만 교체</span>
+          <button type="button" id="cutPickAuto" class="ghost small">자동</button>
+          <button type="button" id="cutPickClose" class="ghost small" aria-label="닫기">✕</button>
         </div>
         <div id="cutPickGrid" class="tech-grid checks"></div>
       </div>
@@ -773,9 +773,9 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
           <div class="pick-sets">
             <label class="check"><input id="eExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>첫 공개 이후 추가된 약 350개 연출, 12개 스타일, 6개 글꼴도 자동 생성과 셔플 후보에 포함합니다. 끄면 초기 공개판의 연출만 사용합니다.</small></span></label>
             <label class="check"><input id="eWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>초롱, 엽서, 쇼지, 부채, 가문 문양, 세이가이하, 벚꽃잎 등의 일본풍 그래픽입니다. 끄면 자동 생성과 셔플에서 선택되지 않습니다.</small></span></label>
-            <label class="check"><input class="typo-toggle" type="checkbox" checked><span>文字PV系の部品を使う<small>線・数字・字組みだけで見せる、文字PVらしい部品（約50）</small></span></label>
-            <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>キネティックの部品を使う<small>語ごとに動く・跳ねる・積み上がる、動き重視の部品（約50）</small></span></label>
-            <label class="check"><input class="horror-toggle" type="checkbox"><span>ホラーの演出も使う<small>不気味な雰囲気の部品（約50）と配色セット3。オンにすると、おまかせの雰囲気に「ホラー」が加わります</small></span></label>
+            <label class="check"><input class="typo-toggle" type="checkbox" checked><span>타이포 부품도 사용<small>선·숫자·글자 배치만으로 보여주는, 타이포다운 부품(약 50개)</small></span></label>
+            <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>키네틱 부품도 사용<small>단어마다 움직이고 튀고 쌓이는, 움직임 중심의 부품(약 50개)</small></span></label>
+            <label class="check"><input class="horror-toggle" type="checkbox"><span>호러 연출도 사용<small>으스스한 분위기의 부품(약 50개)과 배색 세트 3종. 켜면 자동으로 만들기의 분위기에 「호러」가 추가됩니다</small></span></label>
             <label class="check"><input class="unify-toggle" type="checkbox"><span>통일감</span></label>
             <label class="check"><input class="typeset-toggle" type="checkbox"><span>문자 정렬</span></label>
           </div>
@@ -809,7 +809,7 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
           <div class="outbtns"><button id="eMP4" class="primary">MP4 내보내기</button><button id="eMP4File" class="ghost mp4file" hidden title="저장할 파일을 먼저 고르고 거기에 바로 기록합니다. 긴 곡이나 1080p 이상에서 브라우저 메모리가 부족해 실패할 때 사용하세요(Chrome / Edge)">큰 동영상용(파일에 바로 저장)</button></div>
           <button class="terms-open linkish">내보낸 동영상의 권리</button>
           <div class="exp-box" hidden>
-            <button class="exp-share primary" hidden>共有して保存</button>
+            <button class="exp-share primary" hidden>공유하여 저장</button>
             <div class="progress"><i class="exp-bar"></i></div>
             <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">중지</button></div>
           </div>
@@ -869,12 +869,12 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
         <div class="pick-sets">
           <label class="check"><input id="tExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>「추가」 표시가 있는 기법·스타일·서체. 끄면 자동/셔플에서 첫 공개 버전의 연출만 사용합니다</small></span></label>
           <label class="check"><input id="tWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>「일본풍」 표시가 있는 기법과 스타일. 끄면 자동/셔플에서는 선택되지 않습니다(추가 분류 판정 이후 적용. 행마다 수동 지정한 경우에는 사용할 수 있습니다)</small></span></label>
-          <label class="check"><input class="typo-toggle" type="checkbox" checked><span>文字PV系の部品を使う<small>「文」印の手法。オフにすると、おまかせやシャッフルでは選ばれません</small></span></label>
-          <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>キネティックの部品を使う<small>「キ」印の手法。オフにすると、おまかせやシャッフルでは選ばれません</small></span></label>
-          <label class="check"><input class="horror-toggle" type="checkbox"><span>ホラーの演出も使う<small>「ホ」印の手法とスタイル。おまかせでは雰囲気が「ホラー」のときだけ使います</small></span></label>
+          <label class="check"><input class="typo-toggle" type="checkbox" checked><span>타이포 부품도 사용<small>「타」로 표시된 기법. 끄면 자동으로 만들기나 셔플에서 선택되지 않습니다</small></span></label>
+          <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>키네틱 부품도 사용<small>「키」로 표시된 기법. 끄면 자동으로 만들기나 셔플에서 선택되지 않습니다</small></span></label>
+          <label class="check"><input class="horror-toggle" type="checkbox"><span>호러 연출도 사용<small>「호」로 표시된 기법과 스타일. 자동으로 만들기에서는 분위기가 「호러」일 때만 사용합니다</small></span></label>
         </div>
         <div class="row" style="margin-bottom:10px"><input id="techFilter" type="text" placeholder="기법 이름으로 검색" style="flex:1" aria-label="기법 이름으로 검색"><span id="techTotal" class="muted mono"></span></div>
-        <p class="note">画面に見えているプレビューは自動でループします。</p>
+        <p class="note">화면에 보이는 미리보기는 자동으로 반복됩니다.</p>
         <div id="techLists"></div>
       </div>
 
@@ -901,7 +901,7 @@ dialog.mask-dlg { width: min(960px, calc(100vw - 32px)); }
           <button id="btnPNGL" title="후경(배경 그래픽과 가사 뒤 장식)과 전경(가사, 장식, 고스트)을 각각 back / front 폴더에 투명 PNG로 내보냅니다. 화면 전체 효과는 양쪽에 적용되므로 전경을 후경 위에 겹치면 일반 화면과 같은 모습이 됩니다.">투명 PNG 전경/후경 (ZIP)</button>
         </div>
         <div class="exp-box" hidden style="margin-top:12px">
-          <button class="exp-share primary" hidden>共有して保存</button>
+          <button class="exp-share primary" hidden>공유하여 저장</button>
           <div class="progress"><i class="exp-bar"></i></div>
           <div class="row" style="justify-content:space-between;margin-top:6px"><span class="exp-text muted mono">—</span><button class="exp-cancel ghost small">중지</button></div>
         </div>
@@ -3762,9 +3762,9 @@ J.defaultProject = () => ({
   style: 'noir', mood: null,
   extra: false,                   // random picks may use the parts added after the first version (追加分)
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
-  horror: false,                  // parts sets (independent of 'extra'): ホラー (also enables the ホラー mood)
-  typo: true,                     // 文字PV系 typographic parts
-  kinetic: true,                  // キネティック parts
+  horror: false,                  // parts sets (independent of 'extra'): 호러 (also enables the 호러 mood)
+  typo: true,                     // 타이포 typographic parts
+  kinetic: true,                  // 키네틱 parts
   lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' — picks the faces each font key is drawn with
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
   unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
@@ -4157,7 +4157,7 @@ J.plan = (project, audio) => {
       const emph = kime || ln.impact && (k === 0 || u.recap) || ln.emph.some(w => u.text.includes(w));
       const Z = zoneOf(li), LW = Z ? Z.w : layoutW, LH = Z ? Z.h : layoutH;       // the frame this cut is laid out in (band / 표시 영역 / whole)
       const UU = U && !ovAny ? U : null;                              // per-line settings always win over 統一感
-      const tech = cutTechOf(ov, k);                                  // このカットだけの指定
+      const tech = cutTechOf(ov, k);                                  // 이 컷만의 지정
       let layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, LH > LW);
       if (UU) layout = UU.layout(li, layout, { nn, dur, emph, kime, rng, portrait: LH > LW, recap: u.recap });
       // 우타하메 (per line): the characters come in with the singing, so the lyric may only be drawn once
@@ -4283,7 +4283,7 @@ J.plan = (project, audio) => {
         }
       }
       drawn.trans = trans;
-      if (tech.trans === 'none') {                  // このカットだけ「つなぎなし」: undo the join
+      if (tech.trans === 'none') {                  // 이 컷만 「전환 없음」: undo the join
         if (trans || morph) { enter = joinSaved.enter; inDur = joinSaved.inDur; if (prevCut) { prevCut.exit = joinSaved.prevExit; prevCut.outDur = joinSaved.prevOut; } }
         trans = null; transP = {}; transDur = 0; morph = null;
       } else if (tech.trans && J.TRANS[tech.trans] && canTrans) {
@@ -4799,12 +4799,12 @@ J.previewPlan = (project, group, key) => {
   });
   const [W, H] = J.designSize(project.aspect || '16:9');
   const rng = J.rng(J.h(J.sid(String(group) + ':' + String(key)), 11, 22));
-  let text = enUI ? 'Lyric' : '字面';
+  let text = enUI ? 'Lyric' : '글자';
   if (group === 'layout') {
     const L0 = J.LAYOUTS[key];
     const n2 = [...text.replace(/\s+/g, '')].length;
-    if (L0 && L0.fits && !L0.fits(n2)) text = enUI ? 'color of dawn' : '夜明けの色を';
-    if (L0 && L0.fits && !L0.fits([...text.replace(/\s+/g, '')].length)) text = enUI ? 'I remember the color of dawn' : '夜明けの色を覚えてる';
+    if (L0 && L0.fits && !L0.fits(n2)) text = enUI ? 'color of dawn' : '새벽의 빛깔을';
+    if (L0 && L0.fits && !L0.fits([...text.replace(/\s+/g, '')].length)) text = enUI ? 'I remember the color of dawn' : '새벽의 빛깔을 기억해';
   }
   const nn = [...text.replace(/\s+/g, '')].length;
   const dur = 2.4;
@@ -4849,8 +4849,8 @@ J.previewPlan = (project, group, key) => {
     const TD = J.TRANS[key];
     const transDur = J.clamp(TD.dur || 0.35, 0.18, 0.7);
     const transP = TD.plan ? (TD.plan(rng, st) || {}) : {};
-    const tA = enUI ? 'BEFORE' : '前のカット';
-    const tB = enUI ? 'AFTER' : '字面';
+    const tA = enUI ? 'BEFORE' : '이전 컷';
+    const tB = enUI ? 'AFTER' : '글자';
     let pA = {}, pB = {};
     try { pA = J.LAYOUTS.center.plan(rng, { text: tA, n: [...tA].length, W, H, dur: 1.2 }, st) || {}; } catch (e) {}
     try { pB = J.LAYOUTS.center.plan(rng, { text: tB, n: [...tB].length, W, H, dur: 1.2 }, st) || {}; } catch (e) {}
@@ -4917,7 +4917,7 @@ J.MOODS = {
   emotional: { name: '감성', fx: { motion: [0.55, 0.85], glitch: [0.3, 0.6], chroma: [0.5, 0.85], decor: [0.3, 0.6], density: [0.4, 0.7], texture: [0.6, 1], bgSwitch: [0.2, 0.5], react: [0.3, 0.7] },
     layout: ['huge', 'center', 'vcols', 'stack', 'condensed', 'mixed', 'circle'], enter: ['assemble', 'blur', 'zoom', 'wipe', 'slice'], exit: ['drift', 'explode', 'fall', 'blur'], styles: ['noir', 'paper', 'hud', 'mono', 'crimson'] },
   // ホラー: only offered when the project's ホラー switch is on (the horror set's parts come with it)
-  horror:    { name: 'ホラー', set: 'horror', fx: { motion: [0.35, 0.65], glitch: [0.3, 0.7], chroma: [0.2, 0.5], decor: [0.3, 0.6], density: [0.3, 0.55], texture: [0.7, 1], bgSwitch: [0.1, 0.3] },
+  horror:    { name: '호러', set: 'horror', fx: { motion: [0.35, 0.65], glitch: [0.3, 0.7], chroma: [0.2, 0.5], decor: [0.3, 0.6], density: [0.3, 0.55], texture: [0.7, 1], bgSwitch: [0.1, 0.3] },
     layout: ['center', 'vcols', 'stack', 'huge', 'type'], enter: ['flicker', 'blur', 'type', 'scramble'], exit: ['blur', 'glitch', 'fall', 'drift'], styles: ['noir', 'mono', 'crimson'], noHold: ['wave'], sprinkle: 0.1 },
   chaos:     { name: '전부 넣기', fx: { motion: [0.5, 1], glitch: [0.3, 1], chroma: [0.4, 1], decor: [0.4, 1], density: [0.45, 0.9], texture: [0.3, 1], bgSwitch: [0.3, 0.9], react: [0.3, 1] },
     layout: null, enter: null, exit: null, styles: null },
@@ -18382,7 +18382,7 @@ const shaky = (env, pts, col, lw, a, seed, amp) => {
 
 /* ================================================================== 1. flashlight */
 reg('hrFlashlight', {
-  name: '懐中電灯', tags: TAGS.concat(['emotional']), w: 1, busy: true, ae: 'circle', fits: n => n >= 1 && n <= 18,
+  name: '손전등', tags: TAGS.concat(['emotional']), w: 1, busy: true, ae: 'circle', fits: n => n >= 1 && n <= 18,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, rng.chance(0.6) ? ['serif', 'display'] : ['display'])), path: rng.pick(['read', 'read', 'search']), rk: rng.range(0.85, 1.1), dark: rng.range(0.9, 0.96), dust: rng.chance(0.7), sx: rng.range(-0.3, 0.3), sy: rng.range(-0.3, 0.3) };
   },
@@ -18433,7 +18433,7 @@ reg('hrFlashlight', {
 
 /* ================================================================== 2. door gap */
 reg('hrDoorGap', {
-  name: '扉の隙間', tags: TAGS.concat(['editorial']), w: 0.9, busy: true, ae: 'vcols', fits: n => n >= 1 && n <= 16,
+  name: '문틈', tags: TAGS.concat(['editorial']), w: 0.9, busy: true, ae: 'vcols', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     const n = J.glyphCount(cut.text);
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), vert: n <= 7 && !hasLatin(cut.text) && rng.chance(0.75), side: rng.pick([-1, 1]), pause: rng.range(0.16, 0.26), wedge: rng.chance(0.8) };
@@ -18486,7 +18486,7 @@ reg('hrDoorGap', {
 
 /* ================================================================== 3. obsessive wall writing */
 reg('hrWallScrawl', {
-  name: '壁の落書き', tags: TAGS.concat(['glitch']), w: 0.9, busy: true, ae: 'tile', fits: n => n >= 1 && n <= 14,
+  name: '벽 낙서', tags: TAGS.concat(['glitch']), w: 0.9, busy: true, ae: 'tile', fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), hand: handOf(rng, st), rows: rng.int(7, 10), mainHand: rng.chance(0.4), red: rng.range(0.06, 0.16), rise: rng.range(0.55, 0.8) };
   },
@@ -18533,7 +18533,7 @@ reg('hrWallScrawl', {
 
 /* ================================================================== 4. CCTV monitor */
 reg('hrCctv', {
-  name: '監視モニター', tags: TAGS.concat(['glitch', 'editorial']), w: 1, busy: true, treat: 'safe', ae: 'type', fits: n => n >= 1 && n <= 18,
+  name: '감시 모니터', tags: TAGS.concat(['glitch', 'editorial']), w: 1, busy: true, treat: 'safe', ae: 'type', fits: n => n >= 1 && n <= 18,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'body'])), v: rng.pick(['quad', 'quad', 'single']), act: rng.int(0, 3), cam0: rng.int(1, 12), box: rng.chance(0.7) };
   },
@@ -18607,7 +18607,7 @@ reg('hrCctv', {
 const KANA = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん';
 const ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 reg('hrOuija', {
-  name: '降霊盤', tags: TAGS, w: 0.7, portrait: 0.8, ae: 'type', fits: n => n >= 1 && n <= 14,
+  name: '영매판', tags: TAGS, w: 0.7, portrait: 0.8, ae: 'type', fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), fontB: rng.pick(fontsOf(st, ['serif'])), jit: rng.range(0.45, 0.9), latin: hasLatin(cut.text) };
   },
@@ -18679,7 +18679,7 @@ reg('hrOuija', {
 
 /* ================================================================== 6. missing poster */
 reg('hrMissing', {
-  name: '尋ね人', tags: TAGS.concat(['editorial']), w: 0.8, treat: 'safe', ae: 'labels', fits: n => n >= 1 && n <= 16,
+  name: '실종 전단', tags: TAGS.concat(['editorial']), w: 0.8, treat: 'safe', ae: 'labels', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), fontH: rng.pick(fontsOf(st, ['display'])), ang: rng.range(-3.5, 3.5), off: rng.range(-0.06, 0.06), torn: rng.int(1, 3), stains: rng.int(1, 3) };
   },
@@ -18752,7 +18752,7 @@ reg('hrMissing', {
 
 /* ================================================================== 7. the one wrong glyph */
 reg('hrWrongOne', {
-  name: '一字だけ違う', tags: TAGS.concat(['editorial', 'calm']), w: 1, ae: 'mixed', fits: n => n >= 2 && n <= 16,
+  name: '한 글자만 다름', tags: TAGS.concat(['editorial', 'calm']), w: 1, ae: 'mixed', fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) {
     const cs = [...flat(cut.text)].map((c, i) => [c, i]).filter(([c]) => c !== ' ' && !J.isPunct(c));
     const kan = cs.filter(([c]) => J.isKanji(c) || J.isKata(c) || /[A-Za-z]/.test(c));
@@ -18799,7 +18799,7 @@ reg('hrWrongOne', {
 
 /* ================================================================== 8. rising out of the dark */
 reg('hrRisingDark', {
-  name: '闇から這い出る', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'wave', fits: n => n >= 1 && n <= 14,
+  name: '어둠에서 기어나옴', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'wave', fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), pulls: rng.int(3, 5), span: rng.range(0.45, 0.6), rim: rng.chance(0.8) };
   },
@@ -18844,7 +18844,7 @@ reg('hrRisingDark', {
 
 /* ================================================================== 9. redacted file */
 reg('hrRedacted', {
-  name: '黒塗り文書', tags: TAGS.concat(['editorial']), w: 0.8, busy: true, ae: 'type', fits: n => n >= 1 && n <= 20,
+  name: '먹칠 문서', tags: TAGS.concat(['editorial']), w: 0.8, busy: true, ae: 'type', fits: n => n >= 1 && n <= 20,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'body', 'mono'])), row: rng.range(0.42, 0.58), stamp: rng.chance(0.75), stampAng: rng.range(-14, -6), leak: rng.range(0.1, 0.25) };
   },
@@ -18908,7 +18908,7 @@ reg('hrRedacted', {
 
 /* ================================================================== 10. static TV */
 reg('hrStaticTv', {
-  name: '砂嵐のテレビ', tags: TAGS.concat(['glitch']), w: 0.8, treat: 'safe', ae: 'circle', fits: n => n >= 1 && n <= 14,
+  name: '노이즈 티비', tags: TAGS.concat(['glitch']), w: 0.8, treat: 'safe', ae: 'circle', fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'body'])), off: rng.range(-0.06, 0.06), tune: rng.range(0.3, 0.5), ant: rng.range(18, 34) };
   },
@@ -18967,7 +18967,7 @@ reg('hrStaticTv', {
 
 /* ================================================================== 11. spirit photo */
 reg('hrSpiritPhoto', {
-  name: '心霊写真', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'gloss', fits: n => n >= 1 && n <= 16,
+  name: '심령사진', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'gloss', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { hand: handOf(rng, st), ang: rng.range(-5, 5), spot: [rng.range(0.25, 0.75), rng.range(0.3, 0.6)], win: rng.chance(0.6), side: rng.pick([1, -1]) };
   },
@@ -19031,7 +19031,7 @@ reg('hrSpiritPhoto', {
 
 /* ================================================================== 12. the shadow that does not match */
 reg('hrWrongShadow', {
-  name: '影が違う', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'stack', fits: n => n >= 1 && n <= 12,
+  name: '다른 그림자', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'stack', fits: n => n >= 1 && n <= 12,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), k: rng.range(1.5, 1.9), turn: rng.range(0.45, 0.65), dir: rng.pick([1, -1]), lean: rng.range(4, 9) };
   },
@@ -19148,7 +19148,7 @@ const alive = (it, amin = 0.9) => it.fill !== false && (it.alpha ?? 1) >= amin &
 
 /* between blinks: every time the screen blinks, the glyphs are closer */
 reg('enter', 'hrBlinkCreep', {
-  name: '瞬きの間に', tags: TAGS.concat(['emotional']), w: 0.9, ae: 'flicker', minDur: 1,
+  name: '눈 깜빡할 사이', tags: TAGS.concat(['emotional']), w: 0.9, ae: 'flicker', minDur: 1,
   inDur: dur => J.clamp(dur * 0.5, 0.6, 1.3),
   apply(env, it, p) {
     const seed = it.seed | 0, sz = it.size, cs = cseed(env), ord = orderOf(env, it);
@@ -19168,7 +19168,7 @@ reg('enter', 'hrBlinkCreep', {
 
 /* jump scare: faint and tiny, then it snaps at you and settles */
 reg('enter', 'hrJumpScare', {
-  name: '飛び出し', tags: TAGS.concat(['glitch', 'pop']), w: 0.7, ae: 'zoom', minDur: 0.9,
+  name: '불쑥 등장', tags: TAGS.concat(['glitch', 'pop']), w: 0.7, ae: 'zoom', minDur: 0.9,
   inDur: dur => J.clamp(dur * 0.42, 0.45, 1),
   apply(env, it, p) {
     const at = 0.62, seed = it.seed | 0;
@@ -19188,7 +19188,7 @@ reg('enter', 'hrJumpScare', {
 
 /* uneasy timing: glyphs arrive one by one after irregular, too-long pauses, each with a twitch */
 reg('enter', 'hrUneasy', {
-  name: '間の悪い出現', tags: TAGS.concat(['editorial']), w: 1, ae: 'type', minDur: 0.9,
+  name: '어색한 등장', tags: TAGS.concat(['editorial']), w: 1, ae: 'type', minDur: 0.9,
   inDur: (dur, n) => J.clamp(dur * 0.55, 0.5, 1.6),
   apply(env, it, p) {
     const cs = cseed(env), N = cutN(env), idx = indexOf(env, it), times = uneasyTimes(cs, N, 0.86), sz = it.size, acc = env.sc.accent;
@@ -19204,7 +19204,7 @@ reg('enter', 'hrUneasy', {
 
 /* vertical hold: the line rolls through the frame like a TV losing sync, then locks */
 reg('enter', 'hrVhold', {
-  name: '垂直同期', tags: TAGS.concat(['glitch']), w: 0.8, ae: 'slice',
+  name: '수직 동기', tags: TAGS.concat(['glitch']), w: 0.8, ae: 'slice',
   inDur: dur => J.clamp(dur * 0.4, 0.35, 0.8),
   apply(env, it, p) {
     const bx = J.itemBox(it), pad = it.size * 0.25, y0 = bx.y0 - pad, y1 = bx.y1 + pad, Hh = y1 - y0;
@@ -19227,7 +19227,7 @@ reg('enter', 'hrVhold', {
 
 /* mirror writing: it appears reversed, shudders, and snaps the right way round */
 reg('enter', 'hrMirrorSnap', {
-  name: '鏡文字', tags: TAGS.concat(['glitch']), w: 0.8, ae: 'flicker', minDur: 0.8,
+  name: '거울 문자', tags: TAGS.concat(['glitch']), w: 0.8, ae: 'flicker', minDur: 0.8,
   inDur: dur => J.clamp(dur * 0.45, 0.5, 1.1),
   apply(env, it, p) {
     const seed = it.seed | 0, [cx] = layCenter(it), sx = it.sx || 1, st = env.step;
@@ -19243,7 +19243,7 @@ reg('enter', 'hrMirrorSnap', {
 
 /* manifesting: it wavers in and out, each glyph on its own breath, and finally holds */
 reg('enter', 'hrManifest', {
-  name: '浮かび上がる', tags: TAGS.concat(['emotional', 'calm']), w: 1, ae: 'blur', minDur: 0.8,
+  name: '떠오르기', tags: TAGS.concat(['emotional', 'calm']), w: 1, ae: 'blur', minDur: 0.8,
   inDur: dur => J.clamp(dur * 0.5, 0.5, 1.4),
   apply(env, it, p) {
     const cs = cseed(env), idx = indexOf(env, it), sz = it.size, N = cutN(env);
@@ -19260,7 +19260,7 @@ reg('enter', 'hrManifest', {
 
 /* claw marks: four slanted tears open across the line and widen until it is all there */
 reg('enter', 'hrClawReveal', {
-  name: '爪痕から', tags: TAGS.concat(['graphic']), w: 0.8, ae: 'wipe',
+  name: '손톱자국에서', tags: TAGS.concat(['graphic']), w: 0.8, ae: 'wipe',
   inDur: dur => J.clamp(dur * 0.36, 0.3, 0.7),
   apply(env, it, p) {
     const seed = it.seed | 0, bx = J.itemBox(it), pad = it.size * 0.3;
@@ -19288,7 +19288,7 @@ reg('enter', 'hrClawReveal', {
 
 /* pulled under: glyphs are yanked down one by one; the last one clings and trembles first */
 reg('exit', 'hrPulledDown', {
-  name: '引きずり込み', tags: TAGS.concat(['glitch', 'emotional']), w: 1, ae: 'fall',
+  name: '끌려 들어가기', tags: TAGS.concat(['glitch', 'emotional']), w: 1, ae: 'fall',
   outDur: dur => J.clamp(dur * 0.4, 0.4, 0.9),
   apply(env, it, p) {
     const cs = cseed(env), N = cutN(env), idx = indexOf(env, it), H = env.H, sz = it.size, st = env.step;
@@ -19310,7 +19310,7 @@ reg('exit', 'hrPulledDown', {
 
 /* one stays behind: the line vanishes at once except one glyph, which turns to look, then is gone */
 reg('exit', 'hrLookBack', {
-  name: '一字残る', tags: TAGS.concat(['emotional']), w: 0.9, ae: 'cut', minDur: 1,
+  name: '한 글자만 남음', tags: TAGS.concat(['emotional']), w: 0.9, ae: 'cut', minDur: 1,
   outDur: dur => J.clamp(dur * 0.45, 0.55, 1.2),
   apply(env, it, p) {
     const cs = cseed(env), N = cutN(env), idx = indexOf(env, it), sz = it.size, st = env.step;
@@ -19330,7 +19330,7 @@ reg('exit', 'hrLookBack', {
 
 /* turning away: each glyph turns its back (edge-on, then reversed and darkened) and fades */
 reg('exit', 'hrTurnAway', {
-  name: '背を向ける', tags: TAGS.concat(['calm', 'emotional']), w: 0.9, ae: 'stretch',
+  name: '돌아서기', tags: TAGS.concat(['calm', 'emotional']), w: 0.9, ae: 'stretch',
   outDur: dur => J.clamp(dur * 0.4, 0.4, 0.9),
   apply(env, it, p) {
     const ord = orderOf(env, it), c0 = colOf(it), dk = nightC(env.sc), sz = it.size;
@@ -19346,7 +19346,7 @@ reg('exit', 'hrTurnAway', {
 
 /* shiver: a tremor that keeps growing, and glyphs drop out of existence between frames */
 reg('exit', 'hrShiver', {
-  name: '震えて消える', tags: TAGS.concat(['glitch']), w: 0.9, ae: 'glitch',
+  name: '떨며 사라짐', tags: TAGS.concat(['glitch']), w: 0.9, ae: 'glitch',
   outDur: dur => J.clamp(dur * 0.35, 0.35, 0.8),
   apply(env, it, p) {
     const cs = cseed(env), idx = indexOf(env, it), sz = it.size, st = env.step;
@@ -19361,7 +19361,7 @@ reg('exit', 'hrShiver', {
 
 /* swallowed: a stain of darkness spreads from one point and eats the line */
 reg('exit', 'hrSwallow', {
-  name: '闇に呑まれる', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'wipe',
+  name: '어둠에 삼켜짐', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'wipe',
   outDur: dur => J.clamp(dur * 0.4, 0.4, 0.9),
   apply(env, it, p) {
     const seed = it.seed | 0, bx = J.itemBox(it), sz = it.size;
@@ -19382,7 +19382,7 @@ reg('exit', 'hrSwallow', {
 
 /* dying light: the words strobe out, with single frames where they come back wrong */
 reg('exit', 'hrFlickerDie', {
-  name: '明滅して消える', tags: TAGS.concat(['glitch']), w: 0.9, ae: 'glitch',
+  name: '깜빡이다 사라짐', tags: TAGS.concat(['glitch']), w: 0.9, ae: 'glitch',
   outDur: dur => J.clamp(dur * 0.38, 0.35, 0.8),
   apply(env, it, p) {
     const seed = it.seed | 0, st = env.step, r = J.r(seed, st, 81);
@@ -19397,7 +19397,7 @@ reg('exit', 'hrFlickerDie', {
 
 /* draining: the ink level sinks inside each glyph while drips run out of the bottom */
 reg('exit', 'hrDrain', {
-  name: '滴り落ちる', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'wipe', minDur: 0.8,
+  name: '방울져 떨어짐', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'wipe', minDur: 0.8,
   outDur: dur => J.clamp(dur * 0.45, 0.5, 1.1),
   apply(env, it, p) {
     const cs = cseed(env), idx = indexOf(env, it), ord = orderOf(env, it), sz = it.size;
@@ -19431,7 +19431,7 @@ reg('exit', 'hrDrain', {
 
 /* twitch: dead still, then a rare violent jerk of one glyph (or the whole line) */
 reg('hold', 'hrTwitch', {
-  name: '痙攣', tags: TAGS.concat(['glitch']), w: 1, ae: 'glitchtick',
+  name: '경련', tags: TAGS.concat(['glitch']), w: 1, ae: 'glitchtick',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.02) return;
     const cs = cseed(env), st = env.step, idx = indexOf(env, it), N = cutN(env), sz = it.size;
@@ -19446,7 +19446,7 @@ reg('hold', 'hrTwitch', {
 
 /* staring: now and then one glyph slowly tilts its head towards you, holds, and snaps back */
 reg('hold', 'hrStare', {
-  name: '見つめる字', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'drift',
+  name: '쳐다보는 글자', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.02) return;
     const cs = cseed(env), idx = indexOf(env, it), N = cutN(env), per = 2, t = env.ltb - 0.3;
@@ -19460,7 +19460,7 @@ reg('hold', 'hrStare', {
 
 /* the late one: the line sways together, one glyph follows a moment too late */
 reg('hold', 'hrLagOne', {
-  name: '遅れる一字', tags: TAGS.concat(['calm']), w: 0.8, ae: 'drift',
+  name: '늦게 따라오는 글자', tags: TAGS.concat(['calm']), w: 0.8, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.02) return;
     const cs = cseed(env), idx = indexOf(env, it), N = cutN(env), sz = it.size, t = env.ltb, late = J.h(cs, 121) % N;
@@ -19472,7 +19472,7 @@ reg('hold', 'hrLagOne', {
 
 /* failing light: the words buzz, dim and drop out for a frame or two */
 reg('hold', 'hrFlickerLight', {
-  name: '切れかけの灯', tags: TAGS.concat(['glitch', 'emotional']), w: 0.9, ae: 'glitchtick',
+  name: '꺼질듯한 불빛', tags: TAGS.concat(['glitch', 'emotional']), w: 0.9, ae: 'glitchtick',
   apply(env, it, amt) {
     const k = amt * J.clamp(motionK(env), 0.4, 1.3); if (k < 0.02) return;
     const cs = cseed(env), st = env.step, run = st >> 1;
@@ -19489,7 +19489,7 @@ reg('hold', 'hrFlickerLight', {
 
 /* ink bleed: a dark halo seeps out of the letters and thin drips run down from some of them */
 reg('treat', 'hrInkBleed', {
-  name: '滲み垂れ', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'softShadow',
+  name: '잉크 번짐', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'softShadow',
   plan: rng => ({ drips: rng.range(0.25, 0.45), red: rng.chance(0.4) }),
   apply(env, it, P) {
     if (!alive(it)) return;
@@ -19521,7 +19521,7 @@ reg('treat', 'hrInkBleed', {
 
 /* eroded: letters worn away with pits and scratches in the background colour */
 reg('treat', 'hrEroded', {
-  name: '風化', tags: TAGS.concat(['editorial', 'graphic']), w: 0.8, ae: 'halftone',
+  name: '풍화', tags: TAGS.concat(['editorial', 'graphic']), w: 0.8, ae: 'halftone',
   plan: rng => ({ dens: rng.range(0.7, 1.2), scr: rng.chance(0.7) }),
   apply(env, it, P) {
     if (!alive(it)) return;
@@ -19549,7 +19549,7 @@ reg('treat', 'hrEroded', {
 
 /* redacted: a black bar covers part of the line and is pulled off later, leaving its outline */
 reg('treat', 'hrRedact', {
-  name: '黒塗り', tags: TAGS.concat(['editorial', 'graphic']), w: 0.7, ae: 'boxed',
+  name: '먹칠', tags: TAGS.concat(['editorial', 'graphic']), w: 0.7, ae: 'boxed',
   plan: rng => ({ at: rng.range(0.25, 0.5), frac: rng.range(0.3, 0.6), from: rng.range(0, 1) }),
   apply(env, it, P) {
     if (!alive(it)) return;
@@ -19581,7 +19581,7 @@ reg('treat', 'hrRedact', {
 
 /* double exposure: a second, fainter take of the line drifts out of register */
 reg('treat', 'hrDoubleExp', {
-  name: '二重露光', tags: TAGS.concat(['emotional', 'glitch']), w: 0.8, ae: 'echoOutline',
+  name: '이중 노출', tags: TAGS.concat(['emotional', 'glitch']), w: 0.8, ae: 'echoOutline',
   plan: rng => ({ amp: rng.range(0.18, 0.28), k: rng.range(1.03, 1.08) }),
   apply(env, it, P) {
     if (!alive(it)) return;
@@ -19655,7 +19655,7 @@ const lamp = (t, seed, rate = 1) => {
 
 /* claw scratches: parallel jagged gouges scraped in around the words */
 reg('decor', 'hrScratches', {
-  name: '引っ掻き傷', tags: TAGS.concat(['glitch']), w: 0.9, layer: 'front', ae: 'slash',
+  name: '긁힌 상처', tags: TAGS.concat(['glitch']), w: 0.9, layer: 'front', ae: 'slash',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env), out = 1 - E.inCubic(env.pOut);
@@ -19684,7 +19684,7 @@ reg('decor', 'hrScratches', {
 
 /* sigil: a slow-turning ring of marks and a seven-pointed star drawn in faint lines behind the words */
 reg('decor', 'hrSigil', {
-  name: '魔法陣', tags: TAGS.concat(['graphic']), w: 0.7, layer: 'back', subtle: true, ae: 'rings',
+  name: '마법진', tags: TAGS.concat(['graphic']), w: 0.7, layer: 'back', subtle: true, ae: 'rings',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env);
@@ -19712,7 +19712,7 @@ reg('decor', 'hrSigil', {
 
 /* the eye: a simple outline eye in a corner that opens, follows the words and blinks at the wrong moments */
 reg('decor', 'hrWatchEye', {
-  name: '見ている目', tags: TAGS.concat(['graphic']), w: 0.8, layer: 'front', ae: 'reticle',
+  name: '지켜보는 눈', tags: TAGS.concat(['graphic']), w: 0.8, layer: 'front', ae: 'reticle',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env);
@@ -19740,7 +19740,7 @@ reg('decor', 'hrWatchEye', {
 
 /* static patches: small rectangles of TV snow flicker at the edges of the frame */
 reg('decor', 'hrStaticPatch', {
-  name: '砂嵐の欠片', tags: TAGS.concat(['glitch']), w: 0.8, layer: 'front', ae: 'glitchRects',
+  name: '노이즈 조각', tags: TAGS.concat(['glitch']), w: 0.8, layer: 'front', ae: 'glitchRects',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H } = env, s = Pd.seed | 0, st = env.step, u = U(env), ctx = env.ctx;
@@ -19766,7 +19766,7 @@ reg('decor', 'hrStaticPatch', {
 
 /* light shaft: a slanted beam from a high window with dust hanging in it */
 reg('decor', 'hrDustBeam', {
-  name: '光の筋と埃', tags: TAGS.concat(['calm', 'emotional']), w: 0.8, layer: 'back', subtle: true, ae: 'sparks',
+  name: '빛줄기와 먼지', tags: TAGS.concat(['calm', 'emotional']), w: 0.8, layer: 'back', subtle: true, ae: 'sparks',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const { W, H, sc, ctx } = env, s = Pd.seed | 0, u = U(env);
@@ -19796,7 +19796,7 @@ reg('decor', 'hrDustBeam', {
 
 /* drips: dark ink running down from the top edge of the frame, slowly */
 reg('decor', 'hrDrips', {
-  name: '垂れる墨', tags: TAGS.concat(['emotional']), w: 0.8, layer: 'front', ae: 'blobs',
+  name: '떨어지는 먹물', tags: TAGS.concat(['emotional']), w: 0.8, layer: 'front', ae: 'blobs',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env);
@@ -19821,7 +19821,7 @@ reg('decor', 'hrDrips', {
 
 /* cracks: fine fractures creep out of a corner of the frame */
 reg('decor', 'hrCracks', {
-  name: 'ひび割れ', tags: TAGS.concat(['graphic', 'glitch']), w: 0.7, layer: 'front', ae: 'lineBurst',
+  name: '갈라진 틈', tags: TAGS.concat(['graphic', 'glitch']), w: 0.7, layer: 'front', ae: 'lineBurst',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env);
@@ -19844,7 +19844,7 @@ reg('decor', 'hrCracks', {
 
 bgReg('hrFailingLamp', {
   ae: 'vignettePulse',
-  name: '切れかけの灯', tags: TAGS.concat(['emotional']), w: 0.9, subtle: true,
+  name: '꺼질듯한 불빛', tags: TAGS.concat(['emotional']), w: 0.9, subtle: true,
   plan: rng => ({ seed: rng.int(1, 1e9), x: rng.range(0.35, 0.65), rate: rng.range(0.7, 1.3) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, t = env.t, u = U(env), lv = lamp(t, Pm.seed | 0, Pm.rate || 1), fi = E.outCubic(clamp(bgT(env) / 0.6));
@@ -19862,7 +19862,7 @@ bgReg('hrFailingLamp', {
 
 bgReg('hrCorridor', {
   ae: 'squareTunnel',
-  name: '暗い廊下', tags: TAGS.concat(['graphic']), w: 0.8,
+  name: '어두운 복도', tags: TAGS.concat(['graphic']), w: 0.8,
   plan: rng => ({ seed: rng.int(1, 1e9), vx: rng.range(0.44, 0.56), vy: rng.range(0.44, 0.54), spd: rng.range(0.25, 0.45), doors: rng.chance(0.75) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, t = bgT(env), u = U(env), fi = E.outCubic(clamp(t / 0.6));
@@ -19904,7 +19904,7 @@ bgReg('hrCorridor', {
 
 bgReg('hrMold', {
   ae: 'meshBlobs',
-  name: '広がる染み', tags: TAGS.concat(['emotional']), w: 0.7, subtle: true,
+  name: '퍼지는 얼룩', tags: TAGS.concat(['emotional']), w: 0.7, subtle: true,
   plan: rng => ({ seed: rng.int(1, 1e9), n: rng.int(3, 5), k: rng.range(0.08, 0.14) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, t = bgT(env), u = U(env), s = Pm.seed | 0, k = Pm.k || 0.1;
@@ -19926,7 +19926,7 @@ bgReg('hrMold', {
 
 bgReg('hrDeadTrees', {
   ae: 'mountains',
-  name: '枯れ木の森', tags: TAGS.concat(['calm', 'emotional']), w: 0.7,
+  name: '마른 나무숲', tags: TAGS.concat(['calm', 'emotional']), w: 0.7,
   plan: rng => ({ seed: rng.int(1, 1e9), n: rng.int(5, 8), fog: rng.range(0.1, 0.2) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, t = env.t, u = U(env), s = Pm.seed | 0, fi = E.outCubic(clamp(bgT(env) / 0.8));
@@ -19957,7 +19957,7 @@ const KM = env => clamp((env.fx.motion ?? 0.7) * 1.25, 0, 1.25);
 
 reg('cam', 'hrNervous', {
   ae: 'handheld',
-  name: '怯えた手持ち', tags: TAGS.concat(['glitch', 'emotional']), w: 0.9,
+  name: '겁먹은 손떨림', tags: TAGS.concat(['glitch', 'emotional']), w: 0.9,
   plan: rng => ({ f: rng.range(0.9, 1.3), jerk: rng.range(0.6, 1) }),
   get: (env, Pm) => {
     const K = KM(env), f = Pm.f || 1, t = env.lt, sd = env.cut.seed | 0;
@@ -19975,7 +19975,7 @@ reg('cam', 'hrNervous', {
 
 reg('cam', 'hrDutchSnap', {
   ae: 'dutch',
-  name: '不意の傾き', tags: TAGS.concat(['emotional', 'graphic']), w: 0.7, strong: true,
+  name: '갑작스런 기울기', tags: TAGS.concat(['emotional', 'graphic']), w: 0.7, strong: true,
   plan: rng => ({ at: rng.range(0.45, 0.65), a: rng.range(3, 4.8) * rng.pick([1, -1]) }),
   get: (env, Pm) => {
     const K = KM(env), d = env.cut.dur, u = clamp(env.lt / Math.max(0.3, d));
@@ -19989,7 +19989,7 @@ const fx = (k, d) => reg('fx', k, Object.assign({}, d, { draw(ctx, ev, k2, I) { 
 
 /* one frame of a zoomed, red-stained negative */
 fx('hrSubliminal', {
-  name: 'サブリミナル', tags: TAGS.concat(['glitch']), w: 0.6, dur: 2, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'invert',
+  name: '서브리미널', tags: TAGS.concat(['glitch']), w: 0.6, dur: 2, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'invert',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     if (k > 0.55) return;
@@ -20002,7 +20002,7 @@ fx('hrSubliminal', {
 
 /* the picture tears, drops to black with a signal-lost caption, and rolls back in */
 fx('hrSignalLoss', {
-  name: '映像の途切れ', tags: TAGS.concat(['glitch', 'editorial']), w: 0.7, dur: 9, pre: 3, amp: 1, glitchy: true, scratch: true, ae: 'blackFrame',
+  name: '영상 끊김', tags: TAGS.concat(['glitch', 'editorial']), w: 0.7, dur: 9, pre: 3, amp: 1, glitchy: true, scratch: true, ae: 'blackFrame',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const s = evS(ev), st = I.step * 7 + s;
@@ -20032,7 +20032,7 @@ fx('hrSignalLoss', {
 
 /* something tall and dark crosses the frame in a few frames */
 fx('hrPassingShadow', {
-  name: '横切る影', tags: TAGS.concat(['emotional']), w: 0.5, dur: 5, amp: 1, mid: true, ae: 'flash',
+  name: '지나가는 그림자', tags: TAGS.concat(['emotional']), w: 0.5, dur: 5, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch } = I, s = evS(ev), dir = J.r(s, 1) < 0.5 ? 1 : -1, M = Math.min(cw, ch);
     const x = dir > 0 ? J.lerp(-cw * 0.25, cw * 1.25, k) : J.lerp(cw * 1.25, -cw * 0.25, k);
@@ -20059,7 +20059,7 @@ const trReg = (k, d) => reg('trans', k, Object.assign({}, d, {
 
 /* static cut: the old shot drowns in snow, the new one surfaces out of it */
 trReg('hrStaticCut', {
-  name: '砂嵐カット', tags: TAGS.concat(['glitch']), w: 0.9, dur: 0.4, ae: 'pixelate',
+  name: '노이즈 컷', tags: TAGS.concat(['glitch']), w: 0.9, dur: 0.4, ae: 'pixelate',
   plan: rng => ({ roll: rng.chance(0.6) }),
   draw(ctx, A, B, p, I, Pm) {
     const { cw, ch } = I, st = I.step, src = p < 0.5 ? A : B;
@@ -20075,7 +20075,7 @@ trReg('hrStaticCut', {
 
 /* blink: eyelids close on the old shot and open on the new one */
 trReg('hrBlink', {
-  name: 'まばたき', tags: TAGS.concat(['emotional']), w: 0.8, dur: 0.45, ae: 'irisOpen',
+  name: '눈깜빡임', tags: TAGS.concat(['emotional']), w: 0.8, dur: 0.45, ae: 'irisOpen',
   plan: rng => ({ half: rng.chance(0.3) }),
   draw(ctx, A, B, p, I, Pm) {
     const { cw, ch } = I, src = p < 0.5 ? A : B;
@@ -20098,7 +20098,7 @@ const ENT = { hrBlinkCreep: 1.3, hrJumpScare: 0.9, hrUneasy: 1.6, hrVhold: 1.1, 
 const EXI = { hrPulledDown: 1.4, hrLookBack: 1.3, hrTurnAway: 1.2, hrShiver: 1.2, hrSwallow: 1.3, hrFlickerDie: 1.3, hrDrain: 1.2, blur: 1.1, popOut: 0.1, balloonOff: 0.1 };
 const S = {
   hrRuin: {
-    name: '廃墟', desc: '褪せた緑灰色・錆の赤・明朝の残響', moods: ['horror'], set: 'horror',
+    name: '폐허', desc: '빛바랜 초록빛 회색·녹슨 빨강·명조체의 잔향', moods: ['horror'], set: 'horror',
     schemes: [
       { bg: '#161B18', fg: '#D3DACF', sub: '#7D887E', accent: '#B0473A', accent2: '#6E8B6B', ink: '#D3DACF', dim: '#1F2621', ghostA: '#5E7A62', ghostB: '#8A3A30' },
       { bg: '#8C958A', fg: '#141814', sub: '#2E362F', accent: '#6A1A14', accent2: '#E4E8DF', ink: '#141814', dim: '#848D82', ghostA: '#3F4D41', ghostB: '#6A1A14' },
@@ -20114,7 +20114,7 @@ const S = {
     decor: { hrDustBeam: 1.6, hrCracks: 1.2, hrSigil: 0.8, hrScratches: 1, hrWatchEye: 0.6, hrDrips: 0.8, confetti: 0.05, heartsStars: 0.05 }, hud: false, glow: 0.4,
   },
   hrNightRec: {
-    name: '深夜の録画', desc: '真っ黒な画面・監視映像の白と赤・砂嵐', moods: ['horror'], set: 'horror',
+    name: '심야 녹화', desc: '새까만 화면·감시 영상의 흰색과 빨강·노이즈', moods: ['horror'], set: 'horror',
     schemes: [
       { bg: '#050505', fg: '#EDEDED', sub: '#8A8A8A', accent: '#E3261E', accent2: '#FFFFFF', ink: '#EDEDED', dim: '#121212', ghostA: '#6E6E6E', ghostB: '#E3261E' },
       { bg: '#0B0E0B', fg: '#D8F0D8', sub: '#6F866F', accent: '#FF3A2A', accent2: '#D8F0D8', ink: '#D8F0D8', dim: '#141A14', ghostA: '#3E6B3E', ghostB: '#FF3A2A' },
@@ -20130,7 +20130,7 @@ const S = {
     decor: { hrStaticPatch: 1.6, hrWatchEye: 1, hrCracks: 0.8, hrScratches: 0.8, timecodeBar: 1, hud: 1, confetti: 0.05 }, hud: true, glow: 0.5, glitchBoost: 1.2,
   },
   hrCurse: {
-    name: '呪いの手紙', desc: '黄ばんだ便箋・褪せた墨・暗い赤の書き込み', moods: ['horror'], set: 'horror',
+    name: '저주의 편지', desc: '누렇게 바랜 편지지·빛바랜 먹빛·어두운 빨강 글씨', moods: ['horror'], set: 'horror',
     schemes: [
       { bg: '#D8CBA4', fg: '#2A2017', sub: '#6B5B45', accent: '#7E1410', accent2: '#3F3326', ink: '#2A2017', dim: '#CDBF97', ghostA: '#9A2A20', ghostB: '#8A7A5E', paper: true },
       { bg: '#1C140E', fg: '#E3D5B0', sub: '#9A8866', accent: '#B8261C', accent2: '#E3D5B0', ink: '#E3D5B0', dim: '#271D15', ghostA: '#6E1510', ghostB: '#5A4A34', paper: true },
@@ -20301,7 +20301,7 @@ function flowUnits(units, font, maxW, maxH, o = {}) {
 
 /* ================================================================== 1 knSlamStack — 積み上げ */
 reg('knSlamStack', {
-  name: '積み上げ', tags: ['pop', 'graphic'], w: 1.1, ae: 'justified', fits: n => n >= 2 && n <= 18,
+  name: '쌓아 올리기', tags: ['pop', 'graphic'], w: 1.1, ae: 'justified', fits: n => n >= 2 && n <= 18,
   enterBias: { cut: 3, blur: 0.7, pop: 0.8, slice: 0.3, wipe: 0.4 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), align: rng.pick(['center', 'center', 'left', 'right']), from: rng.pick(['scale', 'scale', 'drop', 'side']),
@@ -20370,7 +20370,7 @@ reg('knSlamStack', {
 
 /* ================================================================== 2 knQuarterTurn — 直角ターン */
 reg('knQuarterTurn', {
-  name: '直角ターン', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'sideways', portrait: 0.9, fits: n => n >= 2 && n <= 16,
+  name: '직각 회전', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'sideways', portrait: 0.9, fits: n => n >= 2 && n <= 16,
   enterBias: { cut: 3, pop: 0.8, blur: 0.8, slice: 0.2, wipe: 0.3 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), sgn: rng.pick([1, -1]), end: 'all', acc: rng.int(0, 3), joint: rng.chance(0.6) };
@@ -20433,7 +20433,7 @@ reg('knQuarterTurn', {
 
 /* ================================================================== 3 knSwapCenter — 入れ替わり */
 reg('knSwapCenter', {
-  name: '入れ替わり', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'slotMachine', fits: n => n >= 2 && n <= 18,
+  name: '자리 바꿈', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'slotMachine', fits: n => n >= 2 && n <= 18,
   enterBias: { cut: 3, pop: 0.7, blur: 0.8, slice: 0.3, wipe: 0.3 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), fontL: rng.pick(fontsOf(st, ['display', 'serif'])), mode: rng.pick(['roll', 'punch', 'slide', 'roll']), ticks: rng.chance(0.7), acc: rng.chance(0.5) };
@@ -20488,7 +20488,7 @@ reg('knSwapCenter', {
 
 /* ================================================================== 4 knZoomDive — 文字へ潜る */
 reg('knZoomDive', {
-  name: '文字へ潜る', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'zoomRepeat', fits: n => n >= 2 && n <= 16,
+  name: '글자 속으로', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'zoomRepeat', fits: n => n >= 2 && n <= 16,
   enterBias: { cut: 3, blur: 0.8, pop: 0.5, slice: 0.2, wipe: 0.2 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), cap: rng.chance(0.75), acc: rng.chance(0.5) };
@@ -20542,7 +20542,7 @@ reg('knZoomDive', {
 
 /* ================================================================== 5 knFlowSnap — 流れて整列 */
 reg('knFlowSnap', {
-  name: '流れて整列', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'gridCells', fits: n => n >= 3 && n <= 16,
+  name: '흐르다 정렬', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'gridCells', fits: n => n >= 3 && n <= 16,
   enterBias: { cut: 3, blur: 0.6, pop: 0.6, slice: 0.2, wipe: 0.2 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'body'])), amp: rng.range(0.1, 0.16), lam: rng.range(0.45, 0.7), grid: rng.pick(['cells', 'cells', 'rules']), acc: rng.int(0, 15) };
@@ -20620,7 +20620,7 @@ reg('knFlowSnap', {
 
 /* ================================================================== 6 knSeesaw — シーソー */
 reg('knSeesaw', {
-  name: 'シーソー', tags: ['pop', 'graphic'], w: 0.8, ae: 'bounceLine', portrait: 0.4, fits: n => n >= 2 && n <= 14,
+  name: '시소', tags: ['pop', 'graphic'], w: 0.8, ae: 'bounceLine', portrait: 0.4, fits: n => n >= 2 && n <= 14,
   enterBias: { cut: 3, pop: 0.6, blur: 0.5, slice: 0.2, wipe: 0.2 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), order: rng.pick(['lr', 'lr', 'out']), acc: rng.chance(0.5), fulc: rng.pick(['tri', 'tri', 'round']) };
@@ -20676,7 +20676,7 @@ reg('knSeesaw', {
 
 /* ================================================================== 7 knTypeSlam — タイプ→スラム */
 reg('knTypeSlam', {
-  name: 'タイプ→スラム', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'type', fits: n => n >= 2 && n <= 24,
+  name: '타이핑→강타', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'type', fits: n => n >= 2 && n <= 24,
   enterBias: { cut: 3, blur: 0.5, pop: 0.5, slice: 0.2, wipe: 0.3 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), key: rng.pick(['long', 'long', 'last']), side: rng.pick(['below', 'below', 'above']), burst: rng.chance(0.7) };
@@ -20740,7 +20740,7 @@ reg('knTypeSlam', {
 /* ================================================================== 8 knRhythmCuts — 語のカット割り */
 const SHOTS = ['huge', 'vert', 'small', 'crop', 'band', 'tilt'];
 reg('knRhythmCuts', {
-  name: '語のカット割り', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'panels', fits: n => n >= 2 && n <= 18,
+  name: '단어별 컷 분할', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'panels', fits: n => n >= 2 && n <= 18,
   enterBias: { cut: 3.5, pop: 0.4, blur: 0.4, slice: 0.2, wipe: 0.2 },
   plan(rng, cut, st) {
     const sh = SHOTS.slice(); for (let i = sh.length - 1; i > 0; i--) { const j = rng.int(0, i); const t = sh[i]; sh[i] = sh[j]; sh[j] = t; }
@@ -20827,7 +20827,7 @@ function pathAt(P0, s) {
   return [lerp(a[0], b[0], k), lerp(a[1], b[1], k), Math.atan2(b[1] - a[1], b[0] - a[0]) / DEG];
 }
 reg('knPathRide', {
-  name: 'ループ軌道', tags: ['pop', 'graphic'], w: 0.8, ae: 'wave', portrait: 0.4, fits: n => n >= 2 && n <= 14,
+  name: '루프 궤도', tags: ['pop', 'graphic'], w: 0.8, ae: 'wave', portrait: 0.4, fits: n => n >= 2 && n <= 14,
   enterBias: { cut: 3, blur: 0.6, pop: 0.3, slice: 0.2, wipe: 0.2 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), side: rng.pick([1, 1, -1]), rail: rng.pick(['dash', 'line', 'dots']), acc: rng.chance(0.5) };
@@ -20873,7 +20873,7 @@ reg('knPathRide', {
 
 /* ================================================================== 10 knGearWords — 歯車 */
 reg('knGearWords', {
-  name: '歯車', tags: ['pop', 'graphic'], w: 0.7, ae: 'circleWords', treat: 'safe', fits: n => n >= 2 && n <= 16,
+  name: '톱니바퀴', tags: ['pop', 'graphic'], w: 0.7, ae: 'circleWords', treat: 'safe', fits: n => n >= 2 && n <= 16,
   enterBias: { cut: 3, pop: 0.5, blur: 0.4, slice: 0.1, wipe: 0.1 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), dir: rng.pick([1, -1]), fillMode: rng.pick(['alt', 'alt', 'ink', 'ring']) };
@@ -20928,7 +20928,7 @@ reg('knGearWords', {
 
 /* ================================================================== 11 knCollide — 正面衝突 */
 reg('knCollide', {
-  name: '正面衝突', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'splitHalves', fits: n => n >= 2 && n <= 16,
+  name: '정면충돌', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'splitHalves', fits: n => n >= 2 && n <= 16,
   enterBias: { cut: 3.5, pop: 0.3, blur: 0.4, slice: 0.2, wipe: 0.2 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), acc: rng.pick(['A', 'B', 'none']), spark: rng.chance(0.8), at: rng.range(0.28, 0.36) };
@@ -20994,7 +20994,7 @@ reg('knCollide', {
 
 /* ================================================================== 12 knTumble — 箱転がし */
 reg('knTumble', {
-  name: '箱転がし', tags: ['pop', 'graphic'], w: 0.8, ae: 'dominoes', fits: n => n >= 2 && n <= 16,
+  name: '상자 굴리기', tags: ['pop', 'graphic'], w: 0.8, ae: 'dominoes', fits: n => n >= 2 && n <= 16,
   enterBias: { cut: 3.5, pop: 0.3, blur: 0.4, slice: 0.1, wipe: 0.1 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), box: rng.pick(['plate', 'frame', 'none']), acc: rng.int(0, 5), floor: rng.chance(0.7) };
@@ -21043,7 +21043,7 @@ reg('knTumble', {
 
 /* ================================================================== 13 knReflow — 縦から横へ */
 reg('knReflow', {
-  name: '縦から横へ', tags: ['editorial', 'graphic', 'emotional'], w: 0.9, ae: 'halfVertical', fits: n => n >= 2 && n <= 16,
+  name: '세로에서 가로로', tags: ['editorial', 'graphic', 'emotional'], w: 0.9, ae: 'halfVertical', fits: n => n >= 2 && n <= 16,
   enterBias: { cut: 2.5, blur: 1, pop: 0.4, slice: 0.2, wipe: 0.3 },
   plan(rng, cut, st) {
     const port = cut.H > cut.W * 1.08, lat = /[A-Za-z]/.test(cut.text);
@@ -21080,7 +21080,7 @@ reg('knReflow', {
 
 /* ================================================================== 14 knPadGrid — パッド */
 reg('knPadGrid', {
-  name: 'パッド', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'gridCells', fits: n => n >= 2 && n <= 18,
+  name: '패드', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'gridCells', fits: n => n >= 2 && n <= 18,
   enterBias: { cut: 3, pop: 0.8, blur: 0.4, slice: 0.2, wipe: 0.2 },
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), round: rng.chance(0.5), flash: rng.pick(['accent', 'accent', 'ink']), beat: rng.chance(0.7) };
@@ -21211,7 +21211,7 @@ const WIN = dur => clamp(dur * 0.45, 0.32, 1.0);
 
 reg('enter', 'knWordSlam', {
   // words slam down one after another from a huge scale; the ones already down take a knock at each impact
-  name: '語ごとスラム', tags: ['pop', 'graphic', 'glitch'], w: 1.1, ae: 'pop', minDur: 0.5, inDur: WIN,
+  name: '단어별 강타', tags: ['pop', 'graphic', 'glitch'], w: 1.1, ae: 'pop', minDur: 0.5, inDur: WIN,
   apply(env, it, p, ctx) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.62 : 0, secs = ctx.inDur * (1 - sp);
     const land = j => stg(p, j, n, sp);
@@ -21230,7 +21230,7 @@ reg('enter', 'knWordSlam', {
 
 reg('enter', 'knTypeToSlam', {
   // each word is typed small at its start, then snaps up to full size
-  name: '打鍵→拡大', tags: ['pop', 'editorial', 'graphic'], w: 0.9, ae: 'type', minDur: 0.55, inDur: WIN,
+  name: '타이핑→확대', tags: ['pop', 'editorial', 'graphic'], w: 0.9, ae: 'type', minDur: 0.55, inDur: WIN,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.55 : 0;
     glyphs(it, (i, g) => {
@@ -21248,7 +21248,7 @@ reg('enter', 'knTypeToSlam', {
 
 reg('enter', 'knReplaceIn', {
   // the words flash big in the middle one by one, replacing each other, then all fly to their places
-  name: '入れ替わり登場', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'scramble', minDur: 0.7, inDur: dur => clamp(dur * 0.5, 0.45, 1.2),
+  name: '교체 등장', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'scramble', minDur: 0.7, inDur: dur => clamp(dur * 0.5, 0.45, 1.2),
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, T = n > 1 ? 0.7 : 0.2, B = G.box, bw = Math.max(1e-3, (G.vert ? B.y1 - B.y0 : B.x1 - B.x0));
     const fly = E.outExpo(clamp((p - T) / (1 - T)));
@@ -21274,7 +21274,7 @@ reg('enter', 'knReplaceIn', {
 
 reg('enter', 'knHingeDrop', {
   // each word swings down from upright on a hinge at its bottom-left corner and bounces level
-  name: '蝶番おろし', tags: ['pop', 'graphic'], w: 0.9, ae: 'drop', minDur: 0.5, inDur: WIN,
+  name: '경첩 낙하', tags: ['pop', 'graphic'], w: 0.9, ae: 'drop', minDur: 0.5, inDur: WIN,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.5 : 0, dir = (J.h(env.cut.seed | 0, it.mi | 0, 61) & 1) ? 1 : -1;
     glyphs(it, (i, g) => {
@@ -21291,7 +21291,7 @@ reg('enter', 'knHingeDrop', {
 
 reg('enter', 'knLoopIn', {
   // every glyph rides the same looping track into its place, one after another like a train
-  name: 'ループ入り', tags: ['pop', 'graphic'], w: 0.8, ae: 'spin', minDur: 0.5, inDur: dur => clamp(dur * 0.5, 0.4, 1.1),
+  name: '회전하며 등장', tags: ['pop', 'graphic'], w: 0.8, ae: 'spin', minDur: 0.5, inDur: dur => clamp(dur * 0.5, 0.4, 1.1),
   apply(env, it, p) {
     const vert = !!it.vertical, dir = (J.h(env.cut.seed | 0, it.mi | 0, 63) & 1) ? 1 : -1;
     const D = Math.min(env.W, env.H) * 0.55, R = D / TAU * 1.5;
@@ -21308,7 +21308,7 @@ reg('enter', 'knLoopIn', {
 
 reg('enter', 'knPushIn', {
   // words arrive at the end of the line one by one and push the ones before them into place
-  name: '押し込み', tags: ['pop', 'editorial', 'graphic'], w: 1, ae: 'type', minDur: 0.45, inDur: WIN,
+  name: '밀어 넣기', tags: ['pop', 'editorial', 'graphic'], w: 1, ae: 'type', minDur: 0.45, inDur: WIN,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert;
     const f = p * n, k0 = Math.min(n - 1, Math.floor(f)), e = E.outBack(clamp((f - k0) / 0.75), 1.5);
@@ -21334,7 +21334,7 @@ reg('enter', 'knPushIn', {
 
 reg('enter', 'knInertia', {
   // the line brakes into place: the front stops first, the rest bunch up behind it and spring apart
-  name: '急ブレーキ', tags: ['pop', 'graphic'], w: 0.9, ae: 'stretch', minDur: 0.45, inDur: dur => clamp(dur * 0.4, 0.3, 0.8),
+  name: '급브레이크', tags: ['pop', 'graphic'], w: 0.9, ae: 'stretch', minDur: 0.45, inDur: dur => clamp(dur * 0.4, 0.3, 0.8),
   apply(env, it, p) {
     const vert = !!it.vertical, dir = (J.h(env.cut.seed | 0, it.mi | 0, 67) & 1) ? 1 : -1;   // 1: comes from the left
     const D = (vert ? env.H : env.W) * 0.6;
@@ -21351,7 +21351,7 @@ reg('enter', 'knInertia', {
 
 reg('enter', 'knWordSpin', {
   // each word spins in as one rigid piece, neighbours turning the opposite way
-  name: '語ごと回転', tags: ['pop', 'graphic'], w: 0.9, ae: 'spin', inDur: WIN,
+  name: '단어별 회전', tags: ['pop', 'graphic'], w: 0.9, ae: 'spin', inDur: WIN,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.5 : 0;
     glyphs(it, (i, g) => {
@@ -21367,7 +21367,7 @@ reg('enter', 'knWordSpin', {
 
 reg('enter', 'knDiveIn', {
   // words fly in from behind the camera one after another, huge and soft, landing sharp
-  name: '手前から語', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'zoom', inDur: WIN,
+  name: '앞에서 등장', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'zoom', inDur: WIN,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.55 : 0;
     glyphs(it, (i, g) => {
@@ -21382,7 +21382,7 @@ reg('enter', 'knDiveIn', {
 
 reg('enter', 'knStretchOut', {
   // each word shoots out from its first letter like a tape measure and snaps back to length
-  name: '伸び出し', tags: ['pop', 'graphic'], w: 0.9, ae: 'stretch', inDur: WIN,
+  name: '늘어나며 등장', tags: ['pop', 'graphic'], w: 0.9, ae: 'stretch', inDur: WIN,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.55 : 0;
     glyphs(it, (i, g) => {
@@ -21400,7 +21400,7 @@ const WOUT = dur => clamp(dur * 0.32, 0.3, 0.75);
 
 reg('exit', 'knWordKick', {
   // the words are kicked out one after another, up and down in turn, tumbling
-  name: '語ごと蹴り出し', tags: ['pop', 'graphic'], w: 1, ae: 'scatter', outDur: WOUT,
+  name: '단어별 걷어차기', tags: ['pop', 'graphic'], w: 1, ae: 'scatter', outDur: WOUT,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.4 : 0, H = env.H;
     glyphs(it, (i, g) => {
@@ -21417,7 +21417,7 @@ reg('exit', 'knWordKick', {
 
 reg('exit', 'knPushOut', {
   // the line is shunted along in word-sized steps; each word fades as it passes the line's start
-  name: '押し出し退場', tags: ['editorial', 'graphic', 'pop'], w: 0.9, ae: 'wipe', outDur: WOUT,
+  name: '밀어내며 퇴장', tags: ['editorial', 'graphic', 'pop'], w: 0.9, ae: 'wipe', outDur: WOUT,
   apply(env, it, p) {
     const G = wgeo(env, it), vert = G.vert;
     const st = j => (vert ? G.wb[j].y0 : G.wb[j].x0), en = j => (vert ? G.wb[j].y1 : G.wb[j].x1);
@@ -21442,7 +21442,7 @@ reg('exit', 'knPushOut', {
 
 reg('exit', 'knDiveGlyph', {
   // the camera dives into one letter: the line blows up around it and the rest flies past
-  name: '一字へ突入', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'shrink', outDur: dur => clamp(dur * 0.3, 0.3, 0.7),
+  name: '글자 속으로 퇴장', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'shrink', outDur: dur => clamp(dur * 0.3, 0.3, 0.7),
   apply(env, it, p) {
     const lay = J.layoutText(Object.assign({}, it, { size: 1, _lay: null, _m: null })).filter(g => !isBlank(g.ch));
     if (!lay.length) return;
@@ -21467,7 +21467,7 @@ reg('exit', 'knDiveGlyph', {
 
 reg('exit', 'knLaunch', {
   // the line pulls away: the front glyph goes first, the rest follow on a stretching chain
-  name: '急発進', tags: ['pop', 'graphic'], w: 0.9, ae: 'stretch', outDur: dur => clamp(dur * 0.3, 0.3, 0.65),
+  name: '급출발', tags: ['pop', 'graphic'], w: 0.9, ae: 'stretch', outDur: dur => clamp(dur * 0.3, 0.3, 0.65),
   apply(env, it, p) {
     const vert = !!it.vertical, dir = (J.h(env.cut.seed | 0, it.mi | 0, 71) & 1) ? 1 : -1, D = (vert ? env.H : env.W) * 1.25;
     glyphs(it, (i, g, n) => {
@@ -21484,7 +21484,7 @@ reg('exit', 'knLaunch', {
 
 reg('exit', 'knWordBlink', {
   // one word at a time: a punch in the accent colour, then gone — on the beat when there is one
-  name: '一語ずつ消灯', tags: ['pop', 'glitch', 'graphic'], w: 0.9, ae: 'cut', outDur: dur => clamp(dur * 0.35, 0.3, 0.8),
+  name: '단어별로 꺼지기', tags: ['pop', 'glitch', 'graphic'], w: 0.9, ae: 'cut', outDur: dur => clamp(dur * 0.35, 0.3, 0.8),
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, rev = (J.h(env.cut.seed | 0, 73) & 1) === 1, acc = env.sc.accent;
     glyphs(it, (i, g) => {
@@ -21502,7 +21502,7 @@ reg('exit', 'knWordBlink', {
 
 reg('exit', 'knCloseGap', {
   // words drop out one by one and the rest slide together, re-centring, until the last one pops
-  name: '詰めて消える', tags: ['editorial', 'graphic', 'pop'], w: 0.9, ae: 'shrink', outDur: dur => clamp(dur * 0.35, 0.35, 0.8),
+  name: '좁아지며 사라짐', tags: ['editorial', 'graphic', 'pop'], w: 0.9, ae: 'shrink', outDur: dur => clamp(dur * 0.35, 0.35, 0.8),
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert;
     const lo = j => (vert ? G.wb[j].y0 : G.wb[j].x0), hi = j => (vert ? G.wb[j].y1 : G.wb[j].x1);
@@ -21534,7 +21534,7 @@ reg('exit', 'knCloseGap', {
 
 reg('exit', 'knJumpCutOut', {
   // three hard jump cuts (closer, wider, tilted) and the line is gone — no in-betweens
-  name: 'ジャンプカット', tags: ['pop', 'glitch', 'graphic'], w: 0.8, ae: 'glitch', outDur: dur => clamp(dur * 0.3, 0.3, 0.6),
+  name: '점프 컷', tags: ['pop', 'glitch', 'graphic'], w: 0.8, ae: 'glitch', outDur: dur => clamp(dur * 0.3, 0.3, 0.6),
   apply(env, it, p) {
     const sd = J.h(env.cut.seed | 0, it.mi | 0, 79), side = sd & 1 ? 1 : -1;
     const st = Math.floor(clamp(p) * 4);
@@ -21547,7 +21547,7 @@ reg('exit', 'knJumpCutOut', {
 
 reg('exit', 'knStackAway', {
   // the words hop into a tower one by one, then the whole tower drops out of frame
-  name: '積んで落とす', tags: ['pop', 'graphic'], w: 0.8, ae: 'fall', outDur: dur => clamp(dur * 0.4, 0.45, 0.9), minDur: 0.9,
+  name: '쌓았다가 떨어지기', tags: ['pop', 'graphic'], w: 0.8, ae: 'fall', outDur: dur => clamp(dur * 0.4, 0.45, 0.9), minDur: 0.9,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, T = 0.62, H = env.H;
     const lh = G.vert ? null : (G.box.y1 - G.box.y0);
@@ -21572,7 +21572,7 @@ reg('exit', 'knStackAway', {
 /* ================================================================ HOLDS */
 reg('hold', 'knWordPulse', {
   // one word at a time swells on the beat, cycling through the line
-  name: '語ごとの拍', tags: ['pop', 'graphic'], w: 1, ae: 'breathe',
+  name: '단어별 박동', tags: ['pop', 'graphic'], w: 1, ae: 'breathe',
   apply(env, it, amt) {
     const G = wgeo(env, it), n = G.nW;
     if (n < 1) return;
@@ -21589,7 +21589,7 @@ reg('hold', 'knWordPulse', {
 
 reg('hold', 'knCounterRock', {
   // neighbouring words rock the opposite way, like meshed gears
-  name: '逆回転ゆれ', tags: ['pop', 'calm', 'graphic'], w: 0.9, ae: 'wave',
+  name: '반대로 흔들림', tags: ['pop', 'calm', 'graphic'], w: 0.9, ae: 'wave',
   apply(env, it, amt) {
     const G = wgeo(env, it), n = G.nW, t = env.ltb ?? env.lt;
     const A = 4 * amt * (0.4 + mot(env)) * Math.sin(t * TAU * 0.55);
@@ -21606,7 +21606,7 @@ reg('hold', 'knCounterRock', {
 
 reg('hold', 'knWordRide', {
   // a slow swell travels along the line; each word rides it as one piece, tilting with the slope
-  name: '語の波乗り', tags: ['calm', 'emotional', 'pop'], w: 0.9, ae: 'wave',
+  name: '단어 파도타기', tags: ['calm', 'emotional', 'pop'], w: 0.9, ae: 'wave',
   apply(env, it, amt) {
     const G = wgeo(env, it), t = env.ltb ?? env.lt, A = it.size * 0.07 * amt * (0.4 + mot(env));
     if (A < 0.2) return;
@@ -21622,7 +21622,7 @@ reg('hold', 'knWordRide', {
 
 reg('hold', 'knTickShift', {
   // the line ticks sideways on every beat like a second hand: snap, tiny overshoot, hold
-  name: '刻みシフト', tags: ['graphic', 'pop', 'editorial'], w: 0.8, ae: 'jitter',
+  name: '틱 이동', tags: ['graphic', 'pop', 'editorial'], w: 0.8, ae: 'jitter',
   apply(env, it, amt) {
     const per = 0.5, s0 = beatSince(env, per), idx = beatIdx(env, per);
     const d = it.size * 0.05 * amt * (0.4 + mot(env));
@@ -21635,7 +21635,7 @@ reg('hold', 'knTickShift', {
 
 reg('hold', 'knBeatLean', {
   // on each beat the words lean over, alternately forward and back, and spring upright
-  name: '拍で傾く', tags: ['pop', 'glitch', 'graphic'], w: 0.8, ae: 'jitter',
+  name: '박자에 맞춰 기울기', tags: ['pop', 'glitch', 'graphic'], w: 0.8, ae: 'jitter',
   apply(env, it, amt) {
     const G = wgeo(env, it), s0 = beatSince(env, 0.55), idx = beatIdx(env, 0.55);
     const A = 18 * amt * (0.4 + mot(env)) * Math.exp(-s0 * 4.5) * Math.cos(s0 * 15);
@@ -21649,7 +21649,7 @@ reg('hold', 'knBeatLean', {
 
 reg('hold', 'knGapBreath', {
   // the spaces between words breathe in and out; the words themselves keep still
-  name: '語間の呼吸', tags: ['calm', 'editorial', 'emotional'], w: 0.9, ae: 'breathe',
+  name: '단어 사이 숨쉬기', tags: ['calm', 'editorial', 'emotional'], w: 0.9, ae: 'breathe',
   apply(env, it, amt) {
     const G = wgeo(env, it), n = G.nW, t = env.ltb ?? env.lt;
     if (n < 2) return;
@@ -21711,7 +21711,7 @@ const curIdx = (ts, t) => { let k = -1; for (let i = 0; i < ts.length; i++) if (
 /* ================================================================ CAMERA */
 reg('cam', 'knReadPan', {
   // the frame steps along with the reading: one snap per word, then it settles back to centre
-  name: '読み追い', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'snapPan',
+  name: '읽기 따라가기', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'snapPan',
   plan: rng => ({ a: rng.range(0.026, 0.036) }),
   get(env, P) {
     const ts = wordTimes(env), n = ts.length, K = KM(env), A = env.W * (P.a || 0.03) * K, lt = env.lt;
@@ -21727,7 +21727,7 @@ reg('cam', 'knReadPan', {
 
 reg('cam', 'knTiltKick', {
   // every new word kicks the frame into a lean, alternating sides, and the last one sets it level
-  name: '語で傾く', tags: ['pop', 'graphic', 'emotional'], w: 0.8, ae: 'dutch',
+  name: '단어마다 기울기', tags: ['pop', 'graphic', 'emotional'], w: 0.8, ae: 'dutch',
   plan: rng => ({ dir: rng.pick([1, -1]), a: rng.range(2.4, 3.4) }),
   get(env, P) {
     const ts = wordTimes(env), n = ts.length, K = Math.min(1, KM(env)), lt = env.lt, A = (P.a || 3) * K * (P.dir || 1);
@@ -21741,7 +21741,7 @@ reg('cam', 'knTiltKick', {
 
 reg('cam', 'knCardFlip', {
   // the frame flips over like a card to show the cut, and pinches on each new word
-  name: 'カード返し', tags: ['pop', 'graphic'], w: 0.7, ae: 'barrelRoll', strong: true,
+  name: '카드 뒤집기', tags: ['pop', 'graphic'], w: 0.7, ae: 'barrelRoll', strong: true,
   plan: rng => ({ vert: rng.chance(0.3), dir: rng.pick([1, -1]) }),
   get(env, P) {
     const ts = wordTimes(env), lt = env.lt, K = Math.min(1, KM(env)), d = P.dir || 1;
@@ -21754,7 +21754,7 @@ reg('cam', 'knCardFlip', {
 
 reg('cam', 'knShearKick', {
   // a sideways shear kick on every word (or beat) that springs back upright
-  name: 'シアーキック', tags: ['pop', 'glitch', 'graphic'], w: 0.8, ae: 'jelly',
+  name: '출렁 킥', tags: ['pop', 'glitch', 'graphic'], w: 0.8, ae: 'jelly',
   plan: rng => ({ a: rng.range(5, 8) }),
   get(env, P) {
     const ts = wordTimes(env), lt = env.lt, K = Math.min(1.1, KM(env));
@@ -21767,7 +21767,7 @@ reg('cam', 'knShearKick', {
 
 reg('cam', 'knJumpCut', {
   // hard reframes on every word (tighter, wider, off-centre) with no in-betweens, then back to centre
-  name: 'ジャンプカット', tags: ['pop', 'glitch', 'editorial'], w: 0.7, ae: 'stepZoom',
+  name: '점프 컷', tags: ['pop', 'glitch', 'editorial'], w: 0.7, ae: 'stepZoom',
   plan: rng => ({ s0: rng.int(0, 99) }),
   get(env, P) {
     const ts = wordTimes(env), n = ts.length, lt = env.lt, K = Math.min(1, KM(env));
@@ -21780,7 +21780,7 @@ reg('cam', 'knJumpCut', {
 
 reg('cam', 'knRushIn', {
   // the whole frame rushes up from far away, overshoots a touch and locks
-  name: '奥から突進', tags: ['pop', 'graphic', 'emotional'], w: 0.7, ae: 'crashZoom', strong: true,
+  name: '안쪽에서 돌진', tags: ['pop', 'graphic', 'emotional'], w: 0.7, ae: 'crashZoom', strong: true,
   plan: rng => ({ z: rng.range(0.66, 0.76), r: rng.range(-4, 4) }),
   get(env, P) {
     const K = Math.min(1, KM(env)), q = clamp(env.lt / 0.34);
@@ -21804,7 +21804,7 @@ const trReg = (k, d) => reg('trans', k, Object.assign({}, d, {
 
 trReg('knCornerSwing', {
   // the old frame swings away round a corner, the new one swings in behind it — a quarter turn to the next line
-  name: 'コーナースイング', tags: ['pop', 'graphic'], w: 0.8, ae: 'spinOut', dur: 0.42,
+  name: '코너 스윙', tags: ['pop', 'graphic'], w: 0.8, ae: 'spinOut', dur: 0.42,
   plan: rng => ({ c: rng.int(0, 3) }),
   draw(ctx, A, B, p, I, P) {
     const { cw, ch } = I, c = P.c | 0;
@@ -21828,7 +21828,7 @@ trReg('knCornerSwing', {
 
 trReg('knStutterCut', {
   // rhythm cut: old and new frames trade places in hard cuts before the new one holds
-  name: '刻みカット', tags: ['pop', 'glitch', 'graphic'], w: 0.7, ae: 'flashCross', dur: 0.36,
+  name: '잘림 컷', tags: ['pop', 'glitch', 'graphic'], w: 0.7, ae: 'flashCross', dur: 0.36,
   plan: rng => ({ z: rng.range(1.05, 1.1), o: rng.range(0.02, 0.035) * rng.pick([1, -1]) }),
   draw(ctx, A, B, p, I, P) {
     const { cw, ch } = I, z = P.z || 1.07, o = (P.o || 0.03) * cw;
@@ -21845,7 +21845,7 @@ trReg('knStutterCut', {
 
 trReg('knStripSlam', {
   // the new frame drops in as tall strips, one after another, each landing with a small bounce
-  name: '短冊スラム', tags: ['pop', 'graphic'], w: 0.8, ae: 'sliceShift', dur: 0.45,
+  name: '띠 모양 강타', tags: ['pop', 'graphic'], w: 0.8, ae: 'sliceShift', dur: 0.45,
   plan: rng => ({ n: rng.int(3, 5), rev: rng.chance(0.5), up: rng.chance(0.25) }),
   draw(ctx, A, B, p, I, P) {
     const { cw, ch } = I, n = P.n || 4;
@@ -21891,7 +21891,7 @@ function treatGeo(env, it) {
 
 reg('treat', 'knWordScale', {
   // one key word is set big, the rest small — the line re-flows around the contrast
-  name: '大小語', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'sizeWave', safe: true,
+  name: '크기 다른 단어', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'sizeWave', safe: true,
   plan: rng => ({ big: rng.range(1.28, 1.42), small: rng.range(0.78, 0.86), pick: rng.pick(['long', 'long', 'last', 'first']) }),
   apply(env, it, P) {
     if (!alive(it)) return;
@@ -21936,7 +21936,7 @@ reg('treat', 'knWordScale', {
 
 reg('treat', 'knWordPlate', {
   // every other word is knocked out of a solid plate that follows the word as it moves
-  name: '語ごと反転', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'boxed',
+  name: '단어별 반전판', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'boxed',
   plan: rng => ({ first: rng.chance(0.5), pad: rng.range(0.08, 0.14), tilt: rng.chance(0.4) ? rng.range(1.5, 3) : 0 }),
   apply(env, it, P) {
     if (!alive(it)) return;
@@ -21981,7 +21981,7 @@ const getBB = (env, bb) => J.centerBB(env, bb);
 
 reg('decor', 'knSpeedTrail', {
   // speed lines stream off the back of the lyric and follow it wherever it moves
-  name: '追従スピード線', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'slash', layer: 'front',
+  name: '추적 스피드선', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'slash', layer: 'front',
   draw(env, bb0, P) {
     if (env.pass !== 'main') return;
     const bb = getBB(env, bb0), { W, H, sc } = env, u = Math.min(W, H);
@@ -22014,7 +22014,7 @@ reg('decor', 'knSpeedTrail', {
 
 reg('decor', 'knWordTicks', {
   // a small segmented bar that fills one segment per word as the words arrive, with a running count
-  name: '語カウンター', tags: ['graphic', 'editorial', 'pop'], w: 0.8, ae: 'counter', layer: 'front', subtle: true,
+  name: '단어 카운터', tags: ['graphic', 'editorial', 'pop'], w: 0.8, ae: 'counter', layer: 'front', subtle: true,
   draw(env, bb0, P) {
     const bb = getBB(env, bb0), { W, H, sc } = env, u = Math.min(W, H);
     const o = E.outCubic(clamp(env.lt / 0.35)) * (1 - E.inCubic(env.pOut));
@@ -35274,7 +35274,7 @@ const labelSize = env => J.clamp(Math.min(env.W, env.H) * 0.018, 11, 22);
 
 /* ================================================================== 1 tyKeySplit — 大字挟み */
 reg('tyKeySplit', {
-  name: '大字挟み', tags: ['editorial', 'graphic', 'emotional'], ae: 'mixed', w: 1.1, emph: 1.4, fits: n => n >= 2 && n <= 16,
+  name: '큰 글자 끼우기', tags: ['editorial', 'graphic', 'emotional'], ae: 'mixed', w: 1.1, emph: 1.4, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), fs: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), mode: rng.pick(['kanji', 'kanji', 'mid']), big: rng.pick(['fill', 'fill', 'accent', 'outline']), rule: rng.chance(0.75) };
   },
@@ -35352,7 +35352,7 @@ reg('tyKeySplit', {
 
 /* ================================================================== 2 tyCropGiant — 見切れ大文字 */
 reg('tyCropGiant', {
-  name: '見切れ大文字', tags: ['graphic', 'editorial', 'pop'], ae: 'huge', w: 1, fits: n => n >= 1 && n <= 14,
+  name: '가장자리 대형 글자', tags: ['graphic', 'editorial', 'pop'], ae: 'huge', w: 1, fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), fm: rng.pick(fontsOf(st, ['display', 'serif'])), edge: rng.pick(['a', 'b']), style: rng.pick(['dim', 'dim', 'outline']), dir: rng.pick([1, -1]) };
   },
@@ -35400,7 +35400,7 @@ reg('tyCropGiant', {
 
 /* ================================================================== 3 tyCross — 十字組 */
 reg('tyCross', {
-  name: '十字組', tags: ['graphic', 'editorial'], ae: 'vcols', w: 0.9, fits: n => n >= 3 && n <= 11,
+  name: '십자 배치', tags: ['graphic', 'editorial'], ae: 'vcols', w: 0.9, fits: n => n >= 3 && n <= 11,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), mode: rng.pick(['kanji', 'mid', 'mid']), rules: rng.chance(0.8), key: rng.pick(['accent', 'accent', 'fg']) };
   },
@@ -35444,7 +35444,7 @@ reg('tyCross', {
 
 /* ================================================================== 4 tyBandHide — 帯隠れ */
 reg('tyBandHide', {
-  name: '帯隠れ', tags: ['graphic', 'pop', 'editorial'], ae: 'diag', w: 1, fits: n => n >= 1 && n <= 14,
+  name: '띠로 가리기', tags: ['graphic', 'pop', 'editorial'], ae: 'diag', w: 1, fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), band: rng.pick(['ink', 'accent', 'fg']), pos: rng.pick(['low', 'low', 'high']), speed: rng.range(40, 90), dir: rng.pick([1, -1]), k: rng.range(0.3, 0.38) };
   },
@@ -35484,7 +35484,7 @@ reg('tyBandHide', {
 
 /* ================================================================== 5 tyRuby — ルビ振り */
 reg('tyRuby', {
-  name: 'ルビ振り', tags: ['editorial', 'calm', 'emotional'], ae: 'gloss', w: 1, fits: n => n >= 1 && n <= 14,
+  name: '루비 달기', tags: ['editorial', 'calm', 'emotional'], ae: 'gloss', w: 1, fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), idx: rng.chance(0.7), up: rng.chance(0.5) };
   },
@@ -35524,7 +35524,7 @@ reg('tyRuby', {
 
 /* ================================================================== 6 tyBaseline — 罫線組 */
 reg('tyBaseline', {
-  name: '罫線組', tags: ['editorial', 'calm', 'graphic'], ae: 'type', w: 1.1, fits: n => n >= 2 && n <= 18,
+  name: '괘선 짜임', tags: ['editorial', 'calm', 'graphic'], ae: 'type', w: 1.1, fits: n => n >= 2 && n <= 18,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display', 'body'])), nl: rng.pick([2, 3, 3]), key: rng.chance(0.8), right: rng.chance(0.5) };
   },
@@ -35572,7 +35572,7 @@ reg('tyBaseline', {
 
 /* ================================================================== 7 tyScaleSteps — 級数上げ */
 reg('tyScaleSteps', {
-  name: '級数上げ', tags: ['graphic', 'editorial', 'pop'], ae: 'mixed', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '크기 올림', tags: ['graphic', 'editorial', 'pop'], ae: 'mixed', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick(['up', 'up', 'down']), labels: rng.chance(0.8), ratio: rng.range(2.0, 2.8) };
   },
@@ -35649,7 +35649,7 @@ const groupLines = (units, L) => {
   return out;
 };
 reg('tyJustify', {
-  name: '幅揃え', tags: ['graphic', 'pop', 'editorial'], ae: 'stack', w: 1.1, fits: n => n >= 3 && n <= 16,
+  name: '너비 맞춤', tags: ['graphic', 'pop', 'editorial'], ae: 'stack', w: 1.1, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), rules: rng.chance(0.7), acc: rng.int(0, 3), align: rng.pick(['center', 'left']) };
   },
@@ -35694,7 +35694,7 @@ reg('tyJustify', {
 
 /* ================================================================== 9 tyIndexTable — 一覧表 */
 reg('tyIndexTable', {
-  name: '一覧表', tags: ['editorial', 'graphic', 'calm'], ae: 'gloss', w: 0.8, portrait: 1.3, fits: n => n >= 2 && n <= 9,
+  name: '일람표', tags: ['editorial', 'graphic', 'calm'], ae: 'gloss', w: 0.8, portrait: 1.3, fits: n => n >= 2 && n <= 9,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), info: rng.pick(['roma', 'roma', 'code']), head: rng.chance(0.8) };
   },
@@ -35744,7 +35744,7 @@ reg('tyIndexTable', {
 
 /* ================================================================== 10 tySplitType — 断ち割り */
 reg('tySplitType', {
-  name: '断ち割り', tags: ['graphic', 'glitch', 'pop'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 14,
+  name: '가운데 분할', tags: ['graphic', 'glitch', 'pop'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), off: rng.range(0.08, 0.15) * rng.pick([1, -1]), cutY: rng.pick([0.02, -0.06, 0.08]), cap: rng.chance(0.75) };
   },
@@ -35786,7 +35786,7 @@ reg('tySplitType', {
 
 /* ================================================================== 11 tyErode — 削り反復 */
 reg('tyErode', {
-  name: '削り反復', tags: ['emotional', 'editorial', 'calm'], ae: 'stack', w: 0.9, portrait: 0.6, fits: n => n >= 3 && n <= 12,
+  name: '깎여나가는 반복', tags: ['emotional', 'editorial', 'calm'], ae: 'stack', w: 0.9, portrait: 0.6, fits: n => n >= 3 && n <= 12,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), mode: rng.pick(['grow', 'grow', 'erode']), idx: rng.chance(0.7) };
   },
@@ -35824,7 +35824,7 @@ reg('tyErode', {
 
 /* ================================================================== 12 tyVRuler — 縦目盛り */
 reg('tyVRuler', {
-  name: '縦目盛り', tags: ['editorial', 'calm', 'graphic'], ae: 'vcols', w: 0.9, portrait: 1.3, fits: n => n >= 1 && n <= 12,
+  name: '세로 눈금', tags: ['editorial', 'calm', 'graphic'], ae: 'vcols', w: 0.9, portrait: 1.3, fits: n => n >= 1 && n <= 12,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), side: rng.pick([1, -1]), lab: rng.pick(['time', 'time', 'roma']) };
   },
@@ -35866,7 +35866,7 @@ reg('tyVRuler', {
 
 /* ================================================================== 13 tyFullTrack — 全幅字送り */
 reg('tyFullTrack', {
-  name: '全幅字送り', tags: ['editorial', 'calm', 'graphic'], ae: 'center', w: 1, fits: n => n >= 3 && n <= 14,
+  name: '전폭 글자 흐름', tags: ['editorial', 'calm', 'graphic'], ae: 'center', w: 1, fits: n => n >= 3 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif', 'body'])), caps: rng.chance(0.8), rule: rng.chance(0.75) };
   },
@@ -35910,7 +35910,7 @@ reg('tyFullTrack', {
 
 /* ================================================================== 14 tyStatCount — 字数表示 */
 reg('tyStatCount', {
-  name: '字数表示', tags: ['editorial', 'graphic'], ae: 'type', w: 0.8, fits: n => n >= 1 && n <= 16,
+  name: '글자수 표시', tags: ['editorial', 'graphic'], ae: 'type', w: 0.8, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), nf: rng.pick(fontsOf(st, ['display', 'mono'])), acc: rng.chance(0.5) };
   },
@@ -35941,7 +35941,7 @@ reg('tyStatCount', {
     if (e > 0) {
       env.draw({ text: pad2(cnt), font: Pm.nf, size: ns, align: 'left', x: nx, y: ny, color: Pm.acc ? accentOn(sc) : sc.fg, alpha: e, ghost: false });
       const y2 = ny + ns * 0.62;
-      label(env, latin ? 'CHARACTERS' : '文字 / CHARACTERS', nx, y2, { alpha: e, size: ls, font: latin ? monoF(env) : bodyF(env) });
+      label(env, latin ? 'CHARACTERS' : '글자 / CHARACTERS', nx, y2, { alpha: e, size: ls, font: latin ? monoF(env) : bodyF(env) });
       label(env, `LINE ${pad2((cut.line | 0) + 1)}  ─  ${J.fmtTime(cut.start)}`, nx, y2 + ls * 1.8, { alpha: e * 0.8, size: ls * 0.85 });
     }
     return bb;
@@ -35950,7 +35950,7 @@ reg('tyStatCount', {
 
 /* ================================================================== 15 tyMargin — 余白 */
 reg('tyMargin', {
-  name: '余白', tags: ['calm', 'editorial', 'emotional'], ae: 'center', w: 0.8, emph: 0.4, fits: n => n >= 1 && n <= 18,
+  name: '여백', tags: ['calm', 'editorial', 'emotional'], ae: 'center', w: 0.8, emph: 0.4, fits: n => n >= 1 && n <= 18,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), pos: rng.pick(['bl', 'bl', 'tr', 'br', 'lc']), mark: rng.chance(0.7) };
   },
@@ -35985,7 +35985,7 @@ reg('tyMargin', {
 
 /* ================================================================== 16 tyRotBlock — 回転ブロック */
 reg('tyRotBlock', {
-  name: '回転ブロック', tags: ['graphic', 'pop', 'editorial'], ae: 'sideways', w: 1, fits: n => n >= 4 && n <= 16,
+  name: '회전 블록', tags: ['graphic', 'pop', 'editorial'], ae: 'sideways', w: 1, fits: n => n >= 4 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), fb: rng.pick(fontsOf(st, ['display', 'serif'])), rot: rng.pick([-90, -90, 90]), accent: rng.chance(0.5), rule: rng.chance(0.8) };
   },
@@ -36038,7 +36038,7 @@ reg('tyRotBlock', {
 
 /* ================================================================== 17 tySquare — 方形組 */
 reg('tySquare', {
-  name: '方形組', tags: ['graphic', 'editorial', 'pop'], ae: 'gridCells', w: 1, fits: n => n >= 3 && n <= 16,
+  name: '사각 짜임', tags: ['graphic', 'editorial', 'pop'], ae: 'gridCells', w: 1, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), order: rng.pick(['yoko', 'yoko', 'tate']), frame: rng.chance(0.75), acc: rng.chance(0.7) };
   },
@@ -36070,7 +36070,7 @@ reg('tySquare', {
         env.line([[xa, y0 - g], [J.lerp(xa, xb, e), y0 - g]], sc.fg, Math.max(2, lw * 2.4), 0.9, false);
         env.line([[xb, y0 + rows * cell + g], [J.lerp(xb, xa, e), y0 + rows * cell + g]], sc.sub, lw, 0.8, false);
         label(env, `${cols}×${rows}`, xb, y0 + rows * cell + g + ls * 1.1, { align: 'right', alpha: e, size: ls * 0.9 });
-        label(env, tate ? '縦組' : 'YOKO', xa, y0 + rows * cell + g + ls * 1.1, { alpha: e * 0.8, size: ls * 0.9, font: tate ? bodyF(env) : monoF(env) });
+        label(env, tate ? '세로짜기' : 'YOKO', xa, y0 + rows * cell + g + ls * 1.1, { alpha: e * 0.8, size: ls * 0.9, font: tate ? bodyF(env) : monoF(env) });
       }
     }
     return bb;
@@ -36079,7 +36079,7 @@ reg('tySquare', {
 
 /* ================================================================== 18 tyLineFocus — 行中強調 */
 reg('tyLineFocus', {
-  name: '行中強調', tags: ['editorial', 'emotional', 'calm'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '줄 속 강조', tags: ['editorial', 'emotional', 'calm'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display', 'body'])), mark: rng.pick(['bar', 'bar', 'dot', 'box']) };
   },
@@ -36213,7 +36213,7 @@ const boxOf = it => { it._m = J.measure(it); return J.itemBox(it); };
 
 /* キー字先行 — the key glyph lands first (big → size), the rest slide out from behind it */
 reg('enter', 'tyKeyFirst', {
-  name: 'キー字先行', tags: ['pop', 'graphic', 'editorial', 'emotional'], ae: 'pop', w: 1,
+  name: '핵심 글자 먼저', tags: ['pop', 'graphic', 'editorial', 'emotional'], ae: 'pop', w: 1,
   apply(env, it, p) {
     const lay = layOf(it), sx = it.sx || 1, sy = it.sy || 1;
     const plain = lay.filter(g => !isSp(g.ch));
@@ -36237,7 +36237,7 @@ reg('enter', 'tyKeyFirst', {
 
 /* 行送りワイプ — each line is wiped on in turn, an accent rule running ahead under it */
 reg('enter', 'tyLineWipe', {
-  name: '行送りワイプ', tags: ['editorial', 'graphic', 'calm'], ae: 'wipe', w: 1,
+  name: '줄 와이프', tags: ['editorial', 'graphic', 'calm'], ae: 'wipe', w: 1,
   apply(env, it, p) {
     const lines = lineInfo(it), nL = Math.max(1, lines.length), st = Math.min(0.28, 0.6 / nL);
     const qOf = li => { const k = lines.findIndex(L => L.li === li); return E.inOutCubic(clamp((p - Math.max(0, k) * st) / (1 - (nL - 1) * st))); };
@@ -36269,7 +36269,7 @@ reg('enter', 'tyLineWipe', {
 
 /* 一字ずつ拡大 — glyphs are flashed one at a time, large in the middle, then set into their slot */
 reg('enter', 'tyZoomOne', {
-  name: '一字ずつ拡大', tags: ['pop', 'graphic', 'emotional'], ae: 'zoom', w: 0.8, minDur: 1.0,
+  name: '한 글자씩 확대', tags: ['pop', 'graphic', 'emotional'], ae: 'zoom', w: 0.8, minDur: 1.0,
   inDur: (dur, n) => J.clamp(0.14 * n + 0.2, 0.4, Math.min(1.5, dur * 0.55)),
   apply(env, it, p) {
     const lay = layOf(it), sx = it.sx || 1, sy = it.sy || 1;
@@ -36298,7 +36298,7 @@ reg('enter', 'tyZoomOne', {
 
 /* 下線から立つ — an underline is drawn, the glyphs grow up out of it, the line then retracts */
 reg('enter', 'tyUnderLift', {
-  name: '下線から立つ', tags: ['editorial', 'graphic', 'pop'], ae: 'stretch', w: 1,
+  name: '밑줄에서 일어서기', tags: ['editorial', 'graphic', 'pop'], ae: 'stretch', w: 1,
   apply(env, it, p) {
     const lines = lineInfo(it), ord = orders(env, it), V = !!it.vertical, sx = it.sx || 1, sy = it.sy || 1;
     const multi = layOf(it).filter(g => !isSp(g.ch)).length > 1;
@@ -36324,7 +36324,7 @@ reg('enter', 'tyUnderLift', {
 
 /* 点から字 — every glyph starts as a middle dot (・) that pops and turns into the glyph */
 reg('enter', 'tyDotGrow', {
-  name: '点から字', tags: ['pop', 'calm', 'graphic'], ae: 'pop', w: 0.9,
+  name: '점에서 글자로', tags: ['pop', 'calm', 'graphic'], ae: 'pop', w: 0.9,
   apply(env, it, p) {
     const ord = orders(env, it), ac = accentOf(env);
     it.charFns.push((i) => {
@@ -36352,7 +36352,7 @@ const drawBrackets = (e, V, cx, cy, half, w, h, size, col, a) => {
   }
 };
 reg('enter', 'tyBracketOpen', {
-  name: '括弧が開く', tags: ['editorial', 'graphic', 'pop'], ae: 'wipe', w: 0.9,
+  name: '괄호 열림', tags: ['editorial', 'graphic', 'pop'], ae: 'wipe', w: 0.9,
   apply(env, it, p) {
     const b = boxOf(it), V = !!it.vertical, pad = it.size * 0.12;
     const e = E.inOutCubic(clamp((p - 0.08) / 0.62));
@@ -36366,7 +36366,7 @@ reg('enter', 'tyBracketOpen', {
 
 /* 打ち直し — typed in with a cursor; one glyph is mistyped, deleted and typed again */
 reg('enter', 'tyRetype', {
-  name: '打ち直し', tags: ['editorial', 'glitch', 'emotional'], ae: 'type', w: 0.8, minDur: 1.0, cursor: true,
+  name: '다시 타이핑', tags: ['editorial', 'glitch', 'emotional'], ae: 'type', w: 0.8, minDur: 1.0, cursor: true,
   inDur: (dur, n) => J.clamp(0.1 * n + 0.4, 0.45, Math.min(1.5, dur * 0.55)),
   apply(env, it, p) {
     const lay = layOf(it), N = lay.N;
@@ -36396,7 +36396,7 @@ reg('enter', 'tyRetype', {
 
 /* ルビから — each glyph appears small in the ruby position above its slot, then drops and grows into place */
 reg('enter', 'tyRubyDrop', {
-  name: 'ルビから', tags: ['calm', 'editorial', 'emotional'], ae: 'drop', w: 1,
+  name: '루비에서 내려오기', tags: ['calm', 'editorial', 'emotional'], ae: 'drop', w: 1,
   apply(env, it, p) {
     const ord = orders(env, it), V = !!it.vertical, sx = it.sx || 1, sy = it.sy || 1, sub = subOf(env);
     it.charFns.push((i, g) => {
@@ -36417,7 +36417,7 @@ reg('enter', 'tyRubyDrop', {
 
 /* 線で消す — a strike line is drawn through each line, the glyphs collapse onto it, then the line retracts */
 reg('exit', 'tyStrike', {
-  name: '線で消す', tags: ['editorial', 'graphic', 'emotional'], ae: 'wipe', w: 1,
+  name: '선으로 지우기', tags: ['editorial', 'graphic', 'emotional'], ae: 'wipe', w: 1,
   apply(env, it, p) {
     const lines = lineInfo(it), ord = orders(env, it), V = !!it.vertical;
     it.charFns.push((i) => {
@@ -36443,7 +36443,7 @@ reg('exit', 'tyStrike', {
 
 /* 点に戻る — glyphs shrink into middle dots (・), which then wink out */
 reg('exit', 'tyToDot', {
-  name: '点に戻る', tags: ['calm', 'pop', 'graphic'], ae: 'shrink', w: 0.9,
+  name: '점으로 돌아가기', tags: ['calm', 'pop', 'graphic'], ae: 'shrink', w: 0.9,
   apply(env, it, p) {
     const ord = orders(env, it), ac = accentOf(env);
     it.charFns.push((i) => {
@@ -36459,7 +36459,7 @@ reg('exit', 'tyToDot', {
 
 /* 改行送り — the text line-feeds upward in three steps and leaves through a window */
 reg('exit', 'tyLineFeed', {
-  name: '改行送り', tags: ['editorial', 'calm', 'graphic'], ae: 'wipe', w: 1,
+  name: '줄바꿈 밀기', tags: ['editorial', 'calm', 'graphic'], ae: 'wipe', w: 1,
   apply(env, it, p) {
     const b = boxOf(it), V = !!it.vertical, pad = it.size * 0.12;
     const k = clamp(p) * 3, st = Math.min(3, Math.floor(k)), f = k - st;
@@ -36473,7 +36473,7 @@ reg('exit', 'tyLineFeed', {
 
 /* 括弧閉じ — 「 」 appear at the ends and close in to the middle, taking the line with them */
 reg('exit', 'tyBracketClose', {
-  name: '括弧閉じ', tags: ['editorial', 'graphic', 'pop'], ae: 'wipe', w: 0.9,
+  name: '괄호 닫힘', tags: ['editorial', 'graphic', 'pop'], ae: 'wipe', w: 0.9,
   apply(env, it, p) {
     const b = boxOf(it), V = !!it.vertical, pad = it.size * 0.12;
     const e = E.inOutCubic(clamp((p - 0.12) / 0.7));
@@ -36488,7 +36488,7 @@ reg('exit', 'tyBracketClose', {
 
 /* 番号に変わる — each glyph turns into its small index number, then the numbers fade */
 reg('exit', 'tyToIndex', {
-  name: '番号に変わる', tags: ['editorial', 'glitch', 'graphic'], ae: 'scatter', w: 0.8,
+  name: '번호로 바뀜', tags: ['editorial', 'glitch', 'graphic'], ae: 'scatter', w: 0.8,
   apply(env, it, p) {
     const lay = layOf(it), ord = orders(env, it), sub = subOf(env), V = !!it.vertical;
     const num = new Map(); let k = 0;
@@ -36510,7 +36510,7 @@ reg('exit', 'tyToIndex', {
 
 /* 一字残し — everything folds into the key glyph, which then swells and fades */
 reg('exit', 'tyKeyLast', {
-  name: '一字残し', tags: ['emotional', 'pop', 'graphic'], ae: 'shrink', w: 0.9,
+  name: '한 글자만 남기기', tags: ['emotional', 'pop', 'graphic'], ae: 'shrink', w: 0.9,
   apply(env, it, p) {
     const lay = layOf(it), sx = it.sx || 1, sy = it.sy || 1;
     const plain = lay.filter(g => !isSp(g.ch));
@@ -36539,7 +36539,7 @@ reg('exit', 'tyKeyLast', {
 
 /* 下線へ沈む — an underline is drawn, each glyph sinks into it (masked at the line), then the line retracts */
 reg('exit', 'tyUnderSink', {
-  name: '下線へ沈む', tags: ['editorial', 'calm', 'graphic'], ae: 'fall', w: 1,
+  name: '밑줄로 가라앉기', tags: ['editorial', 'calm', 'graphic'], ae: 'fall', w: 1,
   apply(env, it, p) {
     const lines = lineInfo(it), ord = orders(env, it), V = !!it.vertical, sx = it.sx || 1, sy = it.sy || 1;
     it.charFns.push((i, g) => {
@@ -36564,7 +36564,7 @@ reg('exit', 'tyUnderSink', {
 
 /* 縦組に折れる — a horizontal line folds down into a vertical column (a column folds into a row), then fades */
 reg('exit', 'tyFoldVert', {
-  name: '縦組に折れる', tags: ['graphic', 'editorial', 'pop'], ae: 'fall', w: 0.9,
+  name: '세로짜기로 접힘', tags: ['graphic', 'editorial', 'pop'], ae: 'fall', w: 0.9,
   apply(env, it, p) {
     const lay = layOf(it), V = !!it.vertical, sx = it.sx || 1, sy = it.sy || 1;
     const ln = new Map();
@@ -36589,7 +36589,7 @@ reg('exit', 'tyFoldVert', {
 
 /* 一字の鼓動 — only the key glyph pulses (on the beat when there is one) */
 reg('hold', 'tyKeyPulse', {
-  name: '一字の鼓動', tags: ['emotional', 'pop', 'calm'], ae: 'breathe', w: 1,
+  name: '한 글자의 박동', tags: ['emotional', 'pop', 'calm'], ae: 'breathe', w: 1,
   apply(env, it, amt) {
     const lay = layOf(it), plain = lay.filter(g => !isSp(g.ch));
     if (!plain.length) return;
@@ -36609,7 +36609,7 @@ reg('hold', 'tyKeyPulse', {
 
 /* 読み送り — a reading cursor steps along the line: the current glyph lifts a little in the accent colour */
 reg('hold', 'tyReadCursor', {
-  name: '読み送り', tags: ['calm', 'editorial', 'pop'], ae: 'wave', w: 1,
+  name: '읽어가기', tags: ['calm', 'editorial', 'pop'], ae: 'wave', w: 1,
   apply(env, it, amt) {
     if (amt < 0.3) return;
     const lay = layOf(it), plain = lay.filter(g => !isSp(g.ch)), n = plain.length;
@@ -36631,7 +36631,7 @@ reg('hold', 'tyReadCursor', {
 
 /* 白抜き明滅 — now and then one glyph switches to outline only for a moment */
 reg('hold', 'tyOutlineBlink', {
-  name: '白抜き明滅', tags: ['glitch', 'graphic', 'pop'], ae: 'glitchtick', w: 0.9,
+  name: '흰 테두리 점멸', tags: ['glitch', 'graphic', 'pop'], ae: 'glitchtick', w: 0.9,
   apply(env, it, amt) {
     const lay = layOf(it), plain = lay.filter(g => !isSp(g.ch));
     if (!plain.length) return;
@@ -36645,7 +36645,7 @@ reg('hold', 'tyOutlineBlink', {
 
 /* 字間ステップ — letter spacing snaps between a few set values (on the beat), like a typographer trying options */
 reg('hold', 'tyTrackStep', {
-  name: '字間ステップ', tags: ['graphic', 'editorial', 'pop'], ae: 'breathe', w: 0.8,
+  name: '자간 스텝', tags: ['graphic', 'editorial', 'pop'], ae: 'breathe', w: 0.8,
   apply(env, it, amt) {
     if (layOf(it).filter(g => !isSp(g.ch)).length < 2) return;
     const len = env.beat ? Math.max(0.25, env.beat.len) : 0.55;
@@ -36729,7 +36729,7 @@ const glyphEdges = (env, bb) => {
 
 /* 奥付 — a small colophon block (line, time, glyph count, reading) typed into a free corner, with a hairline */
 reg('decor', 'tyColophon', {
-  name: '奥付', tags: ['editorial', 'calm', 'graphic'], ae: 'leaders', w: 1, layer: 'front',
+  name: '정보 카드', tags: ['editorial', 'calm', 'graphic'], ae: 'leaders', w: 1, layer: 'front',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = getBB(env, bb0), { sc } = env, cut = env.cut, u = U(env);
@@ -36758,7 +36758,7 @@ reg('decor', 'tyColophon', {
 
 /* 柱とノンブル — a running head (line number + lyric line + hairline) at the top and a folio number at the bottom */
 reg('decor', 'tyRunningHead', {
-  name: '柱とノンブル', tags: ['editorial', 'calm'], ae: 'timecodeBar', w: 1, layer: 'front',
+  name: '머리글과 페이지 번호', tags: ['editorial', 'calm'], ae: 'timecodeBar', w: 1, layer: 'front',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = getBB(env, bb0), { W, H, sc } = env, cut = env.cut, u = U(env), m = MG(env);
@@ -36789,7 +36789,7 @@ reg('decor', 'tyRunningHead', {
 
 /* 字割り線 — hairlines at every glyph body edge run from the lyric out to the frame edges, like a type specimen */
 reg('decor', 'tyGlyphBody', {
-  name: '字割り線', tags: ['editorial', 'graphic', 'calm'], ae: 'guides', w: 0.9, layer: 'front',
+  name: '글자 구획선', tags: ['editorial', 'graphic', 'calm'], ae: 'guides', w: 0.9, layer: 'front',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = getBB(env, bb0), { W, H, sc } = env, u = U(env), m = MG(env) * 0.6;
@@ -36817,7 +36817,7 @@ reg('decor', 'tyGlyphBody', {
 
 /* 文字罫 — a rule made of tiny repeated lyric text runs along the top and bottom edges, drifting in opposite directions */
 reg('decor', 'tyTextRule', {
-  name: '文字罫', tags: ['editorial', 'graphic', 'calm'], ae: 'verticalStrip', w: 1, layer: 'front', subtle: true,
+  name: '글자 괘선', tags: ['editorial', 'graphic', 'calm'], ae: 'verticalStrip', w: 1, layer: 'front', subtle: true,
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = getBB(env, bb0), { W, H, sc, ctx } = env, cut = env.cut, u = U(env), m = MG(env);
@@ -36844,7 +36844,7 @@ reg('decor', 'tyTextRule', {
 
 /* 級数見本 — the key glyph of the lyric set at five falling sizes on one baseline, each with its size, in a free corner */
 reg('decor', 'tyTypeScale', {
-  name: '級数見本', tags: ['editorial', 'graphic'], ae: 'indexNum', w: 0.8, layer: 'front',
+  name: '크기 견본', tags: ['editorial', 'graphic'], ae: 'indexNum', w: 0.8, layer: 'front',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = getBB(env, bb0), { sc } = env, u = U(env);
@@ -36874,7 +36874,7 @@ reg('decor', 'tyTypeScale', {
 
 /* 大きな約物 — huge dim 「 」 (or 『 』 / “ ”) glyphs set behind the lyric at its opposite corners */
 reg('decor', 'tyBigPunct', {
-  name: '大きな約物', tags: ['editorial', 'emotional', 'graphic'], ae: 'bracketsJP', w: 0.9, layer: 'front',
+  name: '큰 인용 부호', tags: ['editorial', 'emotional', 'graphic'], ae: 'bracketsJP', w: 0.9, layer: 'front',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = getBB(env, bb0), { W, H, sc } = env;
@@ -36922,7 +36922,7 @@ const itemSpace = (env, it, fn) => {
 
 /* 一字抜き — the key glyph is set hollow (outline only) among solid glyphs, or the reverse */
 reg('treat', 'tyHollowKey', {
-  name: '一字抜き', tags: ['graphic', 'editorial', 'pop'], ae: 'spotChar', w: 0.9, safe: true,
+  name: '한 글자 비우기', tags: ['graphic', 'editorial', 'pop'], ae: 'spotChar', w: 0.9, safe: true,
   plan: rng => ({ rev: rng.chance(0.35) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.5)) return;
@@ -36942,7 +36942,7 @@ reg('treat', 'tyHollowKey', {
 
 /* 天地罫 — a heavy rule above and a hairline below every line (right / left of a vertical column) */
 reg('treat', 'tyHeadRules', {
-  name: '天地罫', tags: ['editorial', 'graphic', 'calm'], ae: 'underline', w: 0.8,
+  name: '위아래 괘선', tags: ['editorial', 'graphic', 'calm'], ae: 'underline', w: 0.8,
   plan: rng => ({ k: rng.range(0.06, 0.09), acc: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it) || nonSp(it) < 2) return;
@@ -36967,7 +36967,7 @@ reg('treat', 'tyHeadRules', {
 
 /* 頭字強調 — the first glyph of the line is set larger (baseline kept) in the accent colour, the rest make room */
 reg('treat', 'tyHeadBig', {
-  name: '頭字強調', tags: ['editorial', 'pop', 'emotional'], ae: 'sizeWave', w: 0.9,
+  name: '첫 글자 강조', tags: ['editorial', 'pop', 'emotional'], ae: 'sizeWave', w: 0.9,
   plan: rng => ({ k: rng.range(1.35, 1.6), acc: rng.chance(0.7) }),
   apply(env, it, Pt) {
     if (!alive(it) || nonSp(it) < 2) return;
@@ -36994,7 +36994,7 @@ reg('treat', 'tyHeadBig', {
 
 /* 字番号 — a tiny superscript index number beside every glyph */
 reg('treat', 'tyIndexSup', {
-  name: '字番号', tags: ['editorial', 'graphic'], ae: 'emphasisDots', w: 0.7,
+  name: '글자 번호', tags: ['editorial', 'graphic'], ae: 'emphasisDots', w: 0.7,
   plan: rng => ({ acc: rng.chance(0.6) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -37048,7 +37048,7 @@ const trReg = (k, d) => reg('trans', k, Object.assign({}, d, {
 
 /* 罫線ワイプ — the frame is ruled into text lines; each line is "typed" across from the left, a cursor bar leading it */
 trReg('tyRuleWipe', {
-  name: '罫線ワイプ', tags: ['editorial', 'graphic', 'calm'], ae: 'blinds', w: 0.9, dur: 0.45,
+  name: '괘선 와이프', tags: ['editorial', 'graphic', 'calm'], ae: 'blinds', w: 0.9, dur: 0.45,
   plan: rng => ({ n: rng.int(7, 12), rtl: rng.chance(0.25) }),
   draw(ctx, A, B, p, I, Pt) {
     const { cw, ch } = I, n = Pt.n || 9, bh = ch / n, ac = tAcc(I), lw = Math.max(1, Math.min(cw, ch) * 0.0015);
@@ -37072,7 +37072,7 @@ trReg('tyRuleWipe', {
 
 /* 升目送り — a manuscript grid; the new cut fills in cell by cell in vertical reading order (columns right to left) */
 trReg('tyGridCells', {
-  name: '升目送り', tags: ['editorial', 'graphic'], ae: 'checker', w: 0.8, dur: 0.5,
+  name: '원고지 칸 채우기', tags: ['editorial', 'graphic'], ae: 'checker', w: 0.8, dur: 0.5,
   plan: rng => ({ rows: rng.int(4, 6), tate: rng.chance(0.7) }),
   draw(ctx, A, B, p, I, Pt) {
     const { cw, ch } = I, rows = Pt.rows || 5, cell = ch / rows, cols = Math.ceil(cw / cell), ox = (cw - cols * cell) / 2;
@@ -37104,8 +37104,8 @@ trReg('tyGridCells', {
       pattern or motif. Applied after (1): with project.wa === false
       they are never picked at random.
    A line can still be set to any entry by hand (per-line override).
-   3) Part sets with their own switch (not 추가 연출): ホラー (horror,
-      off by default), 文字PV系 (typo) and キネティック (kinetic),
+   3) Part sets with their own switch (not 추가 연출): 호러 (horror,
+      off by default), 타이포 (typo) and 키네틱 (kinetic),
       both on by default. Entries carry `set: '<name>'` (or come
       from a pack of that name).
    Pack authors: packs not listed in J.BASE_PACKS count as 추가 연출;
@@ -37311,7 +37311,7 @@ function mergeProject(p) {
   for (const [role, k] of Object.entries((p && p.fonts) || {})) if (typeof k === 'string' && J.FONTS[k] && /^[\w-]+$/.test(role)) o.fonts[role] = k;
   return o;
 }
-const SET_UI = { horror: { name: 'ホラー', badge: 'ホ' }, typo: { name: '文字PV系', badge: '文' }, kinetic: { name: 'キネティック', badge: 'キ' } };
+const SET_UI = { horror: { name: '호러', badge: '호' }, typo: { name: '타이포', badge: '타' }, kinetic: { name: '키네틱', badge: '키' } };
 function setBadges(d) {
   return (d && d.extra ? '<span class="set-badge ex" title="첫 공개 버전 이후 추가">추가</span>' : '') + (d && d.wa ? '<span class="set-badge" title="일본풍 연출">일본풍</span>' : '')
     + (d && d.set && SET_UI[d.set] ? `<span class="set-badge set-${d.set}" title="${SET_UI[d.set].name}">${SET_UI[d.set].badge}</span>` : '');
@@ -37778,7 +37778,7 @@ function followLine(li) {
   if (performance.now() - listTouched < 2500) return;                       // the user is scrolling the list
   const el = S.lineEls[li], col = el && el.closest('.col-left');
   if (!el || !col || col.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-  const tp = $('tapPanel'), pad = tp && !tp.hidden ? tp.offsetHeight + 12 : 8;   // 固定表示中のタップboxの下に隠れないように
+  const tp = $('tapPanel'), pad = tp && !tp.hidden ? tp.offsetHeight + 12 : 8;   // 고정 표시 중인 tapBox 아래에 가려지지 않도록
   const r = el.getBoundingClientRect(), c = col.getBoundingClientRect();
   if (r.top >= c.top + pad && r.bottom <= c.bottom - 8) return;
   col.scrollTo({ top: col.scrollTop + (r.top - c.top) - Math.max(c.height * 0.3, pad + 24), behavior: 'smooth' });
@@ -38028,8 +38028,8 @@ function connectTimelineBoundaries(source, target) {
 
 /* ---------------- cut info ---------------- */
 const CHIP_GROUPS = [
-  ['layout', 'l', 'レイアウト'], ['enter', 'e', '登場'], ['hold', 'h', '保持'], ['exit', 'x', '退場'],
-  ['decor', '', '装飾'], ['treat', 't', '加工'], ['bg', 'b', '背景'], ['cam', 'c', 'カメラ'], ['trans', 'c', 'つなぎ'],
+  ['layout', 'l', '레이아웃'], ['enter', 'e', '등장'], ['hold', 'h', '유지'], ['exit', 'x', '퇴장'],
+  ['decor', '', '장식'], ['treat', 't', '글자 가공'], ['bg', 'b', '배경'], ['cam', 'c', '카메라'], ['trans', 'c', '컷 간 전환'],
 ];
 const cutPick = { g: null, line: -1, k: -1 };
 let lastCutIdx = -2;
@@ -38079,7 +38079,7 @@ function cutGroupVal(cut, g) {
   return '';
 }
 function groupName(g, k) {
-  if (!k) return 'なし';
+  if (!k) return '없음';
   const tbl = J.registry(g);
   return (tbl && tbl[k] && tbl[k].name) || k;
 }
@@ -38107,7 +38107,7 @@ function rerollCurrentCut(kind) {
   if (S.exporting || S.tap) return;
   const cut = J.cutAt(S.plan, S.t);
   const k = lyricCutK(cut);
-  if (!cut || k < 0) { toast('この位置のカットは抽選できません'); return; }
+  if (!cut || k < 0) { toast('이 위치의 컷은 다시 뽑을 수 없습니다'); return; }
   remember();
   const n = [...String(cut.text || '').replace(/\s+/g, '')].length;
   const groups = kind === 'omakase'
@@ -38124,7 +38124,7 @@ function rerollCurrentCut(kind) {
   replan();
   commit();
   seek(t0);
-  toast(kind === 'omakase' ? 'このカットをおまかせ' : 'このカットをシャッフル');
+  toast(kind === 'omakase' ? '이 컷만 자동으로 만들기' : '이 컷만 섞기');
 }
 function updateCutInfo() {
   const cut = J.cutAt(S.plan, S.t);
@@ -38164,8 +38164,8 @@ function updateCutInfo() {
     const forced = slot[g] != null && slot[g] !== '' && !quiet[g];
     bits.push(`<button type="button" class="chip ${cls}${forced ? ' is-forced' : ''}" data-g="${g}" aria-pressed="${cutPick.g === g ? 'true' : 'false'}" ${k < 0 ? 'disabled' : ''}><b>${label}</b>${escapeHtml(groupName(g, cutGroupVal(cut, g)))}</button>`);
   });
-  bits.push(`<button type="button" class="ghost small cut-roll" data-roll="shuffle" ${k < 0 ? 'disabled' : ''} title="このカットだけ構成を再抽選">シャッフル</button>`);
-  bits.push(`<button type="button" class="ghost small cut-roll accent" data-roll="omakase" ${k < 0 ? 'disabled' : ''} title="このカットだけ手法をランダムに">おまかせ</button>`);
+  bits.push(`<button type="button" class="ghost small cut-roll" data-roll="shuffle" ${k < 0 ? 'disabled' : ''} title="이 컷만 구성을 다시 뽑기">섞기</button>`);
+  bits.push(`<button type="button" class="ghost small cut-roll accent" data-roll="omakase" ${k < 0 ? 'disabled' : ''} title="이 컷만 기법을 무작위로">자동</button>`);
   el.innerHTML = bits.join('') + mediaChips;
   if (k >= 0) {
     el.querySelectorAll('button.chip[data-g]').forEach(b => b.addEventListener('click', () => toggleCutPick(b.dataset.g, cut, k)));
@@ -38213,7 +38213,7 @@ function fillCutPick() {
     const none = document.createElement('button');
     none.type = 'button';
     none.className = 'tcard' + (forced === 'none' ? ' is-on' : '');
-    none.innerHTML = '<span class="tcard-name" style="padding:16px 6px"><span>なし</span></span>';
+    none.innerHTML = '<span class="tcard-name" style="padding:16px 6px"><span>없음</span></span>';
     none.addEventListener('click', () => { setCutTech(cutPick.line, cutPick.k, g, 'none'); replan(); });
     grid.appendChild(none);
   }
@@ -39054,9 +39054,9 @@ function updateHist() {
            this does not pin one technique in place.
    params: freezes the current value of the effects sliders, on-twos and flash.
    Neither goes into J.plan: they only bracket the places that rewrite the look (Randomize, mood reroll). */
-const LOCK_TITLE_ON = 'おまかせ／シャッフルで変えないようにロック';
-const TECH_LOCK_ON = 'おまかせでON／OFFを変えないようにロック';
-const LOCK_TITLE_OFF = 'ロック中。クリックで解除';
+const LOCK_TITLE_ON = '자동으로 만들기/셔플에서 바뀌지 않도록 잠금';
+const TECH_LOCK_ON = '자동으로 만들기에서 ON/OFF가 바뀌지 않도록 잠금';
+const LOCK_TITLE_OFF = '잠금 중. 클릭하면 해제';
 function locksOf() {
   const P = S.project;
   if (!P.locks) P.locks = { tech: {}, params: {} };
@@ -39073,15 +39073,15 @@ function groupLabel(g) { const m = GROUPS.find(x => x[0] === g); return m ? m[1]
 function toggleTechLock(g) {
   const L = locksOf();
   remember();
-  if (L.tech[g]) { delete L.tech[g]; toast('ロック解除：' + groupLabel(g)); }
-  else { L.tech[g] = true; toast('ロック：' + groupLabel(g)); }
+  if (L.tech[g]) { delete L.tech[g]; toast('잠금 해제: ' + groupLabel(g)); }
+  else { L.tech[g] = true; toast('잠금: ' + groupLabel(g)); }
   commit(); autosave(); renderTech();
 }
 function toggleParamLock(k) {
   const L = locksOf();
   remember();
-  if (L.params[k]) { delete L.params[k]; toast('ロック解除：' + lockName(k)); }
-  else { L.params[k] = true; toast('ロック：' + lockName(k)); }
+  if (L.params[k]) { delete L.params[k]; toast('잠금 해제: ' + lockName(k)); }
+  else { L.params[k] = true; toast('잠금: ' + lockName(k)); }
   commit(); autosave(); renderFx();
 }
 function lockedEnabled() {                        // ON/OFF selection of every locked group, as it is now
@@ -39215,7 +39215,7 @@ function toast(m, cols) {
 /* ---------------- かんたん / 詳細 ---------------- */
 function setMode(m) {
   S.mode = m === 'easy' ? 'easy' : m === 'mobile' ? 'mobile' : 'pro';
-  const mobile = S.mode === 'mobile', easy = S.mode === 'easy' || mobile;   // スマホ = the かんたん panel, laid out for a phone
+  const mobile = S.mode === 'mobile', easy = S.mode === 'easy' || mobile;   // 스마트폰 = the 간단 panel, laid out for a phone
   $('app').classList.toggle('is-easy', easy);
   $('app').classList.toggle('is-mobile', mobile);
   $('app').classList.remove('menu-open'); $('btnMenu').setAttribute('aria-expanded', 'false');
@@ -39474,11 +39474,11 @@ async function runExport(kind) {
   let wake = null; try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) { wake = null; }
   // スマホ: at most 1080p (phones run out of memory / encoder time at 1440p and 4K)
   const proj = S.mode === 'mobile' && (S.project.res || 1080) > 1080 ? Object.assign({}, S.project, { res: 1080 }) : S.project;
-  if (proj !== S.project) toast('スマホの画面では 1080p で書き出します');
+  if (proj !== S.project) toast('스마트폰 화면에서는 1080p로 내보냅니다');
   try {
     await J.ensureFonts(S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS, J.fontsOfPlan(S.plan));
     const lost = J.missingUserFonts(J.fontsOfPlan(S.plan).concat(Object.values(S.project.fonts || {})));
-    if (lost.length) throw new Error(`読み込んだ書体（${[...new Set(lost)].join('・')}）がこのブラウザにないため、書き出しを止めました。「フォント」から同じファイルを読み込み直すか、別の書体を選んでください`);
+    if (lost.length) throw new Error(`불러온 서체(${[...new Set(lost)].join('·')})가 이 브라우저에 없어 내보내기를 멈췄습니다. 「글꼴」에서 같은 파일을 다시 불러오거나 다른 서체를 선택해 주세요`);
     if (kind === 'mp4' || kind === 'mp4file') {
       const plan = S.plan, range = exportRange(), span = J.exportSpan(plan, range);
       const r = await J.exportMP4({ plan, project: proj, audio: S.project.includeAudio !== false ? S.audio : null, quality: S.project.quality || 'high', onProgress, signal: ac.signal, range, file });
@@ -39872,7 +39872,7 @@ function tapBack() {                    // 1つ戻る: undo the last tap and jum
 function stopTap() { const base = S.tap && S.tap.base; S.tap = null; $('tapPanel').hidden = true; $('btnTap').setAttribute('aria-pressed', 'false'); replan(); followLineStarts(base); flushSave(); }
 function updateTap() {
   const bb = $('tapBack'); if (bb) bb.disabled = !S.tap.done.length;
-  $('tapPanel').classList.toggle('compact', S.tap.done.length > 0);   // 最初の数回が終わったら説明を畳んで、固定しても邪魔にならないように
+  $('tapPanel').classList.toggle('compact', S.tap.done.length > 0);   // 처음 몇 번이 끝나면 설명을 접어서, 고정해도 방해되지 않도록
   if (S.tap.append) {
     const order = J.mediaOrder(S.project, S.tap.layer);
     $('tapLine').textContent = `${S.tap.i + 1}. ${order.length ? order[S.tap.i % order.length].name : '이미지 없음'}`; return;
@@ -40173,9 +40173,9 @@ function bind() {
   }));
   setSwitch('extra-toggle', 'extra', true, '추가 연출: 사용', '추가 연출: 사용 안 함 (초기 공개판 연출만)');
   setSwitch('wa-toggle', 'wa', true, '일본풍 연출: 사용', '일본풍 연출: 사용 안 함 (자동 생성·셔플에서 제외)');
-  setSwitch('typo-toggle', 'typo', true, '文字PV系の部品：使う', '文字PV系の部品：使わない（おまかせ・シャッフルで選ばれません）');
-  setSwitch('kinetic-toggle', 'kinetic', true, 'キネティックの部品：使う', 'キネティックの部品：使わない（おまかせ・シャッフルで選ばれません）');
-  setSwitch('horror-toggle', 'horror', true, 'ホラーの演出：使う（おまかせの雰囲気に「ホラー」が加わります）', 'ホラーの演出：使わない');
+  setSwitch('typo-toggle', 'typo', true, '타이포 부품: 사용', '타이포 부품: 사용 안 함(자동으로 만들기·셔플에서 선택되지 않습니다)');
+  setSwitch('kinetic-toggle', 'kinetic', true, '키네틱 부품: 사용', '키네틱 부품: 사용 안 함(자동으로 만들기·셔플에서 선택되지 않습니다)');
+  setSwitch('horror-toggle', 'horror', true, '호러 연출: 사용(자동으로 만들기의 분위기에 「호러」가 추가됩니다)', '호러 연출: 사용 안 함');
   setSwitch('unify-toggle', 'unify', true, '통일감: 켬(파트별로 맞추고 킬링 파트·모프·굵기도 사용)', '통일감: 끔');
   setSwitch('typeset-toggle', 'typeset', true, '문자 정렬: 켬(자간·조사·영문·0.2초 먼저·효과 절제)', '문자 정렬: 끔');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
@@ -40442,7 +40442,7 @@ async function restoreFonts() {
   if (!list.length) return;
   const missing = await J.restoreUserFonts(list);
   fontKey = ''; renderFontRoles(); replan();
-  if (missing.length) toast(`読み込んだ書体（${missing.join('・')}）がこのブラウザにありません。「フォント」から同じファイルを読み込み直してください（それまでは近い書体で表示します）`);
+  if (missing.length) toast(`불러온 서체(${missing.join('·')})가 이 브라우저에 없습니다. 「글꼴」에서 같은 파일을 다시 불러와 주세요(그동안은 비슷한 서체로 표시합니다)`);
 }
 
 /* ---------------- boot ---------------- */

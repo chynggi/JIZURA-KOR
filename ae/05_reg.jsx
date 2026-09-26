@@ -47,7 +47,7 @@ function jzRandomOk(o, g, k) {
     if (!m) return false;
     if (m.extra && !(o && o.extra === true)) return false;
     if (m.wa && o && o.wa === false) return false;
-    if (m.set && !jzSetOn(o, m.set)) return false;   // part sets: ホラー (off unless switched on), 文字PV系 / キネティック (on)
+    if (m.set && !jzSetOn(o, m.set)) return false;   // part sets: 호러 (off unless switched on), 타이포 / 키네틱 (on)
     return true;
 }
 // inDur / outDur tables exported from the web (duration grid 0.2..4.0 s, optional glyph-count rows)

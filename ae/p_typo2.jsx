@@ -170,7 +170,7 @@ jzReg('layout', 'tyStatCount', {
         try { N.property('ADBE Text Properties').property('ADBE Text Document').expression = ATY_FNS + 'var n=Math.round(' + nG + '*oc((time-0.1)/0.9));(n<10?"0":"")+n'; } catch (er) { jzWarn('count: ' + er.toString()); }
         aty_op(ctx, N, e);
         var y2 = ny + ns * 0.62;
-        aty_label(ctx, latin ? 'CHARACTERS' : '文字 / CHARACTERS', nx, y2, { size: ls, font: latin ? jzMonoF(ctx) : jzBodyF(ctx), op: e });
+        aty_label(ctx, latin ? 'CHARACTERS' : '글자 / CHARACTERS', nx, y2, { size: ls, font: latin ? jzMonoF(ctx) : jzBodyF(ctx), op: e });
         aty_label(ctx, 'LINE ' + aty_p2((c.line | 0) + 1) + '  ─  ' + jzFmtTime(c.start), nx, y2 + ls * 1.8, { size: ls * 0.85, op: '0.8*' + e });
         return bb;
     }
@@ -277,7 +277,7 @@ jzReg('layout', 'tySquare', {
             aty_grp(F, 'bottom', [[[xb, yb], [xa, yb]]], sc.sub, { width: lw, alpha: 0.8, trim: hd + '100*' + e });
             jzNoGhost(F);
             aty_label(ctx, cols + '×' + rows, xb, yb + ls * 1.1, { align: 'right', size: ls * 0.9, op: e });
-            aty_label(ctx, tate ? '縦組' : 'YOKO', xa, yb + ls * 1.1, { size: ls * 0.9, font: tate ? jzBodyF(ctx) : jzMonoF(ctx), op: '0.8*' + e });
+            aty_label(ctx, tate ? '세로짜기' : 'YOKO', xa, yb + ls * 1.1, { size: ls * 0.9, font: tate ? jzBodyF(ctx) : jzMonoF(ctx), op: '0.8*' + e });
         }
         return bb;
     }

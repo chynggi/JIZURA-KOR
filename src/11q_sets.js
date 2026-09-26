@@ -8,8 +8,8 @@
       pattern or motif. Applied after (1): with project.wa === false
       they are never picked at random.
    A line can still be set to any entry by hand (per-line override).
-   3) Part sets with their own switch (not 추가 연출): ホラー (horror,
-      off by default), 文字PV系 (typo) and キネティック (kinetic),
+   3) Part sets with their own switch (not 추가 연출): 호러 (horror,
+      off by default), 타이포 (typo) and 키네틱 (kinetic),
       both on by default. Entries carry `set: '<name>'` (or come
       from a pack of that name).
    Pack authors: packs not listed in J.BASE_PACKS count as 추가 연출;

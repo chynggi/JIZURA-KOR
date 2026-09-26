@@ -18,9 +18,9 @@ J.defaultProject = () => ({
   style: 'noir', mood: null,
   extra: false,                   // random picks may use the parts added after the first version (追加分)
   wa: true,                       // …and the 和風 motifs (提灯・障子・家紋…) — applied after 'extra'
-  horror: false,                  // parts sets (independent of 'extra'): ホラー (also enables the ホラー mood)
-  typo: true,                     // 文字PV系 typographic parts
-  kinetic: true,                  // キネティック parts
+  horror: false,                  // parts sets (independent of 'extra'): 호러 (also enables the 호러 mood)
+  typo: true,                     // 타이포 typographic parts
+  kinetic: true,                  // 키네틱 parts
   lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' — picks the faces each font key is drawn with
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
   unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
@@ -413,7 +413,7 @@ J.plan = (project, audio) => {
       const emph = kime || ln.impact && (k === 0 || u.recap) || ln.emph.some(w => u.text.includes(w));
       const Z = zoneOf(li), LW = Z ? Z.w : layoutW, LH = Z ? Z.h : layoutH;       // the frame this cut is laid out in (band / 표시 영역 / whole)
       const UU = U && !ovAny ? U : null;                              // per-line settings always win over 統一感
-      const tech = cutTechOf(ov, k);                                  // このカットだけの指定
+      const tech = cutTechOf(ov, k);                                  // 이 컷만의 지정
       let layout = ov.layout && J.LAYOUTS[ov.layout] ? ov.layout : pickLayout(rng, st, en, nn, dur, history, emph, u.recap, LH > LW);
       if (UU) layout = UU.layout(li, layout, { nn, dur, emph, kime, rng, portrait: LH > LW, recap: u.recap });
       // 우타하메 (per line): the characters come in with the singing, so the lyric may only be drawn once
@@ -539,7 +539,7 @@ J.plan = (project, audio) => {
         }
       }
       drawn.trans = trans;
-      if (tech.trans === 'none') {                  // このカットだけ「つなぎなし」: undo the join
+      if (tech.trans === 'none') {                  // 이 컷만 「전환 없음」: undo the join
         if (trans || morph) { enter = joinSaved.enter; inDur = joinSaved.inDur; if (prevCut) { prevCut.exit = joinSaved.prevExit; prevCut.outDur = joinSaved.prevOut; } }
         trans = null; transP = {}; transDur = 0; morph = null;
       } else if (tech.trans && J.TRANS[tech.trans] && canTrans) {
@@ -1055,12 +1055,12 @@ J.previewPlan = (project, group, key) => {
   });
   const [W, H] = J.designSize(project.aspect || '16:9');
   const rng = J.rng(J.h(J.sid(String(group) + ':' + String(key)), 11, 22));
-  let text = enUI ? 'Lyric' : '字面';
+  let text = enUI ? 'Lyric' : '글자';
   if (group === 'layout') {
     const L0 = J.LAYOUTS[key];
     const n2 = [...text.replace(/\s+/g, '')].length;
-    if (L0 && L0.fits && !L0.fits(n2)) text = enUI ? 'color of dawn' : '夜明けの色を';
-    if (L0 && L0.fits && !L0.fits([...text.replace(/\s+/g, '')].length)) text = enUI ? 'I remember the color of dawn' : '夜明けの色を覚えてる';
+    if (L0 && L0.fits && !L0.fits(n2)) text = enUI ? 'color of dawn' : '새벽의 빛깔을';
+    if (L0 && L0.fits && !L0.fits([...text.replace(/\s+/g, '')].length)) text = enUI ? 'I remember the color of dawn' : '새벽의 빛깔을 기억해';
   }
   const nn = [...text.replace(/\s+/g, '')].length;
   const dur = 2.4;
@@ -1105,8 +1105,8 @@ J.previewPlan = (project, group, key) => {
     const TD = J.TRANS[key];
     const transDur = J.clamp(TD.dur || 0.35, 0.18, 0.7);
     const transP = TD.plan ? (TD.plan(rng, st) || {}) : {};
-    const tA = enUI ? 'BEFORE' : '前のカット';
-    const tB = enUI ? 'AFTER' : '字面';
+    const tA = enUI ? 'BEFORE' : '이전 컷';
+    const tB = enUI ? 'AFTER' : '글자';
     let pA = {}, pB = {};
     try { pA = J.LAYOUTS.center.plan(rng, { text: tA, n: [...tA].length, W, H, dur: 1.2 }, st) || {}; } catch (e) {}
     try { pB = J.LAYOUTS.center.plan(rng, { text: tB, n: [...tB].length, W, H, dur: 1.2 }, st) || {}; } catch (e) {}

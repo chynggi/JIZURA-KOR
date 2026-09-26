@@ -26,12 +26,12 @@ function jzUI(thisObj) {
     cExtra.helpTip = '끄면 최초 공개판의 연출(356개 부품·스타일 12종)만 사용합니다. 켜면 나중에 추가된 연출·스타일·서체도 후보가 됩니다';
     var cWa = gSw.add('checkbox', undefined, '일본풍 연출도 사용'); cWa.value = jzGet('wa', '1') === '1';
     cWa.helpTip = '초롱·엽서·장지문·부채·가문(家紋)·세이가이하 물결·벚꽃잎 등의 일본풍 그래픽과 일본풍 스타일. 끄면 자동으로 선택되지 않습니다(추가분 판정 이후에 적용)';
-    var cTypo = gSw.add('checkbox', undefined, '文字PV系の部品を使う'); cTypo.value = jzGet('typo', '1') === '1';
-    cTypo.helpTip = '線・数字・字組みだけで見せる、文字PVらしい部品（約50）';
-    var cKin = gSw.add('checkbox', undefined, 'キネティックの部品を使う'); cKin.value = jzGet('kinetic', '1') === '1';
-    cKin.helpTip = '語ごとに動く・跳ねる・積み上がる、動き重視の部品（約50）';
-    var cHor = gSw.add('checkbox', undefined, 'ホラーの演出も使う'); cHor.value = jzGet('horror', '0') === '1';
-    cHor.helpTip = '不気味な雰囲気の部品（約50）と配色セット3。オンにすると、おまかせの雰囲気に「ホラー」が加わります（ホラーの部品は雰囲気が「ホラー」のときだけ使います）';
+    var cTypo = gSw.add('checkbox', undefined, '타이포 부품도 사용'); cTypo.value = jzGet('typo', '1') === '1';
+    cTypo.helpTip = '선·숫자·글자 배치만으로 보여주는, 타이포다운 부품(약 50개)';
+    var cKin = gSw.add('checkbox', undefined, '키네틱 부품도 사용'); cKin.value = jzGet('kinetic', '1') === '1';
+    cKin.helpTip = '단어마다 움직이고 튀고 쌓이는, 움직임 중심의 부품(약 50개)';
+    var cHor = gSw.add('checkbox', undefined, '호러 연출도 사용'); cHor.value = jzGet('horror', '0') === '1';
+    cHor.helpTip = '으스스한 분위기의 부품(약 50개)과 배색 세트 3종. 켜면 자동으로 만들기의 분위기에 「호러」가 추가됩니다(호러 부품은 분위기가 「호러」일 때만 사용합니다)';
     var gLang = gSw.add('group'); gLang.spacing = 4; gLang.add('statictext', undefined, '가사 언어');
     var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en'];
     var ddLang = gLang.add('dropdownlist', undefined, ['자동 판정', '日本語', '繁體中文', '简体中文', '한국어', 'English']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
@@ -39,7 +39,7 @@ function jzUI(thisObj) {
     function switches() { return { extra: cExtra.value, wa: cWa.value, typo: cTypo.value, kinetic: cKin.value, horror: cHor.value, lang: JZ_LANG_KEYS[ddLang.selection ? ddLang.selection.index : 0] }; }
     var gS = t1.add('group'); gS.add('statictext', undefined, '스타일');
     var styleNames = [], i;
-    for (i = 0; i < JZ_DATA.styleOrder.length; i++) { var stI = JZ_DATA.styles[JZ_DATA.styleOrder[i]]; styleNames.push(stI.name + (stI.extra || stI.wa ? '  〔' + (stI.extra ? '추가' : '') + (stI.extra && stI.wa ? '·' : '') + (stI.wa ? '일본풍' : '') + '〕' : '') + (stI.set === 'horror' ? '  〔ホ〕' : '')); }
+    for (i = 0; i < JZ_DATA.styleOrder.length; i++) { var stI = JZ_DATA.styles[JZ_DATA.styleOrder[i]]; styleNames.push(stI.name + (stI.extra || stI.wa ? '  〔' + (stI.extra ? '추가' : '') + (stI.extra && stI.wa ? '·' : '') + (stI.wa ? '일본풍' : '') + '〕' : '') + (stI.set === 'horror' ? '  〔호〕' : '')); }
     var ddStyle = gS.add('dropdownlist', undefined, styleNames); ddStyle.selection = parseInt(jzGet('style', '0'), 10) || 0;
     var gC = t1.add('group'); gC.add('statictext', undefined, '크기');
     var sizes = ['활성 컴포와 같게', '1920×1080', '1080×1920', '1080×1080', '3840×2160', '1280×720', '1440×1080 (4:3)', '1080×1440 (3:4)'];
