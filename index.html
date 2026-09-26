@@ -38608,7 +38608,7 @@ async function cleanupDeletedAssets() {
   for (const id of pendingAssetDeletes()) if (!active.has(id)) await J.assetForget(id).catch(() => {});
   try { localStorage.setItem(ASSET_DELETE_KEY, JSON.stringify(pendingAssetDeletes().filter(id => active.has(id)))); } catch (e) {}
 }
-const U = { list: [], i: -1, restoring: false, pendingGroup: null, lastGroup: null, lastAt: 0 };
+const U = { list: [], i: -1, restoring: false, hold: false, pendingGroup: null, lastGroup: null, lastAt: 0 };
 function initUndo() { U.list = [JSON.stringify(S.project)]; U.i = 0; updateUndoButtons(); }
 function markUndoGroup(group) { U.pendingGroup = group; }
 function updateUndoButtons() {
@@ -38616,8 +38616,10 @@ function updateUndoButtons() {
   if ($('btnRedo')) $('btnRedo').disabled = U.i >= U.list.length - 1;
 }
 // a tap-sync pass and a line-start handle drag are one step each: recorded when they end (stopTap / pointerup flushSave)
+// U.hold: a line-start change (곡에서 초안 / 시각 입력란 / 한 행 탭) replans twice (new start, then cutTimes following it);
+// held while both run, so only the flushSave() after records — one undo step instead of the intermediate + final
 function recordUndoState(force) {
-  if (U.restoring || !S.project || ((S.tap || TL.drag >= 0) && !force)) return;
+  if (U.restoring || U.hold || !S.project || ((S.tap || TL.drag >= 0) && !force)) return;
   const snap = JSON.stringify(S.project), group = U.pendingGroup, now = Date.now();
   U.pendingGroup = null;
   if (U.i < 0) { U.list = [snap]; U.i = 0; updateUndoButtons(); return; }
@@ -39026,6 +39028,16 @@ function followLineStarts(base) {
   }
   if (JSON.stringify(out) === JSON.stringify(S.project.timing.cutTimes || {})) return;
   S.project.timing.cutTimes = out; replan();
+}
+// 행 목록 시각 입력란의 change 핸들러 본문: 새 시작을 적용하고 컷 경계를 따라가게 한 뒤 1단계로 저장한다
+function setLineStart(i, v) {
+  if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
+  const base = lineShiftBase();
+  if (isFinite(v)) S.project.timing.lineTimes[i] = Math.max(0, v); else delete S.project.timing.lineTimes[i];
+  U.hold = true;
+  try { replan(); followLineStarts(base); }
+  finally { U.hold = false; }
+  flushSave();
 }
 function tlDragTo(i, ev) {
   let t = tlTime(ev);
@@ -39839,13 +39851,7 @@ function renderLines() {
     const q = sel => li.querySelector(sel);
     if (q('.lay')) q('.lay').value = o.layout || '';
     if (q('.ncut')) q('.ncut').value = o.cuts ? String(o.cuts) : '';
-    q('.time').addEventListener('change', e => {
-      const v = parseFloat(e.target.value);
-      if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
-      const base = lineShiftBase();
-      if (isFinite(v)) S.project.timing.lineTimes[i] = Math.max(0, v); else delete S.project.timing.lineTimes[i];
-      replan(); followLineStarts(base);
-    });
+    q('.time').addEventListener('change', e => setLineStart(i, parseFloat(e.target.value)));
     q('.txt').addEventListener('click', () => seek(ln.start + 0.001));
     q('.txt').addEventListener('dblclick', () => editLine(li, ln));
     q('.edit').addEventListener('click', () => editLine(li, ln));
@@ -41414,7 +41420,10 @@ async function draftFromSong() {
   if (ts.length !== lines.length) { toast('곡에서 행의 시작을 찾지 못했습니다'); return; }
   const base = lineShiftBase();
   S.project.timing.lineTimes = {}; ts.forEach((t, i) => { S.project.timing.lineTimes[i] = t; });
-  replan(); followLineStarts(base); flushSave();
+  U.hold = true;
+  try { replan(); followLineStarts(base); }
+  finally { U.hold = false; }
+  flushSave();
   toast(`${lines.length}행의 시작을 곡에서 추정했습니다(초안). 어긋난 행은 ◎ Shift+클릭이나 타임라인으로 고치세요. Ctrl+Z로 되돌릴 수 있습니다`);
 }
 
@@ -41474,7 +41483,13 @@ function tapBack() {                    // 1つ戻る: undo the last tap and jum
   S.tap.i = d.i; replan(); followLineStarts(S.tap.base); updateTap();
   seek(Math.max(0, S.t - 3)); if (!S.playing) play();
 }
-function stopTap() { const base = S.tap && S.tap.base; S.tap = null; $('tapPanel').hidden = true; syncTapButtons(); replan(); followLineStarts(base); flushSave(); }
+function stopTap() {
+  const base = S.tap && S.tap.base; S.tap = null; $('tapPanel').hidden = true; syncTapButtons();
+  U.hold = true;
+  try { replan(); followLineStarts(base); }
+  finally { U.hold = false; }
+  flushSave();
+}
 function syncTapButtons() {
   for (const id of ['btnTap', 'btnTapMedia']) $(id).setAttribute('aria-pressed', String(!!S.tap));
 }
@@ -42337,7 +42352,7 @@ function boot() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;
 // hooks for hosts that embed the app (the After Effects CEP panel)
-J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines, saveBundle, openProject, removeAsset };
+J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines, saveBundle, openProject, removeAsset, setLineStart, startTap };
 })();
 
 </script>

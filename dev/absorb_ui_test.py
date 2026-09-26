@@ -470,7 +470,66 @@ async def test_blank_cut_keeps_assets(b, url):
     assert not errs, errs
     await pg.close()
 
+async def test_line_start_change_is_one_undo_step(b, url):
+    # 행 시작을 바꾸면(곡에서 초안 / 시각 입력란 / 한 행 탭) 안에서 replan()이 두 번 돈다(새 시작 → 컷 경계가
+    # 따라옴). 이 둘이 실행 취소 2단계로 남으면 Ctrl+Z 한 번이 중간 상태(새 시작 + 옛 경계)로만 돌아간다.
+    pg, errs = await open_app(b, url)
+    r = await pg.evaluate('''async () => {
+      const P = () => J.ui.project;
+      const setup = () => {
+        P().timing.lineTimes = { 0: 2, 1: 6, 2: 10 };
+        P().timing.cutTimes = Object.assign({}, P().timing.cutTimes, { '0:1': 4 });
+        J.uiApi.flushSave();
+        return JSON.stringify({ lt: P().timing.lineTimes, ct: P().timing.cutTimes });
+      };
+      const snap = () => JSON.stringify({ lt: P().timing.lineTimes, ct: P().timing.cutTimes });
+      const undo = async () => {
+        document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', key: 'z', ctrlKey: true, bubbles: true }));
+        await new Promise(r => setTimeout(r, 300));
+      };
+      document.querySelector('#modePro') && document.querySelector('#modePro').click();
+      const ta = document.querySelector('#lyrics');
+      ta.value = '하나\\n둘\\n셋'; ta.dispatchEvent(new Event('input', { bubbles: true }));
+      J.uiApi.flushSave(); await new Promise(r => setTimeout(r, 300));
+      ta.blur();
+
+      // 1) 행 목록 시각 입력란 경로: 0행 시작 2 → 8
+      const before1 = setup();
+      J.uiApi.setLineStart(0, 8);
+      await new Promise(r => setTimeout(r, 300));
+      await undo();
+      const field = { before: before1, after: snap() };
+
+      // 2) 곡에서 초안 경로: J.draftLineStarts를 스텁으로 바꿔 고정 시각을 돌려준다
+      const before2 = setup();
+      const origAudio = J.ui.audio, origDraft = J.draftLineStarts;
+      J.ui.audio = { duration: 30 };
+      J.draftLineStarts = async () => [1, 5, 9];
+      document.querySelector('#btnDraft').click();
+      await new Promise(r => setTimeout(r, 300));
+      await undo();
+      const draft = { before: before2, after: snap() };
+      J.ui.audio = origAudio; J.draftLineStarts = origDraft;
+
+      // 3) 한 행 탭 경로: startTap(0, true) → tapNow 한 번 → single이라 곧바로 stopTap
+      const before3 = setup();
+      J.uiApi.startTap(0, true);
+      J.ui.t = 8;
+      document.querySelector('#tapBtn').click();
+      await new Promise(r => setTimeout(r, 300));
+      await undo();
+      const tap = { before: before3, after: snap() };
+
+      return { field, draft, tap };
+    }''')
+    assert r['field']['after'] == r['field']['before'], f"시각 입력란 경로: {r['field']}"
+    assert r['draft']['after'] == r['draft']['before'], f"곡에서 초안 경로: {r['draft']}"
+    assert r['tap']['after'] == r['tap']['before'], f"한 행 탭 경로: {r['tap']}"
+    assert not errs, errs
+    await pg.close()
+
 TESTS = [test_cut_times_follow_line, test_layered_export_media, test_blank_cut_keeps_assets,
+         test_line_start_change_is_one_undo_step,
          test_undo_covers_our_edits, test_asset_delete_is_undoable, test_ai_pick_end_to_end, test_fork_features]
 async def main():
     with serve() as url:
