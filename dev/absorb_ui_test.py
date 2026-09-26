@@ -556,42 +556,83 @@ async def test_blank_cut_keeps_assets(b, url):
     await pg.close()
 
 async def test_frontmost_above_assets(b, url):
-    # 강조(frontmost) 가사는 전경 컷이 없어도 앞 소재 위에 보여야 한다(R13). 전경 컷 분기(09_render.js:80)만
-    # 강조 가사를 소재 위에 다시 그렸는데, 정상 경로도 소재 앞에서 다시 그리도록 맞췄다.
-    # 앞 소재 = 화면 전체 파랑, 가사 = 가운데 초록. 두 겹이 겹치는 중앙 픽셀의 색으로 순서를 본다.
+    # 강조(frontmost) 가사는 전경 컷이 없어도 앞 소재 위에 보여야 한다(R13). 정상 경로도 전경 컷 분기처럼
+    # 본문 패스에서 강조를 미루고(deferFrontmost) 소재 뒤에 lyricLayer:'above'로 한 번만 다시 그린다.
+    # 그래서 (1) 순서가 맞고, (2) 강조 가사·고스트 패스가 소재 유무와 무관하게 한 번만 그려지며,
+    # (3) 강조 컷의 컷 전환도 한 번만 적용된다.
     pg, errs = await open_app(b, url)
     r = await pg.evaluate('''() => {
       const da = J.drawAssets, dc = J.Renderer.prototype.drawCut;
-      J.drawAssets = (ctx, plan, layer) => { if (layer === 'front') { ctx.fillStyle = '#0000ff'; ctx.fillRect(0, 0, plan.W, plan.H); } };
-      J.Renderer.prototype.drawCut = env => { env.rect(env.W * 0.4, env.H * 0.4, env.W * 0.2, env.H * 0.2, '#00ff00'); };
-      const project = J.defaultProject();
-      project.title = ''; project.durationOverride = 4;
-      project.fx = { ...project.fx, koma: 0, chroma: 0, texture: 0, hud: 'off' };
-      project.overrides = { 0: { single: true } };
-      project.lyrics = '[00:00]*강조*';
-      project.assets = [{ id: 'front-asset', kind: 'overlay', layer: 'front' }];
-      const plan = J.plan(project); plan.media = J.planMedia(project, plan); plan.foreground = J.planMedia(project, plan, null, 'foreground');
-      plan.events = []; plan.hud = false;
-      for (const cut of plan.cuts) Object.assign(cut, { cam: 'none', decor: [], trans: null, enter: 'cut', exit: 'cut', hold: 'still', groupExit: 'cut', groupOutDur: 0 });
+      const keptTrans = J.TRANS.__frontmostProbe;
       const cv = document.createElement('canvas'); cv.width = 320; cv.height = 180;
-      const ctx = cv.getContext('2d'), renderer = new J.Renderer();
-      const opts = { scale: cv.width / plan.W, noPost: true, noGhost: true, noHud: true };
-      const center = () => Array.from(ctx.getImageData(160, 90, 1, 1).data);
-      const out = { frontmost: plan.cuts[0].frontmost };
+      const ctx = cv.getContext('2d');
+      const glyph = (env, a) => env.rect(env.W * 0.35, env.H * 0.35, env.W * 0.3, env.H * 0.3, '#00ff00', a == null ? 1 : a);
+      const px = (x, y) => Array.from(ctx.getImageData(x, y, 1, 1).data);
+      const grid = () => { const a = []; for (let x = 64; x <= 256; x += 32) for (let y = 48; y <= 132; y += 21) a.push(...px(x, y)); return a; };
+      const baseProject = () => { const p = J.defaultProject(); p.title = ''; p.durationOverride = 4;
+        p.fx = { ...p.fx, koma: 0, texture: 0, hud: 'off' }; p.overrides = { 0: { single: true } }; return p; };
+      const build = p => { const plan = J.plan(p); plan.media = J.planMedia(p, plan); plan.foreground = J.planMedia(p, plan, null, 'foreground');
+        plan.events = []; plan.hud = false;
+        for (const c of plan.cuts) Object.assign(c, { cam: 'none', decor: [], trans: null, enter: 'cut', exit: 'cut', hold: 'still', groupExit: 'cut', groupOutDur: 0 });
+        return plan; };
+      const out = {};
       try {
-        renderer.frame(ctx, plan, .5, opts); out.normal = center();
-        renderer.frame(ctx, plan, .5, Object.assign({}, opts, { transparent: true, layer: 'front' })); out.frontLayer = center();
-        for (const cut of plan.cuts) cut.frontmost = false;
-        renderer.frame(ctx, plan, .5, opts); out.control = center();
-      } finally { J.drawAssets = da; J.Renderer.prototype.drawCut = dc; }
+        // 1) 순서: 전경 컷 없이 강조 가사가 앞 소재 위 (불투명 전체 화면 소재, 크로마 0)
+        J.drawAssets = (c, plan, layer) => { if (layer === 'front') { c.fillStyle = '#0000ff'; c.fillRect(0, 0, plan.W, plan.H); } };
+        J.Renderer.prototype.drawCut = env => glyph(env);
+        const p1 = baseProject(); p1.fx = { ...p1.fx, chroma: 0 };
+        p1.lyrics = '[00:00]*강조*'; p1.assets = [{ id: 'front-asset', kind: 'overlay', layer: 'front' }];
+        const plan1 = build(p1);
+        const opts1 = { scale: cv.width / plan1.W, noPost: true, noGhost: true, noHud: true };
+        const center = () => px(160, 90);
+        out.frontmost = plan1.cuts[0].frontmost;
+        const renderer1 = new J.Renderer();
+        renderer1.frame(ctx, plan1, .5, opts1); out.normal = center();
+        renderer1.frame(ctx, plan1, .5, Object.assign({}, opts1, { transparent: true, layer: 'front' })); out.frontLayer = center();
+        for (const c of plan1.cuts) c.frontmost = false;
+        renderer1.frame(ctx, plan1, .5, opts1); out.control = center();
+
+        // 2) 이중 드로우 없음: 가사를 덮지 않는 작은 앞 소재 + 기본 크로마·고스트, 반투명 가사.
+        //    소재가 있든 없든 같은 픽셀이어야 하고(한 번만 그려짐), 패스마다 drawCut은 한 번만 불린다.
+        J.drawAssets = (c, plan, layer) => { if (layer === 'front') { c.fillStyle = '#0000ff'; c.fillRect(0, 0, plan.W * 0.08, plan.H * 0.08); } };
+        const counts = new Map();
+        J.Renderer.prototype.drawCut = env => { const k = env.cut.index + ':' + env.pass; counts.set(k, (counts.get(k) || 0) + 1); glyph(env, 0.5); };
+        const p2 = baseProject(); p2.lyrics = '[00:00]*강조*'; p2.assets = [{ id: 'corner-asset', kind: 'overlay', layer: 'front' }];
+        const plan2 = build(p2);
+        const opts2 = { scale: cv.width / plan2.W, noPost: true, noHud: true };   // chroma·ghost 기본값
+        const renderer2 = new J.Renderer();
+        counts.clear(); renderer2.frame(ctx, plan2, .5, opts2); out.withAsset = grid(); out.draws = [...counts.values()];
+        counts.clear(); plan2.assets = []; renderer2.frame(ctx, plan2, .5, opts2); out.withoutAsset = grid(); out.drawsNoAsset = [...counts.values()];
+
+        // 3) 컷 전환은 한 번만: 앞 소재 + 강조 컷에 전환. base가 미루고 재그리기가 한 번 적용한다.
+        let transCalls = 0; J.TRANS.__frontmostProbe = { draw: () => { transCalls++; } };
+        J.drawAssets = (c, plan, layer) => { if (layer === 'front') { c.fillStyle = '#0000ff'; c.fillRect(0, 0, plan.W * 0.08, plan.H * 0.08); } };
+        J.Renderer.prototype.drawCut = env => glyph(env);
+        const p3 = baseProject(); p3.overrides = { 0: { single: true }, 1: { single: true } };
+        p3.lyrics = '[00:00]가나\\n[00:01]*강조*'; p3.assets = [{ id: 'corner-asset', kind: 'overlay', layer: 'front' }];
+        const plan3 = build(p3);
+        const fmost = plan3.cuts.filter(c => c.frontmost), last = fmost[fmost.length - 1], prev = plan3.cuts[last.index - 1];
+        last.trans = '__frontmostProbe'; last.transDur = .4; if (prev) prev.end = last.start;
+        new J.Renderer().frame(ctx, plan3, last.start + .15, { scale: cv.width / plan3.W, noPost: true, noHud: true, noGhost: true });
+        out.transCalls = transCalls; out.transIndex = last.index;
+      } finally {
+        J.drawAssets = da; J.Renderer.prototype.drawCut = dc;
+        if (keptTrans) J.TRANS.__frontmostProbe = keptTrans; else delete J.TRANS.__frontmostProbe;
+      }
       return out;
     }''')
     def near(rgba, rgb, tol=30):
         return rgba[3] > 200 and all(abs(rgba[i] - rgb[i]) <= tol for i in range(3))
-    assert r['frontmost'], r
-    assert near(r['normal'], (0, 255, 0)), f'전경 컷이 없을 때 강조 가사가 앞 소재에 가립니다: {r}'
-    assert near(r['frontLayer'], (0, 255, 0)), f'앞 레이어에서 강조 가사가 소재 위에 오지 않습니다: {r}'
-    assert near(r['control'], (0, 0, 255)), f'강조가 아니면 앞 소재가 가사 위에 와야 합니다(대조): {r}'
+    problems = []
+    if not r['frontmost']: problems.append(f'강조가 frontmost가 아닙니다: {r}')
+    if not near(r['normal'], (0, 255, 0)): problems.append(f'전경 컷이 없을 때 강조 가사가 앞 소재에 가립니다: {r["normal"]}')
+    if not near(r['frontLayer'], (0, 255, 0)): problems.append(f'앞 레이어에서 강조 가사가 소재 위에 오지 않습니다: {r["frontLayer"]}')
+    if not near(r['control'], (0, 0, 255)): problems.append(f'강조가 아니면 앞 소재가 가사 위에 와야 합니다(대조): {r["control"]}')
+    if not (r['draws'] and all(n == 1 for n in r['draws'])): problems.append(f'강조 가사·고스트가 패스마다 한 번만 그려져야 합니다: {r["draws"]}')
+    if not (r['drawsNoAsset'] and all(n == 1 for n in r['drawsNoAsset'])): problems.append(f'소재 없는 기준 렌더도 패스마다 한 번이어야 합니다: {r["drawsNoAsset"]}')
+    if not (len(r['withAsset']) == len(r['withoutAsset']) and all(abs(a - b) <= 2 for a, b in zip(r['withAsset'], r['withoutAsset']))): problems.append('앞 소재가 가사를 덮지 않아도 소재 유무로 픽셀이 달라집니다(이중 드로우)')
+    if not (r['transIndex'] > 0 and r['transCalls'] == 1): problems.append(f'컷 전환이 {r["transCalls"]}번 적용됩니다(강조 컷 index {r["transIndex"]}, 한 번이어야 함)')
+    assert not problems, problems
     assert not errs, errs
     await pg.close()
 

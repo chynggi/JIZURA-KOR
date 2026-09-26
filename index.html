@@ -6637,7 +6637,11 @@ class Renderer {
     const clock = J.komaOf(fx) > 0 ? stepDur : 1 / 24;
     const tq = Math.floor(t / stepDur + 1e-6) * stepDur;
     const mainCut = J.cutAt(plan, tq);
-    const visible = cut => !opt.noLyrics && (opt.lyricLayer === 'above' ? cut.frontmost : opt.lyricLayer === 'below' ? !cut.frontmost : true);
+    // In the normal path the frontmost (강조) lyrics are drawn by the redraw after the front 소재 (see below);
+    // this flag makes the base pass behave like the foreground branch's lyricLayer:'below' pass, so a frontmost
+    // cut — and its transition/morph — is drawn there exactly once, never in both passes.
+    let deferFrontmost = false;
+    const visible = cut => !opt.noLyrics && (opt.lyricLayer === 'above' ? cut.frontmost : opt.lyricLayer === 'below' || deferFrontmost ? !cut.frontmost : true);
     const activeCuts = at => J.lyricCutsAt(plan, at).filter(visible)
       .sort((a, b) => Number(!!a.frontmost) - Number(!!b.frontmost) || a.index - b.index).map(J.lyricRenderCut);
     const sc = st.schemes[mainCut ? mainCut.scheme % st.schemes.length : 0] || st.schemes[0];
@@ -6730,6 +6734,13 @@ class Renderer {
     // 소재 behind the lyrics (not on the 합성용 key backgrounds, which are text-only by design)
     const assetsOn = !key && !opt.noAssets && J.drawAssets && plan.assets && plan.assets.length;
     if (assetsOn && layer !== 'front') J.drawAssets(ctx, plan, 'back');
+    // 소재 앞: draw the active 강조(frontmost) lyrics above the front 소재 (the foreground branch does the same
+    // at :80). The base pass below defers them via deferFrontmost, and the redraw carries their transition/morph,
+    // so each frontmost cut is drawn once, in the order non-frontmost lyrics → front assets → frontmost lyrics.
+    // The sub-passes that already handle it (noForeground/noAssets/lyricLayer 'above') and the back layer are skipped.
+    const overlayFrontmost = !!assetsOn && layer !== 'back' && !opt.noForeground && !opt.noAssets && opt.lyricLayer !== 'above'
+      && !opt.noLyrics && J.lyricCutsAt(plan, tq).some(c => c.frontmost);
+    deferFrontmost = overlayFrontmost;
     const shx = J.rs(step, 71) * shake * 16 * u, shy = J.rs(step, 72) * shake * 11 * u;
     // ---------- content passes ----------
     const passes = [
@@ -6834,11 +6845,9 @@ class Renderer {
       this.drawMorph(ctx, L, e, allowFilter);
     }
     if (assetsOn && layer !== 'back') J.drawAssets(ctx, plan, 'front');   // 소재 over the lyrics (and a photo's subject)
-    // 소재 앞: a 강조(frontmost) lyric must stay above the front 소재 in every path, not only over a 전경 컷
-    // (the foreground branch redraws it above the cut at line 80). Mirror that here, skipping the sub-passes
-    // that already draw it (noForeground/noAssets/lyricLayer 'above') so it is never drawn twice.
-    if (assetsOn && layer !== 'back' && !opt.noForeground && !opt.noAssets && opt.lyricLayer !== 'above'
-      && !opt.noLyrics && J.lyricCutsAt(plan, tq).some(c => c.frontmost)) {
+    if (overlayFrontmost) {
+      // noTrans is intentionally not set: the base pass deferred this cut, so the redraw is the single place its
+      // transition (and morph) runs. Its backdrop capture at :103-106 keeps that a single application.
       this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true, noMedia: true, noAssets: true, transparent: true, preserveCanvas: true, noHud: true, noPost: true, lyricLayer: 'above' }));
     }
     // ---------- cut-to-cut transition: composite the previous cut's resting frame with this one ----------
