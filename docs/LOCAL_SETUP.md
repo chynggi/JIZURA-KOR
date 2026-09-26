@@ -28,6 +28,7 @@ cd JIZURA-KOR
   python3 -m http.server 8000
   ```
   → <http://localhost:8000/> 접속
+  저장소 루트의 `preview_server.py`를 쓰면 `python3 preview_server.py`로 <http://127.0.0.1:8766/>에서 바로 열립니다(8765는 결정 서버의 기본 포트라 피합니다).
 
 글꼴은 Google Fonts에서 받아오므로 인터넷 연결이 필요합니다(오프라인이면 PC 글꼴로 대체됩니다).
 
@@ -72,11 +73,17 @@ python3 -m playwright install chromium
 
 python3 build.py --dev                          # dev/www/ 에 테스트용 번들 생성
 python3 dev/build_test.py all --all-packs       # dev/www/t_all.html 생성
-(cd dev/www && python3 -m http.server 8765 &)   # 테스트 스크립트는 8765 포트를 사용
+(cd dev/www && python3 -m http.server 8768 &)   # 8765는 결정 서버 기본 포트라 겹치므로 피하고 8768을 씁니다
 
 python3 dev/smoke_all.py        # 모든 부품 조합 렌더링: 콘솔 오류·예외·느린 프레임 확인
 python3 dev/cost_scan.py        # 부품별 렌더링 비용
 python3 dev/overview.py layout out/overview   # 그룹별 한눈에 보기 이미지
+```
+
+`dev/smoke_all.py`는 접속 포트가 소스에 `localhost:8765`로 박혀 있으므로, 8768로 돌리려면 소스를 바꿔 실행합니다.
+
+```
+dev/.venv/bin/python -c "import sys; src=open('dev/smoke_all.py').read().replace('localhost:8765','localhost:8768'); sys.argv=['smoke_all.py']; exec(compile(src,'smoke_all.py','exec'))"
 ```
 
 `dev/www/`는 빌드 산출물이므로 커밋하지 않습니다.
@@ -86,7 +93,8 @@ python3 dev/overview.py layout out/overview   # 그룹별 한눈에 보기 이�
 ```
 python3 dev/decision_server_test.py     # 로컬 결정 서버
 node dev/media_test.js && node dev/lyric_test.js && node dev/decide_test.js
-dev/.venv/bin/python dev/absorb_ui_test.py   # 배경·전경·번들·실행 취소·AI로 고르기(브라우저)
+dev/.venv/bin/python dev/absorb_ui_test.py   # 배경·전경·번들(.jizura)·실행 취소·AI로 고르기(브라우저)
+dev/.venv/bin/python dev/fork_ui_test.py      # 포크 기능(테마·미디어 효과·가사·프로젝트 파일, 브라우저)
 ```
 
 ## 7. 내 저장소로 공개(GitHub Pages)
