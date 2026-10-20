@@ -26,7 +26,7 @@ const ICON = {
   frontmost: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="5" width="10" height="8" rx="1"/><path d="M5 2h9v8M8 4l2 2 2-2"/></svg>',
 };
 
-const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: 'all', loopHold: null, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2, timelineZoom: 1 };
+const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, frameMs: 1000 / 60, lastTick: 0, loop: 'all', loopHold: null, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2, timelineZoom: 1 };
 const LOOP_CYCLE = ['all', 'line', 'cut', false];
 const LOOP_COPY = {
   all:  { ko: '반복', titleKo: '전체 반복' },
@@ -435,11 +435,8 @@ function drawPreviewFrame(ctx, {renderer=S.renderer,fast=false,time=S.t}={}) {
 function draw() {
   const c = $('view'), ctx = c.getContext('2d');
   if(!S.playPreparing)syncMainMediaPreview();
-  const t0 = performance.now();
   drawPreviewFrame(ctx,{fast:!!S.areaEdit || S.playing && S.slow});
   if (S.plan.centerFree) drawCenterGuide(ctx, c.width / S.plan.W);
-  const dt = performance.now() - t0;
-  S.slow = S.playing ? (dt > 30 ? true : dt < 14 ? false : S.slow) : false;
   updateTimeUI(); drawTimeline(); followTimelinePlayhead(); updateCutInfo(); drawItemFrames();
 }
 // 재생 중 확대된 타임라인의 재생 위치가 화면 밖으로 나가지 않도록 따라 스크롤한다
@@ -455,6 +452,11 @@ function tick(now) {
   requestAnimationFrame(tick);
   if (S.exporting) return;
   if (S.playing) {
+    // the canvas is rasterised after draw() returns, so time whole frames (the rAF interval), not draw():
+    // once playback cannot keep ~40fps it stays in the lighter preview until the next play()
+    const gap = S.lastTick ? Math.min(100, now - S.lastTick) : 1000 / 60; S.lastTick = now;
+    S.frameMs = S.frameMs * 0.9 + gap * 0.1;
+    if (S.frameMs > 24) S.slow = true;
     // rAF timestamps can precede the moment play()/seek() stamped t0 → clamp so t never goes negative
     let t = Math.max(0, S.audio ? AP.time() : (now - S.t0) / 1000 * playRate());
     if (S.tap && S.tap.append && !S.audio && t >= S.plan.duration - 2) extendTapPreview(t);
@@ -560,6 +562,7 @@ async function play() {
   if (S.tap && S.tap.counting) return;
   if(S.playPreparing){pause();return;}
   refreshLoopHold();
+  S.slow = false; S.frameMs = 1000 / 60; S.lastTick = 0;   // 새 재생은 가벼운 미리보기 판정을 처음부터 다시 한다
   const videos=['media','foreground'].some(layer=>S.plan.layerVisibility?.[layer]!==false&&J.mediaAt(S.plan,S.t,layer)?.type==='video');
   if(videos){
     const controller=new AbortController();S.playPreparing=controller;

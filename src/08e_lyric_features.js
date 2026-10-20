@@ -20,12 +20,14 @@ J.lyricEffectSettings = project => {
   };
 };
 
-J.lyricComposite = (project, cut, settings = J.lyricEffectSettings(project)) => {
+// scheme: the cut's colour scheme. The random pick only uses blends that keep its lyric colour visible:
+// multiply only darkens and screen only lightens, so light lyrics get screen, dark lyrics multiply (overlay: manual only)
+J.lyricComposite = (project, cut, settings = J.lyricEffectSettings(project), scheme) => {
   const options = project.lyricCutOptions?.[`${cut.line}:${cut.part}`] || {};
   const line = project.overrides?.[cut.line];
   const locked = line?.lock ? line.lockedComposites?.[cut.part] : null;
   const blend = J.LYRIC_BLENDS.includes(options.blend) ? options.blend : J.LYRIC_BLENDS.includes(locked?.blend) ? locked.blend
-    : settings.randomBlend ? J.rng(J.h(cut.seed, 953)).pick(J.LYRIC_BLENDS) : 'normal';
+    : settings.randomBlend ? J.rng(J.h(cut.seed, 953)).pick(['normal', scheme && J.lum(scheme.fg) < 0.5 ? 'multiply' : 'screen']) : 'normal';
   const random = J.rng(J.h(cut.seed, 967))();
   const strength = cut.emphasis ? (2 + random) / 3 : cut.suppressed ? random / 3 : random;
   const opacity = percent(options.opacity, null) ?? percent(locked?.opacity, null)
@@ -242,7 +244,7 @@ J.finishLyricPlan = (project, plan, audio) => {
   const bgScenes = settings.autoPlacement && J.backgroundScenes ? J.backgroundScenes(project, plan, audio?.duration) : [];
   for (const cut of plan.cuts) {
     if (cut.line < 0 || !Number.isInteger(cut.part)) continue;
-    Object.assign(cut, J.lyricComposite(project, cut, settings));
+    Object.assign(cut, J.lyricComposite(project, cut, settings, plan.style.schemes[cut.scheme % plan.style.schemes.length] || plan.style.schemes[0]));
     const placementSeed = project.lyricCutOptions?.[`${cut.line}:${cut.part}`]?.placementSeed;
     if (Number.isFinite(placementSeed)) cut.placementSeed = placementSeed;
     cut.areaMode = cut.area ? 'manual' : 'default';

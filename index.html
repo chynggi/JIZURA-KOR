@@ -7485,12 +7485,14 @@ J.lyricEffectSettings = project => {
   };
 };
 
-J.lyricComposite = (project, cut, settings = J.lyricEffectSettings(project)) => {
+// scheme: the cut's colour scheme. The random pick only uses blends that keep its lyric colour visible:
+// multiply only darkens and screen only lightens, so light lyrics get screen, dark lyrics multiply (overlay: manual only)
+J.lyricComposite = (project, cut, settings = J.lyricEffectSettings(project), scheme) => {
   const options = project.lyricCutOptions?.[`${cut.line}:${cut.part}`] || {};
   const line = project.overrides?.[cut.line];
   const locked = line?.lock ? line.lockedComposites?.[cut.part] : null;
   const blend = J.LYRIC_BLENDS.includes(options.blend) ? options.blend : J.LYRIC_BLENDS.includes(locked?.blend) ? locked.blend
-    : settings.randomBlend ? J.rng(J.h(cut.seed, 953)).pick(J.LYRIC_BLENDS) : 'normal';
+    : settings.randomBlend ? J.rng(J.h(cut.seed, 953)).pick(['normal', scheme && J.lum(scheme.fg) < 0.5 ? 'multiply' : 'screen']) : 'normal';
   const random = J.rng(J.h(cut.seed, 967))();
   const strength = cut.emphasis ? (2 + random) / 3 : cut.suppressed ? random / 3 : random;
   const opacity = percent(options.opacity, null) ?? percent(locked?.opacity, null)
@@ -7707,7 +7709,7 @@ J.finishLyricPlan = (project, plan, audio) => {
   const bgScenes = settings.autoPlacement && J.backgroundScenes ? J.backgroundScenes(project, plan, audio?.duration) : [];
   for (const cut of plan.cuts) {
     if (cut.line < 0 || !Number.isInteger(cut.part)) continue;
-    Object.assign(cut, J.lyricComposite(project, cut, settings));
+    Object.assign(cut, J.lyricComposite(project, cut, settings, plan.style.schemes[cut.scheme % plan.style.schemes.length] || plan.style.schemes[0]));
     const placementSeed = project.lyricCutOptions?.[`${cut.line}:${cut.part}`]?.placementSeed;
     if (Number.isFinite(placementSeed)) cut.placementSeed = placementSeed;
     cut.areaMode = cut.area ? 'manual' : 'default';
@@ -11453,14 +11455,14 @@ class Renderer {
     if (!opt.transparent && !plan.keyBg) {
       // scanlines
       const scan = (st.texture.scan || 0) * (fx.texture ?? 0.6);
-      if (scan > 0.03) {
+      if (!opt.fast && scan > 0.03) {             // the lighter preview (opt.fast) skips the full-frame textures
         const pat = ctx.createPattern(this.scan, 'repeat');
         const k = Math.max(1, Math.round(ch / 540));
         ctx.save(); ctx.scale(k, k); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = scan * 0.28; ctx.fillStyle = pat; ctx.fillRect(0, 0, cw / k, ch / k); ctx.restore();
       }
       // grain
       const gr = (st.texture.grain || 0) * (fx.texture ?? 0.6);
-      if (gr > 0.02) {
+      if (!opt.fast && gr > 0.02) {
         const img = this.grain[((step % 4) + 4) % 4];
         const pat = ctx.createPattern(img, 'repeat');
         const k = Math.max(1, ch / 1080);
@@ -44055,7 +44057,7 @@ const ICON = {
   frontmost: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="5" width="10" height="8" rx="1"/><path d="M5 2h9v8M8 4l2 2 2-2"/></svg>',
 };
 
-const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: 'all', loopHold: null, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2, timelineZoom: 1 };
+const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, frameMs: 1000 / 60, lastTick: 0, loop: 'all', loopHold: null, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2, timelineZoom: 1 };
 const LOOP_CYCLE = ['all', 'line', 'cut', false];
 const LOOP_COPY = {
   all:  { ko: '반복', titleKo: '전체 반복' },
@@ -44464,11 +44466,8 @@ function drawPreviewFrame(ctx, {renderer=S.renderer,fast=false,time=S.t}={}) {
 function draw() {
   const c = $('view'), ctx = c.getContext('2d');
   if(!S.playPreparing)syncMainMediaPreview();
-  const t0 = performance.now();
   drawPreviewFrame(ctx,{fast:!!S.areaEdit || S.playing && S.slow});
   if (S.plan.centerFree) drawCenterGuide(ctx, c.width / S.plan.W);
-  const dt = performance.now() - t0;
-  S.slow = S.playing ? (dt > 30 ? true : dt < 14 ? false : S.slow) : false;
   updateTimeUI(); drawTimeline(); followTimelinePlayhead(); updateCutInfo(); drawItemFrames();
 }
 // 재생 중 확대된 타임라인의 재생 위치가 화면 밖으로 나가지 않도록 따라 스크롤한다
@@ -44484,6 +44483,11 @@ function tick(now) {
   requestAnimationFrame(tick);
   if (S.exporting) return;
   if (S.playing) {
+    // the canvas is rasterised after draw() returns, so time whole frames (the rAF interval), not draw():
+    // once playback cannot keep ~40fps it stays in the lighter preview until the next play()
+    const gap = S.lastTick ? Math.min(100, now - S.lastTick) : 1000 / 60; S.lastTick = now;
+    S.frameMs = S.frameMs * 0.9 + gap * 0.1;
+    if (S.frameMs > 24) S.slow = true;
     // rAF timestamps can precede the moment play()/seek() stamped t0 → clamp so t never goes negative
     let t = Math.max(0, S.audio ? AP.time() : (now - S.t0) / 1000 * playRate());
     if (S.tap && S.tap.append && !S.audio && t >= S.plan.duration - 2) extendTapPreview(t);
@@ -44589,6 +44593,7 @@ async function play() {
   if (S.tap && S.tap.counting) return;
   if(S.playPreparing){pause();return;}
   refreshLoopHold();
+  S.slow = false; S.frameMs = 1000 / 60; S.lastTick = 0;   // 새 재생은 가벼운 미리보기 판정을 처음부터 다시 한다
   const videos=['media','foreground'].some(layer=>S.plan.layerVisibility?.[layer]!==false&&J.mediaAt(S.plan,S.t,layer)?.type==='video');
   if(videos){
     const controller=new AbortController();S.playPreparing=controller;

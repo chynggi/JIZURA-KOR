@@ -636,14 +636,14 @@ class Renderer {
     if (!opt.transparent && !plan.keyBg) {
       // scanlines
       const scan = (st.texture.scan || 0) * (fx.texture ?? 0.6);
-      if (scan > 0.03) {
+      if (!opt.fast && scan > 0.03) {             // the lighter preview (opt.fast) skips the full-frame textures
         const pat = ctx.createPattern(this.scan, 'repeat');
         const k = Math.max(1, Math.round(ch / 540));
         ctx.save(); ctx.scale(k, k); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = scan * 0.28; ctx.fillStyle = pat; ctx.fillRect(0, 0, cw / k, ch / k); ctx.restore();
       }
       // grain
       const gr = (st.texture.grain || 0) * (fx.texture ?? 0.6);
-      if (gr > 0.02) {
+      if (!opt.fast && gr > 0.02) {
         const img = this.grain[((step % 4) + 4) % 4];
         const pat = ctx.createPattern(img, 'repeat');
         const k = Math.max(1, ch / 1080);
