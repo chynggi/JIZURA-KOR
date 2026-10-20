@@ -40,8 +40,8 @@ J.MOODS = {
   for (const [g, map] of Object.entries(extra)) for (const [k, ms] of Object.entries(map)) ms.forEach(m => add(g, k, m));
 })();
 
-/* 연출 방향(upstream의 おまかせ テーマ): おまかせ within one direction. A direction picks among its moods, turns on the part switches it needs
-   (returned with the result) and always keeps the parts of its set / 和風 as candidates. No direction = the usual おまかせ.
+/* 연출 방향(upstream의 「자동 연출」 테마): 한 방향 안에서 무작위로 고릅니다. 방향은 그 분위기 중에서 고르고, 필요한 부품 스위치를 켭니다
+   (결과와 함께 돌려줍니다). 그 세트/일본풍 부품은 항상 후보로 둡니다. 방향이 없으면 보통 자동 연출입니다.
    (J.THEMES is the fork's genre/taste theme presets in 11r_themes.js, so these live under J.OMAKASE_THEMES.) */
 J.OMAKASE_THEMES = {
   lyricpv: { name: '문자 PV', moods: ['editorial', 'graphic', 'emotional'], set: 'typo' },
@@ -86,7 +86,9 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
   // technique subset per group: everything tagged with the mood (plus the mood's hand-picked core items),
   // a sprinkle of everything else, and a minimum count so the planner always has room to vary
   const enabled = {};
-  const MIN = { layout: 6, enter: 5, exit: 5, hold: 3, decor: 6, treat: 4, bg: 4, cam: 3, fx: 4, trans: 3 };
+  // 統一感重視: far fewer techniques are switched on, so the planner has less to vary between.
+  const unified = project.themeBalance === 'unified';
+  const MIN = unified ? { layout: 3, enter: 3, exit: 2, hold: 2, decor: 3, treat: 2, bg: 2, cam: 2, fx: 2, trans: 2 } : { layout: 6, enter: 5, exit: 5, hold: 3, decor: 6, treat: 4, bg: 4, cam: 3, fx: 4, trans: 3 };
   for (const g of J.GROUP_KEYS) {
     const order = J.order(g).filter(k => !(J.registry(g)[k] || {}).special && (!J.randomOk || J.randomOk(project, g, k)) && moodSetOk(J.registry(g)[k]));
     const hand = ['layout', 'enter', 'exit'].includes(g) && Array.isArray(M[g]) ? M[g] : [];   // (M.fx holds slider ranges, not a list)
@@ -95,7 +97,7 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
     const on = {};
     // entries of a set tied to another mood are switched off explicitly (a missing key would count as enabled)
     for (const k of J.order(g)) if (!moodSetOk(J.registry(g)[k])) on[k] = false;
-    for (const k of order) on[k] = prefer ? (prefer.has(k) || rnd() < (M.sprinkle || 0.22)) : rnd() < 0.8;
+    for (const k of order) on[k] = prefer ? (prefer.has(k) ? (!unified || rnd() < 0.45) : rnd() < (unified ? 0.03 : (M.sprinkle || 0.22))) : rnd() < (unified ? 0.3 : 0.8);
     const offs = order.filter(k => !on[k]);
     let n = order.length - offs.length;
     while (n < Math.min(MIN[g] || 3, order.length) && offs.length) { const k = offs.splice(Math.floor(rnd() * offs.length), 1)[0]; on[k] = true; n++; }

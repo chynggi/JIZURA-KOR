@@ -13,6 +13,7 @@
     <div class="proj">
       <input id="songTitle" type="text" placeholder="곡명(타이틀 카드·HUD에 표시)" aria-label="곡명">
       <input id="songArtist" type="text" placeholder="아티스트" aria-label="아티스트">
+      <input id="projectName" type="text" placeholder="프로젝트 이름" aria-label="프로젝트 이름" title="프로젝트를 저장할 때의 파일명. 저장하면 갱신됩니다">
     </div>
     <button id="btnOmakaseTop" class="primary omk-top" title="스타일·분위기·연출·색 배합을 통째로 무작위로">자동</button>
     <button id="btnMenu" class="ghost menu-btn" aria-expanded="false" aria-controls="appMenu">메뉴</button>
@@ -29,12 +30,15 @@
           <label class="file" tabindex="0" title="저장한 프로젝트(.jizura·.jizuraichi·.json) 열기">열기<input id="fileProject" type="file" accept=".jizura,.jizuraichi,.json"></label>
           <button id="btnSave" title="프로젝트를 .json으로 저장">저장</button>
           <button id="btnSaveAll" title="곡, 소재(이미지·피사체 마스크), 배경·전경 이미지·동영상, 불러온 서체까지 한 파일(.jizura)에 넣어 저장합니다. 다른 PC·브라우저에서 「열기」로 그대로 이어서 작업할 수 있습니다">곡·소재 포함 저장(.jizura)</button>
+          <button id="btnSaveSettings" title="테마·스타일·연출 후보·연출 강도·색·글꼴·전경/배경 공통 설정·출력 크기/화질만 저장합니다(가사·소재·컷별 설정은 넣지 않음)">설정만 내보내기</button>
+          <label class="file" tabindex="0" title="설정만 저장한 파일이나 프로젝트 파일에서 공통 설정만 가져옵니다(지금 가사·소재·컷별 설정은 그대로)">설정만 불러오기<input id="fileSettings" type="file" accept=".jizura,.jizuraichi,.json"></label>
           <button id="btnReset" class="ghost" title="가사·음원·설정·기록을 모두 지우고 처음 상태로 되돌립니다">초기화</button>
         </div>
       </details>
       <details class="header-menu" id="outputMenu">
         <summary>출력</summary><div class="header-menu-items">
           <button id="menuMP4" data-export-dialog="mp4">MP4 내보내기</button>
+          <button id="menuShort" data-export-dialog="short">쇼츠용 출력(9:16)</button>
           <button id="menuPNG" data-export-dialog="png">PNG 시퀀스 (ZIP)</button>
           <button id="menuPNGA" data-export-dialog="pnga">투명 PNG (ZIP·배경 없음)</button>
           <button id="btnAE" title="After Effects 패널용 구성 데이터 내보내기">AE용 내보내기</button>
@@ -51,6 +55,8 @@
         <div class="hint" id="tapHint">음원에 맞춰 각 행이 시작되는 순간 <span class="kbd">Space</span> 또는 버튼을 누르세요. 잘못 눌렀다면 <span class="kbd">Backspace</span> 또는 ‘한 번 되돌리기’. 중간 행부터 다시 하려면 행 목록의 ◎를 누르세요. 한 행에 컷이 여러 개면 컷이 바뀌는 순간 <span class="kbd">Tab</span>을 눌러 그 컷의 시작 시각도 맞출 수 있습니다.</div>
         <div class="tap-opts"><label>속도 <select id="tapRate" aria-label="탭하는 동안의 재생 속도"><option value="1">1×</option><option value="0.75">0.75×</option><option value="0.5">0.5×</option></select></label><label><input type="checkbox" id="tapCount"> 카운트다운</label></div>
         <div class="next">다음: <b id="tapLine">—</b><b id="tapCountNum" class="tap-count" hidden></b></div>
+        <div class="tap-ahead" hidden><span id="tapLineAhead1"></span></div>
+        <div class="tap-ahead tap-ahead-2" hidden><span id="tapLineAhead2"></span></div>
         <button id="tapBtn" class="tap">TAP</button>
         <button id="tapBack" class="ghost">한 번 되돌리기</button>
         <button id="tapStop" class="ghost">종료</button>
@@ -58,18 +64,27 @@
       <nav class="source-tabs" role="tablist" aria-label="가사·배경·전경"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
       <div class="sec" id="lyricsPane">
         <div class="sec-h"><h2>가사</h2><span class="sec-btns"><label class="file ghost small" title="LRC 파일(타임스탬프가 붙은 가사)을 불러와 지금 가사를 바꿉니다(‘실행 취소’로 되돌릴 수 있습니다)">LRC 불러오기<input id="fileLrc" type="file" accept=".lrc,.txt,text/plain"></label><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
+        <div class="lyrics-editor">
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
+          <div id="lyricPlaybackHighlight" class="lyric-playback-highlight" aria-hidden="true" hidden><div></div></div>
+        </div>
+        <div id="lyricInputTools" class="lyric-input-tools" role="group" aria-label="가사 입력 보조">
+          <button type="button" data-lyric-insert="cut" title="컷 경계(/)">컷</button><button type="button" data-lyric-insert="break" title="한 컷 안의 줄바꿈(\n)">줄바꿈</button><button type="button" data-lyric-insert="strong" title="*강조*">강조</button><button type="button" data-lyric-insert="soft" title="~억제~">억제</button><button type="button" data-lyric-insert="scene" title="{ … }: 여러 행을 한 장면으로 겹쳐 표시">1장면</button><button type="button" data-lyric-insert="separate" title="{- … -}: 한 장면으로 남기되 서로 겹치지 않게">겹치지 않는 1장면</button><button type="button" data-lyric-insert="empty" title="｜　　　｜: 글자 없이 연출만 나오는 행">빈 가사</button>
+        </div>
         <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option><option value="en">English</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
             <li>한 행이 한 프레이즈입니다. 빈 행은 약간의 간격을 둡니다</li>
+            <li><code>｜　　　｜</code> … 전각 세로선으로 감싼 공백은 글자 없이 연출만 나오는 가사 행이 됩니다</li>
             <li><code>새벽의 색을/기억해</code> … <code>/</code>으로 컷 경계 지정</li>
             <li><code>{</code>와 <code>}</code>로 감싼 여러 행 … 마지막 컷이 사라질 때까지 차례로 겹쳐 표시</li>
+            <li><code>{-</code>와 <code>-}</code>로 감싼 여러 행 … 차례로 남겨 표시하면서 가사끼리 겹치지 않게 배치</li>
             <li><code>새벽의 색을\n기억해</code> … <code>\n</code>으로 한 컷 안의 줄바꿈 지정(문자로 쓰려면 <code>\\n</code>)</li>
             <li><code>*투명*</code> … 강조(자동 표시 영역을 크게 하고 전경보다 앞에 표시. 전경 피하기 대상에서 제외)</li>
             <li><code>~속삭임~</code> … 억제(표시와 움직임을 작게)</li>
             <li>행 끝의 <code>!</code> … 플래시와 흔들림 추가</li>
-            <li><code>가사|ruby or note</code> … 주석 레이아웃의 작은 글자</li>
+            <li><code>50:가사</code> … 컷의 배치·크기(100이면 화면 전체, 50이면 너비·높이가 절반. 자동 배치의 최소·최대 배율보다 우선). 숫자와 콜론을 그대로 표시하려면 <code>50\:가사</code></li>
+            <li><code>가사|ruby or note</code> … 주석 레이아웃의 작은 글자(지원하는 연출만)</li>
             <li><code>[01:23.45]가사</code> … LRC 타임스탬프를 그대로 사용</li>
             <li><code>&lt;00:12.48&gt;너를</code> … 확장 LRC 단어 시각(컷 경계·가라오케 채움이 단어에 맞춰짐)</li>
             <li><code>[간주 8]</code> … 다음 행 앞에 8초 간주(<code>[간주]</code>는 사이 공간만, <code>[간주 8 | 문구]</code>로 하단 문구, <code>[01:20.00][간주]</code>로 시작 시각)</li>
@@ -81,14 +96,11 @@
       </div>
 
       <div class="sec" id="mediaPane" hidden>
-        <div class="sec-h"><h2 id="mediaPaneTitle">배경</h2><label class="file">추가<input id="mediaFiles" type="file" accept="image/*,video/*" multiple></label></div>
+        <div class="sec-h"><h2 id="mediaPaneTitle">배경</h2><label class="file">추가<input id="mediaFiles" type="file" accept="image/*,video/*,.apng,.gif" multiple></label></div>
         <p class="hint">이미지·동영상을 여기로 드래그 앤 드롭하거나 '추가'에서 선택할 수 있습니다. 배경·전경 파일은 이 브라우저에 저장됩니다.</p>
         <div id="mediaList" class="media-list"></div>
-        <div id="foregroundBlendFields" class="fields media-blend-fields" hidden>
-          <label class="field">전경 합성 방식<select id="mediaBlend"><option value="normal">표준</option><option value="multiply">곱하기</option><option value="screen">스크린</option></select></label>
-          <label class="field">전경 불투명도(%)<input id="mediaOpacity" type="number" min="0" max="100" step="1"></label>
-        </div>
         <div id="mediaCutInsert" class="media-lyric-insert">
+          <fieldset id="backgroundInsertSources" hidden><legend>일괄 삽입할 항목</legend></fieldset>
           <div class="sec-h"><h2>컷 삽입</h2></div>
           <label class="field">일괄 삽입 기준<select id="mediaLyricInsertMode"><option value="line">행에 맞추기</option><option value="cut">컷에 맞추기</option></select></label>
           <label class="check"><input id="mediaGroupLyrics" type="checkbox" checked><span>{ }로 감싼 가사는 1컷</span></label>
@@ -122,7 +134,7 @@
         <div class="sec-h"><h2>곡과 타이밍</h2></div>
         <div id="audioName" class="muted audio-name">곡 없음(불러오면 박을 감지해 컷을 맞춥니다)</div>
         <div class="row">
-          <label class="file" title="mp3 / wav / m4a 등">곡 불러오기<input id="audioFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"></label>
+          <label class="file" title="mp3 / wav / m4a / mp4 / webm 등. 동영상은 소리를 곡으로 쓰고, 배경으로도 넣을 수 있습니다">곡·동영상 불러오기<input id="audioFile" type="file" accept="audio/*,video/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.mp4,.m4v,.mov,.webm,.ogv,.mkv"></label>
           <button id="btnRemoveAudio" class="ghost" type="button" hidden>곡 삭제</button>
           <button id="btnTap" title="곡을 재생하며 각 행 시작 지점에서 탭">탭으로 동기화</button>
           <button id="btnDraft" title="곡의 보컬 대역 음량 변화로 각 행의 시작을 추정합니다(초안. 어긋난 행은 탭이나 타임라인으로 고치세요)">곡에서 초안</button>
@@ -153,8 +165,9 @@
 
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="미리보기">
-      <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="areaEditOverlay" class="area-edit-overlay" aria-label="표시 위치와 크기 편집" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span></div><span class="area-edit-hint">드래그하여 가사 표시 범위 지정</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
-      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>가로세로 비율 고정</label><label>너비(화면 비율 %)<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>높이(화면 비율 %)<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">각도(°)<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">전체 영역으로 초기화</button><button id="areaResetAuto" class="ghost" type="button">자동 배치로 되돌리기</button><button id="areaApplyOne" class="primary" disabled>이 행에만 적용</button><button id="areaApplyFollowing" disabled>이후 전부 적용</button><button id="areaCancel" class="ghost">취소</button></div>
+      <div class="viewport" id="viewport"><button id="exitPreviewFullscreen" class="fullscreen-exit" type="button">전체 화면 종료</button><div class="fullscreen-transport"><button id="fullscreenPlay" type="button" aria-label="재생">▶</button><span id="fullscreenTime" class="tc"></span><input id="fullscreenScrub" type="range" min="0" max="10000" value="0" aria-label="재생 위치"></div><canvas id="view" width="1280" height="720"></canvas><div id="itemFrames" class="item-frames"></div><div id="areaEditOverlay" class="area-edit-overlay" aria-label="표시 위치와 크기 편집" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span><span class="area-rotate-handle n" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle e" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle s" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle w" data-handle="rotate" role="button" aria-label="회전"></span></div><span class="area-edit-hint">드래그하여 가사 표시 범위 지정</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
+      <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>가로세로 비율 고정</label><label>너비(화면 비율 %)<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>높이(화면 비율 %)<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">각도(°)<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">전체 영역으로 초기화</button><button id="areaResetAuto" class="ghost" type="button">자동 배치로 되돌리기</button><button id="areaApplyOne" class="primary" disabled>이 행에만 적용</button><button id="areaApplyFollowing" disabled>이후 전부 적용</button><button id="areaDelete" type="button" title="이 컷을 삭제합니다">삭제</button><button id="areaCancel" class="ghost">취소</button></div>
+      <div class="preview-options"><label class="item-frame-toggle"><input id="showItemFrames" type="checkbox" checked><span id="showItemFramesLabel">편집 모드</span></label><button id="effectFavorites" type="button" class="ghost small">☆ 즐겨찾기 연출</button><button id="previewScreenshot" type="button" class="ghost small" title="미리보기를 PNG로 저장">스크린숏</button><button id="previewFullscreen" type="button" class="ghost small">전체 화면 미리보기</button></div>
       <div class="transport">
         <button id="btnPlay" class="play" aria-label="재생">▶</button>
         <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><button id="timeDur" class="tc muted duration-value" type="button" title="동영상 전체 길이 입력(비워두면 자동)" aria-label="동영상 전체 길이 입력">00:00.00</button><input id="timeDurInput" class="tc duration-input" type="text" inputmode="decimal" aria-label="동영상 전체 길이(초 또는 분:초, 비워두면 자동)" hidden>
@@ -174,8 +187,15 @@
         <span class="tl-hint muted">행 구분(위쪽 눈금)은 드래그로 옮길 수 있습니다. <span class="kbd">Shift</span>를 누르면 비트에 맞추지 않음</span>
       </div>
       <div id="timelineLegend" class="timeline-legend" aria-label="타임라인 아이콘 범례"></div>
+      <div class="timeline-toolbar">
+      <div class="timeline-position-label" id="playheadMenuLabel">재생 위치에서 편집:</div>
+      <div class="timeline-split playhead-menu" id="playheadMenu">
+        <div class="playhead-primary" role="group" aria-labelledby="playheadMenuLabel"><button type="button" data-playhead-menu="insert" aria-expanded="false"></button><button type="button" data-playhead-menu="split" aria-expanded="false"></button><button type="button" data-playhead-menu="endHere" aria-expanded="false"></button><button type="button" data-playhead-menu="untilNext" aria-expanded="false"></button><button id="relayoutAtPlayhead" type="button" disabled></button></div>
+        <div class="playhead-secondary" role="group" hidden><button id="insertForegroundAtPlayhead" type="button" data-playhead-action="insert" data-layer="foreground" disabled></button><button id="insertLyricAtPlayhead" type="button" data-playhead-action="insert" data-layer="lyrics" disabled></button><button id="insertBackgroundAtPlayhead" type="button" data-playhead-action="insert" data-layer="media" disabled></button><button id="splitForegroundCut" type="button" data-playhead-action="split" data-layer="foreground" disabled></button><button id="splitBackgroundCut" type="button" data-playhead-action="split" data-layer="media" disabled></button><button id="endForegroundHere" type="button" data-playhead-action="endHere" data-layer="foreground" disabled></button><button id="endLyricHere" type="button" data-playhead-action="endHere" data-layer="lyrics" disabled></button><button id="endBackgroundHere" type="button" data-playhead-action="endHere" data-layer="media" disabled></button><button id="untilNextForeground" type="button" data-playhead-action="untilNext" data-layer="foreground" disabled></button><button id="untilNextLyric" type="button" data-playhead-action="untilNext" data-layer="lyrics" disabled></button><button id="untilNextBackground" type="button" data-playhead-action="untilNext" data-layer="media" disabled></button></div>
+      </div>
       <div class="timeline-zoom"><button id="timelineZoomOut" type="button" aria-label="타임라인 축소">−</button><span id="timelineZoomValue" aria-live="polite">100%</span><button id="timelineZoomIn" type="button" aria-label="타임라인 확대">＋</button></div>
-      <div id="timelineScroll" class="timeline-scroll"><div id="timelineStack" class="timeline-stack">
+      </div>
+      <div class="timeline-with-visibility"><div id="layerVisibilityControls" class="layer-visibility-controls"></div><div id="timelineScroll" class="timeline-scroll"><div id="timelineStack" class="timeline-stack">
         <canvas id="foregroundTimeline" aria-label="전경 타임라인(경계를 드래그하여 시작 시각 변경, 그 외에는 재생 위치 이동)"></canvas>
         <canvas id="timeline" aria-label="타임라인(클릭으로 이동, 행 구분은 드래그로 조정)"></canvas>
         <canvas id="mediaTimeline" aria-label="배경 타임라인(경계를 드래그하여 시작 시각 변경, 그 외에는 재생 위치 이동)"></canvas>
@@ -221,6 +241,7 @@
             <button id="btnNext2" class="ghost">다음 안 ▶</button>
           </div>
           <div class="pick-sets">
+            <label class="check"><input id="eLyricAvoidCenter" class="avoid-center-toggle" type="checkbox"><span>가사가 화면 가운데를 피하기<small>가사를 자동 배치할 때 화면 가운데를 비웁니다. *강조*한 가사는 가운데에도 놓습니다.</small></span></label>
             <label class="check"><input id="eExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>첫 공개 이후 추가된 약 350개 연출, 12개 스타일, 6개 글꼴도 자동 생성과 셔플 후보에 포함합니다. 끄면 초기 공개판의 연출만 사용합니다.</small></span></label>
             <label class="check"><input id="eWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>초롱, 엽서, 쇼지, 부채, 가문 문양, 세이가이하, 벚꽃잎 등의 일본풍 그래픽입니다. 끄면 자동 생성과 셔플에서 선택되지 않습니다.</small></span></label>
             <label class="check"><input class="typo-toggle" type="checkbox" checked><span>타이포 부품도 사용<small>선·숫자·글자 배치만으로 보여주는, 타이포다운 부품(약 50개)</small></span></label>
@@ -325,17 +346,12 @@
       <div class="tabpane" data-pane="tech" hidden>
         <div class="pick-sets">
           <label class="check"><input id="lyricAutoPlacement" type="checkbox"><span>배치·크기에도 자동으로 변화를 줍니다<small>끄면 전체 화면을 사용합니다. 수동 표시 영역은 유지됩니다. 「자동 배치로 되돌리기」로 수동 지정을 해제할 수 있습니다.</small></span></label>
-          <div id="lyricAutoSizeRange" class="lyric-auto-size-range">
-            <div class="range-title">최소·최대 크기 배율(%)</div>
-            <div class="range-pair" id="lyricAutoSizeSlider" style="--range-min:15%;--range-max:25%">
-              <input id="lyricAutoSizeMin" type="range" min="0" max="500" step="5" value="75" aria-label="자동 크기의 최소 배율">
-              <input id="lyricAutoSizeMax" type="range" min="0" max="500" step="5" value="125" aria-label="자동 크기의 최대 배율">
-            </div>
-            <div class="range-pair-values"><span>최소 <output id="lyricAutoSizeMinValue">75%</output></span><span>최대 <output id="lyricAutoSizeMaxValue">125%</output></span></div>
-          </div>
+          <label class="check"><input id="lyricAvoidCenter" class="avoid-center-toggle" type="checkbox"><span>화면 가운데 피하기<small>자동 배치에서 가사를 화면 가운데에 두지 않습니다. *강조*한 컷은 제외합니다.</small></span></label>
           <label class="check"><input id="lyricAvoidForeground" type="checkbox" checked><span>전경 피하기<small>자동 배치 시 전경의 표시 영역을 피합니다. *강조*한 컷에는 적용하지 않습니다.</small></span></label>
           <label class="slider"><span>겹침 회피 강도</span><input id="lyricAvoidanceStrength" type="range" min="0" max="1" step="0.05" value="1"><output id="lyricAvoidanceStrengthValue">1.00</output></label>
           <p class="note">1이면 전경 범위를 피하고, 낮추면 주변과의 겹침을 허용합니다. 0이면 회피하지 않습니다. 빈 영역이 없으면 겹침이 가장 적은 배치를 사용합니다.</p>
+          <label class="slider"><span>가사끼리 겹침 회피 강도</span><input id="lyricGroupAvoidanceStrength" type="range" min="0" max="1" step="0.05" value="1"><output id="lyricGroupAvoidanceStrengthValue">1.00</output></label>
+          <p class="note"><code>{- … -}</code> 그룹에 적용합니다. 1이면 가사의 표시 영역이 서로 겹치지 않게 배치하고, 0이면 일반 겹침 표시가 됩니다. 자동 배치가 꺼져 있어도 적용합니다.</p>
           <label class="check"><input id="lyricRandomBlend" type="checkbox"><span>합성 방법도 무작위<small>표준·곱하기·스크린·오버레이 중에서 컷마다 고릅니다.</small></span></label>
           <label class="check"><input id="lyricRandomOpacity" type="checkbox"><span>가사 불투명도도 무작위<small>지정한 범위 내에서 *강조*는 높게, ~억제~는 낮게 합니다. 수동 지정과 잠금을 우선합니다.</small></span></label>
           <div class="fields lyric-opacity-range" id="lyricOpacityRange" hidden>
@@ -350,13 +366,13 @@
           <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>키네틱 부품도 사용<small>「키」로 표시된 기법. 끄면 자동으로 만들기나 셔플에서 선택되지 않습니다</small></span></label>
           <label class="check"><input class="horror-toggle" type="checkbox"><span>호러 연출도 사용<small>「호」로 표시된 기법과 스타일. 자동으로 만들기에서는 분위기가 「호러」일 때만 사용합니다</small></span></label>
         </div>
-        <div class="row" style="margin-bottom:10px"><input id="techFilter" type="text" placeholder="기법 이름으로 검색" style="flex:1" aria-label="기법 이름으로 검색"><span id="techTotal" class="muted mono"></span></div>
+        <div class="row" style="margin-bottom:10px"><input id="techFilter" type="search" placeholder="기법 검색(대략 입력해도 찾습니다)" style="flex:1;min-width:0" aria-label="기법 검색"><span id="techTotal" class="muted mono"></span></div>
         <label class="check" style="margin-bottom:10px"><input id="techPreviewPlay" type="checkbox"><span>미리보기 재생<small>켜면 화면에 보이는 미리보기가 자동으로 반복됩니다. 끄면 정지 화면만 표시해 접기/펼치기가 가벼워집니다</small></span></label>
         <div id="techLists"></div>
       </div>
 
-      <div class="tabpane" data-pane="foregroundFx" hidden><div id="foregroundEffectsPanel" class="media-effects-panel"></div></div>
-      <div class="tabpane" data-pane="mediaFx" hidden><div id="mediaEffectsPanel" class="media-effects-panel"></div></div>
+      <div class="tabpane" data-pane="foregroundFx" hidden><div class="row" style="margin-bottom:10px"><input id="foregroundEffectFilter" type="search" placeholder="유사 검색" aria-label="유사 검색" style="flex:1;min-width:0"></div><div id="foregroundEffectsPanel" class="media-effects-panel"></div></div>
+      <div class="tabpane" data-pane="mediaFx" hidden><div class="row" style="margin-bottom:10px"><input id="mediaEffectFilter" type="search" placeholder="유사 검색" aria-label="유사 검색" style="flex:1;min-width:0"></div><div id="mediaEffectsPanel" class="media-effects-panel"></div></div>
 
       <div class="tabpane" data-pane="out" hidden><div id="exportSettingsHome"><div id="exportSettings">
         <div class="fields">
@@ -365,7 +381,9 @@
           <label class="field field-wide">동영상 크기<select id="outVideoSize"><option value="legacy">화면 비율과 해상도로 지정</option><option value="1920x1080">1920 × 1080(풀HD)</option><option value="1280x720">1280 × 720(HD)</option><option value="3840x2160">3840 × 2160(4K)</option><option value="1080x1920">1080 × 1920(세로형)</option><option value="1080x1080">1080 × 1080(정사각형)</option><option value="1080x1350">1080 × 1350(4:5)</option><option value="custom">직접 입력</option></select></label>
           <label class="field video-size-custom" hidden>너비(px)<input id="outVideoWidth" type="number" min="16" max="8192" step="2"></label><label class="field video-size-custom" hidden>높이(px)<input id="outVideoHeight" type="number" min="16" max="8192" step="2"></label>
           <label class="field">fps<select id="outFps"><option>24</option><option>30</option><option>60</option></select></label>
-          <label class="field">화질<select id="outQuality"><option value="standard">표준</option><option value="high">높음</option><option value="max">최고</option></select></label>
+          <label class="field">화질<select id="outQuality"><option value="standard">표준</option><option value="high">높음</option><option value="max">최고</option><option value="custom">비트레이트 지정</option><option value="qp">화질 우선(QP 지정)</option></select><span id="outQPNote" class="note" style="margin:0" hidden>값이 작을수록 고화질, 클수록 가벼워집니다. 낮은 QP는 PC에서 사용하길 권합니다.</span></label>
+          <label class="field" hidden>비트레이트(Mbps)<input id="outBitrate" type="number" min="0.001" step="any" required></label>
+          <label class="field" hidden>압축 강도(QP)<input id="outQP" type="number" min="0" max="51" step="1" required></label>
           <label class="field field-wide">배경<select id="outKey"><option value="off">일반(스타일 배경)</option><option value="green">그린 스크린(합성용)</option><option value="black">블랙 배경(합성용)</option></select></label>
         </div>
         <p class="note key-note">그린 스크린/블랙 배경에서는 단색 배경 위에 흰 글자와 연출만 그립니다. 배경 무늬, 종이 질감, 입자, 비네트는 제외됩니다. 미리보기에도 그대로 반영되며 그린은 크로마키, 블랙은 스크린 합성이나 루마 키로 다른 영상 위에 합성할 수 있습니다.</p>
@@ -375,6 +393,7 @@
         <div class="rng-row"><span class="rng-lab">내보낼 범위</span><select class="rngFrom" aria-label="내보낼 범위의 첫 행"></select><span class="muted">〜</span><select class="rngTo" aria-label="내보낼 범위의 마지막 행"></select><span class="rngInfo muted mono"></span></div>
         <div class="outbtns">
           <button id="btnMP4" class="primary">MP4 내보내기</button>
+          <button id="btnShort" class="primary" hidden>쇼츠용 MP4 내보내기</button>
           <button id="btnMP4File" class="mp4file" hidden title="저장할 파일을 먼저 고르고 거기에 바로 기록합니다. 긴 곡이나 1080p 이상에서 브라우저 메모리가 부족해 실패할 때 사용하세요(Chrome / Edge)">MP4(큰 동영상용·파일에 바로 저장)</button>
           <button id="btnPNG">PNG 시퀀스 (ZIP)</button>
           <button id="btnPNGA">투명 PNG (ZIP·배경 없음)</button>
@@ -432,6 +451,7 @@
       <p>이 사이트는 오리지널판을 기반으로 한 fork판입니다. AI로 고르기를 통한 구성 선정과 배경·전경 이미지·동영상 편집 기능 등을 추가했습니다.</p>
       <p>평소에는 가사·곡·소재를 브라우저 안에서만 처리합니다. 「AI로 고르기」를 쓰면 가사·곡명·아티스트·추가 지시를 직접 설정한 결정 서버(기본은 내 PC 안)로 보냅니다. 음성·이미지·동영상은 보내지 않습니다.</p>
       <p>fork판 소스 코드: <a href="https://github.com/hirazisora/JIZURA" target="_blank" rel="noopener">https://github.com/hirazisora/JIZURA</a></p>
+      <p>인물 잘라내기에 쓰는 외부 모델: RVM(GPL-3.0). <a href="THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener">모델·라이브러리 이용 조건</a></p>
       <p class="muted mono">© 2026 hirazisora · MIT</p>
     </section>
     <div class="terms-foot"><button value="close" class="primary" autofocus>닫기</button></div>
@@ -449,6 +469,11 @@
 
 <dialog id="themesDlg" class="terms" aria-labelledby="themesTitle">
  <form method="dialog"><h2 id="themesTitle">테마 설정</h2>
+ <div class="theme-balance" role="radiogroup" aria-label="통일감·다채로움">
+  <label><input type="radio" name="themeBalance" value="unified"><span>통일감 중시</span></label>
+  <label><input type="radio" name="themeBalance" value="lively"><span>다채로움 중시</span></label>
+ </div>
+ <p id="themeBalanceNote" class="note" aria-live="polite"></p>
  <p>여러 개를 선택할 수 있습니다. 자동으로 만들기에서는 선택한 테마 중 하나에 맞는 설정 후보로 구성합니다. 미선택 시에는 제한하지 않습니다.</p>
  <div id="themeChoices"></div>
  <div class="acts"><button id="btnClearThemes" type="button">선택 해제</button><button value="cancel">취소</button><button id="btnApplyThemes" type="button">적용</button></div>
@@ -457,8 +482,35 @@
 
 <dialog id="exportDlg" class="terms export-dialog" aria-labelledby="exportDlgTitle">
  <h2 id="exportDlgTitle">내보내기</h2>
+ <p id="shortExportDescription" class="note" hidden>원래 영상을 가운데에 두고 위아래 여백을 채워 9:16 세로 동영상으로 만듭니다.</p>
  <label class="field filename-field">파일명<input id="exportFilename" type="text" maxlength="180" autocomplete="off"></label>
  <p class="note">확장자는 자동으로 붙습니다. 사용할 수 없는 문자는 바꿔서 저장합니다.</p>
+ <section id="shortExportOptions" class="short-export-options" hidden>
+  <div class="short-preview">
+   <canvas id="shortExportPreview" width="234" height="416" aria-label="쇼츠용 출력 미리보기"></canvas>
+  </div>
+  <div class="short-timeline">
+     <div class="short-range-values"><label for="shortStartValue">시작(초) <input id="shortStartValue" type="number" min="0" step="any" inputmode="decimal" value="0.000" required></label><label for="shortEndValue">끝(초) <input id="shortEndValue" type="number" min="0" step="any" inputmode="decimal" value="0.000" required></label></div>
+     <div id="shortRange" class="short-range">
+      <span class="short-range-track"><span class="short-range-selection"></span></span>
+      <input id="shortStart" type="range" min="0" max="1" step="0.001" value="0" aria-label="시작(초)">
+      <input id="shortEnd" type="range" min="0" max="1" step="0.001" value="1" aria-label="끝(초)">
+      <input id="shortPreviewSeek" type="range" min="0" max="1" step="0.001" value="0" aria-label="쇼츠용 미리보기 재생 위치">
+     </div>
+     <div class="short-timeline-transport">
+      <div class="short-preview-transport"><button id="shortPreviewPlay" type="button" class="ghost small" aria-label="미리보기 재생">▶</button><span id="shortPreviewTime" class="tc">00:00.00</span></div>
+      <div class="short-preview-markers"><button id="shortSetStart" type="button" class="ghost small">여기부터</button><button id="shortSetEnd" type="button" class="ghost small">여기까지</button></div>
+     </div>
+  </div>
+  <div class="short-fill-settings">
+   <div class="fields">
+    <label class="field field-wide">세로 동영상 크기<select id="shortRes"><option value="720">720 × 1280</option><option value="1080" selected>1080 × 1920</option><option value="1440">1440 × 2560</option><option value="2160">2160 × 3840</option></select></label>
+    <label class="field field-wide">위아래 채우기<select id="shortFill"><option value="zoom">원래 영상을 확대한 배경</option><option value="tile">원래 영상을 위아래로 이어 붙이기</option><option value="ambient">확산(영상의 색을 여백으로 퍼뜨리기)</option></select></label>
+    <label class="field field-wide">흐림 정도 <output id="shortBlurValue">35</output><input id="shortBlur" type="range" min="0" max="100" value="35"></label>
+   </div>
+   <p id="shortExportError" class="short-export-error" role="status"></p>
+  </div>
+ </section>
  <div id="exportDialogContent"></div>
  <div class="terms-foot"><button id="btnCloseExport" type="button">닫기</button></div>
 </dialog>
@@ -466,6 +518,7 @@
  <form method="dialog">
   <h2 id="filenameDlgTitle">파일명</h2>
   <label class="field filename-field">파일명<input id="saveFilename" type="text" maxlength="180" autocomplete="off"></label>
+  <label class="check"><input id="saveFilenameDate" type="checkbox"><span>파일명에 날짜·시각 붙이기<small id="saveFilenamePreview"></small></span></label>
   <p class="note">확장자는 자동으로 붙습니다. 사용할 수 없는 문자는 바꿔서 저장합니다.</p>
   <div class="terms-foot"><button value="cancel">취소</button><button value="save" class="primary">저장</button></div>
  </form>

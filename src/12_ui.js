@@ -9,11 +9,15 @@ const LS_KEY = 'jizura.project.v1';
 const MEDIA_DELETE_KEY = 'jizura.media.pendingDelete.v1';
 const HUD_CHARS = '0123456789:./-_()【】 · No.LYRICRECUNTITLEDXYlinebpminterlude—─／ ';
 const ICON = {
+  copy: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="m8 1 2.1 4.5 4.9.7-3.5 3.5.8 4.9L8 12.3l-4.3 2.3.8-4.9L1 6.2l4.9-.7Z"/></svg>',
+  paste: '<svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 8H1m3-3L1 8l3 3m12-10 2.1 4.5 4.9.7-3.5 3.5.8 4.9-4.3-2.3-4.3 2.3.8-4.9L9 6.2l4.9-.7Z"/></svg>',
+
   details: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/><path d="M5 2v4M11 6v4M7 10v4" stroke-width="3"/></svg>',
   area: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10"/><path d="M2 6h12M5 3v10"/></svg>',
   remove: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m4 4 8 8m0-8-8 8"/></svg>',
 
-  dice: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor"/><circle cx="10.5" cy="10.5" r="1" fill="currentColor"/><circle cx="10.5" cy="5.5" r="1" fill="currentColor"/><circle cx="5.5" cy="10.5" r="1" fill="currentColor"/></svg>',
+  dice: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 5.3A5.3 5.3 0 1 0 13.2 10M12.8 1.8v3.8H9"/></svg>',
+  disableReroll: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.3A5 5 0 1 0 12.7 9M10 1v3.5H6.5"/><path d="M11.5 2h3.5" stroke="#ff5364" stroke-width="2.2"/></svg>',
   lock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>',
   pen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 13l1-3.5L11 2.5l2.5 2.5L6.5 12z"/><path d="M9.5 4l2.5 2.5"/></svg>',
   tap: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2" fill="currentColor"/><circle cx="8" cy="8" r="5.5"/></svg>',
@@ -22,7 +26,7 @@ const ICON = {
   frontmost: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="5" width="10" height="8" rx="1"/><path d="M5 2h9v8M8 4l2 2 2-2"/></svg>',
 };
 
-const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: 'all', loopHold: null, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], blankEls: new Map(), mediaLineEls: [], sourceTab: 'lyrics', curLine: -2, timelineZoom: 1 };
+const S = { project: null, plan: null, audio: null, renderer: new J.Renderer(), playing: false, t: 0, t0: 0, loop: 'all', loopHold: null, need: true, exporting: null, tap: null, linkDrag: null, slow: false, lineEls: [], mediaLineEls: [], sourceTab: 'lyrics', curLine: -2, timelineZoom: 1 };
 const LOOP_CYCLE = ['all', 'line', 'cut', false];
 const LOOP_COPY = {
   all:  { ko: '반복', titleKo: '전체 반복' },
@@ -120,13 +124,28 @@ function removeAudio() {
 }
 
 /* ---------------- project persistence ---------------- */
+// 無表示컷 (retired): the lyric showing when a blank began now ends there (컷の終了時間).
+function migrateLyricBlankCuts(project) {
+  const blanks = (Array.isArray(project.lyricBlankCuts) ? project.lyricBlankCuts : []).filter(b => b && Number.isFinite(+b.start)).sort((a, b) => a.start - b.start);
+  delete project.lyricBlankCuts;
+  if (!blanks.length) return;
+  const plan = J.plan(project), done = new Set();
+  for (const blank of blanks) for (const cut of plan.cuts) {
+    const key = `${cut.line}:${cut.part}`;
+    if (cut.line < 0 || !Number.isInteger(cut.part) || done.has(key) || !(cut.start < +blank.start && cut.end > +blank.start)) continue;
+    project.lyricCutOptions[key] = { ...project.lyricCutOptions[key], untilNext: false, endTime: +(+blank.start).toFixed(3) };
+    done.add(key);
+  }
+}
 function mergeProject(p) {
   const d = J.defaultProject();
   const o = Object.assign(d, p || {});
   if (o.videoSize) { const [w, h] = J.outputSize(o); o.videoSize = { w, h }; }
+  o.shortExport=J.shortExportSettings(o.shortExport);
   o.fx = Object.assign(J.defaultProject().fx, (p && p.fx) || {});
   o.timing = Object.assign(J.defaultProject().timing, (p && p.timing) || {});
   o.timing.cutTimes = o.timing.cutTimes || {};
+  o.customEffects=J.validateCustomEffects(o.customEffects||[]);J.activateCustomEffects(o);
   const en = J.defaultProject().enabled;
   for (const g of Object.keys(en)) en[g] = Object.assign(en[g], ((p && p.enabled) || {})[g] || {});
   o.enabled = en;
@@ -135,7 +154,12 @@ function mergeProject(p) {
   o.lyricCutOptions = (p && p.lyricCutOptions) || {};
   o.lyricEffects = J.lyricEffectSettings(o);
   o.themes = J.themeIds(o);
-  o.lyricBlankCuts = Array.isArray(p && p.lyricBlankCuts) ? p.lyricBlankCuts : [];
+  o.themeBalance = o.themeBalance === 'unified' ? 'unified' : 'lively';
+  // 무표시 컷 (retired): the lyric showing when a blank began now ends there (컷 종료 시각)
+  migrateLyricBlankCuts(o);
+  o.effectFavorites = J.normalizeEffectFavorites(o.effectFavorites);
+  o.customEffects=J.combineCustomEffects(o.customEffects,...o.effectFavorites.map(f=>f.payload.components||[]));J.activateCustomEffects(o);
+  o.favoriteSequence = Math.max(o.effectFavorites.length,Math.floor(+o.favoriteSequence)||0);
   o.timelineLinks = Array.isArray(p && p.timelineLinks) ? p.timelineLinks : [];
   o.media = J.normalizeMedia(p && p.media);
   o.foreground = J.normalizeMedia(p && p.foreground);
@@ -151,6 +175,7 @@ function mergeProject(p) {
     if (typeof v === 'boolean') o.colors[k] = v;
     else if (typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v)) o.colors[k] = v;
   }
+  o.colorTheme = J.normalizeColorTheme(p && p.colorTheme);
   // uploaded faces (user_…, file: kept in this browser) and PC faces (local_…, the installed family name as it is)
   o.userFonts = (Array.isArray(p && p.userFonts) ? p.userFonts : []).filter(uf => uf && (J.SAFE_FONT_KEY.test(uf.key) || J.SAFE_LOCAL_FONT_KEY.test(uf.key)))
     .map(uf => {
@@ -173,7 +198,8 @@ function mergeProject(p) {
 }
 const SET_UI = { horror: { name: '호러', badge: '호' }, typo: { name: '타이포', badge: '타' }, kinetic: { name: '키네틱', badge: '키' } };
 function setBadges(d) {
-  return (d && d.extra ? '<span class="set-badge ex" title="첫 공개 버전 이후 추가">추가</span>' : '') + (d && d.wa ? '<span class="set-badge" title="일본풍 연출">일본풍</span>' : '')
+  return (d && d.custom ? '<span class="set-badge ex" title="'+J.mediaLabel('가져온 자체 연출','Imported custom effect')+'">'+J.mediaLabel('추가','Added')+'</span>' : '')
+    + (d && d.extra && !d.custom ? '<span class="set-badge ex" title="첫 공개 버전 이후 추가">추가</span>' : '') + (d && d.wa ? '<span class="set-badge" title="일본풍 연출">일본풍</span>' : '')
     + (d && d.set && SET_UI[d.set] ? `<span class="set-badge set-${d.set}" title="${SET_UI[d.set].name}">${SET_UI[d.set].badge}</span>` : '');
 }
 function loadLocal() { try { const s = localStorage.getItem(LS_KEY); if (s) return mergeProject(JSON.parse(s)); } catch (e) {} return mergeProject(null); }
@@ -186,9 +212,9 @@ async function cleanupDeletedMedia() {
   for (const id of pending) {
     if (active.has(id)) continue;
     try {
-      await J.removeMedia(id);
       const asset = J.mediaAssets.get(id);
-      if (asset) { URL.revokeObjectURL(asset.url); J.mediaAssets.delete(id); }
+      if (asset) { J.releaseMediaAsset(asset); J.mediaAssets.delete(id); }
+      await J.removeMedia(id);
     } catch (e) { failed.push(id); }
   }
   try { localStorage.setItem(MEDIA_DELETE_KEY, JSON.stringify(pendingMediaDeletes().filter(id => !pending.includes(id) || failed.includes(id)))); } catch (e) {}
@@ -245,6 +271,9 @@ function undoMove(direction) {
     S.audio = null; S.audioFile = null; refreshAudioName(); restoreAudioAsset();
   }
   fontKey = ''; syncUI(); replan(); flushSave();
+  // mergeProject normalizes (e.g. favorite payload key order); store the normalized snapshot so the
+  // next undo/redo doesn't see it as a new edit and drop the redo steps.
+  U.list[U.i] = JSON.stringify(S.project);
   U.restoring = false; updateUndoButtons();
   prepareAssets();                                // a 소재 brought back by undo is decoded again
 }
@@ -264,29 +293,49 @@ function audioLike() {
   if (T.bpm > 0) return { beats: J.beatGrid(T.bpm, T.beatOffset || 0, 600) };
   return null;
 }
-/* 自動判定のとき、判定結果を言語欄の横に出す */
+/* 자동判定のとき、判定結果を言語欄の横に出す */
 function langNote() {
   const el = $('langNote'); if (!el) return;
   el.textContent = (S.project.lang || 'auto') === 'auto' ? '→ ' + J.LANG_LABEL[J.resolveLang(S.project)] : '';
   if (langNote.last !== undefined && langNote.last !== J.lang) { try { renderFontRoles(); } catch (e) {} }   // font menus show the language's faces
   langNote.last = J.lang;
 }
+// The full plan (lyrics + media layers) for a project; also used by the cut details preview.
+function composePlan(project) {
+  const plan = J.plan(project, audioLike());
+  plan.media = J.planMedia(project, plan, S.audio && S.audio.duration);
+  plan.foreground = J.planMedia(project, plan, S.audio && S.audio.duration, 'foreground');
+  plan.duration = Math.max(plan.media.duration, plan.foreground.duration);
+  // An explicit output length also caps existing cuts extending past the song.
+  if(Number.isFinite(+project.durationOverride)&&+project.durationOverride>0){
+    plan.duration=+project.durationOverride;
+    plan.cuts=plan.cuts.filter(c=>c.start<plan.duration);
+    for(const cut of plan.cuts){cut.end=Math.min(cut.end,plan.duration);cut.dur=cut.end-cut.start;}
+    plan.events=plan.events.filter(event=>event.t<plan.duration);
+    for(const layer of ['media','foreground']){
+      plan[layer].cuts=plan[layer].cuts.filter(c=>c.start<plan.duration);
+      for(const cut of plan[layer].cuts)cut.end=Math.min(cut.end,plan.duration);
+    }
+  }
+  for (const layer of ['media', 'foreground']) {
+    plan[layer].duration = plan.duration;
+    const last = plan[layer].cuts.at(-1); if (last && !last.manualEnd && last.videoDuration == null) last.end = plan.duration;
+  }
+  return plan;
+}
 function replan() {
-  S.plan = J.plan(S.project, audioLike());
+  closeTimelineCutMenu();
+  S.plan = composePlan(S.project);
   // lines locked in older projects (seed only): take a snapshot now, so from here on they stay exactly as they are
   for (const [i, o] of Object.entries(S.project.overrides || {})) if (o && o.lock && !Array.isArray(o.lockedCuts)) { const snap = J.lineSnapshot(S.plan, +i); if (snap) o.lockedCuts = snap; }
-  S.plan.media = J.planMedia(S.project, S.plan, S.audio && S.audio.duration);
-  S.plan.foreground = J.planMedia(S.project, S.plan, S.audio && S.audio.duration, 'foreground');
-  S.plan.duration = Math.max(S.plan.media.duration, S.plan.foreground.duration);
-  for (const layer of ['media', 'foreground']) {
-    S.plan[layer].duration = S.plan.duration;
-    const last = S.plan[layer].cuts.at(-1); if (last && last.videoDuration == null) last.end = S.plan.duration;
-  }
+  J.captureAutoEffects(S.project,S.plan);
   if (S.tap && S.tap.append && !S.audio) extendTapPreview(S.t);
   langNote();
   if (S.t > S.plan.duration) S.t = Math.max(0, S.plan.duration - 1e-3);
   refreshLoopHold();
-  const temporarilyHidden = ref => S.project.durationOverride != null && /^l:\d+:\d+$/.test(ref) && +ref.split(':')[1] < S.plan.lines.length;
+  const temporarilyHidden = ref => S.project.durationOverride != null && (
+    /^l:\d+:\d+$/.test(ref) && +ref.split(':')[1] < S.plan.lines.length ||
+    /^[fm]:\d+$/.test(ref) && +ref.slice(2) < S.project[ref[0]==='f'?'foreground':'media'].cutCount);
   S.project.timelineLinks = S.project.timelineLinks.filter(link => link && link.a !== link.b && (boundaryCut(link.a) || temporarilyHidden(link.a)) && (boundaryCut(link.b) || temporarilyHidden(link.b)));
   lastCutIdx = null;
   renderLines(); renderMediaList(); renderMediaLines(); sizeViewport(); drawTimeline(); drawTimelineLinks(); updateTimeUI();
@@ -323,7 +372,7 @@ const replanSoon = (ms = 220) => { clearTimeout(replanTimer); replanTimer = setT
 let fontKey = '';
 let thumbFonts = null;
 async function ensureFonts() {
-  const txt = S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS;
+  const txt = S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS + J.drawingText(S.plan);
   const keys = J.fontsOfPlan(S.plan);                       // only the faces this plan draws with
   const key = txt + '|' + keys.join(',') + '|' + Object.keys(J.FONTS).length + '|' + J.lang;   // the lyric language changes the faces
   if (key === fontKey) return;
@@ -347,9 +396,10 @@ function fixedLayout() { return !!(FIXED_MQ && FIXED_MQ.matches) && document.doc
 function sizeViewport() {
   const vp = $('viewport'), c = $('view');
   const ar = S.plan.W / S.plan.H;
+  const full = document.fullscreenElement === vp || vp.classList.contains('preview-fullscreen');
   let cssW = vp.clientWidth || 800, cssH = cssW / ar;
   // fixed workspace: the viewport gets whatever height is left under the header / above the transport and timeline
-  const maxH = fixedLayout() ? Math.max(160, vp.clientHeight - 2) : Math.max(220, window.innerHeight * 0.68);
+  const maxH = full ? document.documentElement.clientHeight : fixedLayout() ? Math.max(160, vp.clientHeight - 2) : Math.max(220, window.innerHeight * 0.68);
   if (cssH > maxH) { cssH = maxH; cssW = cssH * ar; }
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const pw = Math.round(Math.min(S.plan.W, cssW * dpr)), ph = Math.round(pw / ar);
@@ -367,22 +417,39 @@ function drawCenterGuide(ctx, k) {
   ctx.strokeRect(r[0] + 4, r[1] + 4, r[2] - 8, r[3] - 8);
   ctx.setLineDash([]); ctx.restore();
 }
-function draw() {
-  const c = $('view'), ctx = c.getContext('2d');
-  J.syncMediaPreview(S.plan, S.t, S.playing);
-  const t0 = performance.now();
+// Detail previews share the imported videos with the main renderer. Their seeked
+// events request main redraws, which must not reset the videos to the main clock.
+function syncMainMediaPreview() {
+  if(!$('cutDetailsDialog')?.open&&!$('effectFavoritesDialog')?.open&&!($('exportDlg')?.open&&S.exportKind==='short'))J.syncMediaPreview(S.plan,S.t,S.playing);
+}
+function drawPreviewFrame(ctx, {renderer=S.renderer,fast=false,time=S.t}={}) {
   const previewCuts = S.areaEdit && S.areaEdit.kind === 'lyric' && S.areaEdit.draft ? S.plan.cuts.filter(cut => cut.line === S.areaEdit.index) : [];
   const previousAreas = previewCuts.map(cut => cut.area);
   previewCuts.forEach(cut => { cut.area = { ...S.areaEdit.draft, angle: S.areaEdit.angle }; });
   const edit = S.areaEdit, mediaCut = edit && edit.kind !== 'lyric' && S.plan[edit.kind].cuts[edit.index];
   const previousMedia = mediaCut && { placement: mediaCut.placement, zoom: mediaCut.zoom, hold: mediaCut.hold, enter: mediaCut.enter, exit: mediaCut.exit, trans: mediaCut.trans };
   if (mediaCut) Object.assign(mediaCut, { placement: { cx: edit.draft.x + edit.draft.w / 2, cy: edit.draft.y + edit.draft.h / 2, w: edit.draft.w, h: edit.draft.h, lockAspect: edit.lockAspect, angle: edit.angle }, zoom: 100, hold: 'still', enter: 'cut', exit: 'cut', trans: undefined });
-  try { S.renderer.frame(ctx, S.plan, S.t, { scale: c.width / S.plan.W, fast: !!edit || S.playing && S.slow, noTrans: !!edit, noPost: !!edit, previewEdit: !!edit, noForeground: !!edit && edit.kind === 'media' }); }
+  try { renderer.frame(ctx, S.plan, time, { scale: ctx.canvas.width / S.plan.W, fast, noTrans: !!edit, noPost: !!edit, previewEdit: !!edit && edit.kind !== 'lyric', noForeground: !!edit && edit.kind === 'media' }); }
   finally { previewCuts.forEach((cut, i) => { cut.area = previousAreas[i]; }); if (mediaCut) Object.assign(mediaCut, previousMedia); }
+}
+function draw() {
+  const c = $('view'), ctx = c.getContext('2d');
+  if(!S.playPreparing)syncMainMediaPreview();
+  const t0 = performance.now();
+  drawPreviewFrame(ctx,{fast:!!S.areaEdit || S.playing && S.slow});
   if (S.plan.centerFree) drawCenterGuide(ctx, c.width / S.plan.W);
   const dt = performance.now() - t0;
   S.slow = S.playing ? (dt > 30 ? true : dt < 14 ? false : S.slow) : false;
-  updateTimeUI(); drawTimeline(); updateCutInfo();
+  updateTimeUI(); drawTimeline(); followTimelinePlayhead(); updateCutInfo(); drawItemFrames();
+}
+// 재생 중 확대된 타임라인의 재생 위치가 화면 밖으로 나가지 않도록 따라 스크롤한다
+// (사용자가 직접 스크롤한 직후 1.5초는 멈춘다).
+let timelineUserScroll = 0;
+function followTimelinePlayhead() {
+  if (!S.playing || S.timelineZoom <= 1 || performance.now() - timelineUserScroll < 1500) return;
+  const scroll = $('timelineScroll'), box = scroll.getBoundingClientRect(), line = $('timeline').getBoundingClientRect();
+  const x = line.left + line.width * J.clamp(S.t / Math.max(.001, S.plan.duration), 0, 1);
+  if (x < box.left + box.width * .05 || x > box.right - box.width * .08) scroll.scrollLeft += x - (box.left + box.width * .15);
 }
 function tick(now) {
   requestAnimationFrame(tick);
@@ -402,7 +469,54 @@ function tick(now) {
   }
   if (S.need) { S.need = false; draw(); }
 }
+const lyricPlaybackMarker = { value: null, active: '', rows: [], lines: [] };
+function syncLyricPlaybackHighlight() {
+  const input=$('lyrics'), overlay=$('lyricPlaybackHighlight');
+  if (!input || !overlay) return;
+  const marker=lyricPlaybackMarker, mirror=overlay.firstElementChild;
+  if (document.activeElement===input || !input.clientWidth || input.value!==S.project.lyrics) {
+    overlay.hidden=true; marker.active=''; return;
+  }
+  if (marker.value!==input.value) {
+    marker.value=input.value; marker.active='';
+    marker.lines=J.parseLyrics(input.value).lines;
+    marker.rows=input.value.replace(/\r/g,'').split('\n').map(text=>{
+      const row=document.createElement('span');row.className='lyric-source-row';
+      row.textContent=text || '\u200b';return row;
+    });
+    mirror.replaceChildren(...marker.rows);
+  }
+  const style=getComputedStyle(input);
+  for (const prop of ['font','letterSpacing','lineHeight','textAlign','textIndent','wordSpacing','tabSize','wordBreak','paddingTop','paddingRight','paddingBottom','paddingLeft']) mirror.style[prop]=style[prop];
+  overlay.style.left=input.offsetLeft+input.clientLeft+'px';
+  overlay.style.top=input.offsetTop+input.clientTop+'px';
+  overlay.style.width=input.clientWidth+'px';overlay.style.height=input.clientHeight+'px';
+  const cuts=J.lyricCutsAt(S.plan,S.t).filter(c=>c.line>=0&&Number.isInteger(c.part));
+  const sourceRows=[...new Set(cuts.map(c=>marker.lines[c.line]?.sourceLine).filter(Number.isInteger))];
+  const active=sourceRows.join(',');
+  overlay.hidden=!sourceRows.length;
+  if (marker.active!==active) {
+    marker.rows.forEach((row,i)=>row.classList.toggle('is-current',sourceRows.includes(i)));
+    marker.active=active;
+    // Follow the newest active line while grouped lyrics can retain earlier ones.
+    const latest=cuts.reduce((a,c)=>!a||c.start>a.start?c:a,null);
+    const row=latest && marker.rows[marker.lines[latest.line]?.sourceLine];
+    if (row) {
+      const top=row.offsetTop, bottom=top+row.offsetHeight;
+      if (top<input.scrollTop || bottom>input.scrollTop+input.clientHeight)
+        input.scrollTop=Math.max(0,top-(input.clientHeight-Math.min(row.offsetHeight,input.clientHeight))/2);
+    }
+  }
+  mirror.style.transform=`translate(${-input.scrollLeft}px,${-input.scrollTop}px)`;
+}
 function updateTimeUI() {
+  syncLyricPlaybackHighlight();
+  document.querySelectorAll('#layerVisibilityControls button').forEach(button=>button.disabled=!!S.exporting);
+  $('fullscreenPlay').textContent=S.playing?'❚❚':'▶';
+  $('fullscreenPlay').setAttribute('aria-label',S.playing?J.mediaLabel('일시 정지','Pause'):J.mediaLabel('재생','Play'));
+  $('fullscreenTime').textContent=J.fmtTime(S.t)+' / '+J.fmtTime(S.plan.duration);
+  if(!S.scrubbing)$('fullscreenScrub').value=String(Math.round(S.t/Math.max(.001,S.plan.duration)*10000));
+  syncPlayheadMenu();
   $('timeNow').textContent = J.fmtTime(S.t);
   $('timeDur').textContent = J.fmtTime(S.durationDrag ? S.durationDrag.preview : S.plan.duration);
   $('timeDur').classList.toggle('manual', S.project.durationOverride != null || !!S.durationDrag);
@@ -411,7 +525,6 @@ function updateTimeUI() {
 function minimumProjectDuration() {
   let minimum = 0.1;
   for (const line of S.plan.lines) minimum = Math.max(minimum, line.start + 0.04);
-  for (const blank of S.project.lyricBlankCuts || []) if (Number.isFinite(+blank.start)) minimum = Math.max(minimum, +blank.start + 0.04);
   for (const layer of ['media', 'foreground']) {
     minimum = Math.max(minimum, S.plan[layer].cuts.length * 0.04);
     for (const [index, time] of Object.entries(S.project[layer].timing.lineTimes)) {
@@ -443,22 +556,37 @@ function setProjectDuration(seconds) {
 }
 // 탭 동기화 속도 (0.5× / 0.75×): only while tapping — the song's own time is what gets stored
 const playRate = () => (S.tap && S.tap.rate > 0 ? S.tap.rate : 1);
-function play() {
+async function play() {
+  if (S.tap && S.tap.counting) return;
+  if(S.playPreparing){pause();return;}
   refreshLoopHold();
+  const videos=['media','foreground'].some(layer=>S.plan.layerVisibility?.[layer]!==false&&J.mediaAt(S.plan,S.t,layer)?.type==='video');
+  if(videos){
+    const controller=new AbortController();S.playPreparing=controller;
+    $('btnPlay').textContent='…';$('btnPlay').setAttribute('aria-label',J.mediaLabel('동영상 준비 중(누르면 중지)','Preparing video (press to cancel)'));
+    // Unlock audio during the original tap before awaiting the video decoder.
+    if(S.audio){if(!AP.ctx)AP.ctx=new (window.AudioContext||window.webkitAudioContext)();if(AP.ctx.state==='suspended')AP.ctx.resume();}
+    try{await J.prepareMediaFrame(S.plan,S.t,controller.signal);}
+    catch(error){if(!controller.signal.aborted)toast(error.message);if(S.playPreparing===controller)pause();return;}
+    if(S.playPreparing!==controller||controller.signal.aborted)return;
+    S.playPreparing=null;
+  }
   if (S.audio) AP.play(S.audio.buffer, S.t, playRate());
   else S.t0 = performance.now() - S.t * 1000 / playRate();
   S.playing = true; $('btnPlay').textContent = '❚❚'; $('btnPlay').setAttribute('aria-label', '일시 정지');
 }
 function pause() {
+  S.playPreparing?.abort();S.playPreparing=null;
   S.playing = false; AP.stop();
-  J.syncMediaPreview(S.plan, S.t, false);
+  syncMainMediaPreview();
   $('btnPlay').textContent = '▶'; $('btnPlay').setAttribute('aria-label', '재생'); S.need = true;
 }
 function seek(t) {
+  if(S.playPreparing)pause();
   S.t = J.clamp(t, 0, Math.max(0, S.plan.duration - 1e-3));
   if (S.audio) { if (S.playing) AP.play(S.audio.buffer, S.t, playRate()); }
   else S.t0 = performance.now() - S.t * 1000 / playRate();
-  J.syncMediaPreview(S.plan, S.t, S.playing);
+  syncMainMediaPreview();
   refreshLoopHold();
   S.need = true;
 }
@@ -480,9 +608,15 @@ function sizeTimelineStack() {
   S.timelineZoom = J.clamp(S.timelineZoom, 1, max);                     // the song may have become shorter
   const width = Math.max(10, Math.round(scroll.clientWidth * S.timelineZoom));
   if (stack.style.width !== `${width}px`) stack.style.width = `${width}px`;
+  syncTimelinePan();
   $('timelineZoomValue').textContent = `${Math.round(S.timelineZoom * 100)}%`;
   $('timelineZoomOut').disabled = S.timelineZoom <= 1;
   $('timelineZoomIn').disabled = S.timelineZoom >= max - 1e-6;
+}
+function syncTimelinePan(){
+  const input=$('timelinePan');if(!input)return;
+  const scroll=$('timelineScroll'),max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);
+  input.max=String(max);input.value=String(scroll.scrollLeft);input.disabled=max<=8;
 }
 // anchorX (client px): the point that stays put while zooming (the wheel pointer); default: the middle of the view
 function setTimelineZoom(zoom, anchorX) {
@@ -500,8 +634,38 @@ function followTlPlayhead() {
   const { vd, off } = tlView();
   if (S.t < off || S.t > off + vd * 0.92) drawTimeline();
 }
+// Overlapping cuts (own end times, 1シーン groups) are drawn in stacked lanes, translucent, so every start
+// and end stays reachable. Lanes are assigned greedily by start time; layers grow taller with more lanes.
+function timelineCuts(layer) { return layer === 'lyrics' ? S.plan.cuts.filter(c => !c.blank) : S.plan[layer].cuts; }
+function timelineLanes(layer) {
+  const ends = [], lanes = new Map();
+  for (const cut of [...timelineCuts(layer)].sort((a, b) => a.start - b.start || a.index - b.index)) {
+    let lane = ends.findIndex(end => end <= cut.start + 1e-6);
+    if (lane < 0) { lane = ends.length; ends.push(0); }
+    ends[lane] = cut.end; lanes.set(cut, lane);
+  }
+  return { lanes, count: Math.max(1, ends.length) };
+}
+function timelineCanvas(layer) { return $(layer === 'lyrics' ? 'timeline' : layer === 'media' ? 'mediaTimeline' : 'foregroundTimeline'); }
+function fitTimelineHeight(canvas, count, step, free = 2) {
+  const extra = Math.max(0, count - free) * step;
+  if (+canvas.dataset.extra === extra) return;
+  canvas.dataset.extra = String(extra); canvas.style.height = '';
+  if (extra) canvas.style.height = canvas.clientHeight + extra + 'px';
+}
+// Bar band of a layer's canvas in CSS pixels, and a cut's lane within it.
+function timelineBand(layer, canvas = timelineCanvas(layer)) {
+  const h = canvas.clientHeight;
+  return layer === 'lyrics' ? { top: h * 0.3, bottom: h - 8 } : { top: 17, bottom: h - 3 };
+}
+function laneBox(layer, lane, count, canvas) {
+  const band = timelineBand(layer, canvas), height = (band.bottom - band.top) / count;
+  return { top: band.top + lane * height, height };
+}
 function drawTimeline() {
   sizeTimelineStack();
+  const lanesInfo = timelineLanes('lyrics');
+  fitTimelineHeight($('timeline'), lanesInfo.count, 22);
   const c = $('timeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = J.clamp(Math.round(c.clientWidth * dpr), 10, 32000), h = Math.max(10, Math.round(c.clientHeight * dpr));   // deep zoom: stay under the canvas size limit
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
@@ -521,20 +685,24 @@ function drawTimeline() {
   const beats = S.plan.beats || [];
   x.fillStyle = '#3a3a44';
   for (const b of beats) { if (b < off) continue; if (b > off + vd) break; x.fillRect(Math.round(X(b)), h - 6 * dpr, 1, 6 * dpr); }
-  const top = h * 0.3, bot = h - 8 * dpr;
+  const top = h * 0.3, overlapping = lanesInfo.count > 1, mono = getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace';
   const R = exportRange();
   if (R) { x.fillStyle = 'rgba(245,165,12,0.10)'; x.fillRect(X(R.t0), 0, X(R.t1) - X(R.t0), h); }
-  for (const cut of S.plan.cuts) {
+  for (const cut of timelineCuts('lyrics')) {
     const x0 = X(cut.start), x1 = X(cut.end);
     if (x1 < 0 || x0 > w) continue;
-    const hue = cut.blank ? 190 : layoutHue(cut.layout);
-    x.fillStyle = `hsla(${hue},70%,58%,0.28)`; x.fillRect(x0, top, Math.max(1, x1 - x0 - 1), bot - top);
-    x.fillStyle = `hsla(${hue},80%,62%,0.95)`; x.fillRect(x0, top, Math.max(1, 2 * dpr), bot - top);
+    const lane = laneBox('lyrics', lanesInfo.lanes.get(cut), lanesInfo.count, c);
+    const y0 = lane.top * dpr, lh = Math.max(2, lane.height * dpr - (overlapping ? 1 : 0));
+    const hue = layoutHue(cut.layout);
+    x.fillStyle = `hsla(${hue},70%,58%,${overlapping ? 0.2 : 0.28})`; x.fillRect(x0, y0, Math.max(1, x1 - x0 - 1), lh);
+    if (overlapping) { x.strokeStyle = `hsla(${hue},80%,62%,0.55)`; x.lineWidth = dpr; x.strokeRect(x0 + .5, y0 + .5, Math.max(1, x1 - x0 - 1), lh - 1); }
+    x.fillStyle = `hsla(${hue},80%,62%,${overlapping ? 0.8 : 0.95})`; x.fillRect(x0, y0, Math.max(1, 2 * dpr), lh);
     if (cut.line >= 0) x.fillRect(x0 - 2 * dpr, top - 3 * dpr, 6 * dpr, 6 * dpr);
+    if (cut.manualEnd) drawTimelineEndHandle(x, x1, y0, lh, dpr);
     if (x1 - x0 > 34 * dpr) {
-      x.fillStyle = 'rgba(236,231,225,0.85)'; x.font = `${10 * dpr}px ${getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace'}`;
-      x.save(); x.beginPath(); x.rect(x0, top, x1 - x0 - 3, bot - top); x.clip();
-      x.fillText(cut.blank ? '무표시' : (cut.text || cut.lineText || (J.LAYOUTS[cut.layout] || {}).name || cut.layout), x0 + 5 * dpr, top + 13 * dpr); x.restore();
+      x.fillStyle = 'rgba(236,231,225,0.85)'; x.font = `${10 * dpr}px ${mono}`;
+      x.save(); x.beginPath(); x.rect(x0, y0, x1 - x0 - 3, lh); x.clip();
+      x.fillText(cut.text || cut.lineText || (J.LAYOUTS[cut.layout] || {}).name || cut.layout, x0 + 5 * dpr, y0 + Math.min(13 * dpr, lh - 3 * dpr)); x.restore();
     }
   }
   x.font = `${10 * dpr}px monospace`;
@@ -567,26 +735,35 @@ function extendTapPreview(t) {
     const last = S.plan[layer].cuts.at(-1); if (last && last.videoDuration == null) last.end = end;
   }
 }
+// End handle of a cut with its own end time (「다음 컷 재생까지」 off): drag it to change the end.
+function drawTimelineEndHandle(x, px, y0, height, dpr) {
+  x.fillStyle = '#ece7e1'; x.fillRect(px - 2 * dpr, y0, 2 * dpr, height);
+  x.beginPath(); x.moveTo(px - 2 * dpr, y0); x.lineTo(px - 8 * dpr, y0); x.lineTo(px - 2 * dpr, y0 + 6 * dpr); x.closePath(); x.fill();
+}
 function drawMediaTimeline(layer = 'media') {
   const c = $(layer === 'media' ? 'mediaTimeline' : 'foregroundTimeline'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const lanesInfo = timelineLanes(layer), overlapping = lanesInfo.count > 1;
+  fitTimelineHeight(c, lanesInfo.count, 24, 1);
   const w = J.clamp(Math.round(c.clientWidth * dpr), 10, 32000), h = Math.max(10, Math.round(c.clientHeight * dpr));   // deep zoom: stay under the canvas size limit
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
   const x = c.getContext('2d'), D = Math.max(0.001, S.plan.duration), X = t => t / D * w;
   x.fillStyle = '#131316'; x.fillRect(0, 0, w, h);
   x.fillStyle = '#8e8a94'; x.font = `${10 * dpr}px monospace`; x.fillText(layer === 'media' ? '배경' : '전경', 6 * dpr, 12 * dpr);
   for (const cut of S.plan[layer].cuts) {
-    const a = X(cut.start), b = X(cut.end);
-    x.fillStyle = cut.type === 'video' ? 'rgba(22,244,212,0.28)' : 'rgba(245,165,12,0.28)'; x.fillRect(a, 17 * dpr, Math.max(1, b - a - 1), h - 20 * dpr);
-    x.fillStyle = cut.type === 'video' ? '#16f4d4' : '#f5a50c'; x.fillRect(a, 17 * dpr, 2 * dpr, h - 20 * dpr);
+    const a = X(cut.start), b = X(cut.end), lane = laneBox(layer, lanesInfo.lanes.get(cut), lanesInfo.count, c);
+    const y0 = lane.top * dpr, lh = Math.max(2, lane.height * dpr - (overlapping ? 1 : 0)), rgb = cut.type === 'video' ? '22,244,212' : '245,165,12';
+    x.fillStyle = `rgba(${rgb},${overlapping ? 0.2 : 0.28})`; x.fillRect(a, y0, Math.max(1, b - a - 1), lh);
+    if (overlapping) { x.strokeStyle = `rgba(${rgb},0.55)`; x.lineWidth = dpr; x.strokeRect(a + .5, y0 + .5, Math.max(1, b - a - 1), lh - 1); }
+    x.fillStyle = `rgba(${rgb},${overlapping ? 0.8 : 1})`; x.fillRect(a, y0, 2 * dpr, lh);
     x.fillRect(a - 2 * dpr, 14 * dpr, 6 * dpr, 6 * dpr);
-    if (b - a > 45 * dpr) { x.save(); x.beginPath(); x.rect(a, 17 * dpr, b - a - 3, h - 20 * dpr); x.clip(); x.fillStyle = '#ece7e1'; x.fillText(cut.name, a + 5 * dpr, 31 * dpr); x.restore(); }
+    if (cut.manualEnd) drawTimelineEndHandle(x, b, y0, lh, dpr);
   }
   x.fillStyle = '#f5a50c'; x.fillRect(Math.round(X(S.t)) - dpr, 0, 2 * dpr, h);
   drawTimelineDragGuide(x, w, h, dpr, layer);
 }
 function drawTimelineDragGuide(ctx, width, height, dpr, layer) {
   const drag = S.timelineDrag;
-  if (!drag || !drag.moved || !linkedRefs(drag.ref).some(ref => boundaryLayer(ref) === layer)) return;
+  if (!drag || !drag.moved || (drag.mode === 'end' ? drag.layer !== layer : !linkedRefs(drag.ref).some(ref => boundaryLayer(ref) === layer))) return;
   const px = drag.preview / Math.max(0.001, S.plan.duration) * width;
   ctx.fillStyle = '#16f4d4'; ctx.fillRect(Math.round(px) - 2 * dpr, 0, 4 * dpr, height);
   ctx.fillStyle = '#101318'; ctx.fillRect(J.clamp(px + 5 * dpr, 0, width - 47 * dpr), 1 * dpr, 47 * dpr, 15 * dpr);
@@ -673,7 +850,7 @@ function bindFollow() {
 function boundaryRef(layer, cut) {
   if (layer === 'foreground') return `f:${cut.index}`;
   if (layer === 'media') return `m:${cut.index}`;
-  return cut.blank ? `l:blank:${cut.blankId}` : `l:${cut.line}:${cut.part}`;
+  return `l:${cut.line}:${cut.part}`;
 }
 function boundaryLayer(ref) { return ref[0] === 'f' ? 'foreground' : ref[0] === 'm' ? 'media' : 'lyrics'; }
 function boundaryCut(ref) {
@@ -683,7 +860,6 @@ function boundaryCut(ref) {
     const index = +ref.slice(2);
     return Number.isInteger(index) && index >= 0 && ref === `${ref[0]}:${index}` ? S.plan[layer].cuts[index] || null : null;
   }
-  if (ref.startsWith('l:blank:')) return S.plan.cuts.find(c => c.blank && c.blankId === ref.slice(8)) || null;
   return S.plan.cuts.find(c => c.line >= 0 && boundaryRef('lyrics', c) === ref) || null;
 }
 function linkedRefs(ref) {
@@ -697,24 +873,89 @@ function linkedRefs(ref) {
 function timelineMarkers() {
   const stack = $('timelineStack'), D = Math.max(0.001, S.plan.duration), markers = [];
   for (const [layer, id] of [['foreground', 'foregroundTimeline'], ['lyrics', 'timeline'], ['media', 'mediaTimeline']]) {
-    const canvas = $(id), cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0 || c.blank) : S.plan[layer].cuts;
+    const canvas = $(id), cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0) : S.plan[layer].cuts;
     const y = canvas.offsetTop + 11;
     for (const cut of cuts) if (layer !== 'lyrics' || !/^interlude:/.test(cut.part)) markers.push({ ref: boundaryRef(layer, cut), layer, x: canvas.offsetLeft + cut.start / D * canvas.clientWidth, y });
   }
   return markers;
 }
+// Lock: a locked cut keeps the look it had when locked (effects, colours, fonts, division, area/placement);
+// planning applies it under the user's own edits, so only direct operations on the cut change it.
+// Direct operations (re-roll, details, position) keep it locked and capture the new look afterwards.
+const LYRIC_UNLOCK = { lock: false, lockedSeed: undefined, lockedCuts: undefined, lockedAreas: undefined, lockedComposites: undefined, lockedEffects: undefined, lockedUnits: undefined };
+const MEDIA_UNLOCK = { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedEntrance: undefined, lockedDeparture: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedLayout: undefined, lockedItemId: undefined, lockedEffects: undefined };
+function lyricLockPatch(index, plan = S.plan) {
+  const line = plan.lines[index], cuts = plan.cuts.filter(c => c.line === index && Number.isInteger(c.part));
+  return { lock: true, lockedSeed: line.seed, lockedCuts: J.lineSnapshot(plan, index) || undefined,
+    lockedAreas: Object.fromEntries(cuts.map(c => [c.part, c.area || null])),
+    lockedComposites: Object.fromEntries(cuts.map(c => [c.part, { blend: c.blend, opacity: c.opacity }])),
+    lockedEffects: Object.fromEntries(cuts.map(c => [c.part, J.cutLockSnapshot(c, 'lyrics', plan)])),
+    lockedUnits: { text: line.text, groups: cuts.filter(c => !c.recap).map(c => c.text), recap: cuts.some(c => c.recap) } };
+}
+function mediaLockPatch(layer, index, plan = S.plan) {
+  const cut = plan[layer].cuts[index];
+  return { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedEntrance: cut.entrance, lockedDeparture: cut.departure,
+    lockedPlacement: cut.placement, lockedPlacementMode: cut.placementMode, lockedLayout: cut.bgLayout && JSON.parse(JSON.stringify(cut.bgLayout)), lockedItemId: cut.itemId, lockedEffects: J.cutLockSnapshot(cut, layer, plan) };
+}
+// After a direct operation on a still-locked cut: plan once with the change, then lock that result.
+function relock(layer, index) {
+  const locked = layer === 'lyrics' ? S.project.overrides[index]?.lock : S.project[layer].cutOverrides[index]?.lock;
+  if (!locked) return;
+  const plan = composePlan(S.project);
+  if (layer === 'lyrics') { if (plan.lines[index]) setOv(index, lyricLockPatch(index, plan)); }
+  else if (plan[layer].cuts[index]) mediaOv(index, mediaLockPatch(layer, index, plan), layer);
+}
 function rerollLyricLine(index) {
   const line = S.plan.lines[index]; if (!line) return;
   const current = S.project.overrides[index] || {};
-  setOv(index, { seed: (current.seed | 0) + 1, lock: false, lockedSeed: undefined, lockedCuts: undefined });
+  J.clearPastedLyricEffects(S.project,index);
+  // A locked line re-rolls its effects but keeps its place (re-layout is 再配置's job).
+  setOv(index, { seed: (current.seed | 0) + 1, ...LYRIC_UNLOCK, ...(current.lock ? { lock: true, lockedAreas: current.lockedAreas } : {}) });
+  relock('lyrics', index);
   replan(); seek(line.start + 0.001);
+}
+function disableAndReroll(layer,index,part=null) {
+  const project=S.project;
+  if(layer==='lyrics'){
+    const cuts=S.plan.cuts.filter(c=>c.line===index && Number.isInteger(c.part) && (part==null || c.part===part));
+    if(!cuts.length)return;
+    for(const cut of cuts){
+      for(const group of ['layout','enter','hold','exit','treat','bg','cam','trans']){
+        const key=cut[group];if(key && Object.hasOwn(J.registry(group),key))(project.enabled[group] ||= {})[key]=false;
+      }
+      for(const decor of cut.decor || [])(project.enabled.decor ||= {})[decor.id]=false;
+      for(const event of S.plan.events.filter(e=>e.cutOwner===`${cut.line}:${cut.part}`))(project.enabled.fx ||= {})[event.type]=false;
+    }
+    // Line-wide reroll must not retain explicit choices that override the pool.
+    const ov=project.overrides[index] ||= {};
+    for(const key of ['layout','enter','hold','exit','treat','bg','cam','trans','decor'])delete ov[key];
+    for(const [key,options] of Object.entries(project.lyricCutOptions || {}))if(key.startsWith(`${index}:`) && options.details){
+      options.details=Object.fromEntries(Object.entries(options.details).filter(([field])=>['text','area'].includes(field)));
+      delete options.pastedEffects;
+    }
+    rerollLyricLine(index);renderTech();
+  }else{
+    const cut=S.plan[layer]?.cuts[index];if(!cut)return;
+    const settings=J.mediaEffectSettings(project,layer);
+    for(const key of [cut.technique,cut.entrance,cut.departure])if(J.MEDIA_TECH[key])settings.enabled[key]=false;
+    project[layer].effects=settings;
+    const options=mediaCutOptions(layer,index);
+    const patch={technique:null,entrance:null,departure:null,details:undefined};
+    for(const key of ['layout','enter','hold','exit','treat','trans','effectSettings'])patch[key]=undefined;
+    // Override any asset-wide legacy choices for this cut without changing its placement.
+    project[layer].cutOverrides[index]={...options,...patch};
+    rerollMediaCut(layer,index);renderMediaEffects(layer);
+  }
+}
+function disableRerollButton(layer,index,part=null){
+  const button=document.createElement('button');button.type='button';button.className='icon ghost disable-reroll';
+  button.title=J.mediaLabel('이 연출을 끄고 다시 뽑기','Disable current effects and randomize');button.setAttribute('aria-label',button.title);button.innerHTML=ICON.disableReroll;
+  button.addEventListener('click',()=>disableAndReroll(layer,index,part));return button;
 }
 function toggleLyricLineLock(index) {
   const line = S.plan.lines[index]; if (!line) return;
   const current = S.project.overrides[index] || {};
-  const lockedAreas = Object.fromEntries(S.plan.cuts.filter(c => c.line === index && Number.isInteger(c.part)).map(c => [c.part, c.area || null]));
-  const lockedComposites = Object.fromEntries(S.plan.cuts.filter(c => c.line === index && Number.isInteger(c.part)).map(c => [c.part, { blend: c.blend, opacity: c.opacity }]));
-  setOv(index, current.lock ? { lock: false, lockedSeed: undefined, lockedCuts: undefined, lockedAreas: undefined, lockedComposites: undefined } : { lock: true, lockedSeed: line.seed, lockedCuts: J.lineSnapshot(S.plan, index) || undefined, lockedAreas, lockedComposites });
+  setOv(index, current.lock ? LYRIC_UNLOCK : lyricLockPatch(index));
   replan();
 }
 function emphasisFrontmostHint() {
@@ -745,167 +986,1081 @@ function mediaCutOptions(layer, index) {
 function rerollMediaCut(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, { technique: null, seed: (options.seed | 0) + 1, lock: false }, layer);
-  replan(); seek(cut.start + 0.001);
+  mediaOv(index, { technique: null, seed: (options.seed | 0) + 1, ...MEDIA_UNLOCK, ...(options.lock ? { lock: true, lockedPlacement: options.lockedPlacement, lockedPlacementMode: options.lockedPlacementMode, lockedLayout: options.lockedLayout, lockedItemId: options.lockedItemId } : {}) }, layer);
+  relock(layer, index);
+  replan();
 }
 function toggleMediaCutLock(layer, index) {
   const cut = S.plan[layer].cuts[index], options = mediaCutOptions(layer, index);
   if (!cut || !options) return;
-  mediaOv(index, options.lock ? { lock: false, lockedSeed: undefined, lockedTechnique: undefined, lockedEntrance: undefined, lockedDeparture: undefined, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedItemId: undefined } : { lock: true, lockedSeed: cut.seed, lockedTechnique: cut.technique, lockedEntrance: cut.entrance, lockedDeparture: cut.departure, lockedPlacement: cut.placement && { ...cut.placement }, lockedPlacementMode: cut.placementMode, lockedItemId: cut.itemId }, layer);
+  mediaOv(index, options.lock ? MEDIA_UNLOCK : mediaLockPatch(layer, index), layer);
   replan();
+}
+async function effectFavoriteAction(action,layer,index,part=0){
+  const cut=layer==='lyrics'?S.plan.cuts.find(c=>c.line===index&&c.part===part):S.plan[layer]?.cuts[index];
+  if(!cut)return;
+  pause();
+  if(action==='copy'){
+    const list=S.project.effectFavorites ||= [];
+    const number=(S.project.favoriteSequence||0)+1;
+    const project=S.project;
+    const payload=J.cutEffectsPayload(cut,layer,S.plan);
+    const name=await J.requestFavoriteName(J.mediaLabel('즐겨찾기','Favorite ')+number);
+    if(project!==S.project)return;
+    if(name===null)return;
+    remember();S.project.favoriteSequence=number;
+    list.push({id:J.favoriteId(),name:name.trim()||J.mediaLabel('즐겨찾기','Favorite ')+number,payload});
+    autosave();toast(J.mediaLabel('연출을 즐겨찾기에 추가했습니다','Effects added to favorites'));
+  }else openEffectFavorites({layer,index,part,cut});
+}
+function openEffectFavorites(target=null){
+  pause();const project=S.project;
+  J.openEffectFavorites({project,target,compose:composePlan,
+    changed:()=>{autosave();},
+    configure:()=>{syncUI();renderTech();renderMediaEffects('foreground');renderMediaEffects('media');replan();},
+    apply:payload=>{
+      if(project!==S.project)return false;
+      const cut=target.layer==='lyrics'?S.plan.cuts.find(c=>c.line===target.index&&c.part===target.part):S.plan[target.layer]?.cuts[target.index];
+      if(cut!==target.cut)return false;
+      remember();J.pasteCutEffects(S.project,S.plan,target.layer,cut,payload);replan();
+      toast(J.mediaLabel('즐겨찾기 연출을 적용했습니다','Favorite effects applied'));return true;
+    },
+    closed:()=>{J.syncMediaPreview(S.plan,S.t,false);S.need=true;}
+  });
+}
+function effectFavoriteButtons(layer,index,part=0){
+  return ['copy','paste'].map(action=>{
+    const button=document.createElement('button');button.type='button';button.className='icon ghost effect-'+action;
+    button.title=action==='copy'?J.mediaLabel('연출을 즐겨찾기에 추가','Add effects to favorites'):J.mediaLabel('즐겨찾기에서 연출 적용','Apply favorite effects');button.setAttribute('aria-label',button.title);
+    button.innerHTML=ICON[action];button.onclick=()=>effectFavoriteAction(action,layer,index,part);return button;
+  });
 }
 function detailButton(onClick) {
   const button = document.createElement('button'); button.type = 'button'; button.className = 'icon ghost cut-details-open';
   button.title = '컷 상세 편집'; button.setAttribute('aria-label',button.title);
   button.innerHTML = ICON.details; button.addEventListener('click',onClick); return button;
 }
+let cutPreviewSolo=false,cutPreviewFocus=false;// remembered while the page is open
 function openCutDetails(layer,index,part=0) {
-  const lyric = layer === 'lyrics', clone = value => JSON.parse(JSON.stringify(value));
-  const blank = lyric && part === 'blank';
-  const cut = blank ? S.plan.cuts[index] : lyric ? S.plan.cuts.find(c=>c.line===index && c.part===part) : S.plan[layer]?.cuts[index];
+  const lyric = layer === 'lyrics', L = J.mediaLabel, clone = value => JSON.parse(JSON.stringify(value));
+  const cut = lyric ? S.plan.cuts.find(c=>c.line===index && c.part===part) : S.plan[layer]?.cuts[index];
   if (!cut) return;
   pause();
   const key = `${index}:${part}`, original = clone(lyric ? S.project.lyricCutOptions[key] || {} : S.project[layer].cutOverrides[index] || {});
   let draft = clone(original), current = clone(cut), start = cut.start;
   let locked = !!(lyric ? S.project.overrides[index]?.lock : original.lock);
   const initialLock = locked;
+  const disabledChoices=[];
+  let removedDetail = null;
+  const openDetails = new Map();
+  let activeDetailTab='basic';
+  let personFps=draft.personCutout?.fps || Math.min(24,S.plan.fps || 24),personController=null,personStatus=null,personSync=null;
   const dialog = document.createElement('dialog'); dialog.id='cutDetailsDialog'; dialog.className='cut-details-dialog';
-  dialog.setAttribute('aria-label','컷 상세 편집');
+  dialog.setAttribute('aria-label',L('컷 상세 편집','Edit cut details'));dialog.tabIndex=-1;
+  // Left: a live preview of this cut that stays in view; right: the settings, which scroll on their own.
+  const pane=document.createElement('aside');pane.className='cut-details-preview';
+  pane.innerHTML=`<h2></h2><canvas></canvas><div class="effect-preview-seek"><button type="button" data-cut-preview-play></button><span class="tc effect-preview-now">00:00.00</span><span class="tc muted">/</span><span class="tc muted effect-preview-dur">00:00.00</span><div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i><input type="range" min="0" max="1000" step="1" value="0" data-cut-preview-seek></div></div><label class="check cut-details-solo"><input type="checkbox" data-preview-solo><span></span></label><label class="check cut-details-focus"><input type="checkbox" data-preview-focus><span></span></label>`;
+  pane.querySelector('h2').textContent=L('컷 상세 편집','Edit cut details')+' — '+(lyric?L('가사','Lyrics'):layer==='foreground'?L('전경','Foreground'):L('배경','Background'))+` ${index+1}${lyric?` / ${part+1}`:''}`;
+  pane.querySelector('.progress').setAttribute('aria-label',L('재생 위치','Playback position'));
+  const solo=pane.querySelector('[data-preview-solo]');solo.checked=cutPreviewSolo;solo.nextElementSibling.textContent=L('편집 대상만 표시','Show the edited cut only');
+  solo.addEventListener('change',()=>{cutPreviewSolo=solo.checked;});
+  const focus=pane.querySelector('[data-preview-focus]');focus.checked=cutPreviewFocus;focus.nextElementSibling.textContent=L('편집 대상에 초점','Focus on the edited cut');
+  focus.addEventListener('change',()=>{cutPreviewFocus=focus.checked;});
+  const formHost=document.createElement('div');formHost.className='cut-details-form';
+  dialog.append(pane,formHost);
   document.body.appendChild(dialog);
-  const names = {
-    text:'가사',layout:'레이아웃',enter:'등장',hold:'유지·모션',exit:'퇴장',
-    inDur:'등장 시간(초)',outDur:'퇴장 시간(초)',stagger:'글자 시간차(초)',
-    decor:'장식',scheme:'배색',params:'레이아웃 상세',treat:'가공',treatP:'가공 상세',
-    bg:'배경 연출',bgP:'배경 연출 상세',cam:'카메라',camP:'카메라 상세',
-    trans:'컷 간 전환',transP:'전환 상세',transDur:'전환 시간(초)',
-    area:'표시 영역(화면 비율)',placement:'배치·크기(화면 비율)',
-    motionScale:'움직임 배율',contentScale:'글자 크기 배율',effectSettings:'효과 설정',
-    motion:'움직임 강도',treatment:'가공 강도',duration:'등장·퇴장 시간(초)',bpm:'BPM',beatOffset:'박자 시작 위치(초)',x:'왼쪽 위치',y:'위쪽 위치',cx:'중심 X',cy:'중심 Y',w:'너비',h:'높이',angle:'각도(°)',lockAspect:'가로세로 비율 고정',
-    technique:'기법',entrance:'등장',departure:'퇴장',itemId:'파일',frontmost:'맨 앞에 표시',blend:'합성 방법',opacity:'불투명도(%)',videoLoop:'동영상 반복 재생',videoDuration:'동영상 길이(초)',chromaKey:'크로마키 합성',chromaColor:'크로마키 색',
-    font:'글꼴',size:'크기',scale:'배율',rotation:'회전',color:'색',alpha:'불투명도',seed:'무작위 시드',n:'개수',id:'종류',sx:'가로 배율',sy:'세로 배율',
+  const previewCanvas=pane.querySelector('canvas'),previewRenderer=new J.Renderer();
+  let previewPlan=S.plan,previewCut=cut,previewFrame=0,previewTimer=0,previewLast=performance.now(),previewTime=0,previewPlaying=true;
+  const previewPlay=pane.querySelector('[data-cut-preview-play]'),previewSeek=pane.querySelector('[data-cut-preview-seek]');
+  const previewLength=()=>Math.max(.1,Math.min(previewCut.end,previewPlan.duration)-previewCut.start);
+  const syncPreviewPlay=()=>{previewPlay.textContent=previewPlaying?'❚❚':'▶';previewPlay.setAttribute('aria-label',previewPlaying?L('정지','Pause'):L('재생','Play'));previewPlay.title=previewPlay.getAttribute('aria-label');};
+  syncPreviewPlay();previewSeek.setAttribute('aria-label',L('미리보기 재생 위치','Preview playback position'));
+  previewPlay.addEventListener('click',()=>{previewPlaying=!previewPlaying;previewLast=performance.now();syncPreviewPlay();});
+  previewSeek.addEventListener('input',()=>{previewTime=Number(previewSeek.value)/1000*previewLength();previewLast=performance.now();});
+  const findCut=plan=>lyric ? plan.cuts.find(c=>c.line===index&&c.part===part) : plan[layer]?.cuts[index];
+  const draftProject=()=>{const project=clone(S.project);applyDisabledChoices(project);{if(lyric)project.lyricCutOptions[key]=draft;else project[layer].cutOverrides[index]=draft;}return project;};
+  function refreshPreview(){
+    const range=c=>JSON.stringify([c.start,c.end,c.itemId,c.videoStart,c.videoLoop]),before=range(previewCut);
+    previewPlan=composePlan(draftProject());previewCut=findCut(previewPlan)||previewCut;
+    if(before!==range(previewCut))personStatus=null;
+    if(!personController)personSync?.();return previewCut;
+  }
+  Object.defineProperty(dialog,'cutPreview',{value:Object.freeze({get plan(){return previewPlan;},get cut(){return previewCut;}})});// read-only hook for tests
+  // Number and text edits only rebuild the preview; the form is left as it is.
+  const detailState=()=>JSON.stringify({draft,locked,start,disabledChoices});
+  const detailHistory=[detailState()];let detailHistoryIndex=0;
+  function syncDetailHistory(){
+    const undo=dialog.querySelector('[data-detail-undo]'),redo=dialog.querySelector('[data-detail-redo]');
+    if(undo)undo.disabled=detailHistoryIndex===0;if(redo)redo.disabled=detailHistoryIndex===detailHistory.length-1;
+  }
+  function rememberDetail(){
+    const state=detailState();if(state===detailHistory[detailHistoryIndex])return;
+    detailHistory.splice(detailHistoryIndex+1);detailHistory.push(state);
+    if(detailHistory.length>100)detailHistory.shift();detailHistoryIndex=detailHistory.length-1;syncDetailHistory();
+  }
+  function moveDetailHistory(delta){
+    if(personController)return;
+    const next=detailHistoryIndex+delta;if(next<0||next>=detailHistory.length)return;
+    const focused=document.activeElement,attribute=['data-detail-field','data-mask-field','data-mask-shape','data-mask-motion','data-detail-undo','data-detail-redo'].find(a=>focused?.hasAttribute(a));
+    const focusSelector=attribute?`[${attribute}="${CSS.escape(focused.getAttribute(attribute))}"]`:'[data-detail-undo]';
+    detailHistoryIndex=next;const state=JSON.parse(detailHistory[next]);draft=state.draft;locked=state.locked;start=state.start;disabledChoices.splice(0,disabledChoices.length,...state.disabledChoices);
+    clearTimeout(previewTimer);current=refreshPreview();render();const restoredFocus=dialog.querySelector(focusSelector);(restoredFocus&&!restoredFocus.disabled?restoredFocus:dialog).focus({preventScroll:true});
+  }
+  dialog.addEventListener('keydown',e=>{
+    // Enter in an input commits its value without implicitly clicking Apply.
+    if(e.key==='Enter'&&e.target instanceof HTMLInputElement&&!e.isComposing)e.preventDefault();
+  });
+  // Rebuilding the form can leave focus on body. Route modal history before
+  // document shortcuts, even when the event does not bubble through the dialog.
+  const detailShortcut=e=>{
+    if(!dialog.open)return;
+    // Repeated Escape can make the browser's cancel event non-cancelable.
+    // Stop its default close action before it reaches that native pathway.
+    if(personController&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();return;}
+    if(!(e.ctrlKey||e.metaKey)||e.altKey||e.isComposing||!['KeyZ','KeyY'].includes(e.code))return;
+    e.preventDefault();e.stopImmediatePropagation();moveDetailHistory(e.code==='KeyY'||e.shiftKey?1:-1);
   };
-  const label = key => names[key] || key;
-  const nativeKeys = blank ? [] : lyric ? ['frontmost','blend','opacity'] : ['itemId','technique','entrance','departure','placement','videoLoop','videoDuration','chromaKey','chromaColor'];
+  document.addEventListener('keydown',detailShortcut,true);
+  const schedulePreview=()=>{rememberDetail();clearTimeout(previewTimer);previewTimer=setTimeout(()=>{if(dialog.open)refreshPreview();},120);};
+  // "Show the edited cut only": other layers are switched off and other lyric cuts are left out
+  // of a shallow plan copy (the cut keeps its own background effect and transition).
+  const soloOptions=lyric?{noForeground:true,noMedia:true}:layer==='foreground'?{noMedia:true,noLyrics:true}:{noForeground:true,noLyrics:true};
+  let soloSource=null,soloShown=null;
+  const soloPlan=(plan,c)=>{
+    if(soloSource!==plan){soloSource=plan;soloShown=lyric?{...plan,retainedCutIndices:(plan.retainedCutIndices||[]).filter(i=>i===c.index)}:{...plan,cuts:[],retainedCutIndices:[],events:[]};}
+    return soloShown;
+  };
+  // "Focus on the edited cut": the union of the cut's drawn pixels over its duration (stage
+  // fractions), found by drawing only the cut, transparently and small, at ten times.
+  const probe=document.createElement('canvas'),probeRenderer=new J.Renderer();
+  let focusSource=null,focusRect=null;
+  function focusOf(plan,c){
+    if(focusSource===plan)return focusRect;
+    focusSource=plan;focusRect=null;
+    const pw=240,ph=Math.max(1,Math.round(pw*plan.H/plan.W));probe.width=pw;probe.height=ph;
+    const px=probe.getContext('2d',{willReadFrequently:true}),end=Math.min(c.end,plan.duration);
+    // Sample the settled part: entrance/exit motion may travel far and would shrink the focus.
+    const phase=lyric?null:Math.min(c.effectSettings?.duration||.45,(c.end-c.start)*.3);
+    const settleIn=lyric?(c.inDur||0)+(c.stagger||0)*Math.max(0,[...(c.text||'')].length-1):phase,settleOut=lyric?c.outDur||0:phase;
+    let from=c.start+settleIn,to=end-settleOut;if(to-from<.05){from=c.start;to=end;}
+    const length=Math.max(.05,to-from);
+    let x0=Infinity,y0=Infinity,x1=-1,y1=-1;
+    for(let k=0;k<10;k++){
+      const t=from+length*(k+.5)/10;
+      px.setTransform(1,0,0,1,0,0);px.globalAlpha=1;px.globalCompositeOperation='source-over';px.filter='none';px.clearRect(0,0,pw,ph);
+      try{
+        if(lyric)probeRenderer.frame(px,soloPlan(plan,c),t,{scale:pw/plan.W,noHud:true,noPost:true,transparent:true,...soloOptions});
+        else J.drawMediaCut(px,c,t,{source:J.isMediaCopy(c.itemId)?J.mediaCopySource(plan,c,t,probeRenderer,pw,ph):null});
+      }catch(e){continue;}
+      const d=px.getImageData(0,0,pw,ph).data;
+      for(let y=0;y<ph;y++)for(let x=0;x<pw;x++)if(d[(y*pw+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+    }
+    if(x1>=0)focusRect={x:x0/pw,y:y0/ph,w:(x1-x0+1)/pw,h:(y1-y0+1)/ph};
+    return focusRect;
+  }
+  // The stage window shown when focusing: the cut plus a margin, kept inside the stage.
+  function focusWindow(r){
+    if(!r)return null;
+    const size=Math.min(1,Math.max(r.w,r.h,.04)*1.12),clampTo=(center)=>J.clamp(center-size/2,0,1-size);
+    return size>=1?null:{x:clampTo(r.x+r.w/2),y:clampTo(r.y+r.h/2),size};
+  }
+  const zoomCanvas=document.createElement('canvas');
+  function personEditor(parent){
+    if(lyric)return;
+    const section=document.createElement('section');section.dataset.detailSection='personCutout';section.className='person-cutout-editor';parent.append(section);
+    const hint=document.createElement('p');hint.className='hint';hint.textContent=L('컷 안에서 재생되는 범위만 인물 마스크를 만듭니다. 재생 시간·시작 위치를 바꾼 뒤에는 다시 실행해 주세요','Generate masks only for the range played in this cut. Run again after changing its duration or source start.');section.append(hint);
+    const controls=document.createElement('div');controls.className='person-cutout-controls';section.append(controls);
+    const field=(title,input)=>{const label=document.createElement('label');label.className='cut-detail-field';const text=document.createElement('span');text.textContent=title;label.append(text,input);controls.append(label);};
+    const fps=document.createElement('input');fps.type='number';fps.min=1;fps.max=60;fps.step=1;fps.value=personFps;fps.dataset.personFps='';fps.onchange=()=>{personFps=J.clamp(Math.round(+fps.value||24),1,60);fps.value=personFps;personStatus=null;sync();};field(L('동영상 분석 장수/초','Video analysis frames / second'),fps);
+    const note=document.createElement('p');note.className='hint';note.textContent=L('분석 장수를 낮추면 잘라내기가 빨리 끝나지만, 빠른 움직임에서 마스크가 어긋나기 쉬워집니다.','Lowering the analysis rate finishes the cutout sooner, but masks are more likely to misalign during fast motion.');section.append(note);
+    const run=document.createElement('button');run.type='button';run.dataset.personRun='';run.textContent=L('인물 잘라내기 실행','Generate person mask');
+    const stop=document.createElement('button');stop.type='button';stop.dataset.personCancel='';stop.textContent=L('처리 중지','Stop processing');stop.hidden=!personController;stop.onclick=()=>personController?.abort();section.append(run,stop);
+    const status=document.createElement('p');status.dataset.personStatus='';status.setAttribute('role','status');status.setAttribute('aria-live','polite');section.append(status);
+    const progress=document.createElement('progress');progress.dataset.personProgress='';progress.max=1;progress.hidden=!personController;section.append(progress);
+    const options=document.createElement('div');options.className='person-cutout-options';section.append(options);
+    const effectsTitle=document.createElement('h4');effectsTitle.textContent=L('잘라내기 효과','Cutout effects');options.append(effectsTitle);
+    const effectsHint=document.createElement('p');effectsHint.className='hint';effectsHint.textContent=L('마스크를 만든 뒤에 잘라내기 효과를 켤 수 있습니다.','Generate a mask to enable cutout effects.');options.append(effectsHint);
+    const setOption=(key,value)=>{draft.personCutout={...draft.personCutout,[key]:value};schedulePreview();};
+    const display=document.createElement('input');display.type='checkbox';display.dataset.personDisplay='';display.checked=draft.personCutout?.display==='only';display.onchange=()=>setOption('display',display.checked?'only':'none');
+    const displayLabel=document.createElement('label');displayLabel.className='check';const displayText=document.createElement('span');displayText.textContent=L('인물만 표시','Show person only');displayLabel.append(display,displayText);options.append(displayLabel);
+    for(const [key,ja,en] of [['behindLyrics','글자를 인물 뒤로','Place text behind the person'],['behindForeground','전경을 인물 뒤로','Place foreground behind the person']]){
+      const label=document.createElement('label');label.className='check';const input=document.createElement('input');input.type='checkbox';input.dataset.personOption=key;input.checked=!!draft.personCutout?.[key];input.onchange=()=>setOption(key,input.checked);const text=document.createElement('span');text.textContent=L(ja,en);label.append(input,text);options.append(label);
+    }
+    let available=false,savedEntry=null;
+    const sync=()=>{
+      const busy=!!personController,ref=J.personCutout({...current,personCutout:draft.personCutout});
+      fps.disabled=busy||current.type!=='video';run.disabled=busy||!J.mediaAssets.has(current.itemId)||J.isMediaCopy(current.itemId);stop.hidden=!busy;progress.hidden=!busy;
+      for(const input of options.querySelectorAll('input,select'))input.disabled=busy||!available;
+      effectsHint.hidden=busy||available;
+      if(personStatus){status.textContent=personStatus.text;if(personStatus.value==null)progress.removeAttribute('value');else progress.value=personStatus.value;}
+      else {
+        status.textContent=ref?L('저장된 마스크:','Saved mask: ')+`${ref.frameCount} ${L('장','frames')}`:'';
+        if(savedEntry){try{
+          if(savedEntry.meta.model!==J.PERSON_MODEL.id || personFps!==savedEntry.meta.fps)status.textContent+=' — '+L('분석 설정이 바뀌어 지금 재생 범위를 다시 만듭니다.','Changed analysis settings will regenerate the current playback range.');
+          else {const coverage=J.personMaskCoverage({...previewCut,start},savedEntry);status.textContent+=' — '+(coverage.missing?L(`지금 재생 범위에 ${coverage.missing}장이 부족합니다. 다시 실행하면 추가할 수 있습니다.`,`${coverage.missing} frames missing for the current playback range. Run again to add them.`):L('지금 재생 범위는 이미 만들어져 있습니다.','The current playback range is already covered.'));}
+        }catch(error){status.textContent+=' — '+error.message;}}
+      }
+      status.hidden=!status.textContent;
+    };
+    personSync=sync;
+    const ref=J.personCutout({...current,personCutout:draft.personCutout});
+    if(ref)J.loadPersonMask(ref).then(entry=>{savedEntry=entry;available=!!entry;if(!entry)status.textContent=L('저장된 마스크를 찾을 수 없습니다. 다시 만들어 주세요.','Saved mask is missing. Generate it again.');else sync();}).catch(()=>{status.textContent=L('저장된 마스크를 불러올 수 없습니다. 다시 만들어 주세요.','Cannot load the saved mask. Generate it again.');});
+    run.onclick=async()=>{
+      if(personController)return;
+      clearTimeout(previewTimer);current=refreshPreview();const c={...current,start,personCutout:draft.personCutout},controller=new AbortController();personController=controller;const playingBefore=previewPlaying;previewPlaying=false;syncPreviewPlay();let additional=null;
+      // Keep the progress and Stop control accessible; block every other modal
+      // region, including preview controls, tabs and both footer actions.
+      const frozen=[...dialog.querySelectorAll('input,select,textarea,button')].filter(input=>!input.closest('.person-cutout-editor')).map(input=>[input,input.disabled]);
+      const blocked=[...dialog.querySelectorAll('.cut-details-preview,.cut-details-history,.cut-details-tabs,.cut-details-actions,[data-detail-tab-panel]:not([data-detail-tab-panel="personCutout"])')].map(node=>[node,node.inert]);
+      const freeze=busy=>{dialog.classList.toggle('person-cutout-busy',busy);for(const [input,disabled] of frozen)input.disabled=busy||disabled;for(const [node,inert] of blocked)node.inert=busy||inert;};
+      freeze(true);personStatus={text:L('모델을 준비하는 중…','Preparing model…')};sync();stop.focus({preventScroll:true});
+      try{
+        const result=await J.generatePersonMask(c,{fps:personFps,signal:controller.signal,onProgress:p=>{
+          if(p.phase==='plan'){additional=p.missing;personStatus={text:L(`재생 범위: ${p.total}장 / 만든 것: ${p.reused}장 / 추가: ${p.missing}장`,`Playback range: ${p.total} frames / saved: ${p.reused} / additional: ${p.missing}`),value:p.missing?0:1};}
+          else if(p.phase==='download')personStatus={text:p.cached?L('저장된 모델을 불러오는 중…','Loading cached model…'):L('모델을 내려받는 중:','Downloading model: ')+(p.loaded?(p.loaded/1048576).toFixed(1)+' MB'+(p.total?' / '+(p.total/1048576).toFixed(1)+' MB':''):'…'),value:p.total?p.loaded/p.total:null};
+          else if(p.phase==='initialize')personStatus={text:L('모델을 초기화하는 중…','Initializing model…')};
+          else if(p.phase==='analyze')personStatus={text:L('인물 마스크를 만드는 중:','Generating person masks: ')+`${p.completed} / ${p.total} (${Math.round(p.completed/p.total*100)}%)`+(p.reused?L(`  — 만든 ${p.reused}장 재사용`,` — reusing ${p.reused} saved frames`):'')+` — ${p.backend}`,value:p.completed/p.total};
+          else if(p.phase==='save')personStatus={text:L('마스크를 저장하는 중…','Saving mask…')};
+          sync();
+        }});
+        if(controller.signal.aborted || !dialog.open)return;
+        draft.personCutout=result;personStatus={text:additional===0?L('지금 재생 범위는 모두 만들어져 있습니다. 추가 분석은 하지 않았습니다.','The current playback range is already covered. No additional inference was needed.'):L('재생 범위의 마스크를 만들었습니다. 아래의 잘라내기 효과를 켤 수 있습니다.','Masks generated for the playback range. Enable cutout effects below.'),value:1};rememberDetail();current=refreshPreview();
+      }catch(error){personStatus={text:error.name==='AbortError'?L('처리를 중지했습니다. 기존 마스크는 그대로 둡니다.','Processing stopped. The existing mask is preserved.'):L('인물 잘라내기에 실패했습니다:','Person mask generation failed: ')+error.message};}
+      finally{personController=null;previewPlaying=playingBefore;previewLast=performance.now();syncPreviewPlay();if(dialog.open){freeze(false);render();dialog.querySelector('[data-person-run]')?.focus({preventScroll:true});}}
+    };
+    sync();
+  }
+  // ---- Mask editor: circles / rectangles placed on a reference image of the mask's frame ----
+  const maskRef=document.createElement('canvas'),maskRefRenderer=new J.Renderer();
+  let maskRefKey=null,maskRefInfo=null,maskSelected=0;
+  function maskReference(target){
+    const plan=previewPlan,c=previewCut;
+    if(maskRefKey&&maskRefKey.plan===plan&&maskRefKey.target===target)return maskRefInfo;
+    maskRefKey={plan,target};
+    const element=!lyric&&target==='source'&&J.mediaAssets.get(c.itemId)?.element;
+    const sw=element&&(element.videoWidth||element.naturalWidth||element.width),sh=element&&(element.videoHeight||element.naturalHeight||element.height);
+    if(sw&&sh)return maskRefInfo={image:element,sx:0,sy:0,sw,sh,aspect:sw/sh};
+    // Otherwise the cut alone at mid-cut, drawn without masks.
+    const rw=480,rh=Math.round(rw*plan.H/plan.W);maskRef.width=rw;maskRef.height=rh;
+    const rx=maskRef.getContext('2d');rx.setTransform(1,0,0,1,0,0);rx.clearRect(0,0,rw,rh);
+    J.masksSuspended=true;
+    const referenceCut=lyric&&target==='source'&&c.area?{...c,area:{...c.area,angle:0}}:c;
+    const referencePlan=referenceCut===c?soloPlan(plan,c):{...soloPlan(plan,c),cuts:plan.cuts.map(cut=>cut.index===c.index?referenceCut:cut)};
+    try{maskRefRenderer.frame(rx,referencePlan,(c.start+Math.min(c.end,plan.duration))/2,{scale:rw/plan.W,noHud:true,...soloOptions});}catch(e){}
+    finally{J.masksSuspended=false;}
+    if(lyric&&target==='source'){const a=c.area||{x:0,y:0,w:1,h:1};return maskRefInfo={image:maskRef,sx:a.x*rw,sy:a.y*rh,sw:a.w*rw,sh:a.h*rh,aspect:a.w*plan.W/(a.h*plan.H)};}
+    return maskRefInfo={image:maskRef,sx:0,sy:0,sw:rw,sh:rh,aspect:plan.W/plan.H};
+  }
+  function maskEditor(parent){
+    const mask=J.normalizeMask(draft.details?.mask ?? current.mask) || J.normalizeMask({});// defaults include the motion
+    maskSelected=Math.min(maskSelected,Math.max(0,mask.shapes.length-1));
+    const section=document.createElement('section');section.dataset.detailSection='mask';section.className='cut-mask';
+    section.innerHTML=`<div class="cut-mask-controls"><label><input type="checkbox" data-mask-field="enabled"> <span></span></label><label><span></span> <select data-mask-field="target"></select></label><label><input type="checkbox" data-mask-field="invert"> <span></span></label></div><p class="hint cut-mask-hint"></p><div class="cut-mask-aspect"></div><div class="cut-mask-tools"><select data-mask-add></select><button type="button" data-mask-remove></button></div><div class="cut-mask-stage"><canvas class="cut-mask-canvas"></canvas><div class="cut-mask-handles area-edit-overlay media-edit"><div class="area-edit-rect"><span class="area-edit-handle nw" data-mask-handle="nw"></span><span class="area-edit-handle ne" data-mask-handle="ne"></span><span class="area-edit-handle sw" data-mask-handle="sw"></span><span class="area-edit-handle se" data-mask-handle="se"></span><span class="area-rotate-handle n" data-mask-handle="rotate" role="button" aria-label="${L('회전','Rotate')}"></span><span class="area-rotate-handle e" data-mask-handle="rotate" role="button" aria-label="${L('회전','Rotate')}"></span><span class="area-rotate-handle s" data-mask-handle="rotate" role="button" aria-label="${L('회전','Rotate')}"></span><span class="area-rotate-handle w" data-mask-handle="rotate" role="button" aria-label="${L('회전','Rotate')}"></span></div></div></div><div class="cut-details-grid cut-mask-shape"></div><div class="cut-mask-motion"><h4></h4><p class="hint"></p><div class="cut-details-grid"></div></div>`;
+    const [useText,targetText,invertText]=section.querySelectorAll('.cut-mask-controls label > span');
+    useText.textContent=L('마스크 사용','Use mask');targetText.textContent=L('마스크 대상','Mask target');invertText.textContent=L('마스크 반전','Invert mask');
+    const target=section.querySelector('[data-mask-field="target"]');
+    target.add(new Option(L('소재','Source'),'source'));target.add(new Option(L('컷','Cut'),'cut'));
+    section.querySelector('[data-mask-field="enabled"]').checked=mask.enabled;target.value=mask.target;section.querySelector('[data-mask-field="invert"]').checked=mask.invert;
+    const hint=section.querySelector('.cut-mask-hint');
+    const setHint=()=>{hint.textContent=mask.target==='source'
+      ?(lyric?L('소재: 표시 영역을 기준으로 글자를 마스크합니다. 마스크한 글자에 카메라 등의 연출이 걸립니다.','Source: masks the lyric within its display area; camera and other effects apply to the masked lyric.')
+             :L('소재: 소재 이미지를 기준으로 마스크합니다. 마스크한 소재에 연출·효과가 걸립니다.','Source: masks the source image itself; techniques and effects apply to the masked source.'))
+      :L('컷: 화면 전체를 기준으로, 연출·효과가 걸린 뒤의 컷을 마스크합니다.','Cut: masks the finished cut, after its effects, relative to the whole stage.');};
+    const tools={add:section.querySelector('[data-mask-add]'),remove:section.querySelector('[data-mask-remove]')};
+    const shapeNames={ellipse:['원','Circle'],rect:['사각형','Rectangle'],roundRect:['둥근 사각형','Rounded rectangle'],triangle:['삼각형','Triangle'],diamond:['마름모','Diamond'],pentagon:['오각형','Pentagon'],hexagon:['육각형','Hexagon'],star:['별','Star'],heart:['하트','Heart']};
+    // "Add shape…" menu: picking a type adds that shape; the selected shape's type is edited below.
+    tools.add.add(new Option(L('도형 추가…','Add shape…'),''));
+    for(const type of J.MASK_SHAPES)tools.add.add(new Option(L(...shapeNames[type]),type));
+    tools.add.setAttribute('aria-label',L('도형 추가','Add shape'));tools.remove.textContent=L('선택한 도형 삭제','Remove selected shape');
+    const canvas=section.querySelector('canvas'),shapeBox=section.querySelector('.cut-mask-shape');
+    const save=()=>{write('mask',clone(mask),false);draw();};
+    const opacityLabel=document.createElement('label');
+    opacityLabel.innerHTML=`<span>${L('불투명도(%)','Opacity (%)')}</span> <input type="number" min="0" max="100" step="1" data-mask-field="opacity">`;
+    const opacityInput=opacityLabel.querySelector('input');opacityInput.value=mask.opacity;
+    opacityInput.addEventListener('input',()=>{
+      if(opacityInput.value===''||!opacityInput.validity.valid)return;
+      mask.opacity=Number(opacityInput.value);save();
+    });
+    const controls=section.querySelector('.cut-mask-controls');
+    const [useLabel,targetLabel,invertLabel]=controls.children;
+    const opacityRow=document.createElement('div');opacityRow.className='cut-mask-opacity-row';opacityRow.append(opacityLabel,invertLabel);
+    const targetRow=document.createElement('div');targetRow.className='cut-mask-target-row';targetRow.append(targetLabel,hint);
+    controls.replaceChildren(useLabel,targetRow,opacityRow);
+    const featherLabel=document.createElement('label');featherLabel.className='cut-mask-feather';
+    featherLabel.innerHTML=`<span>${L('경계 흐림','Edge feathering')}</span><input type="range" min="0" max="100" step="1" data-mask-field="feather"><output></output>`;
+    const featherInput=featherLabel.querySelector('input'),featherValue=featherLabel.querySelector('output');
+    featherInput.value=mask.feather;featherValue.textContent=String(mask.feather);
+    featherInput.addEventListener('input',()=>{mask.feather=Number(featherInput.value);featherValue.textContent=String(mask.feather);save();});
+    controls.append(featherLabel);
+    function draw(){
+      const ref=maskReference(mask.target),cw=480,ch=Math.round(Math.min(320,cw/ref.aspect)),w=Math.round(Math.min(cw,ch*ref.aspect));
+      if(canvas.width!==w||canvas.height!==ch){canvas.width=w;canvas.height=ch;}
+      const x=canvas.getContext('2d');x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-over';x.fillStyle='#000';x.fillRect(0,0,w,ch);
+      try{x.drawImage(ref.image,ref.sx,ref.sy,ref.sw,ref.sh,0,0,w,ch);}catch(e){}
+      // Darken what the mask hides.
+      const shade=document.createElement('canvas');shade.width=w;shade.height=ch;const sx=shade.getContext('2d');
+      sx.fillStyle='#000';sx.fillRect(0,0,w,ch);
+      J.applyMaskToCanvas(shade,{...mask,invert:!mask.invert,opacity:100},new DOMMatrix(),w,ch);
+      if(mask.enabled){x.save();x.globalAlpha=.62*mask.opacity/100;x.drawImage(shade,0,0);x.restore();}
+      mask.shapes.forEach((s,i)=>{
+        x.lineWidth=i===maskSelected?2:1.2;x.strokeStyle=i===maskSelected?'#ffb000':'#4fe3ff';J.maskShapePath(x,[s],w,ch);x.stroke();
+
+      });
+      positionMaskHandles();
+    }
+    function positionMaskHandles(){
+      const stage=section.querySelector('.cut-mask-stage'),overlay=section.querySelector('.cut-mask-handles'),rect=overlay.firstElementChild,s=mask.shapes[maskSelected];
+      overlay.hidden=!s;if(!s)return;
+      const box=canvas.getBoundingClientRect(),host=stage.getBoundingClientRect();
+      Object.assign(overlay.style,{left:`${box.left-host.left}px`,top:`${box.top-host.top}px`,width:`${box.width}px`,height:`${box.height}px`});
+      Object.assign(rect.style,{left:`${(s.cx-s.w/2)*100}%`,top:`${(s.cy-s.h/2)*100}%`,width:`${s.w*100}%`,height:`${s.h*100}%`,transform:`rotate(${s.angle}deg)`});
+    }
+    const local=(s,px,py,w,h)=>{const a=-s.angle*J.DEG,dx=px-s.cx*w,dy=py-s.cy*h;return [dx*Math.cos(a)-dy*Math.sin(a),dx*Math.sin(a)+dy*Math.cos(a)];};
+    const inside=(s,px,py,w,h)=>{const p=new Path2D();J.maskShapePath(p,[s],w,h);return canvas.getContext('2d').isPointInPath(p,px,py);};
+    // New shapes are square on screen (a circle stays round on a wide frame).
+    const newShape=(type,size)=>{const aspect=canvas.width/Math.max(1,canvas.height);let w=size,h=size*aspect;if(h>.9){w*=.9/h;h=.9;}return {type,cx:.5,cy:.5,w,h,angle:0,lockAspect:true};};
+    function fields(){
+      shapeBox.replaceChildren();const aspectRow=section.querySelector('.cut-mask-aspect');aspectRow.replaceChildren();const s=mask.shapes[maskSelected];aspectRow.hidden=!s;tools.remove.disabled=!s;if(!s)return;
+      const kind=document.createElement('label');kind.className='cut-detail-field';kind.innerHTML=`<span>${L('모양','Shape')}</span><select data-mask-shape="type"></select>`;
+      const kindSelect=kind.querySelector('select');for(const type of J.MASK_SHAPES)kindSelect.add(new Option(L(...shapeNames[type]),type));kindSelect.value=s.type;
+      kindSelect.addEventListener('change',()=>{s.type=kindSelect.value;save();});shapeBox.append(kind);attachDetailRandom(kindSelect,'mask.shape.type');
+      for(const [key,ja,en,min,max] of [['cx','중심 X','Center X',-1,2],['cy','중심 Y','Center Y',-1,2],['w','너비','Width',.01,4],['h','높이','Height',.01,4],['angle','각도(도)','Angle (degrees)',-180,180]]){
+        const factor=['w','h'].includes(key)?100:1;
+        const row=document.createElement('label');row.className='cut-detail-field';row.innerHTML=`<span>${L(ja,en)}${factor===100?L('(%)',' (%)'):''}</span><input type="number" step="any" min="${min*factor}" max="${max*factor}" data-mask-shape="${key}">`;
+        const input=row.querySelector('input');input.value=+(s[key]*factor).toFixed(4);
+        input.addEventListener('change',()=>{
+          const v=Number(input.value)/factor;if(!Number.isFinite(v))return;const next=J.clamp(v,min,max);
+          // Locked aspect: width and height scale together.
+          if(s.lockAspect&&(key==='w'||key==='h')&&s[key]>0){const other=key==='w'?'h':'w';s[other]=J.clamp(s[other]*next/s[key],.01,4);}
+          s[key]=next;fields();save();
+        });shapeBox.append(row);
+      }
+      const lock=document.createElement('label');lock.className='cut-detail-field';lock.innerHTML=`<span>${L('가로세로 비율 고정','Lock aspect ratio')}</span><input type="checkbox" data-mask-shape="lockAspect">`;
+      lock.querySelector('input').checked=s.lockAspect!==false;lock.querySelector('input').addEventListener('change',e=>{s.lockAspect=e.target.checked;save();});aspectRow.append(lock);
+    }
+    section.querySelector('[data-mask-field="enabled"]').addEventListener('change',e=>{
+      mask.enabled=e.target.checked;
+      if(mask.enabled&&!mask.shapes.length){mask.shapes.push(newShape('ellipse',.6));maskSelected=0;fields();}
+      save();
+    });
+    target.addEventListener('change',()=>{mask.target=target.value;setHint();save();});
+    section.querySelector('[data-mask-field="invert"]').addEventListener('change',e=>{mask.invert=e.target.checked;save();});
+    tools.add.addEventListener('change',()=>{const type=tools.add.value;tools.add.value='';if(!type)return;mask.shapes.push(newShape(type,.4));maskSelected=mask.shapes.length-1;fields();save();});
+    tools.remove.addEventListener('click',()=>{if(!mask.shapes[maskSelected])return;mask.shapes.splice(maskSelected,1);maskSelected=Math.max(0,maskSelected-1);fields();save();});
+    // Use the same four corner and dedicated rotation handles as preview placement.
+    const stage=section.querySelector('.cut-mask-stage');
+    const point=e=>{const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)*canvas.width/r.width,(e.clientY-r.top)*canvas.height/r.height];};
+    let drag=null;
+    stage.addEventListener('pointerdown',e=>{
+      const [px,py]=point(e),w=canvas.width,h=canvas.height,grip=e.target.closest('[data-mask-handle]');
+      let found=grip?{mode:grip.dataset.maskHandle==='rotate'?'rotate':'size',index:maskSelected,corner:grip.dataset.maskHandle}:null;
+      if(!found&&e.target.closest('.area-edit-rect'))found={mode:'move',index:maskSelected};
+      if(!found)for(let i=mask.shapes.length-1;i>=0;i--)if(inside(mask.shapes[i],px,py,w,h)){found={mode:'move',index:i};break;}
+      if(!found)return;
+      e.preventDefault();maskSelected=found.index;const s=mask.shapes[found.index];
+      drag={mode:found.mode,corner:found.corner,shape:s,px,py,cx:s.cx,cy:s.cy,w:s.w,h:s.h,angle:s.angle,start:Math.atan2(py-s.cy*h,px-s.cx*w)};
+      stage.setPointerCapture(e.pointerId);fields();draw();
+    });
+    stage.addEventListener('pointermove',e=>{
+      if(!drag)return;
+      const [px,py]=point(e),w=canvas.width,h=canvas.height,s=drag.shape;
+      if(drag.mode==='move'){s.cx=J.clamp(drag.cx+(px-drag.px)/w,-1,2);s.cy=J.clamp(drag.cy+(py-drag.py)/h,-1,2);}
+      else if(drag.mode==='rotate'){
+        let a=drag.angle+(Math.atan2(py-drag.cy*h,px-drag.cx*w)-drag.start)*180/Math.PI;
+        if(e.shiftKey)a=Math.round(a/15)*15;
+        s.angle=Math.round(((a+540)%360-180)*10)/10;
+      }else{
+        const sx=drag.corner.endsWith('e')?1:-1,sy=drag.corner.startsWith('s')?1:-1,a=drag.angle*J.DEG;
+        const [lx,ly]=local({...drag,cx:drag.cx,cy:drag.cy},px,py,w,h);
+        let nw=J.clamp((sx*lx+drag.w*w/2)/w,.01,4),nh=J.clamp((sy*ly+drag.h*h/2)/h,.01,4);
+        if(s.lockAspect!==false){const k=Math.max(nw/drag.w,nh/drag.h);nw=J.clamp(drag.w*k,.01,4);nh=J.clamp(drag.h*k,.01,4);}
+        const dx=sx*(nw-drag.w)*w/2,dy=sy*(nh-drag.h)*h/2;
+        s.cx=J.clamp(drag.cx+(dx*Math.cos(a)-dy*Math.sin(a))/w,-1,2);s.cy=J.clamp(drag.cy+(dx*Math.sin(a)+dy*Math.cos(a))/h,-1,2);s.w=nw;s.h=nh;
+      }
+      draw();
+    });
+    const end=()=>{if(!drag)return;drag=null;fields();save();};
+    stage.addEventListener('pointerup',end);
+    stage.addEventListener('pointercancel',()=>{if(!drag)return;const s=drag.shape;for(const k of ['cx','cy','w','h','angle'])s[k]=drag[k];drag=null;fields();draw();});
+    const maskResize=new ResizeObserver(positionMaskHandles);maskResize.observe(canvas);dialog.addEventListener('close',()=>maskResize.disconnect(),{once:true});
+    // Motion: the moving / revealing media techniques, applied to the mask over this cut (all off by default).
+    function motionFields(){
+      const box=section.querySelector('.cut-mask-motion'),grid=box.querySelector('.cut-details-grid'),m=mask.motion;
+      box.querySelector('h4').textContent=L('마스크 모션','Mask motion');
+      box.querySelector('.hint').textContent=L('마스크 도형에 전경·배경과 같은 등장·퇴장·움직임을 줍니다.','Moves the mask shapes with the same entrances, exits and motions as foreground / background.');
+      grid.replaceChildren();
+      const row=(label,control)=>{const r=document.createElement('label');r.className='cut-detail-field';const s=document.createElement('span');s.textContent=label;r.append(s,control);grid.append(r);return control;};
+      const select=(key,groups)=>{const el=document.createElement('select');el.dataset.maskMotion=key;el.add(new Option(L('없음','None'),'none'));
+        for(const [name,items] of groups){const g=document.createElement('optgroup');g.label=name;for(const [id,def] of items)g.append(new Option(def.name,id));el.append(g);}
+        el.value=m[key];el.addEventListener('change',()=>{m[key]=el.value;save();});return el;};
+      row(L('기법','Technique'),select('technique',J.MASK_MOTION_GROUPS.map(group=>[MEDIA_EFFECT_GROUPS[group],Object.entries(J.MEDIA_TECH).filter(([,d])=>!d.stage&&d.group===group)])));
+      row(L('등장','Entrance'),select('entrance',[[MEDIA_EFFECT_GROUPS.enter,J.mediaPhaseOptions('enter')]]));
+      row(L('퇴장','Exit'),select('departure',[[MEDIA_EFFECT_GROUPS.exit,J.mediaPhaseOptions('exit')]]));
+      for(const [key,ja,en,min,max] of [['amount','움직임 강도','Motion intensity',0,2],['duration','등장·퇴장 시간(초)','Entrance / exit (s)',.05,1.5]]){
+        const input=document.createElement('input');input.type='number';input.step='any';input.min=min;input.max=max;input.value=m[key];input.dataset.maskMotion=key;
+        input.addEventListener('change',()=>{const v=Number(input.value);if(!Number.isFinite(v))return;m[key]=J.clamp(v,min,max);input.value=m[key];save();});row(L(ja,en),input);
+      }
+    }
+    setHint();fields();motionFields();parent.append(section);draw();
+  }
+  function drawPreview(now){
+    previewFrame=requestAnimationFrame(drawPreview);
+    const plan=previewPlan,c=previewCut;if(!plan||!c)return;
+    const w=Math.round(Math.min(plan.W,640)),h=Math.round(w*plan.H/plan.W);
+    if(previewCanvas.width!==w||previewCanvas.height!==h){previewCanvas.width=w;previewCanvas.height=h;}
+    const length=previewLength();
+    if(previewPlaying)previewTime=(previewTime+Math.max(0,now-previewLast)/1000)%length;
+    else previewTime=J.clamp(previewTime,0,length);
+    previewLast=now;
+    const elapsed=previewTime,t=Math.min(c.start+elapsed,c.start+length-1e-6);
+    const shown=cutPreviewSolo?soloPlan(plan,c):plan;
+    const view=cutPreviewFocus?focusWindow(focusOf(plan,c)):null,options={noHud:true,...(cutPreviewSolo?soloOptions:{})};
+    try{
+      J.syncMediaPreview(shown,t,previewPlaying);
+      if(!view)previewRenderer.frame(previewCanvas.getContext('2d'),shown,t,{...options,scale:w/plan.W});
+      else{
+        // Render large enough that the window fills the preview sharply (at most full stage resolution).
+        const zw=Math.round(Math.min(plan.W,w/view.size)),zh=Math.round(zw*plan.H/plan.W);
+        if(zoomCanvas.width!==zw||zoomCanvas.height!==zh){zoomCanvas.width=zw;zoomCanvas.height=zh;}
+        previewRenderer.frame(zoomCanvas.getContext('2d'),shown,t,{...options,scale:zw/plan.W});
+        const pc=previewCanvas.getContext('2d');pc.setTransform(1,0,0,1,0,0);pc.globalAlpha=1;pc.globalCompositeOperation='copy';pc.imageSmoothingEnabled=true;
+        pc.drawImage(zoomCanvas,view.x*zw,view.y*zh,view.size*zw,view.size*zh,0,0,w,h);pc.globalCompositeOperation='source-over';
+      }
+    }catch(e){}
+    previewSeek.value=String(Math.round(elapsed/length*1000));
+    const pct=Math.round(elapsed/length*1000)/10;pane.querySelector('.progress i').style.width=pct+'%';pane.querySelector('.progress').setAttribute('aria-valuenow',String(Math.round(pct)));
+    pane.querySelector('.effect-preview-now').textContent=J.fmtTime(elapsed);pane.querySelector('.effect-preview-dur').textContent=J.fmtTime(length+1e-6);
+  }
+  const names = {
+    text:['가사','Lyrics'],layout:['레이아웃','Layout'],enter:['등장','Entrance'],hold:['유지·모션','Hold / motion'],exit:['퇴장','Exit'],
+    inDur:['등장 시간(초)','Entrance duration (s)'],outDur:['퇴장 시간(초)','Exit duration (s)'],stagger:['글자 시간차(초)','Character delay (s)'],
+    effectEvents:['추가 연출','Additional effects'],effectFx:['추가 연출 설정','Additional effect settings'],offset:['시작부터의 시간(초)','Time from cut start (s)'],amp:['강도','Strength'],dur:['시간(초)','Duration (s)'],type:['연출','Effect'],
+    decor:['장식','Decoration'],scheme:['배색','Palette'],palette:['개별 팔레트','Custom palette'],params:['레이아웃 상세','Layout parameters'],treat:['가공','Treatment'],treatP:['가공 상세','Treatment parameters'],
+    bg:['배경 연출','Background effect'],bgP:['배경 연출 상세','Background parameters'],cam:['카메라','Camera'],camP:['카메라 상세','Camera parameters'],
+    trans:['컷 간 전환','Transition'],transP:['전환 상세','Transition parameters'],transDur:['전환 시간(초)','Transition duration (s)'],
+    area:['표시 영역(화면 비율)','Display area (stage ratios)'],placement:['배치·크기(화면 비율)','Placement / size (stage ratios)'],
+    motionScale:['움직임 배율','Motion scale'],contentScale:['글자 크기 배율','Text scale'],effectSettings:['연출 파라미터','Effect parameters'],
+    motion:['움직임 강도','Motion amount'],treatment:['가공 강도','Treatment amount'],duration:['등장·퇴장 시간(초)','Entrance / exit duration (s)'],bpm:['BPM','BPM'],beatOffset:['박자 시작 위치(초)','Beat offset (s)'],x:['왼쪽 위치','Left'],y:['위쪽 위치','Top'],cx:['중심 X','Center X'],cy:['중심 Y','Center Y'],w:['너비','Width'],h:['높이','Height'],angle:['각도(도)','Angle (degrees)'],lockAspect:['가로세로 비율 고정','Lock aspect ratio'],
+    untilNext:['다음 컷 재생까지','Until the next cut'],endTime:['끝 위치(초)','End position (s)'],technique:['기법','Technique'],entrance:['등장','Entrance'],departure:['퇴장','Exit'],itemId:['소재','Asset'],frontmost:['맨 앞에 표시','Frontmost'],blend:['합성 방법','Blend mode'],opacity:['불투명도(%)','Opacity (%)'],videoLoop:['동영상 반복 재생','Loop video'],videoStart:['소재 재생 시작 위치(초)','Source start time (s)'],videoDuration:['동영상 길이(초)','Video duration (s)'],chromaKey:['크로마키 합성','Chroma key'],chromaColor:['크로마키 색','Key color'],
+    animationLoop:['애니메이션 재생','Animation playback'],animationStart:['애니메이션 시작 위치(초)','Animation start time (s)'],
+    font:['글꼴','Font'],size:['크기','Size'],scale:['배율','Scale'],rotation:['회전','Rotation'],color:['색','Color'],alpha:['불투명도','Opacity'],seed:['무작위 시드','Random seed'],n:['개수','Count'],id:['종류','Type'],sx:['가로 배율','Horizontal scale'],sy:['세로 배율','Vertical scale'],
+  };
+  const label = key => ({enterP:L('등장 상세','Entrance parameters'),holdP:L('유지 상세','Hold parameters'),exitP:L('퇴장 상세','Exit parameters'),techniqueP:L('기법 상세','Technique parameters'),entranceP:L('등장 상세','Entrance parameters'),departureP:L('퇴장 상세','Exit parameters')}[key]) || (names[key] ? L(...names[key]) : J.detailFieldLabel(key));
+  function customParameterLabel(path,field){
+    const [root,index]=path.split('.'),g={params:'layout',enterP:'enter',holdP:'hold',exitP:'exit',treatP:'treat',bgP:'bg',camP:'cam',transP:'trans',techniqueP:'technique',entranceP:'entrance',departureP:'departure'}[root];
+    const def=root==='decor'?J.DECOR[current.decor?.[+index]?.id]:g?(lyric?J.registry(g)[current[g]]:J.MEDIA_TECH[current[g]]):null;
+    const names=def?.customDefinition?.labels?.[field];return names?L(names.ja||field,names.en||names.ja||field):null;
+  }
+  const nativeKeys = lyric ? ['frontmost','blend','opacity'] : ['itemId','technique','entrance','departure','blend','opacity','placement','videoLoop','videoStart','videoDuration','animationLoop','animationStart','chromaKey','chromaColor'];
   function preview() {
-    const project = clone(S.project);
-    if (lyric) project.lyricCutOptions[key]=draft; else project[layer].cutOverrides[index]=draft;
-    const plan=J.plan(project,audioLike());
-    current=lyric ? plan.cuts.find(c=>c.line===index&&c.part===part) : J.planMedia(project,plan,S.audio?.duration,layer).cuts[index];
+    rememberDetail();
+    clearTimeout(previewTimer);
+    current=refreshPreview();
     render();
   }
   function write(field,value,native) {
-    if (!lyric && native && ['technique','entrance','departure','itemId'].includes(field)) {
-      draft.lock = false; locked = false;
+    // Editing a locked media cut's technique / phases / asset is a direct operation: it stays locked
+    // with the new choice.
+    if (!lyric && native && draft.lock) {
+      const lockedField={technique:'lockedTechnique',entrance:'lockedEntrance',departure:'lockedDeparture',itemId:'lockedItemId'}[field];
+      if(lockedField)delete draft[lockedField];
     }
-    if(native) draft[field]=value; else { draft.details ||= {}; draft.details[field]=value; }
+    if(native) {
+      draft[field]=value;
+      if(!lyric && ['entrance','departure'].includes(field)){const phase=field==='entrance'?'enter':'exit';if(draft.details)delete draft.details[phase];if(draft.lockedEffects)delete draft.lockedEffects[phase];}
+    } else {
+      draft.details ||= {}; draft.details[field]=value;
+      if(lyric && field==='params')draft.details.fontParams=J.cutFontParams(value);
+      if(lyric && field==='fonts'){
+        // Explicit empty pointers also override a locked cut's captured fonts.
+        draft.details.fontParams=[];
+        draft.details.params ||= clone(current.params);
+        const stripFonts=obj=>{if(!obj||typeof obj!=='object')return;for(const [key,v] of Object.entries(obj)){if(typeof v==='string'&&J.FONTS[v])delete obj[key];else stripFonts(v);}};
+        stripFonts(draft.details.params);
+      }
+      if(lyric && field==='text' && draft.details.params)
+        for(const key of ['chunks','msgs','units'])delete draft.details.params[key];
+      // An explicit scheme choice also replaces any captured palette (favorites,
+      // locks or manual colors) that would otherwise override its colors.
+      if(lyric && field==='scheme'){
+        const palette=(J.STYLES[S.project.style] || J.STYLES.noir).schemes[Number(value)];
+        if(palette)draft.details.palette=clone(palette);
+      }
+    }
+    schedulePreview();
   }
   function options(field) {
-    if(field==='blend') return ['normal','multiply','screen','overlay'].map((v,i)=>[v,['표준','곱하기','스크린','오버레이'][i]]);
-    if(field==='itemId') return [['','이미지 없음'],...S.project[layer].items.map(a=>[a.id,a.name])];
+    if(field==='animationLoop') return [['auto',L('파일 설정대로','As specified by the file')],['once',L('1회 재생','Play once')],['loop',L('반복 재생','Loop')]];
+    if(field==='blend') return ['normal','multiply','screen','overlay'].map((v,i)=>[v,[L('표준','Normal'),L('곱하기','Multiply'),L('스크린','Screen'),L('오버레이','Overlay')][i]]);
+    if(field==='itemId') return [['',L('이미지 없음','No image')],...J.mediaCopyItems(layer).map(a=>[a.id,a.name]),...S.project[layer].items.map(a=>[a.id,a.name])];
     if(field==='scheme') return S.plan.style.schemes.map((_,i)=>[String(i),String(i+1)]);
-    if(field==='technique') return [['','자동'],['none','효과 없음'],...Object.entries(J.MEDIA_TECH).filter(([,d])=>!d.stage).map(([id,d])=>[id,d.name])];
-    if(field==='entrance'||field==='departure') return [['','자동'],['none','즉시(없음)'],...J.mediaPhaseOptions(field==='entrance'?'enter':'exit').map(([id,d])=>[id,d.name])];
-    if(!lyric && ['layout','hold','treat'].includes(field)) {
+    if(field==='technique') return [['',L('자동','Auto')],['none',L('효과 없음','No effects')],...Object.entries(J.MEDIA_TECH).filter(([id,d])=>!d.stage&&J.mediaTechAllowed(id,layer)).map(([id,d])=>[id,d.name])];
+    if(field==='entrance'||field==='departure') return [['',L('자동','Auto')],['none',L('즉시(없음)','Instant (none)')],...J.mediaPhaseOptions(field==='entrance'?'enter':'exit').map(([id,d])=>[id,d.name])];
+    if(!lyric && ['layout','enter','exit','hold','treat'].includes(field)) {
       const registry=J['MEDIA_'+field.toUpperCase()] || {}, entries=Object.entries(registry).map(([id,d])=>[id,typeof d==='string'?d:d.name||id]);
       for(const def of Object.values(J.MEDIA_TECH)) if(def[field]&&!entries.some(([id])=>id===def[field])) entries.push([def[field],def.name+' / '+def[field]]);
+      if(['enter','exit'].includes(field))for(const def of Object.values(J.MEDIA_TECH))if(def.stage===field&&def.motion&&!entries.some(([id])=>id===def.motion))entries.push([def.motion,def.name]);
       return entries;
     }
     const reg={layout:J.LAYOUTS,enter:J.ENTER,hold:J.HOLD,exit:J.EXIT,treat:J.TREAT,bg:J.BG,cam:J.CAMERA,trans:J.TRANS,font:J.FONTS,id:J.DECOR}[field];
-    return reg ? [...(field==='trans'?[['none','없음']]:[]),...Object.entries(reg).map(([id,d])=>[id,d.name||id])] : null;
+    return reg ? [...(field==='trans'?[['none',L('없음','None')],...(!lyric?[['crossfade',L('크로스페이드','Crossfade')]]:[])]:[]),...Object.entries(reg).map(([id,d])=>[id,d.name||id])] : null;
   }
+  function choicePool(path){
+    if(/^decor\.\d+\.id$/.test(path))return {kind:lyric?'lyric':'decor',group:'decor'};
+    if(lyric && ['layout','enter','hold','exit','treat','bg','cam','trans'].includes(path))return {kind:'lyric',group:path};
+    if((!lyric && ['technique','entrance','departure'].includes(path)) || path.startsWith('mask.motion.'))return {kind:'media',group:layer==='lyrics'?'media':layer};
+    return {kind:'local',group:layer+':'+path};
+  }
+  function applyDisabledChoices(project){
+    for(const {pool,value} of disabledChoices){
+      if(pool.kind==='lyric')((project.enabled ||= {})[pool.group] ||= {})[value]=false;
+      else if(pool.kind==='media'||pool.kind==='decor'){
+        const target=pool.kind==='decor'?layer:pool.group,settings=J.mediaEffectSettings(project,target);
+        (settings[pool.kind==='decor'?'decorEnabled':'enabled'] ||= {})[value]=false;project[target].effects=settings;
+      }else ((project.detailRandomExclusions ||= {})[pool.group] ||= {})[value]=true;
+    }
+  }
+  let detailSearchPopup=null,detailFontPreviewMode='name';
+  const detailFontName=key=>{
+    const font=J.FONTS[key];if(!font)return key;
+    return font.composite?font.label:(J.faceOf?.(key).label||font.label||key);
+  };
+  function closeDetailSearch(){detailSearchPopup?.remove();detailSearchPopup=null;}
+  function attachDetailSearch(select){
+    if(select.dataset.searchAttached)return;select.dataset.searchAttached='true';
+    const open=(initial='')=>{
+      if(select.disabled)return;
+      closeDetailSearch();
+      const popup=document.createElement('div');popup.className='detail-search-popup';popup.setAttribute('popover','auto');
+      const fontMenu=select.dataset.detailFont==='true';
+      const lyricText=fontMenu?String(refreshPreview().text??'').replace(/\s+/gu,' ').trim():'';
+      const chars=Array.from(lyricText),lyricSample=chars.slice(0,120).join('')+(chars.length>120?'…':'')||L('(가사 없음)','(No lyrics)');
+      const search=document.createElement('input');search.type='search';search.placeholder=L('유사 검색','Fuzzy search');search.setAttribute('aria-label',search.placeholder);search.autocomplete='off';search.value=initial;
+      const list=document.createElement('div');list.className='detail-search-options';list.setAttribute('role','listbox');
+      list.setAttribute('aria-label',select.closest('label')?.querySelector('span')?.textContent||search.placeholder);
+      popup.append(search);
+      const modes=[];
+      if(fontMenu){
+        const controls=document.createElement('div');controls.className='detail-font-preview-modes';controls.setAttribute('role','group');controls.setAttribute('aria-label',L('글꼴 미리보기','Font preview'));
+        for(const [mode,ja,en] of [['name','글꼴 이름 표시','Show font names'],['lyrics','가사 표시','Show lyrics']]){
+          const button=document.createElement('button');button.type='button';button.dataset.fontPreviewMode=mode;button.textContent=L(ja,en);
+          button.addEventListener('click',()=>{detailFontPreviewMode=mode;filter();search.focus({preventScroll:true});});controls.append(button);modes.push(button);
+        }
+        popup.append(controls);
+      }
+      popup.append(list);dialog.append(popup);detailSearchPopup=popup;
+      let items=[],active=-1;
+      const fontRequests=new Set();
+      const fontSample=(key,text,size)=>{
+        const span=document.createElement('span');span.className='detail-font-sample';span.style.font=J.fontCSS(key,size);
+        if(J.FONTS[key]?.composite){
+          for(const char of text){const glyph=document.createElement('span');glyph.style.font=J.fontCSS(key,size,char);glyph.textContent=char;span.append(glyph);}
+        }else span.textContent=text;
+        return span;
+      };
+      const highlight=index=>{
+        active=index;items.forEach((item,i)=>{item.classList.toggle('active',i===active);item.setAttribute('aria-selected',String(i===active));});
+        if(items[active]){search.setAttribute('aria-activedescendant',items[active].id);items[active].scrollIntoView({block:'nearest'});}
+        else search.removeAttribute('aria-activedescendant');
+      };
+      search.setAttribute('role','combobox');search.setAttribute('aria-expanded','true');search.setAttribute('aria-autocomplete','list');
+      list.id='cutDetailSearchOptions';search.setAttribute('aria-controls',list.id);
+      const choose=option=>{
+        closeDetailSearch();select.focus();select.value=option.value;
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+      };
+      const filter=()=>{
+        list.replaceChildren();items=[];const matches=J.detailSearchQuery(search.value);let group=null;
+        const fontKeys=new Set(),fontTexts=[];
+        for(const button of modes)button.setAttribute('aria-pressed',String(button.dataset.fontPreviewMode===detailFontPreviewMode));
+        for(const option of select.options){
+          const parent=option.parentElement,groupName=parent.tagName==='OPTGROUP'?parent.label:'';
+          if(option.disabled||parent.disabled||!matches(option.textContent+' '+option.value+' '+groupName))continue;
+          if(groupName&&group!==groupName){const heading=document.createElement('div');heading.className='detail-search-group';heading.textContent=groupName;list.append(heading);}group=groupName;
+          const item=document.createElement('div');item.setAttribute('role','option');item.id='cutDetailSearchOption'+items.length;item.textContent=option.textContent;
+          if(fontMenu&&J.FONTS[option.value]){
+            const key=option.value,name=option.textContent,sample=detailFontPreviewMode==='lyrics'?lyricSample:name;
+            item.classList.add('detail-font-option');item.replaceChildren(fontSample(key,sample,16));item.setAttribute('aria-label',name);item.title=name+(detailFontPreviewMode==='lyrics'?'\n'+sample:'');
+            if(detailFontPreviewMode==='lyrics'){const caption=fontSample(key,name,11);caption.classList.add('detail-font-name');item.append(caption);}
+            fontKeys.add(key);fontTexts.push(sample,name);
+            if(J.FONTS[key].composite)for(const char of sample+name)fontKeys.add(J.fontForChar(key,char));
+          }
+          item.classList.add('detail-search-option');item.dataset.value=option.value;item.onclick=()=>choose(option);list.append(item);items.push(item);
+        }
+        if(!items.length){const empty=document.createElement('div');empty.className='detail-search-empty';empty.textContent=L('해당하는 항목이 없습니다','No matching options');empty.setAttribute('role','status');list.append(empty);}
+        highlight(Math.max(0,items.findIndex(item=>item.dataset.value===select.value)));
+        if(fontKeys.size){
+          const keys=[...fontKeys],text=fontTexts.join(''),request=JSON.stringify([keys,text]);
+          if(!fontRequests.has(request)){fontRequests.add(request);J.ensureFonts(text,keys).catch(()=>{});}
+        }
+      };
+      search.addEventListener('input',filter);
+      search.addEventListener('keydown',e=>{
+        if(e.isComposing)return;
+        if(e.key==='Tab'&&fontMenu)return;
+        if(['ArrowDown','ArrowUp','Enter','Escape','Tab'].includes(e.key)){
+          if(e.key!=='Tab')e.preventDefault();e.stopPropagation();
+          if(e.key==='Escape'||e.key==='Tab'){closeDetailSearch();select.focus();}
+          else if(e.key==='Enter')items[active]?.click();
+          else if(items.length)highlight((active+(e.key==='ArrowDown'?1:-1)+items.length)%items.length);
+        }
+      });
+      popup.addEventListener('click',e=>e.stopPropagation());
+      if(fontMenu){
+        popup.addEventListener('keydown',e=>{
+          if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeDetailSearch();select.focus();}
+          else if(e.key==='Tab')setTimeout(()=>{if(popup.isConnected&&!popup.contains(document.activeElement))closeDetailSearch();},0);
+        });
+      }
+      popup.addEventListener('toggle',e=>{if(e.newState==='closed'){popup.remove();if(detailSearchPopup===popup)detailSearchPopup=null;}});
+      const rect=select.getBoundingClientRect(),width=Math.min(Math.max(rect.width,240),innerWidth-16);
+      popup.style.width=width+'px';popup.style.left=Math.max(8,Math.min(rect.left,innerWidth-width-8))+'px';
+      const below=innerHeight-rect.bottom-8,above=rect.top-8,down=below>=Math.min(280,above),room=Math.max(100,down?below:above);
+      popup.style.maxHeight=Math.min(340,room)+'px';
+      if(down)popup.style.top=rect.bottom+'px';else popup.style.bottom=(innerHeight-rect.top)+'px';
+      popup.showPopover();filter();search.focus();
+    };
+    select.addEventListener('pointerdown',e=>{if(e.button===0)e.preventDefault();});
+    select.addEventListener('click',e=>{e.preventDefault();open();});
+    select.addEventListener('keydown',e=>{
+      if(['Enter',' ','ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();open();}
+      else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();open(e.key);}
+    });
+  }
+  function attachDetailRandom(select,path){
+    if(path==='scheme')return;
+    attachDetailSearch(select);
+    if(select.dataset.randomAttached)return;select.dataset.randomAttached='true';
+    const row=select.closest('label');if(!row)return;
+    const title=row.querySelector('span');if(!title)return;
+    const pool=choicePool(path),project=draftProject();
+    const allowed=value=>{
+      if(disabledChoices.some(entry=>entry.pool.kind===pool.kind&&entry.pool.group===pool.group&&entry.value===value))return false;
+      if(pool.kind==='lyric')return project.enabled?.[pool.group]?.[value]!==false;
+      if(pool.kind==='media')return J.mediaEffectSettings(project,pool.group).enabled?.[value]!==false;
+      if(pool.kind==='decor')return J.mediaDecorOn(J.mediaEffectSettings(project,layer),value);
+      return !project.detailRandomExclusions?.[pool.group]?.[value];
+    };
+    const candidates=()=>[...select.options].filter(option=>!option.disabled && option.value!==select.value && option.value!=='' && option.value!=='legacy' && allowed(option.value));
+    const controls=document.createElement('span');controls.className='detail-random-actions';
+    for(const off of pool.kind==='local'?[false]:[false,true]){
+      const button=document.createElement('button');button.type='button';button.className='icon ghost';button.dataset.detailRandom=path;button.dataset.disableCurrent=String(off);
+      button.title=off?L('이 연출을 끄고 다시 뽑기','Disable current effects and randomize'):L('이 항목만 다시 뽑기','Randomize this setting only');button.setAttribute('aria-label',button.title);
+      button.innerHTML=off?ICON.disableReroll:ICON.dice;
+      button.disabled=select.disabled || !candidates().length;
+      button.onclick=e=>{
+        e.preventDefault();e.stopPropagation();const options=candidates();if(!options.length)return;
+        // Preserve all other resolved effect values while changing this field.
+        const snapshot=J.cutEffectsPayload(current,layer,previewPlan);
+        draft.details={...snapshot.details,...draft.details};
+        if(!lyric){for(const [key,value] of Object.entries(snapshot.native))if(!Object.hasOwn(draft,key))draft[key]=clone(value);if(!Object.hasOwn(draft,'placement'))draft.placement=clone(current.placement);}
+        if(off)disabledChoices.push({pool,value:select.value});
+        select.value=options[Math.floor(Math.random()*options.length)].value;
+        select.dispatchEvent(new Event('change',{bubbles:true}));
+        // Nested controls update values without rebuilding the generic form.
+        if(select.isConnected)preview();
+      };
+      controls.append(button);
+    }
+    title.classList.add('detail-field-title');title.append(controls);
+  }
+  const eventName = event => J.FXE[event.type]?.name || event.type;
   function fieldEditor(parent,field,value,onChange,path=field) {
     if(value && typeof value==='object') {
-      const section=document.createElement('details'); section.open=['area','placement'].includes(field);
-      const title=document.createElement('summary'); title.textContent=label(field); section.append(title);
+      const section=document.createElement(path==='decor'?'section':'details'); section.dataset.detailSection=path;
+      section.open=openDetails.get(path) ?? ['area','placement'].includes(field);
+      const title=document.createElement('summary'); title.textContent=/^decor\.\d+$/.test(path) ? (J.DECOR[value.id]?.name || value.id) : /^effectEvents\.\d+$/.test(path) ? eventName(value) : /^\d+$/.test(field) ? L(`항목 ${Number(field)+1}`,`Item ${Number(field)+1}`) : label(field); if(path!=='decor')section.append(title);
       const grid=document.createElement('div'); grid.className='cut-details-grid';section.append(grid);parent.append(section);
-      for(const [child,v] of Object.entries(value)) {
+      const decoration=/^decor\.\d+$/.test(path),allowed=decoration?new Set(['id',...J.decorDetailFields(value.id)]):null;
+      const shown=decoration?{id:value.id,...J.decorDetailDefaults(cut.seed),...J.DECOR[value.id]?.customDefinition?.params,...value}:value;
+      for(const [child,v] of Object.entries(shown)) {
+        if(allowed && !allowed.has(child))continue;
+        if(decoration && value.id==='counter' && shown.mode!=='count' && ['from','to'].includes(child))continue;
         // Random candidate pools belong to the layer; this editor changes the resolved cut.
-        if(['enabled','randomize','autoPlacement','sizeMin','sizeMax'].includes(child)) continue;
+        if(path==='effectSettings' && !['motion','treatment','duration'].includes(child)) continue;
         fieldEditor(grid,child,v,next=>{
           if (value.lockAspect && ['w','h'].includes(child) && value[child]>0) {
             const other=child==='w'?'h':'w'; value[other]*=next/value[child];
-            const input=grid.querySelector(`[data-detail-field="${path}.${other}"]`);if(input)input.value=value[other];
+            const input=grid.querySelector(`[data-detail-field="${path}.${other}"]`);if(input)input.value=+(value[other]*100).toFixed(6);
           }
-          value[child]=next;onChange(clone(value));
+          value[child]=next;
+          if(decoration){const defaults=J.decorDetailDefaults(cut.seed);for(const key of J.decorDetailFields(value.id))if(value[key]===undefined&&defaults[key]!==undefined)value[key]=defaults[key];}
+          onChange(clone(value));
         },`${path}.${child}`);
       }
+      const actions=document.createElement('div');actions.className='cut-detail-array-actions';
+      if(Array.isArray(value)){if(field==='decor')section.prepend(actions);else section.append(actions);}
       if(field==='decor') {
-        const add=document.createElement('button');add.type='button';add.textContent='장식 추가';
-        add.onclick=()=>{value.push({id:Object.keys(J.DECOR)[0],seed:cut.seed,n:1});onChange(clone(value));preview();};section.append(add);
+        const add=document.createElement('button');add.type='button';add.textContent=L('장식 추가','Add decoration');
+        add.onclick=()=>{value.push({id:Object.keys(J.DECOR)[0],seed:cut.seed,n:1});onChange(clone(value));preview();};actions.append(add);
       }
-      if(Array.isArray(value)) value.forEach((_,i)=>{const del=document.createElement('button');del.type='button';del.textContent=`${i+1} 삭제`;del.onclick=()=>{value.splice(i,1);onChange(clone(value));preview();};section.append(del);});
+      if(Array.isArray(value)) value.forEach((_,i)=>{
+        const del=document.createElement('button');del.type='button';
+        del.textContent=field==='decor'?L('삭제','Delete'):field==='effectEvents'?L(`${eventName(value[i])} 삭제`,`Remove ${eventName(value[i])}`):L(`${i+1} 삭제`,`Remove ${i+1}`);
+        del.onclick=e=>{e.preventDefault();e.stopPropagation();removedDetail={path,index:i};value.splice(i,1);onChange(clone(value));preview();};
+        if(field==='decor'){
+          del.className='cut-decoration-delete';
+          grid.querySelector(`[data-detail-section="${path}.${i}"] > summary`).append(del);
+        }else actions.append(del);
+      });
       return;
     }
-    const row=document.createElement('label');row.className='cut-detail-field';const text=document.createElement('span');text.textContent=label(field);row.append(text);
-    const choices=options(field); const input=document.createElement(choices?'select':field==='text'?'textarea':'input');input.dataset.detailField=path;
+    const percent=typeof value==='number' && (field==='contentScale'||/^(area|placement)\.(w|h)$/.test(path)), factor=percent?100:1;
+    const row=document.createElement('label');row.className='cut-detail-field';const text=document.createElement('span');text.textContent=(customParameterLabel(path,field)||(/^fonts\.[^.]+\.\d+$/.test(path)?L(`글꼴 ${Number(field)+1}`,`Font ${Number(field)+1}`):/^\d+$/.test(field)?L(`항목 ${Number(field)+1}`,`Item ${Number(field)+1}`):label(field)))+(percent?L('(%)',' (%)'):'');row.append(text);
+    if(path.startsWith('palette.')){
+      const colorNames={bg:['배경색','Background color'],fg:['글자색','Text color'],sub:['보조 글자색','Secondary text color'],accent:['강조색','Accent color'],accent2:['강조색 2','Accent color 2'],ink:['장식색','Decoration color'],dim:['배경 글자색','Background text color'],ghostA:['색 어긋남 A','Chromatic color A'],ghostB:['색 어긋남 B','Chromatic color B']};
+      if(colorNames[field])text.textContent=L(...colorNames[field]);
+    }
+    const decorationId=/^decor\.\d+\.mode$/.test(path)?current.decor?.[Number(path.split('.')[1])]?.id:null;
+    const decorId=J.DECOR[decorationId]?.customDefinition?.base||decorationId;
+    const decorMode=['counter','indexNum'].includes(decorId);
+    if(decorMode)value=value==='count'?'count':'index';
+    const modeChoices=decorMode?(decorId==='indexNum'?[["index",L('적게 회전','Fewer digit rolls')],["count",L('많이 회전','More digit rolls')]]:[["index",L('컷 일련번호','Cut number')],["count",L('시작값에서 끝값으로 변화','Animate from start to end')]]):null;
+    const choices=modeChoices || (/^fonts\.[^.]+\.\d+$/.test(path)||(path.startsWith('params.')&&typeof value==='string'&&J.FONTS[value])?Object.entries(J.FONTS).map(([id,d])=>[id,d.name||id]):/^effectEvents\.\d+\.type$/.test(path)?Object.entries(J.FXE).map(([id,d])=>[id,d.name||id]):field==='id'&&!path.startsWith('decor.')?null:options(field)); const input=document.createElement(choices?'select':field==='text'?'textarea':'input');input.dataset.detailField=path;
+    const fontChoice=choices&&(field==='font'||/^fonts\.[^.]+\.\d+$/.test(path)||(path.startsWith('params.')&&typeof value==='string'&&J.FONTS[value]));
+    if(fontChoice)input.dataset.detailFont='true';
     if(choices) { for(const [v,n] of choices) input.add(new Option(n,v));if(value!=null&&!choices.some(([v])=>String(v)===String(value))) input.add(new Option(String(value),String(value)));input.value=value??''; }
     else if(typeof value==='boolean'){input.type='checkbox';input.checked=value;}
-    else if(typeof value==='number'){input.type='number';input.step='any';input.value=value; if(['w','h','n','inDur','outDur','transDur','stagger','motionScale','contentScale','videoDuration','opacity'].includes(field)) input.min=field==='videoDuration'?.04:0; if(field==='opacity')input.max=100;}
+    else if(typeof value==='number'){input.type='number';input.step='any';input.value=+(value*factor).toFixed(6); if(['w','h','n','inDur','outDur','transDur','duration','stagger','motionScale','contentScale','videoStart','videoDuration','opacity'].includes(field)) input.min=field==='videoDuration'?.04:0; if(field==='opacity')input.max=100;}
     else {if(field!=='text')input.type=/^#[0-9a-f]{6}$/i.test(value||'')?'color':'text';input.value=value??'';}
+    if(fontChoice){for(const option of input.options)if(J.FONTS[option.value])option.textContent=detailFontName(option.value);}
     if(lyric && field==='frontmost' && cut.emphasis){input.disabled=true;input.title=emphasisFrontmostHint();}
+    if(typeof value==='number' && ['inDur','outDur','transDur'].includes(path))input.max=Math.max(0,current.end-current.start)*.45;
     input.addEventListener('change',()=>{
-      const v=typeof value==='boolean'?input.checked:typeof value==='number'?Number(input.value):input.value;
+      const v=typeof value==='boolean'?input.checked:typeof value==='number'?Number(input.value)/factor:input.value;
       if(typeof v==='number'&&!Number.isFinite(v))return;
       onChange(v);
+      if(/^decor\.\d+\.(id|mode)$/.test(path)||/^effectEvents\.\d+\.type$/.test(path))preview();
       if(choices && !path.includes('.')) {
-        const param={layout:'params',treat:'treatP',bg:'bgP',cam:'camP',trans:'transP'}[field];
+        const param={enter:'enterP',hold:'holdP',exit:'exitP',technique:'techniqueP',entrance:'entranceP',departure:'departureP',layout:'params',treat:'treatP',bg:'bgP',cam:'camP',trans:'transP'}[field];
         if(param&&draft.details)delete draft.details[param];
         if(field==='technique'&&draft.details)for(const key of ['hold','treat','trans','transP'])delete draft.details[key];
+        if(field==='itemId' && draft.personCutout?.sourceId!==input.value){delete draft.personCutout;personStatus=null;}
         preview();
       }
     });
+    if(!lyric && ['enter','exit'].includes(path))text.textContent=path==='enter'?L('등장 모션(상세)','Entrance motion (advanced)'):L('퇴장 모션(상세)','Exit motion (advanced)');
+    if(lyric && current.lyricSize!=null && /^area\.(w|h)$/.test(path)){input.disabled=true;const hint=document.createElement('small');hint.className='muted';hint.textContent=L(`가사의 크기 표기 ${current.lyricSize}:가 우선합니다. 가사 입력에서 바꿔 주세요.`,`The lyric size directive ${current.lyricSize}: takes priority. Change it in the lyrics input.`);row.append(hint);}
     row.append(input);parent.append(row);
+    if(decorMode){
+      const hint=document.createElement('small');hint.className='muted';
+      hint.textContent=decorId==='indexNum'?L('표시되는 번호는 같습니다. 등장할 때 숫자가 회전하는 횟수를 고릅니다.','The displayed number stays the same. Choose how many times the digits roll on entrance.'):L('「컷 일련번호」는 컷의 번호를 표시합니다. 「시작값에서 끝값으로 변화」는 지정한 시작값부터 끝값까지 숫자를 바꿉니다.','Cut number displays the cut index. Animate from start to end changes the number between the specified starting and ending values.');row.append(hint);
+    }
+    if(field==='scheme'){
+      const hint=document.createElement('small');hint.className='muted';hint.textContent=L('고르면 이 컷에만 스타일 본래의 배색을 적용합니다.','Selecting a scheme applies the original style colors to this cut only.');row.append(hint);
+    }
+    if(choices)attachDetailRandom(input,path);
   }
   function render() {
-    dialog.replaceChildren();const form=document.createElement('form');dialog.append(form);
-    const heading=document.createElement('h2');heading.textContent='컷 상세 편집'+' — '+(lyric?'가사':layer==='foreground'?'전경':'배경')+` ${index+1}${lyric?` / ${part+1}`:''}`;form.append(heading);
-    const hint=document.createElement('p');hint.className='hint';hint.textContent='변경은 「적용」으로 확정됩니다. 수치는 현재 컷의 값입니다. 표시 영역의 1은 화면 전체의 너비·높이에 해당합니다.';form.append(hint);
+    closeDetailSearch();
+    openDetails.clear();
+    for(const section of dialog.querySelectorAll('details[data-detail-section]')){
+      let path=section.dataset.detailSection;
+      if(removedDetail && path.startsWith(removedDetail.path+'.')){
+        const tail=path.slice(removedDetail.path.length+1).split('.'),i=Number(tail[0]);
+        if(i===removedDetail.index)continue;
+        if(i>removedDetail.index){tail[0]=String(i-1);path=removedDetail.path+'.'+tail.join('.');}
+      }
+      openDetails.set(path,section.open);
+    }
+    removedDetail=null;
+    const scrollTop=formHost.scrollTop;
+    formHost.replaceChildren();const form=document.createElement('form');formHost.append(form);
     const grid=document.createElement('div');grid.className='cut-details-grid';form.append(grid);
     const group=boundaryGroupLimits(boundaryRef(layer,cut));
-    fieldEditor(grid,'start',start,v=>{start=v;});
-    const time=grid.querySelector('input');time.previousSibling.textContent='시작 위치(초·연결된 대상도 함께 이동)';time.min=group?.min??0;time.max=group?.max??S.plan.duration;time.disabled=!group;
-    if(!blank) {
-      fieldEditor(grid,'lock',locked,v=>{locked=v;});
-      grid.lastChild.querySelector('span').textContent=lyric?'행의 구성 잠금':'컷 잠금';
+    fieldEditor(grid,'start',start,v=>{start=v;rememberDetail();personStatus=null;personSync?.();});
+    const time=grid.querySelector('input');time.previousSibling.textContent=L('시작 위치(초·연결된 대상도 함께 이동)','Start (s; linked cuts move together)');time.min=group?.min??0;time.max=group?.max??S.plan.duration;time.disabled=!group;
+    // 컷終了時間: editable only with 「다음 컷 재생까지」 off (then it may pass the next cut's start).
+    if(!lyric || Number.isInteger(cut.part)) {
+      const auto=draft.untilNext!==false;let endInput=null;
+      fieldEditor(grid,'untilNext',auto,v=>{
+        if(v){delete draft.untilNext;delete draft.endTime;} else {draft.untilNext=false;if(!Number.isFinite(+draft.endTime))draft.endTime=+current.end.toFixed(3);}
+        endInput.disabled=v;endInput.value=String(v?+current.end.toFixed(3):draft.endTime);schedulePreview();
+      });
+      fieldEditor(grid,'endTime',+(auto||!Number.isFinite(+draft.endTime)?current.end:+draft.endTime).toFixed(3),v=>{draft.endTime=+Math.max(start+.04,v).toFixed(3);schedulePreview();});
+      endInput=grid.lastChild.querySelector('input');endInput.disabled=auto;endInput.min=String(+(start+.04).toFixed(3));endInput.max=String(+S.plan.duration.toFixed(3));
+    }
+    {
+      fieldEditor(grid,'lock',locked,v=>{locked=v;rememberDetail();});
+      grid.lastChild.querySelector('span').textContent=lyric?L('행의 구성 잠금','Lock line composition'):L('컷 잠금','Lock cut');
     }
     for(const field of nativeKeys) {
-      if(['videoLoop','videoDuration','chromaKey','chromaColor'].includes(field)&&current.type!=='video')continue;
+      if(['videoLoop','videoStart','videoDuration','chromaKey','chromaColor'].includes(field)&&current.type!=='video')continue;
+      if(['animationLoop','animationStart'].includes(field)&&!current.animation)continue;
       let value=draft[field]??current[field];
       if(['technique','entrance','departure'].includes(field)&&Object.hasOwn(draft,field))value=draft[field]??'';
       if(field==='placement')value ||= {cx:.5,cy:.5,w:1,h:1,angle:0,lockAspect:true};
       if(field==='videoDuration')value=Number(value)||current.end-current.start;
       fieldEditor(grid,field,clone(value??(field==='opacity'?100:'')),v=>write(field,['itemId','technique','entrance','departure'].includes(field)&&v===''?null:v,true));
     }
-    for(const field of blank ? [] : J.cutDetailKeys[lyric?'lyrics':'media']) {
+    maskEditor(grid);
+    personEditor(grid);
+    for(const field of J.cutDetailKeys[lyric?'lyrics':'media']) {
+      if(field==='mask'||field==='fontParams') continue;// masks have their own editor; font paths follow layout font controls
+      const parameterSlot={enterP:'enter',holdP:'hold',exitP:'exit',techniqueP:'technique',entranceP:'entrance',departureP:'departure'}[field];
+      if(parameterSlot&&!(lyric?J.registry(parameterSlot)[current[parameterSlot]]:J.MEDIA_TECH[current[parameterSlot]])?.custom)continue;
       let value=current[field];
+      // Generated post effects live in plan.events until explicitly edited.
+      // Read them without freezing random choices just by opening this dialog.
+      if(lyric && field==='effectEvents' && value===undefined)
+        value=previewPlan.events.filter(e=>e.cutOwner===`${current.line}:${current.part}`)
+          .map(({t,cutOwner,...event})=>({...event,offset:t-current.start}));
+      if(lyric && field==='fonts')value ||= current.effectStyle?.fonts || previewPlan.style.fonts;
+      if(lyric && field==='palette'){const schemes=(current.effectStyle || previewPlan.style).schemes;value ||= schemes[current.scheme % schemes.length];}
+      if(lyric && field==='effectStyle'){const style=current.effectStyle || previewPlan.style;value={texture:clone(style.texture),ghost:style.ghost??1,glow:style.glow??.6,useGrad:style.useGrad??false};}
+      if(lyric && field==='effectFx'){const fx=current.effectFx || previewPlan.fx;value=Object.fromEntries(['motion','glitch','chroma','texture'].map(k=>[k,fx[k]??0]));value.koma=J.komaOf(fx);}
       if(field==='area')value ||= {x:0,y:0,w:1,h:1,angle:0,lockAspect:true};
       if(field==='trans')value ||= 'none';
       if(value===undefined)continue;
+      if(['enterP','holdP','exitP','techniqueP','entranceP','departureP','treatP','bgP','camP','transP'].includes(field) && value && !Object.keys(value).length)continue;
       fieldEditor(grid,field,clone(value),v=>write(field,field==='scheme'?+v:v,false));
     }
+    const categories=[
+      ['basic',L('기본','Basic'),['start','untilNext','endTime','lock','text','note','itemId','frontmost','blend','opacity','videoLoop','videoStart','videoDuration','animationLoop','animationStart','chromaKey','chromaColor']],
+      ['style',L('스타일','Style'),['layout','params','scheme','fonts','palette','fontParams','effectStyle']],
+      ['motion',L('모션','Motion'),['techniqueP','entranceP','departureP','enterP','holdP','exitP','technique','entrance','departure','enter','hold','exit','inDur','outDur','stagger','motionScale','cam','camP','independentPhases']],
+      ['effects',L('가공·연출','Effects'),['treat','treatP','bg','bgP','trans','transP','transDur','effectSettings','effectFx','effectEvents']],
+      ['decor',L('장식','Decorations'),['decor']],
+      ['mask',L('마스크','Mask'),['mask']],
+      ['personCutout',L('인물 잘라내기','Person cutout'),['personCutout']],
+      ['placement',L('배치·크기','Position / size'),['area','placement','contentScale']],
+      ['other',L('기타','Other'),[]],
+    ];
+    const tabs=document.createElement('div');tabs.className='cut-details-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label',L('편집 항목','Edit categories'));
+    const panels=new Map(),tabButtons=new Map();
+    for(const node of [...grid.children]){
+      const field=(node.dataset.detailSection || node.querySelector('[data-detail-field]')?.dataset.detailField || '').split('.')[0];
+      const category=categories.find(([, ,fields])=>fields.includes(field)) || categories.at(-1);
+      if(!panels.has(category[0])){
+        const panel=document.createElement('div');panel.className='cut-details-grid cut-details-tab-panel';panel.dataset.detailTabPanel=category[0];
+        panel.id=`cut-detail-panel-${category[0]}`;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',`cut-detail-tab-${category[0]}`);panels.set(category[0],panel);
+      }
+      panels.get(category[0]).append(node);
+    }
+    const historyRow=document.createElement('div');historyRow.className='cut-details-history';
+    const undo=document.createElement('button');undo.type='button';undo.dataset.detailUndo='';undo.textContent=L('실행 취소','Undo');undo.onclick=()=>moveDetailHistory(-1);
+    const redo=document.createElement('button');redo.type='button';redo.dataset.detailRedo='';redo.textContent=L('다시 실행','Redo');redo.onclick=()=>moveDetailHistory(1);
+    const reset=document.createElement('button');reset.type='button';reset.textContent=L('초기화','Reset');reset.onclick=()=>{delete draft.details;preview();};
+    historyRow.append(undo,redo,reset);grid.replaceWith(historyRow,tabs);syncDetailHistory();
+    const selectTab=(id,focus=false)=>{
+      activeDetailTab=id;
+      for(const [key,panel] of panels){panel.hidden=key!==id;const button=tabButtons.get(key);button.setAttribute('aria-selected',String(key===id));button.tabIndex=key===id?0:-1;}
+      if(focus)tabButtons.get(id).focus();
+    };
+    for(const [id,title] of categories){
+      if(!panels.has(id))continue;
+      const button=document.createElement('button');button.type='button';button.id=`cut-detail-tab-${id}`;button.dataset.detailTab=id;button.textContent=title;button.setAttribute('role','tab');button.setAttribute('aria-controls',panels.get(id).id);
+      button.onclick=()=>selectTab(id);tabs.append(button);tabButtons.set(id,button);form.append(panels.get(id));
+    }
+    tabs.addEventListener('keydown',e=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+      e.preventDefault();const keys=[...tabButtons.keys()],i=keys.indexOf(activeDetailTab);
+      selectTab(keys[e.key==='Home'?0:e.key==='End'?keys.length-1:(i+(e.key==='ArrowRight'?1:-1)+keys.length)%keys.length],true);
+    });
+    selectTab(panels.has(activeDetailTab)?activeDetailTab:panels.keys().next().value);
+    // Browser validation must reveal the relevant panel before focusing its input.
+    form.addEventListener('invalid',e=>{
+      const panel=e.target.closest('[data-detail-tab-panel]');if(panel)selectTab(panel.dataset.detailTabPanel);
+      for(let node=e.target.parentElement;node&&node!==form;node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;
+    },true);
+    for(const select of form.querySelectorAll('select[data-mask-motion],select[data-mask-shape]')){
+      const path=select.dataset.maskMotion?'mask.motion.'+select.dataset.maskMotion:select.dataset.maskShape?'mask.shape.'+select.dataset.maskShape:'mask.'+select.dataset.maskField;
+      attachDetailRandom(select,path);
+    }
+    for(const select of form.querySelectorAll('select'))attachDetailSearch(select);
     const buttons=document.createElement('div');buttons.className='cut-details-actions';form.append(buttons);
-    const reset=document.createElement('button');reset.type='button';reset.textContent='상세 편집 초기화';reset.onclick=()=>{delete draft.details;preview();};
-    const cancel=document.createElement('button');cancel.type='button';cancel.textContent='취소';cancel.onclick=()=>dialog.close();
-    const apply=document.createElement('button');apply.type='submit';apply.textContent='적용';buttons.append(reset,cancel,apply);
-    form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;
-      if(!blank) { if(lyric) S.project.lyricCutOptions[key]=draft; else S.project[layer].cutOverrides[index]=draft; }
-      if(!blank && (locked !== initialLock || !lyric)) {
-        if(lyric) setOv(index,locked ? {lock:true,lockedSeed:S.plan.lines[index].seed,
-          lockedAreas:Object.fromEntries(S.plan.cuts.filter(c=>c.line===index&&Number.isInteger(c.part)).map(c=>[c.part,c.area||null])),
-          lockedComposites:Object.fromEntries(S.plan.cuts.filter(c=>c.line===index&&Number.isInteger(c.part)).map(c=>[c.part,{blend:c.blend,opacity:c.opacity}]))
-        } : {lock:false,lockedSeed:undefined,lockedAreas:undefined,lockedComposites:undefined});
-        else mediaOv(index,locked ? {lock:true,lockedSeed:current.seed,lockedTechnique:current.technique,lockedEntrance:current.entrance,lockedDeparture:current.departure,lockedPlacement:draft.placement||current.placement,lockedPlacementMode:current.placementMode,lockedItemId:current.itemId} : {lock:false},layer);
+    const cancel=document.createElement('button');cancel.type='button';cancel.textContent=L('취소','Cancel');cancel.onclick=()=>{if(!personController)dialog.close();};
+    const apply=document.createElement('button');apply.type='submit';apply.className='primary';apply.textContent=L('적용','Apply');buttons.append(apply,cancel);
+    formHost.scrollTop=scrollTop;
+    form.onsubmit=e=>{e.preventDefault();if(personController||!form.reportValidity())return;
+      applyDisabledChoices(S.project);
+      if(lyric) S.project.lyricCutOptions[key]=draft; else S.project[layer].cutOverrides[index]=draft;
+      {
+        // Locking here captures the edited result; an unchanged lock is re-captured with the edits.
+        if(lyric){ if(!locked) { if(initialLock) setOv(index,LYRIC_UNLOCK); } else { if(!initialLock) setOv(index,{lock:true}); relock('lyrics',index); } }
+        else if(!locked) mediaOv(index,MEDIA_UNLOCK,layer);
+        else { mediaOv(index,{lock:true},layer); relock(layer,index); }
       }
       if(group&&start!==cut.start) for(const member of group.members)setTimelineBoundaryTime(member,J.clamp(start,group.min,group.max));
-      replan();dialog.close();
+      replan();if(disabledChoices.length){renderTech();renderMediaEffects();}dialog.close();
     };
   }
-  dialog.addEventListener('close',()=>dialog.remove());render();dialog.showModal();
+  // Backdrop dismissal dispatches cancel too, sharing the Escape guard.
+  dialog.addEventListener('cancel',e=>{if(personController)e.preventDefault();});
+  dialog.addEventListener('close',()=>{
+    document.removeEventListener('keydown',detailShortcut,true);
+    personController?.abort();
+    cancelAnimationFrame(previewFrame);clearTimeout(previewTimer);dialog.remove();
+    // Hand shared video elements back to the editor's own time.
+    J.syncMediaPreview(S.plan,S.t,false);S.need=true;
+  });
+  refreshPreview();render();dialog.showModal();previewLast=performance.now();previewFrame=requestAnimationFrame(drawPreview);
+}
+// Preview controls are DOM overlays, so they never enter exported frames.
+let itemFrameSignature = '';
+function drawItemFrames() {
+  const overlay=$('itemFrames'), view=$('view').getBoundingClientRect(), host=$('viewport').getBoundingClientRect();
+  overlay.hidden=!$('showItemFrames').checked || !!S.exporting;
+  if(overlay.hidden) { itemFrameSignature=''; return; }
+  Object.assign(overlay.style,{left:`${view.left-host.left}px`,top:`${view.top-host.top}px`,width:`${view.width}px`,height:`${view.height}px`});
+  const items=[];
+  for(const layer of ['media','lyrics','foreground']) {
+    if(S.plan.layerVisibility?.[layer]===false)continue;
+    if(layer==='lyrics') {
+      for(const cut of J.lyricCutsAt(S.plan,S.t)) if(cut.line>=0) items.push({layer,cut,index:cut.line,area:cut.area||{x:0,y:0,w:1,h:1}});
+    } else {
+      const cut=J.mediaAt(S.plan,S.t,layer),dimensions=J.mediaSourceDimensions(S.plan,cut,S.t);
+      if(!dimensions)continue;
+      const sw=dimensions.width,sh=dimensions.height;
+      let area=J.mediaPlacementRect(cut.placement,sw,sh,S.plan.W,S.plan.H);
+      if(!area)continue;
+      if(!cut.placement && cut.layout==='cover') {const scale=Math.max(S.plan.W/sw,S.plan.H/sh);area={x:(1-sw*scale/S.plan.W)/2,y:(1-sh*scale/S.plan.H)/2,w:sw*scale/S.plan.W,h:sh*scale/S.plan.H};}
+      items.push({layer,cut,index:cut.index,area:{...area,angle:cut.placement?.angle||0}});
+    }
+  }
+  const L=J.mediaLabel,labels={copy:L('연출을 즐겨찾기에 추가','Add effects to favorites'),paste:L('즐겨찾기에서 연출 적용','Apply favorite effects'),dice:L('다시 뽑기','Randomize'),disableReroll:L('이 연출을 끄고 다시 뽑기','Disable current effects and randomize'),lock:L('잠금','Lock'),area:L('표시 영역','Display area'),details:L('상세 편집','Edit details'),remove:L('삭제','Delete'),frontmost:L('맨 앞에 표시','Frontmost')};
+  const layerNames={foreground:L('전경','Foreground'),lyrics:L('가사','Lyrics'),media:L('배경','Background')};
+  overlay.classList.toggle('selecting',!!S.areaEdit);
+  const occupied=[];
+  const html=items.map(({layer,cut,index,area})=>{
+    const selected=S.areaEdit && (S.areaEdit.kind==='lyric'?'lyrics':S.areaEdit.kind)===layer && S.areaEdit.index===index;
+    if(S.areaEdit&&!selected)return '';
+    if(selected)area={...S.areaEdit.draft,angle:S.areaEdit.angle};
+    const locked=layer==='lyrics'?!!S.project.overrides[index]?.lock:!!mediaCutOptions(layer,index)?.lock;
+    const cx=(area.x+area.w/2)*view.width,cy=(area.y+area.h/2)*view.height,a=(area.angle||0)*Math.PI/180;
+    const points=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>{x*=area.w*view.width/2;y*=area.h*view.height/2;return [cx+x*Math.cos(a)-y*Math.sin(a),cy+x*Math.sin(a)+y*Math.cos(a)];});
+    const actions=S.areaEdit&&!selected?[]:['lock','dice','disableReroll','copy','paste',...(layer==='lyrics'?['frontmost']:[]),'details'];
+    const frameName=layer==='lyrics'?(String(cut.text||'').trim()||L('빈 가사','Empty lyrics')):(cut.name||L('이미지 없음','No image'));
+    const labelWidth=Math.min(160,Math.max(36,[...frameName].length*10+8));
+    const width=Math.min(view.width,actions.length*25+labelWidth),x=J.clamp(points[0][0],0,Math.max(0,view.width-width));
+    let y=J.clamp(points[0][1],0,Math.max(0,view.height-26));
+    if(S.areaEdit){
+      const preferred=Math.min(...points.map(p=>p[1]))-64;
+      const handles=[...document.querySelectorAll('.area-edit-handle,.area-rotate-handle')].map(el=>el.getBoundingClientRect());
+      const minY=Math.ceil(host.top-view.top+6);
+      const candidates=Array.from({length:Math.ceil((view.height+30-minY)/26)},(_,i)=>minY+i*26).filter(v=>v+26<=view.height+30);
+      const score=v=>{
+        const corners=points.filter(([px,py])=>px>=x-8&&px<=x+width+8&&py>=v-8&&py<=v+34).length;
+        const overlaps=occupied.filter(r=>x<r.x+r.w&&x+width>r.x&&v<r.y+26&&v+26>r.y).length;
+        const grip=handles.filter(r=>view.left+x<r.right+5&&view.left+x+width>r.left-5&&view.top+v<r.bottom+5&&view.top+v+26>r.top-5).length;
+        return grip*1000000000+corners*1000000+overlaps*10000+Math.abs(v-preferred);
+      };
+      y=candidates.reduce((best,v)=>score(v)<score(best)?v:best,candidates[0]);
+    }else while(occupied.some(r=>x<r.x+r.w && x+width>r.x && y<r.y+26 && y+26>r.y) && y+52<=view.height)y+=26;
+    occupied.push({x,y,w:width});
+    const controls=actions.map(action=>{
+      const active=action==='lock'?locked:action==='frontmost'?!!cut.frontmost:false;
+      return `<button type="button" class="item-frame-action ${active?'active':''}" data-action="${action}" data-layer="${layer}" data-index="${index}" data-part="${cut.part??0}" title="${labels[action]}" aria-label="${layerNames[layer]} ${labels[action]}" ${['lock','frontmost'].includes(action)?`aria-pressed="${active}"`:''} ${S.playing?'disabled':''}>${ICON[action]}</button>`;
+    }).join('');
+    return `<svg class="item-frame-outline ${layer} ${selected?'selected':''}" data-select-layer="${layer}" data-select-index="${index}" width="100%" height="100%" aria-hidden="true"><polygon points="${points.map(p=>p.join(',')).join(' ')}"/></svg><div class="item-frame-tools ${layer}" style="left:${x}px;top:${y}px;width:${width}px;max-width:${view.width}px" data-layer="${layer}"><button type="button" class="item-frame-name" data-select-layer="${layer}" data-select-index="${index}" title="${escapeHtml(frameName)}" ${S.playing?'disabled':''}>${escapeHtml(frameName)}</button>${controls}</div>`;
+  }).join('');
+  if(itemFrameSignature!==html){overlay.innerHTML=html;itemFrameSignature=html;}
+}
+function removeLyricCut(line,part) {
+  remember();
+  const key=`${line}:${part}`;
+  S.project.lyricCutOptions[key]={...S.project.lyricCutOptions[key],removed:true};
+  replan();
+}
+function setMediaCutAsset(layer,index,itemId) {
+  if(S.exporting || S.tap)return;
+  const m=S.project[layer];
+  if(m.cutOverrides[index]?.personCutout?.sourceId!==itemId && m.cutOverrides[index])delete m.cutOverrides[index].personCutout;
+  // Freeze the displayed order before switching from shuffled to manual selection.
+  if(m.randomOrder){
+    for(const cut of S.plan[layer].cuts)mediaOv(cut.index,{itemId:cut.itemId || null},layer);
+    m.randomOrder=false;
+  }
+  const ov=mediaCutOptions(layer,index);
+  mediaOv(index,{itemId,...(ov?.lock?{lockedItemId:itemId}:{})},layer);
+  replan();
+}
+function drawTimelineAssetSelects() {
+  const stack=$('timelineStack');
+  let overlay=$('timelineAssets');
+  if(!overlay){overlay=document.createElement('div');overlay.id='timelineAssets';stack.append(overlay);}
+  const retained=new Set();
+  for(const layer of ['foreground','media']){
+    const m=S.project[layer],canvas=$(layer==='foreground'?'foregroundTimeline':'mediaTimeline'),lanes=timelineLanes(layer);
+    const options=`<option value="">${J.mediaLabel('이미지 없음','No image')}</option>${[...J.mediaCopyItems(layer),...m.items].map(item=>`<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}`;
+    for(const cut of S.plan[layer].cuts){
+      const key=`${layer}-${cut.index}`,duration=Math.max(.001,S.plan.duration);
+      const width=(cut.end-cut.start)/duration*canvas.clientWidth-38;
+      if(width<=0)continue;
+      retained.add(key);
+      let select=overlay.querySelector(`[data-key="${key}"]`);
+      if(!select){
+        select=document.createElement('select');select.className='timeline-asset-select';select.dataset.key=key;
+        select.dataset.layer=layer;select.dataset.index=cut.index;
+        select.addEventListener('pointerdown',e=>{e.stopPropagation();pause();});
+        select.addEventListener('keydown',e=>e.stopPropagation());
+        select.addEventListener('change',()=>{
+          setMediaCutAsset(layer,+select.dataset.index,select.value || null);
+        });
+        overlay.append(select);
+      }
+      // Preserve native dropdown state and focus across timeline redraws.
+      if(select._options!==options){select.innerHTML=options;select._options=options;}
+      if(select.value!==(cut.itemId || ''))select.value=cut.itemId || '';
+      select.disabled=!!(S.exporting || S.tap);
+      select.title=m.randomOrder?J.mediaLabel('소재를 바꾸면 지금 순서로 무작위 순서를 끕니다','Changing the asset turns off random order and keeps the current order'):cut.name;
+      select.setAttribute('aria-label',`${J.mediaLabel(layer==='foreground'?'전경':'배경',layer==='foreground'?'Foreground':'Background')} ${cut.index+1}: ${J.mediaLabel('소재 바꾸기','Change asset')}`);
+      select.style.left=`${canvas.offsetLeft+cut.start/duration*canvas.clientWidth+33}px`;
+      // Each select sits on its cut's lane.
+      const lane=laneBox(layer,lanes.lanes.get(cut),lanes.count,canvas);
+      select.style.top=`${canvas.offsetTop+(lanes.count>1?lane.top+Math.max(0,(lane.height-20)/2):22)}px`;select.style.width=`${width}px`;
+    }
+  }
+  for(const select of Array.from(overlay.children))if(!retained.has(select.dataset.key))select.remove();
+}
+let timelineCutMenu = null;
+function closeTimelineCutMenu(restoreFocus=false) {
+  if(!timelineCutMenu)return;
+  const {menu,controller,trigger}=timelineCutMenu;
+  timelineCutMenu=null;controller.abort();menu.remove();trigger.setAttribute('aria-expanded','false');
+  if(restoreFocus && trigger.isConnected)trigger.focus();
+}
+function openTimelineCutMenu(trigger) {
+  if(S.exporting || S.tap)return;
+  if(timelineCutMenu?.trigger===trigger){closeTimelineCutMenu(true);return;}
+  closeTimelineCutMenu();S.playheadMenu=null;syncPlayheadMenu();pause();
+  const layer=trigger.dataset.layer,index=+trigger.dataset.index,part=+trigger.dataset.part||0;
+  const cut=layer==='lyrics'?S.plan.cuts.find(c=>c.line===index&&c.part===part):S.plan[layer].cuts[index];
+  if(!cut)return;
+  const L=J.mediaLabel,locked=layer==='lyrics'?!!S.project.overrides[index]?.lock:!!mediaCutOptions(layer,index)?.lock;
+  const labels={dice:L('다시 뽑기','Randomize'),disableReroll:L('이 연출을 끄고 다시 뽑기','Disable current effects and randomize'),lock:L(locked?'잠금 해제':'잠금',locked?'Unlock':'Lock'),area:L('표시 영역','Display area'),details:L('상세 편집','Edit details'),copy:L('연출을 즐겨찾기에 추가','Add effects to favorites'),paste:L('즐겨찾기에서 연출 적용','Apply favorite effects'),remove:L('삭제','Delete'),frontmost:L('맨 앞에 표시','Frontmost')};
+  const actions=['dice','disableReroll','lock',...(layer==='lyrics'||J.mediaSourceAvailable(cut)?['area']:[]),'details','copy','paste',...(layer==='lyrics'?['frontmost']:[]),'remove'];
+  const menu=document.createElement('div'),controller=new AbortController(),signal=controller.signal;
+  menu.id='timelineCutMenu';menu.className='timeline-cut-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label',L('컷 조작','Cut actions'));
+  menu.innerHTML=actions.map(action=>{
+    const toggle=['lock','frontmost'].includes(action),active=action==='lock'?locked:action==='frontmost'?!!cut.frontmost:false;
+    return `<button type="button" role="${toggle?'menuitemcheckbox':'menuitem'}" ${toggle?`aria-checked="${active}"`:''} data-action="${action}" data-layer="${layer}" data-index="${index}" data-part="${part}">${ICON[action]}<span>${labels[action]}</span>${active?'<span class="menu-check" aria-hidden="true">✓</span>':''}</button>`;
+  }).join('');
+  document.body.append(menu);timelineCutMenu={menu,controller,trigger};trigger.setAttribute('aria-expanded','true');
+  const r=trigger.getBoundingClientRect(),box=menu.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(r.left,innerWidth-box.width-8))+'px';
+  menu.style.top=Math.max(8,Math.min(r.bottom+4,innerHeight-box.height-8))+'px';
+  menu.addEventListener('click',e=>{const button=e.target.closest('button');if(!button)return;e.stopPropagation();closeTimelineCutMenu();if(!S.exporting&&!S.tap)performTimelineAction(button);},{signal});
+  menu.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    const buttons=[...menu.querySelectorAll('button')],index=buttons.indexOf(document.activeElement);
+    if(e.key==='Escape'){e.preventDefault();closeTimelineCutMenu(true);}
+    else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();buttons[e.key==='Home'?0:e.key==='End'?buttons.length-1:(index+(e.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length].focus();}
+    else if(e.key==='Tab')closeTimelineCutMenu();
+  },{signal});
+  document.addEventListener('pointerdown',e=>{if(!menu.contains(e.target)&&!trigger.contains(e.target))closeTimelineCutMenu();},{capture:true,signal});
+  window.addEventListener('resize',()=>closeTimelineCutMenu(),{signal});
+  document.addEventListener('scroll',e=>{if(!menu.contains(e.target))closeTimelineCutMenu();},{capture:true,signal});
+  menu.querySelector('button').focus();
 }
 function performTimelineAction(control) {
+  if(control.dataset.action==='menu'){openTimelineCutMenu(control);return;}
+  if (control.classList.contains('item-frame-action') && S.playing) return;
   const layer = control.dataset.layer, index = +control.dataset.index;
   if (!Number.isInteger(index) || index < 0) return;
-  if (control.dataset.action === 'details') { openCutDetails(layer,index,control.dataset.part === 'blank' ? 'blank' : +control.dataset.part || 0); return; }
+  if(control.dataset.action==='disableReroll'){disableAndReroll(layer,index,control.dataset.part==null?null:+control.dataset.part);return;}
+  if (['copy','paste'].includes(control.dataset.action)) { effectFavoriteAction(control.dataset.action,layer,index,+control.dataset.part||0); return; }
+  if (control.dataset.action === 'details') { openCutDetails(layer,index,+control.dataset.part || 0); return; }
   if (control.dataset.action === 'area') {
     if (layer === 'lyrics') openAreaEditor(index);
     else if (layer === 'foreground' || layer === 'media') openMediaEditor(index, layer);
@@ -916,7 +2071,8 @@ function performTimelineAction(control) {
     return;
   }
   if (layer === 'lyrics') {
-    if (control.dataset.action === 'dice') rerollLyricLine(index);
+    if (control.dataset.action === 'remove') removeLyricCut(index,+control.dataset.part||0);
+    else if (control.dataset.action === 'dice') rerollLyricLine(index);
     else toggleLyricLineLock(index);
   } else if (layer === 'foreground' || layer === 'media') {
     if (control.dataset.action === 'dice') rerollMediaCut(layer, index);
@@ -927,6 +2083,16 @@ function performTimelineAction(control) {
 function drawTimelineLinks() {
   const svg = $('timelineLinks'), stack = $('timelineStack');
   if (!svg || !S.plan) return;
+  for(const [layer,id] of [['foreground','foregroundTimeline'],['lyrics','timeline'],['media','mediaTimeline']]){
+    const canvas=$(id),button=$('layerVisibilityControls').querySelector(`[data-layer="${layer}"]`);
+    if(!button)continue;
+    const visible=S.project.layerVisibility?.[layer]!==false;
+    button.style.top=(canvas.offsetTop+(canvas.clientHeight-30)/2)+'px';
+    button.setAttribute('aria-pressed',String(visible));
+    button.querySelector('.eye-slash').style.display=visible?'none':'';
+    button.title=J.mediaLabel({foreground:'전경',lyrics:'가사',media:'배경'}[layer],{foreground:'Foreground',lyrics:'Lyrics',media:'Background'}[layer])+': '+J.mediaLabel(visible?'숨기기':'보이기',visible?'Hide':'Show');
+    button.setAttribute('aria-label',button.title);
+  }
   const width = stack.clientWidth, height = stack.clientHeight;
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   const markers = timelineMarkers();
@@ -946,37 +2112,19 @@ function drawTimelineLinks() {
   }).join('');
   const preview = S.linkDrag ? `<line class="link-preview" x1="${S.linkDrag.sourceX}" y1="${S.linkDrag.sourceY}" x2="${S.linkDrag.x}" y2="${S.linkDrag.y}"/>` : '';
   const handles = markers.map(m => `<g class="link-handle ${linkedRefs(m.ref).length > 1 ? 'linked' : ''}" data-ref="${escapeHtml(m.ref)}" role="button" aria-label="경계 연결"><circle cx="${m.x}" cy="${m.y}" r="9"/><text x="${m.x}" y="${m.y + 0.5}">🔗</text></g>`).join('');
-  const action = (layer, cut, index, locked) => {
-    const canvas = $(layer === 'lyrics' ? 'timeline' : layer === 'foreground' ? 'foregroundTimeline' : 'mediaTimeline');
-    const startX = canvas.offsetLeft + cut.start / Math.max(0.001, S.plan.duration) * canvas.clientWidth;
-    const y = canvas.offsetTop + 11;
-    const actions = [['dice', false, layer === 'lyrics' ? '이 행 다시 뽑기' : '이 컷 다시 뽑기', ICON.dice], ['lock', locked, layer === 'lyrics' ? '이 행의 구성 잠금' : '이 컷 잠금', ICON.lock]];
-    if (layer === 'lyrics' || J.mediaAssets.has(cut.itemId)) actions.push(['area', false, layer === 'lyrics' ? '이 행의 표시 영역을 편집' : '이 컷의 배치·크기 편집', ICON.area]);
-    if (layer !== 'lyrics') actions.push(['details', false, '컷 상세 편집', ICON.details]);
-    if (layer !== 'lyrics') actions.push(['remove', false, '이 컷 삭제', ICON.remove]);
-    const left = J.clamp(startX + 25, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - (actions.length - 1) * 20 - 23);
-    return actions.map(([name, active, label, icon], n) => {
-      const x = left + n * 20, graphic = icon.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
-      return `<g class="timeline-action ${active ? 'locked' : ''}" data-action="${name}" data-layer="${layer}" data-index="${index}" role="button" tabindex="0" aria-label="${label}" ${name === 'lock' ? `aria-pressed="${active}"` : ''} transform="translate(${x} ${y})"><title>${label}</title><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g>`;
+  const menus = ['foreground','lyrics','media'].map(layer => {
+    const canvas=timelineCanvas(layer), lanes=timelineLanes(layer);
+    const list=layer==='lyrics'?S.plan.cuts.filter(c=>c.line>=0&&Number.isInteger(c.part)):S.plan[layer].cuts;
+    return list.map(cut=>{
+      const index=layer==='lyrics'?cut.line:cut.index, lane=laneBox(layer,lanes.lanes.get(cut),lanes.count,canvas);
+      const x=J.clamp(canvas.offsetLeft+cut.start/Math.max(.001,S.plan.duration)*canvas.clientWidth+16,canvas.offsetLeft+12,canvas.offsetLeft+canvas.clientWidth-12);
+      const y=canvas.offsetTop+lane.top+lane.height/2;
+      const label=J.mediaLabel('컷 메뉴','Cut menu');
+      return `<g class="timeline-action" data-action="menu" data-layer="${layer}" data-index="${index}" data-part="${cut.part??0}" role="button" tabindex="0" aria-label="${label}" aria-haspopup="menu" aria-expanded="false" transform="translate(${x} ${y})"><title>${label}</title><rect x="-12" y="-12" width="24" height="24" rx="4"/><path d="M-6 -4h12M-6 0h12M-6 4h12" fill="none" stroke="currentColor" stroke-width="1.5" pointer-events="none"/></g>`;
     }).join('');
-  };
-  const lyricActions = S.plan.lines.map(line => {
-    const cut = S.plan.cuts.find(c => c.line === line.index && c.part === 0);
-    return cut ? action('lyrics', cut, line.index, !!(S.project.overrides[line.index] || {}).lock) : '';
   }).join('');
-  const frontmostActions = S.plan.cuts.filter(cut => cut.line >= 0 && Number.isInteger(cut.part)).map(cut => {
-    const canvas = $('timeline'), startX = canvas.offsetLeft + cut.start / Math.max(0.001, S.plan.duration) * canvas.clientWidth;
-    const x = J.clamp(startX + 10, canvas.offsetLeft + 9, canvas.offsetLeft + canvas.clientWidth - 9);
-    const y = canvas.offsetTop + 33, active = !!cut.frontmost;
-    const graphic = ICON.frontmost.replace('<svg ', '<svg x="-7" y="-7" width="14" height="14" ');
-    return `<g class="timeline-action ${active ? 'frontmost' : ''}" data-action="frontmost" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="${cut.line + 1}행 ${cut.part + 1}컷을 맨 앞에 표시" aria-pressed="${active}" transform="translate(${x} ${y})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${graphic}</g><g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${cut.line}" data-part="${cut.part}" role="button" tabindex="0" aria-label="컷 상세 편집" transform="translate(${Math.min(x + 20,canvas.offsetLeft + canvas.clientWidth - 9)} ${y})"><title>컷 상세 편집</title><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
-  }).join('');
-  const blankActions = S.plan.cuts.filter(c=>c.blank).map(c=> {
-    const canvas=$('timeline'), x=canvas.offsetLeft+c.start/S.plan.duration*canvas.clientWidth+10;
-    return `<g class="timeline-action" data-action="details" data-layer="lyrics" data-index="${c.index}" data-part="blank" role="button" tabindex="0" aria-label="컷 상세 편집" transform="translate(${x} ${canvas.offsetTop+33})"><rect x="-9" y="-9" width="18" height="18" rx="3"/>${ICON.details.replace('<svg ','<svg x="-7" y="-7" width="14" height="14" ')}</g>`;
-  }).join('');
-  const mediaActions = ['foreground', 'media'].map(layer => S.plan[layer].cuts.map(cut => action(layer, cut, cut.index, !!mediaCutOptions(layer, cut.index).lock)).join('')).join('');
-  svg.innerHTML = links + preview + handles + lyricActions + frontmostActions + blankActions + mediaActions;
+  drawTimelineAssetSelects();
+  svg.innerHTML = links + preview + handles + menus;
 }
 function markerNear(clientX, clientY, sourceLayer) {
   const rect = $('timelineStack').getBoundingClientRect(), x = clientX - rect.left, y = clientY - rect.top;
@@ -988,15 +2136,33 @@ function markerNear(clientX, clientY, sourceLayer) {
   }
   return best;
 }
+// The start boundary or end handle under the pointer; with stacked lanes the pointer's lane wins.
 function timelineBoundaryAt(ev, layer) {
-  const rect = ev.currentTarget.getBoundingClientRect(), duration = S.plan.duration;
-  const cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0 || c.blank) : S.plan[layer].cuts;
-  let chosen = null, distance = 9;
+  const canvas = ev.currentTarget, rect = canvas.getBoundingClientRect(), duration = S.plan.duration;
+  const info = timelineLanes(layer), band = timelineBand(layer, canvas), y = ev.clientY - rect.top;
+  const laneAt = info.count > 1 && y >= band.top && y <= band.bottom ? Math.min(info.count - 1, Math.floor((y - band.top) / ((band.bottom - band.top) / info.count))) : null;
+  const cuts = layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0) : S.plan[layer].cuts;
+  let best = null;
   for (const cut of cuts) {
-    const px = rect.left + cut.start / duration * rect.width, delta = Math.abs(ev.clientX - px);
-    if (delta < distance) { chosen = cut; distance = delta; }
+    if (laneAt != null && info.lanes.get(cut) !== laneAt) continue;
+    const start = Math.abs(ev.clientX - (rect.left + cut.start / duration * rect.width));
+    if (start < 9 && (!best || start < best.distance) && timelineBoundaryForCut(cut, layer)) best = { cut, distance: start, end: false };
+    if (!cut.manualEnd || layer === 'lyrics' && !Number.isInteger(cut.part)) continue;
+    const end = Math.abs(ev.clientX - (rect.left + cut.end / duration * rect.width));
+    if (end < 9 && (!best || end < best.distance)) best = { cut, distance: end, end: true };
   }
-  return chosen ? timelineBoundaryForCut(chosen, layer) : null;
+  if (!best) return null;
+  return best.end ? { mode: 'end', layer, key: layer === 'lyrics' ? `${best.cut.line}:${best.cut.part}` : best.cut.index, start: best.cut.end, min: best.cut.start + 0.04, max: duration }
+    : timelineBoundaryForCut(best.cut, layer);
+}
+// 컷の終了時間 (turns 「다음 컷 재생까지」 off); null restores it.
+function setCutEnd(layer, key, time) {
+  const patch = time == null ? { untilNext: undefined, endTime: undefined } : { untilNext: false, endTime: +time.toFixed(3) };
+  if (layer === 'lyrics') {
+    const options = S.project.lyricCutOptions, next = { ...options[key], ...patch };
+    for (const k of Object.keys(next)) if (next[k] === undefined) delete next[k];
+    if (Object.keys(next).length) options[key] = next; else delete options[key];
+  } else mediaOv(key, patch, layer);
 }
 function timelineBoundaryForCut(chosen, layer) {
   // the later pieces of a long interlude ('interlude:k') are split by the planner and have no stored time: not draggable
@@ -1008,12 +2174,6 @@ function timelineBoundaryForCut(chosen, layer) {
     min = index ? cutsForLayer[index - 1].start + 0.04 : 0;
     max = index + 1 < cutsForLayer.length ? cutsForLayer[index + 1].start - 0.04 : duration - 0.04;
     target = { index };
-  } else if (chosen.blank) {
-    const rows = [...S.plan.lines.map(line => ({ start: line.start })), ...S.plan.cuts.filter(c => c.blank).map(c => ({ start: c.start, id: c.blankId }))].sort((a, b) => a.start - b.start);
-    const i = rows.findIndex(row => row.id === chosen.blankId);
-    min = i > 0 ? rows[i - 1].start + 0.04 : 0;
-    max = i + 1 < rows.length ? rows[i + 1].start - 0.04 : duration - 0.04;
-    target = { blankId: chosen.blankId };
   } else if (chosen.part === 'interlude') {
     const previous = S.plan.cuts.find(c => c.line === chosen.line && typeof c.part === 'number' && c.end === chosen.start);
     min = previous ? previous.start + 0.22 : S.plan.lines[chosen.line].start + 0.5;
@@ -1021,26 +2181,29 @@ function timelineBoundaryForCut(chosen, layer) {
     target = { line: chosen.line, part: 'interlude' };
   } else if (chosen.part === 0) {
     const line = chosen.line, lines = S.plan.lines;
-    min = line ? lines[line - 1].start + 0.35 : 0;
-    max = line + 1 < lines.length ? lines[line + 1].start - 0.5 : duration - 0.5;
+    // Saved/inserted lines can be out of source order. Use their actual timeline order.
+    const before = lines.filter((l, i) => i !== line && l.start < chosen.start);
+    const after = lines.filter((l, i) => i !== line && l.start > chosen.start);
+    min = before.length ? Math.max(...before.map(l => l.start)) + 0.04 : 0;
+    max = after.length ? Math.min(...after.map(l => l.start)) - 0.04 : duration - 0.04;
     const firstInner = S.project.timing.cutTimes && S.project.timing.cutTimes[`${line}:1`];
     if (firstInner != null && Number.isFinite(+firstInner)) max = Math.min(max, +firstInner - 0.22);
     target = { line, part: 0, nextLineStart: lines[line + 1] && lines[line + 1].start };
   } else {
     const previous = S.plan.cuts.find(c => c.line === chosen.line && c.part === chosen.part - 1);
+    const following = S.plan.cuts.find(c => c.line === chosen.line && c.part === chosen.part + 1);
     min = previous ? previous.start + 0.22 : S.plan.lines[chosen.line].start + 0.22;
-    max = chosen.end - 0.22;
+    max = (following ? following.start : S.plan.lines[chosen.line].visEnd ?? chosen.end) - 0.22;
     target = { line: chosen.line, part: chosen.part };
   }
+  // A previously saved short cut must remain draggable away from a tight boundary.
+  min = Math.min(min, chosen.start); max = Math.max(max, chosen.start);
   return max > min ? { layer, ref: boundaryRef(layer, chosen), start: chosen.start, min, max, ...target } : null;
 }
 function setTimelineBoundaryTime(drag, t) {
   if (drag.layer === 'lyrics') {
     const timing = S.project.timing;
-    if (drag.blankId) {
-      const blank = S.project.lyricBlankCuts.find(b => b.id === drag.blankId);
-      if (blank) blank.start = t;
-    } else if (drag.part === 0) {
+    if (drag.part === 0) {
       timing.lineTimes[drag.line] = t;
       if (drag.nextLineStart != null && timing.lineTimes[drag.line + 1] == null) timing.lineTimes[drag.line + 1] = +drag.nextLineStart.toFixed(3);
     } else {
@@ -1186,7 +2349,6 @@ function updateCutInfo() {
   const idx = `${cut ? cut.index : -1}/${mc ? mc.index : -1}/${fc ? fc.index : -1}`;
   const li = cut ? cut.line : -1;
   if (li !== S.curLine) { S.lineEls.forEach((el, i) => el.classList.toggle('cur', i === li)); S.curLine = li; followLine(li); }
-  S.blankEls.forEach((el, id) => el.classList.toggle('cur', !!cut && cut.blankId === id));
   const active = S.sourceTab === 'foreground' ? fc : mc;
   S.mediaLineEls.forEach((el, i) => el.classList.toggle('cur', !!active && i === active.index));
   if (idx === lastCutIdx) return;
@@ -1202,9 +2364,9 @@ function updateCutInfo() {
   const chip = (cls, k, v) => `<span class="chip ${cls}"><b>${k}</b>${v}</span>`;
   const n = (tbl, k) => (tbl[k] ? tbl[k].name : k);
   const mediaChips = [].concat(...[mc, fc].map((mediaCut, i) => mediaCut ? [chip('b', i ? '전경' : '배경', escapeHtml(mediaCut.name)), chip('l', '기법', J.mediaTechniqueName(mediaCut)), mediaCut.placement && mediaCut.placement.angle ? chip('c', '각도', `${mediaCut.placement.angle}°`) : '', mediaCut.chromaKey ? chip('c', '크로마키', mediaCut.chromaColor) : ''] : [])).join('');
-  if (S.mode !== 'pro' || !cut || cut.blank) {          // 간단/스마트폰, 또는 가사 컷이 아닌 곳: 정적 칩 표시
+  if (S.mode !== 'pro' || !cut) {          // 간단/스마트폰, 또는 가사 컷이 아닌 곳: 정적 칩 표시
     if (cutPick.g) closeCutPick();
-    el.innerHTML = (cut && cut.blank ? [chip('l', '가사', '무표시')] : cut ? [
+    el.innerHTML = (cut ? [
       `<span class="chip mono">#${String(cut.index + 1).padStart(2, '0')}</span>`,
       chip('l', '레이아웃', n(J.LAYOUTS, cut.layout)), chip('e', '등장', n(J.ENTER, cut.enter)), chip('h', '유지', n(J.HOLD, cut.hold)), chip('x', '퇴장', n(J.EXIT, cut.exit)),
       cut.decor && cut.decor.length ? chip('', '장식', cut.decor.map(d => n(J.DECOR, d.id)).join('·')) : '',
@@ -1275,18 +2437,14 @@ function renderCutPanel(cut, mc, fc) {
     reset.addEventListener('click', () => setLyricCutComposite(i, c.part, { blend: undefined, opacity: undefined }));
     const details = detailButton(() => openCutDetails('lyrics', i, c.part));
     details.dataset.cutCtl = 'details'; details.setAttribute('aria-label', `${c.index + 1}번 컷(가사 ${i + 1}행 ${c.part + 1}컷) 상세 편집`);
-    sec.append(head(`가사 ${i + 1}행 ${c.part + 1}컷`), details, label, controls);
-  } else if (cut && cut.blank) {
-    const details = detailButton(() => openCutDetails('lyrics', cut.index, 'blank'));
-    details.dataset.cutCtl = 'details'; details.setAttribute('aria-label', `${cut.index + 1}번 컷(무표시) 상세 편집`);
-    sec.append(head('무표시 컷'), details);
+    sec.append(head(`가사 ${i + 1}행 ${c.part + 1}컷`), details, disableRerollButton('lyrics', i, c.part), ...effectFavoriteButtons('lyrics', i, c.part), label, controls);
   }
   [[mc, 'media', '배경'], [fc, 'foreground', '전경']].forEach(([mediaCut, layer, name]) => {
     if (!mediaCut) return;
     const b = detailButton(() => openCutDetails(layer, mediaCut.index));
     b.dataset.mediaDetails = layer; b.dataset.cutCtl = 'details-' + layer; b.title = `${name} ${mediaCut.index + 1}컷 상세 편집`; b.setAttribute('aria-label', b.title);
     const wrap = document.createElement('span'); wrap.className = 'cut-sec-media';
-    wrap.append(head(`${name} ${mediaCut.index + 1}컷`), b); sec.append(wrap);
+    wrap.append(head(`${name} ${mediaCut.index + 1}컷`), b, ...effectFavoriteButtons(layer, mediaCut.index)); sec.append(wrap);
   });
   sec.hidden = !sec.childElementCount;
   const ln = cut && !cut.blank && cut.line >= 0 ? S.plan.lines[cut.line] : null;
@@ -1380,19 +2538,68 @@ function readRate(ln) {
   if (ln.interlude || !ln.text) return 0;
   return [...ln.text.replace(/\s+/g, '')].length / Math.max(0.05, (ln.visEnd ?? ln.end) - ln.start);
 }
-function insertLyricBlankCut(rows, position) {
-  if (S.project.lyricBlankCuts.length >= 1000) { toast('컷 수 상한에 도달했습니다'); return; }
-  const previous = rows[position - 1], next = rows[position];
-  let start = previous ? (next ? (previous.start + next.start) / 2 : (previous.start + S.plan.duration) / 2) : 0;
-  if (next && next.start - start < 0.04) {
-    if (next.blankId) {
-      const blank = S.project.lyricBlankCuts.find(b => b.id === next.blankId);
-      if (blank) blank.start = +Math.max(0.4, next.start + 0.4).toFixed(3);
-    } else S.project.timing.lineTimes[next.line] = +Math.max(0.4, next.start + 0.4).toFixed(3);
-  }
-  if (!next && S.plan.duration - start < 0.04) start = Math.max(0, S.plan.duration - 0.4);
-  S.project.lyricBlankCuts.push({ id: crypto.randomUUID(), beforeLine: next ? next.line ?? next.beforeLine : S.plan.lines.length, start: +start.toFixed(3) });
-  replan(); seek(start + 0.001);
+// The inserted line becomes an ordinary line starting at the playhead: it runs until the next line
+// (or empty cut) and the line playing before it ends there, re-fitting its words into the shorter span.
+// At a line's own start it takes the first half of that line's slot, so no cut collapses to nothing.
+function lyricInsertRange(start) {
+  const at=S.plan.lines.find(line=>Math.abs(line.start-start)<.05);
+  const lineEnd=line=>S.plan.lines.find(l=>l.index>line.index && l.start>line.start+1e-6)?.start ?? S.plan.duration;
+  if(at)return {at,end:start+(lineEnd(at)-start)/2};
+  return {at:null,end:S.plan.lines.find(line=>line.start>start+1e-6)?.start ?? S.plan.duration};
+}
+function insertLyricAtPlayhead(text) {
+  if(S.exporting || S.tap || !S.plan || S.t>=S.plan.duration-.04)return;
+  pause();
+  const start=S.t,previous=S.project.lyrics,parsed=J.parseLyrics(previous),range=lyricInsertRange(start);
+  const next=range.at || S.plan.lines.find(line=>line.start>=start-1e-6);
+  const rows=previous.replace(/\r/g,'').split('\n');
+  const sourceLine=next ? parsed.lines[next.index].sourceLine : rows.length;
+  const allTimed=parsed.lines.length && parsed.lines.every(line=>line.lrc!=null);
+  const timestamp=allTimed ? `[${Math.floor(start/60)}:${(start%60).toFixed(3)}]` : '';
+  rows.splice(sourceLine,0,timestamp+text);
+  const lyrics=rows.join('\n');
+  // Keep existing line starts stable while adding a new line at the playhead.
+  for(const line of S.plan.lines)S.project.timing.lineTimes[line.index]=line.start;
+  reconcileLyricLines(previous,lyrics);
+  const index=J.parseLyrics(lyrics).lines.findIndex(line=>line.sourceLine===sourceLine);
+  S.project.timing.lineTimes[index]=start;
+  delete S.project.overrides[index];
+  if(range.at)S.project.timing.lineTimes[index+1]=+range.end.toFixed(3);
+  S.project.durationOverride=S.plan.duration;
+  S.project.lyrics=lyrics;$('lyrics').value=lyrics;
+  replan();seek(start);
+}
+function openInsertAtPlayhead(layer) {
+  if(S.exporting || S.tap || S.t>=S.plan.duration-.04)return;
+  pause();
+  const start=S.t,lyric=layer==='lyrics',cuts=lyric?S.plan.cuts:S.plan[layer].cuts;
+  const end=lyric?lyricInsertRange(start).end:cuts.filter(c=>c.start>start+1e-6).reduce((end,c)=>Math.min(end,c.start),S.plan.duration);
+  if(end-start<.04)return;
+  const L=J.mediaLabel,dialog=document.createElement('dialog');dialog.className='insert-cut-dialog';dialog.id='insertCutDialog';
+  const name=lyric?L('가사 삽입','Insert lyrics'):layer==='foreground'?L('전경 삽입','Insert foreground'):L('배경 삽입','Insert background');
+  dialog.innerHTML=`<form><h2>${name}</h2><label>${lyric?L('가사','Lyrics'):L('소재','Asset')}${lyric?'<textarea rows="3" required></textarea>':`<select><option value="">${L('이미지 없음','No image')}</option>${[...J.mediaCopyItems(layer),...S.project[layer].items].map(item=>`<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>`}</label><p class="hint">${J.fmtTime(start)} ～ ${J.fmtTime(end)}</p><div class="row"><button type="button" data-cancel>${L('취소','Cancel')}</button><button type="submit">${L('삽입','Insert')}</button></div></form>`;
+  dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+  dialog.querySelector('form').onsubmit=e=>{
+    e.preventDefault();const input=dialog.querySelector('textarea,select');
+    if(lyric){
+      const text=input.value.trim().replace(/\r/g,'').replace(/\n/g,'\\n');
+      if(J.parseLyrics(text).lines.length!==1){input.setCustomValidity(L('가사를 한 행만 입력해 주세요','Enter one lyric line'));input.reportValidity();return;}
+      S.t=start;insertLyricAtPlayhead(text);
+    }else{
+      const m=S.project[layer],index=cuts.filter(c=>c.start<start-1e-6).length,overrides={},times={};
+      cuts.forEach((cut,i)=>{const n=i>=index?i+1:i;overrides[n]={...m.cutOverrides[i],itemId:cut.itemId};times[n]=cut.start;});
+      // Replace a boundary at the exact playhead instead of making a zero-length cut.
+      if(cuts[index] && Math.abs(cuts[index].start-start)<1e-6){delete overrides[index+1];delete times[index+1];for(let i=index+2;i<=cuts.length;i++){overrides[i-1]=overrides[i];times[i-1]=times[i];delete overrides[i];delete times[i];}}
+      overrides[index]={itemId:input.value||null,technique:null};times[index]=start;
+      const replacing=cuts[index] && Math.abs(cuts[index].start-start)<1e-6;
+      m.manualCuts=true;m.cutCount=cuts.length+(replacing?0:1);m.cutOverrides=overrides;m.timing.lineTimes=times;m.randomOrder=false;
+      if(!replacing){const prefix=layer==='foreground'?'f:':'m:';for(const link of S.project.timelineLinks)for(const side of ['a','b'])if(link[side].startsWith(prefix)&&+link[side].slice(2)>=index)link[side]=prefix+(+link[side].slice(2)+1);}
+      S.project.durationOverride=S.plan.duration;replan();seek(start);
+    }
+    dialog.close();
+  };
+  dialog.querySelector('textarea')?.addEventListener('input',e=>e.target.setCustomValidity(''));
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();dialog.querySelector('textarea,select').focus();
 }
 function reconcileLyricLines(previous, next) {
   const oldLines = J.parseLyrics(previous).lines, newLines = J.parseLyrics(next).lines;
@@ -1417,9 +2624,24 @@ function reconcileLyricLines(previous, next) {
     }
   }
   const anchors = [[-1, -1], ...[...oldToNew].sort((a, b) => a[0] - b[0]), [oldLines.length, newLines.length]];
+  // Shared characters at either end: typing before a line and pressing Enter splits "new + old" in two,
+  // and the old line (with its time, lock and settings) belongs to the half that keeps its text.
+  const overlap = (a, b) => {
+    let p = 0, s = 0; while (p < a.length && p < b.length && a[p] === b[p]) p++;
+    while (s < a.length - p && s < b.length - p && a[a.length - 1 - s] === b[b.length - 1 - s]) s++;
+    return Math.max(p, s);
+  };
   for (let a = 1; a < anchors.length; a++) {
     const [oldBefore, newBefore] = anchors[a - 1], [oldAfter, newAfter] = anchors[a];
-    for (let k = 1; k <= Math.min(oldAfter - oldBefore - 1, newAfter - newBefore - 1); k++) oldToNew.set(oldBefore + k, newBefore + k);
+    const oldGap = oldAfter - oldBefore - 1, newGap = newAfter - newBefore - 1;
+    if (oldGap === 1 && newGap > 1) {
+      const text = oldLines[oldBefore + 1].text;
+      let best = 1;
+      for (let k = 2; k <= newGap; k++) if (overlap(text, newLines[newBefore + k].text) > overlap(text, newLines[newBefore + best].text)) best = k;
+      oldToNew.set(oldBefore + 1, newBefore + best);
+      continue;
+    }
+    for (let k = 1; k <= Math.min(oldGap, newGap); k++) oldToNew.set(oldBefore + k, newBefore + k);
   }
   const oldStarts = J.computeTiming(S.project, { lines: oldLines }, audioLike()).starts;
   const oldTimes = S.project.timing.lineTimes || {};
@@ -1467,11 +2689,6 @@ function reconcileLyricLines(previous, next) {
     if (mapped != null) newCutOptions[`${mapped}:${match[2]}`] = value;
   }
   S.project.lyricCutOptions = newCutOptions;
-  const newStarts = J.computeTiming(S.project, { lines: newLines }, audioLike()).starts;
-  for (const blank of S.project.lyricBlankCuts) {
-    const following = newStarts.findIndex(start => start > +blank.start + 1e-6);
-    blank.beforeLine = following < 0 ? newLines.length : following;
-  }
   const mapRef = ref => {
     const match = /^l:(\d+):(.*)$/.exec(ref);
     if (!match) return ref;
@@ -1485,7 +2702,7 @@ function reconcileLyricLines(previous, next) {
   return true;
 }
 function renderLines() {
-  const ol = $('lineList'); ol.innerHTML = ''; S.lineEls = []; S.blankEls = new Map(); S.curLine = -2;
+  const ol = $('lineList'); ol.innerHTML = ''; S.lineEls = []; S.curLine = -2;
   const ov = S.project.overrides, R = exportRangeLines();
   const layoutOpts = '<option value="">자동</option>' + J.LAYOUT_ORDER.map(k => `<option value="${k}">${J.LAYOUTS[k].name}</option>`).join('');
   // layout menus hold only their current choice until they are used: a long song has hundreds of them
@@ -1497,24 +2714,8 @@ function renderLines() {
     for (const ev of ['pointerdown', 'mousedown', 'focus', 'keydown', 'touchstart']) sel.addEventListener(ev, fill, { capture: true, passive: true });
   };
   const cutOpts = '<option value="">컷: 자동</option>' + [1, 2, 3, 4, 5, 6].map(n => `<option value="${n}">컷: ${n}</option>`).join('');
-  const rows = [...S.plan.lines.map(ln => ({ line: ln.index, start: ln.start })), ...S.plan.cuts.filter(c => c.blank).map(c => ({ blankId: c.blankId, beforeLine: c.beforeLine, start: c.start }))].sort((a, b) => a.start - b.start);
-  const addButton = position => {
-    const row = document.createElement('li'); row.className = 'media-cut-insert';
-    row.innerHTML = `<button class="ghost small" type="button" aria-label="${position + 1}번째에 무표시 컷 추가">＋ 무표시 컷 추가</button>`;
-    row.querySelector('button').addEventListener('click', () => insertLyricBlankCut(rows, position));
-    ol.appendChild(row);
-  };
-  rows.forEach((row, position) => {
-    addButton(position);
-    if (row.blankId) {
-      const li = document.createElement('li'); li.className = 'ln lyric-ln lyric-blank-ln';
-      li.innerHTML = `<span class="no">—</span><input class="time mono" type="number" step="0.01" min="0" value="${row.start.toFixed(2)}" aria-label="무표시 컷 시작 초"><span class="txt">무표시</span><div class="meta"><span class="cuts"></span><span class="tools"><button class="ghost small remove-blank" type="button" aria-label="무표시 컷 삭제">삭제</button></span></div>`;
-      li.querySelector('.time').addEventListener('change', e => { const blank = S.project.lyricBlankCuts.find(b => b.id === row.blankId); if (blank) blank.start = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
-      li.querySelector('.txt').addEventListener('click', () => seek(row.start + 0.001));
-      li.querySelector('.remove-blank').addEventListener('click', () => { S.project.lyricBlankCuts = S.project.lyricBlankCuts.filter(b => b.id !== row.blankId); replan(); });
-      ol.appendChild(li); S.blankEls.set(row.blankId, li);
-      return;
-    }
+  const rows = S.plan.lines.map(ln => ({ line: ln.index, start: ln.start }));
+  rows.forEach(row => {
     const i = row.line, ln = S.plan.lines[i];
     const o = ov[i] || {};
     const rate = readRate(ln), lim = READ_CPS[S.plan.lang] || 8, fast = rate > lim;
@@ -1562,7 +2763,7 @@ function renderLines() {
     if (q('.ncut')) q('.ncut').addEventListener('change', e => { remember(); setOv(i, { cuts: +e.target.value || undefined, single: undefined }); replan(); commit(); seek(ln.start + 0.001); });
     q('.tapfrom').addEventListener('click', e => startTap(i, e.shiftKey));
     q('.rng').addEventListener('click', e => setExportRange(i, e.shiftKey));
-    if (q('.dice')) q('.dice').addEventListener('click', () => rerollLyricLine(i));
+    if (q('.dice')) { q('.dice').addEventListener('click', () => rerollLyricLine(i)); q('.dice').after(disableRerollButton('lyrics', i)); }
     if (q('.lock')) q('.lock').addEventListener('click', () => toggleLyricLineLock(i));
     const cutsEl = q('.cuts');
     S.plan.cuts.filter(c => c.line === i && J.LAYOUTS[c.layout] && !J.LAYOUTS[c.layout].special).forEach(c => {
@@ -1596,13 +2797,12 @@ function renderLines() {
     });
     ol.appendChild(li); S.lineEls.push(li);
   });
-  addButton(rows.length);
   $('linesInfo').textContent = `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
   syncRangeUI();
   syncSourceTab();
 }
 
-/* ---------------- 行から歌詞を直す ---------------- */
+/* ---------------- 行から가사を直す ---------------- */
 // the lyrics text is the source: a plan line knows the row it came from (ln.src); LRC time tags on that row are kept
 const LRC_PREFIX = /^\s*(?:\[\d+:\d+(?:[.:]\d+)?\])*/;
 function editLine(li, ln) {
@@ -1633,7 +2833,7 @@ function loadLrc(text) {
   const P = S.project;
   pause();
   P.lyrics = String(text).replace(/^\ufeff/, '').replace(/\r\n?/g, '\n').trim(); P.timing.lineTimes = {}; P.timing.cutTimes = {}; P.overrides = {}; P.exportRange = null;
-  P.lyricCutOptions = {}; P.lyricBlankCuts = []; P.timelineLinks = [];
+  P.lyricCutOptions = {}; P.timelineLinks = [];
   $('lyrics').value = P.lyrics;
   replan(); flushSave(); seek(0);
   const n = J.parseLyrics(P.lyrics).lines.filter(l => l.lrc != null).length;
@@ -1655,7 +2855,7 @@ function setCutStart(li, part, v) {
   if (!S.tap) { flushSave(); const c = S.plan.cuts.find(x => x.line === li && x.part === part); if (c) seek(c.start + 0.001); }
 }
 
-// 歌詞を消す: lyrics + everything tied to line numbers (times, per-line settings, export range); undoable
+// 가사を消す: lyrics + everything tied to line numbers (times, per-line settings, export range); undoable
 function clearLyrics() {
   if (S.tap || S.exporting) return;
   const P = S.project;
@@ -1735,10 +2935,40 @@ function bindRangeUI() {
     flushSave(); renderLines();
   }));
 }
+function beginAreaSelection() {
+  const edit=S.areaEdit;if(!edit)return;
+  edit.previousEditMode=$('showItemFrames').checked;$('showItemFrames').checked=true;
+  $('viewport').classList.add('area-selection');sizeViewport();
+  S.settingsOpen=false;S.sourceOpen=false;syncSettingsDrawer();syncSourceDrawer();
+  edit.inertNodes=[];
+  const allowed=[$('viewport'),$('areaEditControls')];
+  const disable=node=>{
+    if(allowed.includes(node))return;
+    if(allowed.some(el=>node.contains(el))){for(const child of node.children)disable(child);}
+    else if(!node.inert && !['SCRIPT','STYLE','DIALOG'].includes(node.tagName)){node.inert=true;edit.inertNodes.push(node);}
+  };
+  for(const child of document.body.children)disable(child);
+  const shade=document.createElementNS('http://www.w3.org/2000/svg','svg');shade.id='areaSelectionShade';shade.classList.add('area-selection-shade');shade.setAttribute('aria-hidden','true');
+  shade.innerHTML='<path fill-rule="evenodd"/>';document.body.append(shade);
+  $('areaCancel').focus({preventScroll:true});
+}
+function endAreaSelection() {
+  const edit=S.areaEdit;if(!edit)return;
+  for(const node of edit.inertNodes||[])node.inert=false;
+  $('areaSelectionShade')?.remove();$('showItemFrames').checked=edit.previousEditMode;
+  $('viewport').classList.remove('area-selection');sizeViewport();
+  itemFrameSignature='';S.need=true;
+}
 function positionAreaEditor() {
   if (!S.areaEdit) return;
   const view = $('view').getBoundingClientRect(), viewport = $('viewport').getBoundingClientRect(), overlay = $('areaEditOverlay');
   Object.assign(overlay.style, { left: `${view.left - viewport.left}px`, top: `${view.top - viewport.top}px`, width: `${view.width}px`, height: `${view.height}px` });
+  const shade=$('areaSelectionShade');
+  if(shade){
+    shade.setAttribute('viewBox',`0 0 ${innerWidth} ${innerHeight}`);
+    const rect=r=>`M${r.left},${r.top}H${r.right}V${r.bottom}H${r.left}Z`;
+    shade.querySelector('path').setAttribute('d',`M0,0H${innerWidth}V${innerHeight}H0Z`+rect(viewport)+rect($('areaEditControls').getBoundingClientRect()));
+  }
 }
 function showAreaDraft() {
   const edit = S.areaEdit, area = edit && edit.draft, rect = $('areaEditRect'), media = !!edit && edit.kind !== 'lyric';
@@ -1750,14 +2980,16 @@ function showAreaDraft() {
   if (area) { $('mediaAreaAspectLock').checked = edit.lockAspect; $('mediaAreaWidth').value = String(Math.round(area.w * 1000) / 10); $('mediaAreaHeight').value = String(Math.round(area.h * 1000) / 10); }
   $('mediaAreaAngleField').hidden = !edit;
   if (edit) $('mediaAreaAngle').value = String(edit.angle);
-  $('areaResetFull').hidden = !edit || media;
-  $('areaResetAuto').hidden = !edit || media;
+  $('areaResetFull').hidden = !edit;
+  $('areaResetAuto').hidden = !edit;
+  $('areaResetAuto').disabled = !edit || edit.autoDraft===JSON.stringify(J.lyricArea({...area,angle:edit.angle,lockAspect:edit.lockAspect}));
   $('areaApplyOne').textContent = media ? '이 컷에만 적용' : '이 행에만 적용';
   $('areaApplyOne').disabled = !area;
   $('areaApplyFollowing').disabled = !area;
+  positionAreaEditor();drawItemFrames();
   S.need = true;
 }
-function openAreaEditor(index) {
+function openAreaEditor(index,fromPreview=false) {
   if (S.exporting || S.tap) return;
   if (S.areaEdit) cancelAreaEditor();
   const line = S.plan.lines[index]; if (!line) return;
@@ -1765,48 +2997,73 @@ function openAreaEditor(index) {
   clearTimeout(warmTimer); ++warmJob;
   const saved = J.lyricArea((S.project.overrides[index] || {}).area) || S.plan.cuts.find(c => c.line === index && c.part === 0)?.area;
   S.areaEdit = { kind: 'lyric', index, oldTime: S.t, draft: saved || { x: 0, y: 0, w: 1, h: 1 }, ratio: saved ? saved.h / saved.w : 1, lockAspect: saved ? saved.lockAspect : true, angle: saved ? saved.angle : 0, drag: null };
+  if(!J.lyricArea(S.project.overrides[index]?.area))S.areaEdit.autoDraft=JSON.stringify(J.lyricArea({...S.areaEdit.draft,angle:S.areaEdit.angle,lockAspect:S.areaEdit.lockAspect}));
   const cut = S.plan.cuts.find(c => c.line === index);
-  seek(cut ? cut.start + Math.min(cut.dur * 0.6, cut.inDur + 0.25) : line.start);
+  if(!fromPreview)seek(cut ? cut.start + Math.min(cut.dur * 0.6, cut.inDur + 0.25) : line.start);
   $('areaEditTitle').textContent = `${index + 1}행 「${line.text}」의 표시 영역`;
   $('areaEditOverlay').hidden = false; $('areaEditControls').hidden = false;
-  positionAreaEditor(); showAreaDraft();
+  beginAreaSelection();positionAreaEditor(); showAreaDraft();
 }
-function openMediaEditor(index, layer) {
+function openMediaEditor(index, layer,fromPreview=false) {
   if (S.exporting || S.tap) return;
   if (S.areaEdit) cancelAreaEditor();
-  const cut = S.plan[layer].cuts[index], asset = cut && J.mediaAssets.get(cut.itemId);
-  if (!asset) return;
-  const source = asset.element, sw = source.videoWidth || source.naturalWidth, sh = source.videoHeight || source.naturalHeight;
+  const cut = S.plan[layer].cuts[index], dimensions = J.mediaSourceDimensions(S.plan,cut,S.t);
+  if (!dimensions) return;
+  const sw = dimensions.width, sh = dimensions.height;
   const draft = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
   if (!draft) return;
   pause();
   clearTimeout(warmTimer); ++warmJob;
   S.areaEdit = { kind: layer, index, oldTime: S.t, draft, ratio: S.plan.W / S.plan.H * sh / sw, lockAspect: !cut.placement || cut.placement.lockAspect !== false, type: cut.type, angle: cut.placement && cut.placement.angle || 0, drag: null };
-  seek(cut.start + Math.min(0.5, Math.max(0.001, (cut.end - cut.start) / 2)));
+  if(cut.placementMode!=='manual')S.areaEdit.autoDraft=JSON.stringify(J.lyricArea({...draft,angle:S.areaEdit.angle,lockAspect:S.areaEdit.lockAspect}));
+  if(!fromPreview)seek(cut.start + Math.min(0.5, Math.max(0.001, (cut.end - cut.start) / 2)));
   $('areaEditTitle').textContent = `${index + 1}컷 「${cut.name}」의 배치·크기`;
   $('areaEditOverlay').hidden = false; $('areaEditControls').hidden = false;
-  positionAreaEditor(); showAreaDraft();
+  beginAreaSelection();positionAreaEditor(); showAreaDraft();
 }
 function cancelAreaEditor() {
   if (!S.areaEdit) return;
   const oldTime = S.areaEdit.oldTime;
-  S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
+  endAreaSelection();S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
   seek(oldTime);
+}
+function automaticMediaArea(layer,index) {
+  const m=S.project[layer],ov=m.cutOverrides[index]||{};
+  const project={...S.project,[layer]:{...m,cutOverrides:{...m.cutOverrides,[index]:{...ov,placement:null,lock:false,...autoWindowReset(layer,index)}}}};
+  const plan=composePlan(project),resolved=plan[layer].cuts[index],dimensions=J.mediaSourceDimensions(plan,resolved,S.t);
+  const area=dimensions&&J.mediaPlacementRect(resolved.placement,dimensions.width,dimensions.height,plan.W,plan.H);
+  return {area,cut:resolved};
 }
 function applyAreaEditor(following) {
   if (!S.areaEdit || !S.areaEdit.draft) return;
   const { kind, index, draft } = S.areaEdit;
   remember();
+  // 「以降にも적용」 leaves other locked cuts alone; the edited cut itself stays locked with its new place.
   if (kind !== 'lyric') {
     for (let i = index; i < (following ? S.plan[kind].cuts.length : index + 1); i++) {
-      mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect, angle: S.areaEdit.angle }, zoom: undefined, focus: undefined }, kind);
+      if (i !== index && S.project[kind].cutOverrides[i]?.lock) continue;
+      const automatic=S.areaEdit.autoDraft===JSON.stringify(J.lyricArea({...draft,angle:S.areaEdit.angle,lockAspect:S.areaEdit.lockAspect}));
+      if(automatic){
+        const ov=mediaCutOptions(kind,i),resolved=automaticMediaArea(kind,i);
+        mediaOv(i,{placement:null,...autoWindowReset(kind,i),...(ov?.lock?{lockedPlacement:resolved.cut.placement,lockedPlacementMode:resolved.cut.placementMode,lockedLayout:resolved.cut.bgLayout}: {})},kind);
+        continue;
+      }
+      // The placement becomes manual; an automatic layout's window stays with it as the cut's own mask.
+      const auto = S.plan[kind].cuts[i], windowSig = layoutWindowSig(kind, auto);
+      const details = windowSig ? { ...(S.project[kind].cutOverrides[i]?.details || {}), mask: JSON.parse(JSON.stringify(auto.mask)) } : null;
+      mediaOv(i, { placement: { cx: draft.x + draft.w / 2, cy: draft.y + draft.h / 2, w: draft.w, h: draft.h, lockAspect: S.areaEdit.lockAspect, angle: S.areaEdit.angle }, zoom: undefined, focus: undefined, ...(details ? { details, layoutMask: windowSig } : {}) }, kind);
     }
+    relock(kind, index);
   } else {
     const area = J.lyricArea({ ...draft, angle: S.areaEdit.angle, lockAspect: S.areaEdit.lockAspect });
     const automatic = S.areaEdit.autoDraft === JSON.stringify(area);
-    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) setOv(i, { area: automatic ? undefined : area, lockedAreas: undefined });
+    for (let i = index; i < (following ? S.plan.lines.length : index + 1); i++) {
+      if (i !== index && S.project.overrides[i]?.lock) continue;
+      setOv(i, { area: automatic ? undefined : area, lockedAreas: undefined });
+    }
+    relock('lyrics', index);
   }
-  S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
+  endAreaSelection();S.areaEdit = null; $('areaEditOverlay').hidden = true; $('areaEditControls').hidden = true;
   replan(); commit();
 }
 function areaPointer(ev) {
@@ -1836,20 +3093,20 @@ function mediaPointerAngle(ev, area) {
 function wrapMediaAngle(angle) { return ((angle + 180) % 360 + 360) % 360 - 180; }
 function setMediaDraftSize(width, height) {
   const edit = S.areaEdit, draft = edit.draft, cx = draft.x + draft.w / 2, cy = draft.y + draft.h / 2;
-  const min = edit.kind === 'lyric' ? 0.04 : 0.005, max = edit.kind === 'lyric' ? 1 : 4;
+  const min = edit.kind === 'lyric' ? 0.04 : 0.005, max = 4;
   let w = J.clamp(width, min, max), h = J.clamp(height, min, max);
   if (edit.lockAspect) { w = Math.min(w, max / edit.ratio); h = w * edit.ratio; }
-  edit.draft = { x: J.clamp(cx, edit.kind === 'lyric' ? w / 2 : 0, edit.kind === 'lyric' ? 1 - w / 2 : 1) - w / 2, y: J.clamp(cy, edit.kind === 'lyric' ? h / 2 : 0, edit.kind === 'lyric' ? 1 - h / 2 : 1) - h / 2, w, h };
+  edit.draft = { x: (edit.kind === 'lyric' ? cx : J.clamp(cx, 0, 1)) - w / 2, y: (edit.kind === 'lyric' ? cy : J.clamp(cy, 0, 1)) - h / 2, w, h };
   showAreaDraft();
 }
 function moveMediaDraft(ev) {
   const edit = S.areaEdit, drag = edit.drag, point = mediaPointer(ev), dx = point.x - drag.start.x, dy = point.y - drag.start.y, a = drag.previous;
-  const lyric = edit.kind === 'lyric', min = lyric ? 0.04 : 0.005, max = lyric ? 1 : 4;
+  const lyric = edit.kind === 'lyric', min = lyric ? 0.04 : 0.005, max = 4;
   if (drag.handle === 'rotate') {
     const difference = mediaPointerAngle(ev, a) - drag.pointerAngle;
     edit.angle = Math.round(wrapMediaAngle(drag.previousAngle + Math.atan2(Math.sin(difference), Math.cos(difference)) * 180 / Math.PI) * 10) / 10;
   } else if (drag.handle === 'move') {
-    edit.draft = { x: J.clamp(a.x + dx, lyric ? 0 : -a.w / 2, lyric ? 1 - a.w : 1 - a.w / 2), y: J.clamp(a.y + dy, lyric ? 0 : -a.h / 2, lyric ? 1 - a.h : 1 - a.h / 2), w: a.w, h: a.h };
+    edit.draft = { x: (lyric ? a.x + dx : J.clamp(a.x + dx, -a.w / 2, 1 - a.w / 2)), y: (lyric ? a.y + dy : J.clamp(a.y + dy, -a.h / 2, 1 - a.h / 2)), w: a.w, h: a.h };
   } else {
     const east = drag.handle.includes('e'), south = drag.handle.includes('s');
     const radians = edit.angle * Math.PI / 180, box = $('areaEditOverlay').getBoundingClientRect();
@@ -1859,7 +3116,7 @@ function moveMediaDraft(ev) {
     const w = edit.lockAspect ? J.clamp(a.w + (Math.abs(deltaX) > Math.abs(deltaY / edit.ratio) ? deltaX : deltaY / edit.ratio), min, Math.min(max, max / edit.ratio)) : J.clamp(a.w + deltaX, min, max);
     const h = edit.lockAspect ? w * edit.ratio : J.clamp(a.h + deltaY, min, max);
     const x = east ? a.x : a.x + a.w - w, y = south ? a.y : a.y + a.h - h;
-    edit.draft = { x: J.clamp(x + w / 2, lyric ? w / 2 : 0, lyric ? 1 - w / 2 : 1) - w / 2, y: J.clamp(y + h / 2, lyric ? h / 2 : 0, lyric ? 1 - h / 2 : 1) - h / 2, w, h };
+    edit.draft = { x: (lyric ? x + w / 2 : J.clamp(x + w / 2, 0, 1)) - w / 2, y: (lyric ? y + h / 2 : J.clamp(y + h / 2, 0, 1)) - h / 2, w, h };
   }
   showAreaDraft();
 }
@@ -1871,7 +3128,6 @@ function syncSourceTab() {
   $('lineList').hidden = media; $('mediaLineList').hidden = !media;
   $('cutsHeading').textContent = media ? '컷' : '행과 컷';
   $('mediaPaneTitle').textContent = layer === 'foreground' ? '전경' : '배경';
-  $('foregroundBlendFields').hidden = layer !== 'foreground';
   $('linesInfo').textContent = media ? `파일 ${m.items.length} / 컷 ${S.plan[layer].cuts.length}` : `${S.plan.lines.length}행 / ${S.plan.cuts.length}컷`;
   $('mediaRandom').disabled = !media || (m.items.length < 2 && !m.randomOrder);
   $('mediaRandom').title = media && m.items.length < 2 && !m.randomOrder ? '파일을 2개 이상 추가하면 선택할 수 있습니다' : '';
@@ -1880,9 +3136,21 @@ function syncSourceTab() {
   $('audioTimingSection').hidden = media;
   const targets = mediaLyricTargets(layer);
   $('mediaLyricInsertMode').value = media && m.lyricInsertMode === 'cut' ? 'cut' : 'line';
+  const sourceBox=$('backgroundInsertSources');sourceBox.hidden=layer!=='media';
+  if(layer==='media'){
+    const selected=m.insertSources || {files:true};
+    sourceBox.querySelectorAll('label').forEach(label=>label.remove());
+    for(const item of [{id:'files',name:J.mediaLabel('이미지·동영상','Images / videos')},...J.mediaCopyItems('media')]){
+      const label=document.createElement('label');label.className='check';
+      const input=document.createElement('input');input.type='checkbox';input.dataset.insertSource=item.id;input.checked=!!selected[item.id];
+      input.addEventListener('change',()=>{m.insertSources={...selected,[item.id]:input.checked};replan();});
+      label.append(input,document.createTextNode(item.name));sourceBox.append(label);
+    }
+  }
   $('btnMediaFromLyrics').disabled = !targets.length;
-  $('mediaLyricInsertHint').textContent = !media || !m.items.length
-    ? '이미지·동영상을 추가하면 사용할 수 있습니다.'
+  $('btnTapMedia').disabled = !S.tap && (!media || !J.mediaInsertChoices(S.project,layer).length);
+  $('mediaLyricInsertHint').textContent = !media || !J.mediaInsertChoices(S.project,layer).length
+    ? J.mediaLabel('삽입할 항목을 골라 주세요. 이미지·동영상이라면 소재를 추가해 주세요.', 'Select items to insert. Add assets to insert images or videos.')
     : !targets.length
       ? '대상이 될 가사 행·컷이 없습니다.'
       : '';
@@ -1890,9 +3158,10 @@ function syncSourceTab() {
 function activeMediaLayer() { return S.sourceTab === 'foreground' ? 'foreground' : S.sourceTab === 'media' ? 'media' : null; }
 function mediaLyricTargets(layer) {
   const m = layer && S.project[layer];
-  if (!m || !m.items.length) return [];
-  // Cut mode includes every linkable lyric boundary, including blanks/interludes.
-  let targets = S.plan.cuts.filter(cut => m.lyricInsertMode === 'cut' ? cut.line >= 0 || cut.blank : cut.line >= 0 && cut.part === 0);
+  const choices=J.mediaInsertChoices(S.project,layer);
+  if (!m || !choices.length) return [];
+  // Cut mode includes every linkable lyric boundary, including interludes.
+  let targets = S.plan.cuts.filter(cut => m.lyricInsertMode === 'cut' ? cut.line >= 0 : cut.line >= 0 && cut.part === 0);
   if (m.groupLyricsAsOneCut !== false) {
     const seen = new Set();
     targets = targets.filter(cut => {
@@ -1902,7 +3171,7 @@ function mediaLyricTargets(layer) {
       seen.add(group); return true;
     });
   }
-  return targets.slice(0, m.loop ? 1000 : Math.min(1000, m.items.length));
+  return targets.slice(0, m.loop || choices.some(id=>id!=='files') ? 1000 : Math.min(1000, m.items.length));
 }
 function insertMediaFromLyrics() {
   const layer = activeMediaLayer();
@@ -1918,9 +3187,12 @@ function insertMediaFromLyrics() {
   m.cutOverrides = {};
   m.timing.lineTimes = {};
   S.project.timelineLinks = S.project.timelineLinks.filter(link => !link.a.startsWith(prefix) && !link.b.startsWith(prefix));
+  const choices=J.mediaInsertChoices(S.project,layer);let fileIndex=0;
   targets.forEach((cut, index) => {
-    // Keep upload order as the base assignment; the planner applies random order.
-    m.cutOverrides[index] = { itemId: m.items[index % m.items.length].id, technique: null };
+    const available=choices.filter(id=>id!=='files'||m.loop||fileIndex<m.items.length);
+    const choice=available[Math.floor(Math.random()*available.length)];
+    const itemId=choice==='files'?m.items[fileIndex++ % m.items.length].id:choice;
+    m.cutOverrides[index] = { itemId, technique: null };
     m.timing.lineTimes[index] = cut.start;
     // Keep linked inner boundaries fixed when the line start is moved later.
     if (m.lyricInsertMode === 'cut' && cut.line >= 0 && cut.part !== 0) S.project.timing.cutTimes[`${cut.line}:${cut.part}`] = cut.start;
@@ -1931,9 +3203,10 @@ function insertMediaFromLyrics() {
 }
 function mediaThumb(item, cls = '') {
   if (!item) return `<span class="missing media-ln-thumb" aria-hidden="true">—</span>`;
+  if (J.isMediaCopy(item.id)) return `<span class="missing ${cls}" title="${escapeHtml(item.name)}" aria-label="${escapeHtml(item.name)}">↻</span>`;
   const asset = J.mediaAssets.get(item.id);
-  if (!asset) return `<span class="missing">파일 없음</span>`;
-  return `<img class="${cls}" src="${asset.poster || asset.url}" alt="">`;
+  if (!asset) return `<span class="missing">소재 없음</span>`;
+  return `<img class="${cls}" data-media-thumb="${escapeHtml(item.id)}" src="${escapeHtml(asset.poster || asset.url)}" alt="">`;
 }
 function renderMediaList() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
@@ -1961,8 +3234,20 @@ function renderMediaList() {
   });
   $('mediaRandom').checked = !!m.randomOrder;
   $('mediaLoop').checked = !!m.loop;
-  $('mediaBlend').value = m.blend;
-  $('mediaOpacity').value = m.opacity;
+}
+// A dynamic layout's window (mask) shown by a cut, or null when its mask is a hand-made one. When such a
+// cut's placement is frozen (split, moved by hand, favorite pasted) the window is frozen with it as the cut's
+// own mask, marked with layoutMask (its signature) so that going back to automatic takes it back as well.
+function layoutWindowSig(layer, cut) {
+  return layer === 'media' && cut?.bgLayout && cut.mask && JSON.stringify(cut.mask) === cut.bgLayout.sig ? cut.bgLayout.sig : null;
+}
+// The override patch that hands a frozen layout window back to automatic (a mask edited since stays).
+function autoWindowReset(layer, index) {
+  const o = S.project[layer]?.cutOverrides?.[index];
+  if (!o?.layoutMask) return {};
+  const details = { ...(o.details || {}) };
+  if (JSON.stringify(details.mask) === o.layoutMask) delete details.mask;
+  return { layoutMask: undefined, details: Object.keys(details).length ? details : undefined };
 }
 function mediaOv(index, patch, layer = activeMediaLayer() || 'media') {
   const m = S.project[layer];
@@ -1975,6 +3260,181 @@ function freezeMediaCuts(layer) {
   cuts.forEach((cut, i) => { m.cutOverrides[i] = Object.assign({}, m.cutOverrides[i] || {}, { itemId: cut.sourceItemId }); });
   m.manualCuts = true;
   m.cutCount = cuts.length;
+}
+function mediaSplitTarget(layer) {
+  if(!S.plan || S.exporting || S.tap || S.plan[layer].cuts.length>=1000)return null;
+  const cut=J.mediaAt(S.plan,S.t,layer);
+  return cut && S.t-cut.start>=0.04-1e-7 && cut.end-S.t>=0.04-1e-7 ? cut : null;
+}
+// 再配置: the unlocked lyric / foreground / background cuts at the playhead get automatic placement again,
+// with a fresh placement seed (techniques and other settings keep theirs).
+function relayoutTargets() {
+  if (!S.plan) return [];
+  const targets = [];
+  for (const cut of J.lyricCutsAt(S.plan, S.t)) if (cut.line >= 0 && Number.isInteger(cut.part) && !S.project.overrides?.[cut.line]?.lock) targets.push({ layer: 'lyrics', cut });
+  for (const layer of ['foreground', 'media']) {
+    if (S.project.layerVisibility?.[layer] === false) continue;
+    const cut = J.mediaAt(S.plan, S.t, layer);
+    if (cut && cut.itemId && !mediaCutOptions(layer, cut.index).lock) targets.push({ layer, cut });
+  }
+  return targets;
+}
+// 「재생 위치で編集」: the first row picks the action, the second row the layer. Buttons that cannot act at the
+// playhead are greyed out, and an action whose layers all are is too.
+const PLAYHEAD_LABELS = {
+  insert: ['삽입', 'Insert'], split: ['분할', 'Split'], endHere: ['여기까지 재생', 'Play until here'], untilNext: ['다음 컷까지 재생', 'Play until the next cut'],
+};
+const LAYER_LABELS = { foreground: ['전경', 'Foreground'], lyrics: ['가사', 'Lyrics'], media: ['배경', 'Background'] };
+const PLAYHEAD_TITLES = {
+  insert: ['을(를) 재생 위치에 삽입', ': insert at the playhead'], split: ['을(를) 재생 위치에서 분할', ': split at the playhead'],
+  endHere: ['의 컷을 재생 위치에서 끝내기', ': end the cut at the playhead'], untilNext: ['의 컷을 다음 컷 시작까지 표시', ': show the cut until the next cut starts'],
+};
+function initPlayheadMenu() {
+  const L = J.mediaLabel;
+  const popup=document.querySelector('.playhead-secondary');
+  popup.id='playheadPopup';popup.classList.add('timeline-cut-menu');popup.setAttribute('role','menu');
+  document.body.append(popup);
+  const close=()=>{S.playheadMenu=null;syncPlayheadMenu();};
+  document.addEventListener('pointerdown',e=>{if(S.playheadMenu&&!popup.contains(e.target)&&!e.target.closest('[data-playhead-menu]'))close();},{capture:true});
+  window.addEventListener('resize',close);
+  document.addEventListener('scroll',e=>{if(S.playheadMenu&&!popup.contains(e.target))close();},{capture:true});
+  popup.addEventListener('keydown',e=>{
+    e.stopPropagation();const buttons=[...popup.querySelectorAll('button:not([hidden]):not(:disabled)')],index=buttons.indexOf(document.activeElement);
+    if(e.key==='Escape'){e.preventDefault();const trigger=document.querySelector(`[data-playhead-menu="${S.playheadMenu}"]`);close();trigger?.focus({preventScroll:true});}
+    else if(buttons.length&&['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();buttons[e.key==='Home'?0:e.key==='End'?buttons.length-1:(index+(e.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length].focus({preventScroll:true});}
+    else if(e.key==='Tab')close();
+  });
+  for (const button of document.querySelectorAll('[data-playhead-menu]')) {
+    button.textContent = L(...PLAYHEAD_LABELS[button.dataset.playheadMenu]);
+    button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-controls','playheadPopup');
+    button.addEventListener('click', () => { closeTimelineCutMenu();S.playheadMenu = S.playheadMenu === button.dataset.playheadMenu ? null : button.dataset.playheadMenu; syncPlayheadMenu();if(S.playheadMenu)popup.querySelector('button:not([hidden]):not(:disabled)')?.focus({preventScroll:true}); });
+  }
+  for (const button of document.querySelectorAll('[data-playhead-action]')) {
+    const [layerJa, layerEn] = LAYER_LABELS[button.dataset.layer], [ja, en] = PLAYHEAD_TITLES[button.dataset.playheadAction];
+    const y={foreground:2,lyrics:6,media:10}[button.dataset.layer];
+    button.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M2 3h12M2 8h12M2 13h12" opacity=".35"/><rect x="2" y="${y}" width="12" height="4" rx="1" fill="currentColor"/></svg><span>${L(layerJa, layerEn)}</span>`;button.setAttribute('role','menuitem'); button.title = L(layerJa + ja, layerEn + en); button.setAttribute('aria-label', button.title);
+  }
+  $('relayoutAtPlayhead').textContent = L('배치 섞기', 'Shuffle layout');
+  $('relayoutAtPlayhead').title = L('재생 위치의 컷 배치를 다시 짭니다', 'Re-lay out the cuts at the playhead');
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.playheadMenu) { S.playheadMenu = null; syncPlayheadMenu(); } });
+}
+// The cut 「여기까지 재생」 / 「다음 컷까지 재생」 acts on: the latest-starting cut before the playhead
+// (the one showing, or the last one to have ended); 다음 컷까지 재생 only for a cut with its own end.
+function playheadEndTarget(layer, manualOnly) {
+  if (S.exporting || S.tap || !S.plan) return null;
+  const cuts = (layer === 'lyrics' ? S.plan.cuts.filter(c => c.line >= 0 && Number.isInteger(c.part)) : S.plan[layer].cuts)
+    .filter(c => c.start < S.t - 0.04 && (!manualOnly || c.manualEnd));
+  const pick = list => list.reduce((best, c) => !best || c.start > best.start ? c : best, null);
+  const target = pick(cuts.filter(c => S.t < c.end)) || pick(cuts);
+  if (!target || !manualOnly && Math.abs(target.end - S.t) < 0.01) return null;
+  return { cut: target, key: layer === 'lyrics' ? `${target.line}:${target.part}` : target.index };
+}
+function playheadActionEnabled(action, layer) {
+  const busy = S.exporting || S.tap || !S.plan;
+  if (action === 'insert') return !busy && S.t < S.plan.duration - .04;
+  if (action === 'split') return !!mediaSplitTarget(layer);
+  return !!playheadEndTarget(layer, action === 'untilNext');
+}
+function syncPlayheadMenu() {
+  if(S.exporting||S.tap)S.playheadMenu=null;
+  const menu = S.playheadMenu;
+  for (const button of document.querySelectorAll('[data-playhead-action]')) {
+    button.hidden = button.dataset.playheadAction !== menu;
+    button.disabled = !playheadActionEnabled(button.dataset.playheadAction, button.dataset.layer);
+  }
+  for (const button of document.querySelectorAll('[data-playhead-menu]')) {
+    const action = button.dataset.playheadMenu;
+    button.disabled = ![...document.querySelectorAll(`[data-playhead-action="${action}"]`)].some(b => !b.disabled);
+    button.setAttribute('aria-expanded', String(menu === action));
+  }
+  const popup=document.querySelector('.playhead-secondary');popup.hidden = !menu;
+  if(menu){
+    const trigger=document.querySelector(`[data-playhead-menu="${menu}"]`);
+    if(trigger.disabled){S.playheadMenu=null;popup.hidden=true;trigger.setAttribute('aria-expanded','false');}
+    else{popup.setAttribute('aria-label',trigger.textContent);const r=trigger.getBoundingClientRect(),box=popup.getBoundingClientRect();popup.style.left=Math.max(8,Math.min(r.left,innerWidth-box.width-8))+'px';popup.style.top=Math.max(8,Math.min(r.bottom+4,innerHeight-box.height-8))+'px';}
+  }
+  $('relayoutAtPlayhead').disabled = !!(S.exporting || S.tap) || !relayoutTargets().length;
+}
+function playheadEnd(layer, untilNext) {
+  const target = playheadEndTarget(layer, untilNext); if (!target) return;
+  pause();
+  setCutEnd(layer, target.key, untilNext ? null : S.t);
+  replan();
+}
+function relayoutAtPlayhead() {
+  const targets = relayoutTargets(); if (!targets.length) return;
+  pause();
+  const L = J.mediaLabel, fresh = () => 1 + Math.floor(Math.random() * 1e9);
+  const lyricAuto = J.lyricEffectSettings(S.project).autoPlacement;
+  for (const { layer, cut } of targets) {
+    if (layer === 'lyrics') {
+      // Manual areas give way to automatic placement for this cut (and its line's shared area).
+      const options = S.project.lyricCutOptions[`${cut.line}:${cut.part}`] ||= {};
+      if (options.details) { delete options.details.area; if (!Object.keys(options.details).length) delete options.details; }
+      if (S.project.overrides?.[cut.line]?.area) delete S.project.overrides[cut.line].area;
+      options.placementSeed = fresh();
+    } else mediaOv(cut.index, { placement: undefined, placementSeed: fresh(), ...autoWindowReset(layer, cut.index) }, layer);
+  }
+  replan();
+  const note = !lyricAuto && targets.some(t => t.layer === 'lyrics') ? L('(가사 자동 배치가 꺼져 있어 가사는 전체 화면 그대로입니다)', ' (automatic lyric placement is off, so lyrics keep the full stage)') : '';
+  toast(L(`재생 위치의 컷 ${targets.length}개를 다시 배치했습니다`, `Re-laid out ${targets.length} cut(s) at the playhead`) + note);
+}
+function openSplitMediaCut(layer) {
+  if(!mediaSplitTarget(layer))return;
+  pause();
+  const time=S.t,L=J.mediaLabel,dialog=document.createElement('dialog');
+  dialog.id='splitMediaCutDialog';dialog.className='insert-cut-dialog';
+  dialog.innerHTML=`<form><h2>${layer==='foreground'?L('전경 분할','Split foreground'):L('배경 분할','Split background')}</h2><div class="split-effect-options"><label><input type="checkbox" name="left">${L('왼쪽을 무작위 연출로','Randomize left effects')}</label><label><input type="checkbox" name="right">${L('오른쪽을 무작위 연출로','Randomize right effects')}</label></div><p class="hint">${L('끄면 지금 연출 설정을 이어받습니다.','Unchecked sides inherit the current effects.')}</p><div class="row"><button type="button" data-cancel>${L('취소','Cancel')}</button><button type="submit">${L('분할','Split')}</button></div></form>`;
+  dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+  dialog.querySelector('form').onsubmit=e=>{
+    e.preventDefault();S.t=time;
+    splitMediaCut(layer,dialog.querySelector('[name=left]').checked,dialog.querySelector('[name=right]').checked);
+    dialog.close();
+  };
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
+}
+function splitMediaCut(layer,randomLeft=false,randomRight=false) {
+  const cut=mediaSplitTarget(layer);if(!cut)return;
+  pause();
+  const time=S.t,m=S.project[layer],cuts=S.plan[layer].cuts,index=cut.index;
+  const clone=v=>JSON.parse(JSON.stringify(v)),overrides={},times={};
+  const resolved={...clone(mediaCutOptions(layer,index)),itemId:cut.itemId,
+    technique:cut.technique,entrance:cut.entrance,departure:cut.departure,
+    placement:clone(cut.placement),blend:cut.blend,opacity:cut.opacity,
+    details:Object.fromEntries(J.cutDetailKeys.media.filter(k=>cut[k]!==undefined).map(k=>[k,clone(cut[k])]))};
+  const windowSig=layoutWindowSig(layer,cut);if(windowSig)resolved.layoutMask=windowSig;
+  const first=clone(resolved),second=clone(resolved);
+  for(const [side,random] of [[first,randomLeft],[second,randomRight]]){
+    if(!random)continue;
+    // Clear resolved effects, including copied detail overrides, while keeping
+    // the asset, placement, compositing, mask and source playback settings.
+    side.details=side.details.mask?{mask:side.details.mask}:{};
+    for(const key of ['technique','entrance','departure','layout','enter','hold','exit','treat','trans'])side[key]=null;
+    side.lock=false;side.seed=(side.seed|0)+1;
+    for(const key of Object.keys(side))if(key.startsWith('locked'))delete side[key];
+  }
+  if(cut.type==='video'){
+    const asset=J.mediaAssets.get(cut.itemId),item=m.items.find(x=>x.id===cut.itemId);
+    const duration=asset?.element?.duration || item?.duration;
+    first.videoStart=cut.videoStart;first.videoDuration=time-cut.start;
+    second.videoStart=Number.isFinite(duration)&&duration>0 ? J.mediaVideoTime(cut,time,duration) : cut.videoStart+time-cut.start;
+    second.videoDuration=cut.end-time;
+    first.videoLoop=second.videoLoop=cut.videoLoop;
+  }
+  if(cut.animation){first.animationStart=cut.animationStart;second.animationStart=cut.animationStart+time-cut.start;first.animationLoop=second.animationLoop=cut.animationLoop;}
+  cuts.forEach((c,i)=>{
+    const next=i>index?i+1:i;
+    overrides[next]=i===index?first:{...clone(m.cutOverrides[i] || {}),itemId:c.itemId};
+    times[next]=c.start;
+  });
+  overrides[index+1]=second;times[index+1]=time;
+  m.randomOrder=false;m.manualCuts=true;m.cutCount=cuts.length+1;m.cutOverrides=overrides;m.timing.lineTimes=times;
+  S.project.durationOverride=S.plan.duration;
+  const prefix=layer==='foreground'?'f:':'m:';
+  for(const link of S.project.timelineLinks)for(const end of ['a','b']){
+    if(link[end].startsWith(prefix) && +link[end].slice(2)>index)link[end]=prefix+(+link[end].slice(2)+1);
+  }
+  replan();seek(time);
 }
 function insertMediaCut(index, layer = activeMediaLayer() || 'media') {
   const m = S.project[layer], cuts = S.plan[layer].cuts;
@@ -2035,39 +3495,71 @@ function removeMediaCut(index, layer = activeMediaLayer() || 'media') {
   });
   replan();
 }
+function importProgressDialog(id, heading, delay=0) {
+  const dialog=document.createElement('dialog');dialog.id=id;dialog.className='insert-cut-dialog media-loading-dialog';
+  const title=document.createElement('h2'),status=document.createElement('p'),progress=document.createElement('progress');
+  title.id=id+'Title';title.textContent=heading;dialog.setAttribute('aria-labelledby',title.id);
+  status.setAttribute('role','status');status.setAttribute('aria-live','polite');progress.max=1;progress.setAttribute('aria-label',heading);
+  dialog.setAttribute('aria-busy','true');dialog.append(title,status,progress);
+  dialog.addEventListener('cancel',e=>e.preventDefault());
+  const escape=e=>{if(dialog.open&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();}};
+  document.addEventListener('keydown',escape,true);
+  const show=()=>{document.body.append(dialog);dialog.showModal();};
+  const timer=delay?setTimeout(show,delay):null;if(!delay)show();
+  return {
+    report(text,value=null){status.textContent=text;if(value==null)progress.removeAttribute('value');else progress.value=J.clamp(value,0,1);},
+    close(){clearTimeout(timer);document.removeEventListener('keydown',escape,true);if(dialog.open)dialog.close();dialog.remove();}
+  };
+}
 async function addMediaFiles(files, layer) {
+  files=files.filter(file=>/^(image|video)\//.test(file.type)||/\.(png|apng|gif)$/i.test(file.name));
+  if(!files.length)return;
+  if(S.projectBusy || S.exporting){toast(J.mediaLabel('처리가 끝난 뒤에 소재를 추가해 주세요','Wait for the current operation before adding assets'));return;}
+  S.projectBusy=true;
   const m = S.project[layer];
-  for (const file of files) {
-    const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
+  const loading=importProgressDialog('mediaLoadingDialog',layer==='foreground'?J.mediaLabel('전경 소재를 불러오는 중','Loading foreground assets'):J.mediaLabel('배경 소재를 불러오는 중','Loading background assets'),files.some(J.isVideoFile)?0:300);
+  try {
+  for (const [index,file] of files.entries()) {
+    const report=(text,value=null)=>loading.report(text+` (${index+1}/${files.length}): ${file.name}`,value);
+    report(J.mediaLabel('불러오는 중','Loading'));
+    const type = file.type.startsWith('image/') || /\.(png|apng|gif)$/i.test(file.name) ? 'image' : J.isVideoFile(file) ? 'video' : null;
     if (!type) continue;
     const existing = m.items.find(x => x.name === file.name && x.size === file.size && !J.mediaAssets.has(x.id));
     const item = existing || { id: crypto.randomUUID(), name: file.name, size: file.size, type };
     try {
-      const el = await J.attachMedia(item, file);
+      const el = await J.attachMedia(item, file, J.mediaAssets, p=>{
+        if(p.phase==='read')report(J.mediaLabel('파일을 읽는 중','Reading file')+(p.total?` ${Math.round(p.loaded/p.total*100)}%`:''),p.total?p.loaded/p.total:null);
+        else report(J.mediaLabel('소재를 준비하는 중','Preparing asset'));
+      });
       el.addEventListener('seeked', () => { S.need = true; });
       if (type === 'video') item.duration = el.duration || 0;
       if (!existing) {
         m.items.push(item);
         m.overrides[item.id] = { ...(m.overrides[item.id] || {}), technique: null };
       }
+      report(J.mediaLabel('브라우저에 저장하는 중','Saving in browser'));
       await J.storeMedia(item.id, file);
-    } catch (err) { toast(`${file.name}: 불러올 수 없습니다`); }
+    } catch (err) { toast(`${file.name}: `+J.mediaLabel('불러올 수 없습니다','Could not load asset')); }
   }
   replan();
+  } finally {
+    loading.close();S.projectBusy=false;
+  }
 }
 const MEDIA_EFFECT_GROUPS = {
-  enter: '등장', exit: '퇴장',
-  cinema: '시네마·카메라', dynamic: '다이내믹 모션',
-  bpm: 'BPM 동기화', texture: '색·질감',
-  graphic: '분할·잔상·글리치', transition: '컷 간 전환',
+  enter: J.mediaLabel('등장', 'Entrance'), exit: J.mediaLabel('퇴장', 'Exit'),
+  cinema: J.mediaLabel('카메라', 'Camera'), dynamic: J.mediaLabel('다이내믹 모션', 'Dynamic motion'),
+  bpm: J.mediaLabel('BPM 동기화', 'BPM sync'), texture: J.mediaLabel('색·질감', 'Color / texture'),
+  graphic: J.mediaLabel('분할·잔상·글리치', 'Panels / echoes / glitch'), maskFx: J.mediaLabel('마스크', 'Masks'),
+  transition: J.mediaLabel('컷 간 전환', 'Cut transitions'),
 };
 function renderMediaLines() {
   const layer = activeMediaLayer() || 'media', m = S.project[layer];
   const ol = $('mediaLineList'); ol.innerHTML = ''; S.mediaLineEls = [];
-  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="이미지·동영상 기법"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>효과 없음</option><option value="" ${ov.technique === null ? 'selected' : ''}>자동</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>기존 설정</option>` : ''}${J.MEDIA_TECH[cut.technique]?.stage ? `<option value="${cut.technique}" selected>${J.mediaTechniqueName(cut)} (기존 설정)</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).filter(([group]) => !['enter', 'exit'].includes(group)).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group && !def.stage).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${def.name}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  const selectTechnique = (ov, cut) => `<select class="media-technique" aria-label="${J.mediaLabel('이미지·동영상 기법', 'Media technique')}"><option value="none" ${(ov.technique === 'none' || ov.technique === undefined && cut.technique === 'none') ? 'selected' : ''}>${J.mediaLabel('효과 없음', 'No effects')}</option><option value="" ${ov.technique === null ? 'selected' : ''}>${J.mediaLabel('자동', 'Auto')}</option>${cut.technique === 'legacy' ? `<option value="legacy" selected>${J.mediaLabel('기존 설정', 'Legacy settings')}</option>` : ''}${J.MEDIA_TECH[cut.technique]?.stage ? `<option value="${cut.technique}" selected>${J.mediaTechniqueName(cut)} (${J.mediaLabel('기존 설정', 'Legacy settings')})</option>` : ''}${Object.entries(MEDIA_EFFECT_GROUPS).filter(([group]) => !['enter', 'exit'].includes(group) && Object.entries(J.MEDIA_TECH).some(([key, def]) => def.group === group && J.mediaTechAllowed(key, layer))).map(([group, name]) => `<optgroup label="${name}">${Object.entries(J.MEDIA_TECH).filter(([key, def]) => def.group === group && !def.stage && J.mediaTechAllowed(key, layer)).map(([key, def]) => `<option value="${key}" ${ov.technique === key ? 'selected' : ''}>${escapeHtml(def.name)}</option>`).join('')}</optgroup>`).join('')}</select>`;
   const selectPhase = (ov, cut, stage, field) => {
     const value = ov[field] ?? '', title = MEDIA_EFFECT_GROUPS[stage];
-    return `<label>${title}<select class="media-phase" data-media-phase="${field}" aria-label="${title}"><option value="" ${!value ? 'selected' : ''}>자동</option><option value="none" ${value === 'none' ? 'selected' : ''}>즉시(없음)</option>${J.mediaPhaseOptions(stage).map(([key, def]) => `<option value="${key}" ${value === key ? 'selected' : ''}>${def.name}</option>`).join('')}</select></label>`;
+    return `<label>${title}<select class="media-phase" data-media-phase="${field}" aria-label="${title}"><option value="" ${!value ? 'selected' : ''}>${J.mediaLabel('자동', 'Auto')}</option><option value="none" ${value === 'none' ? 'selected' : ''}>${J.mediaLabel('즉시(없음)', 'Instant (none)')}</option>${J.mediaPhaseOptions(stage).map(([key, def]) => `<option value="${key}" ${value === key ? 'selected' : ''}>${escapeHtml(def.name)}</option>`).join('')}</select></label>`;
 
   };
   const addButton = index => {
@@ -2078,38 +3570,55 @@ function renderMediaLines() {
   };
   S.plan[layer].cuts.forEach((cut, i) => {
     addButton(i);
-    const item = m.items.find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
-    const fileSelect = `<select class="media-cut-file" ${m.randomOrder ? `disabled title="파일을 지정하려면 무작위 순서를 꺼주세요"` : ''} aria-label="${i + 1}컷 파일"><option value="">이미지 없음</option>${m.items.map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
+    const item = [...m.items,...J.mediaCopyItems(layer)].find(x => x.id === cut.itemId), ov = Object.assign({}, m.overrides[cut.itemId] || {}, m.cutOverrides[i] || {});
+    const fileSelect = `<select class="media-cut-file" ${m.randomOrder ? `title="${J.mediaLabel('소재를 바꾸면 지금 순서로 무작위 순서를 끕니다', 'Changing the asset turns off random order and keeps the current order')}"` : ''} aria-label="${i + 1}번째 컷의 소재"><option value="">이미지 없음</option>${[...J.mediaCopyItems(layer),...m.items].map(asset => `<option value="${escapeHtml(asset.id)}" ${cut.itemId === asset.id ? 'selected' : ''}>${escapeHtml(asset.name)}</option>`).join('')}</select>`;
     if (ov.layout === 'stretch') ov.layout = 'cover';
     for (const key of ['layout', 'enter', 'hold', 'exit', 'treat']) if (ov[key] === undefined) ov[key] = cut[key];
     const asset = J.mediaAssets.get(cut.itemId), source = asset && asset.element;
-    const sw = source && (source.videoWidth || source.naturalWidth), sh = source && (source.videoHeight || source.naturalHeight);
+    const dimensions=J.mediaSourceDimensions(S.plan,cut,cut.start);
+    const sw=dimensions?.width,sh=dimensions?.height;
     const placement = J.mediaPlacementRect(cut.placement, sw, sh, S.plan.W, S.plan.H);
     const placementControl = `<span class="foreground-placement-controls"><button class="foreground-placement-open ghost" type="button" ${placement ? '' : 'disabled'} aria-label="${i + 1}컷 배치와 크기 편집"><span class="foreground-placement-thumb"><i style="left:${(placement ? placement.x : 0) * 100}%;top:${(placement ? placement.y : 0) * 100}%;width:${(placement ? placement.w : 1) * 100}%;height:${(placement ? placement.h : 1) * 100}%;transform:rotate(${cut.placement ? cut.placement.angle || 0 : 0}deg)"></i></span>배치·크기 편집</button>${cut.placementMode === 'auto' ? `<span class="tagl">자동 배치</span>` : ''}${cut.placementMode === 'manual' ? '<button class="foreground-placement-reset ghost" type="button">자동 배치로 되돌리기</button>' : ''}</span>`;
     const li = document.createElement('li'); li.className = 'ln media-ln';
-    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}컷 시작 초">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.mediaTechniqueName(cut)}</span></span><span class="tools">${selectTechnique(ov, cut)}<button class="icon ghost dice" title="이 컷 다시 뽑기">${ICON.dice}</button><button class="icon ghost lock" title="이 컷 잠금" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}컷 삭제">삭제</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>동영상 반복 재생</label><label class="media-video-duration">동영상 길이(초)<input type="number" min="0.04" max="3600" step="0.01" placeholder="자동" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}컷 동영상 길이(초)"></label>` : ''}</div>`;
-    if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>크로마키 합성</label><label>색<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}컷 크로마키 색" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
+    li.innerHTML = `<span class="no">${String(i + 1).padStart(2, '0')}</span><input class="time mono" type="number" step="0.01" min="0" value="${cut.start.toFixed(2)}" aria-label="${i + 1}번째 컷의 시작 초">${fileSelect}${mediaThumb(item, 'media-ln-thumb')}<div class="meta"><span class="cuts"><span>${J.mediaTechniqueName(cut)}</span></span><span class="tools">${selectTechnique(ov, cut)}<button class="icon ghost dice" title="이 컷 다시 뽑기">${ICON.dice}</button><button class="icon ghost lock" title="이 컷 잠금" aria-pressed="${ov.lock ? 'true' : 'false'}">${ICON.lock}</button><button class="ghost small remove-media-cut" type="button" aria-label="${i + 1}번째 컷 삭제">삭제</button></span>${placementControl}${cut.type === 'video' ? `<label class="media-video-loop"><input type="checkbox" ${cut.videoLoop ? 'checked' : ''}>동영상 반복 재생</label><label class="media-video-start-field">${J.mediaLabel('소재 재생 시작 위치(초)','Source start time (s)')}<input class="media-video-start" type="number" min="0" step="0.01" value="${cut.videoStart}" aria-label="${J.mediaLabel('소재 재생 시작 위치(초)','Source start time (s)')}"></label><label class="media-video-duration">동영상 길이(초)<input type="number" min="0.04" max="3600" step="0.01" placeholder="자동" value="${ov.videoDuration ?? ''}" aria-label="${i + 1}번째 컷의 동영상 길이(초)"></label>` : ''}</div>`;
+    if (cut.type === 'video') li.querySelector('.meta').insertAdjacentHTML('beforeend', `<span class="media-chroma"><label><input class="media-chroma-toggle" type="checkbox" ${cut.chromaKey ? 'checked' : ''}>크로마키 합성</label><label>색<input class="media-chroma-color" type="color" value="${cut.chromaColor}" aria-label="${i + 1}번째 컷의 크로마키 색" ${cut.chromaKey ? '' : 'disabled'}></label></span>`);
     li.querySelector('.foreground-placement-controls').insertAdjacentHTML('beforebegin', `<div class="media-phase-controls">${selectPhase(ov, cut, 'enter', 'entrance')}${selectPhase(ov, cut, 'exit', 'departure')}</div>`);
     li.querySelectorAll('[data-media-phase]').forEach(select => select.addEventListener('change', e => {
       mediaOv(i, { [select.dataset.mediaPhase]: e.target.value || null, lock: false }, layer); replan();
     }));
+    const compositing=document.createElement('div');compositing.className='lyric-cut-compositing media-cut-compositing';
+    const L=J.mediaLabel,modes={normal:L('표준','Normal'),multiply:L('곱하기','Multiply'),screen:L('스크린','Screen'),overlay:L('오버레이','Overlay')};
+    compositing.innerHTML=`<label>${L('합성 방법','Blend')}<select class="media-cut-blend" aria-label="${L('이 컷의 합성 방법','This cut blend mode')}">${Object.entries(modes).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><label>${L('불투명도(%)','Opacity (%)')}<input class="media-cut-opacity" type="number" min="0" max="100" step="1" value="${cut.opacity}" aria-label="${L('이 컷의 불투명도(%)','This cut opacity (%)')}"></label>`;
+    compositing.querySelector('select').value=cut.blend;
+    compositing.querySelector('select').addEventListener('change',e=>{mediaOv(i,{blend:e.target.value},layer);replan();});
+    compositing.querySelector('input').addEventListener('change',e=>{mediaOv(i,{opacity:J.clamp(+e.target.value||0,0,100)},layer);replan();});
+    li.querySelector('.meta').append(compositing);
     li.querySelector('.time').addEventListener('change', e => { m.timing.lineTimes[i] = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
-    li.querySelector('.media-cut-file').addEventListener('change', e => { mediaOv(i, { itemId: e.target.value || null }, layer); replan(); });
+    li.querySelector('.media-cut-file').addEventListener('change', e => setMediaCutAsset(layer,i,e.target.value || null));
     li.querySelector('.media-technique').addEventListener('change', e => { if (e.target.value !== 'legacy') { mediaOv(i, { technique: e.target.value || null, lock: false, lockedTechnique: undefined }, layer); replan(); } });
+    if(cut.animation){
+      li.querySelector('.meta').insertAdjacentHTML('beforeend',`<label class="media-video-loop">${J.mediaLabel('애니메이션 재생','Animation playback')}<select class="media-animation-loop">${[['auto',J.mediaLabel('파일 설정대로','As specified by the file')],['once',J.mediaLabel('1회 재생','Play once')],['loop',J.mediaLabel('반복 재생','Loop')]].map(([value,label])=>`<option value="${value}" ${cut.animationLoop===value?'selected':''}>${label}</option>`).join('')}</select></label>`);
+      li.querySelector('.media-animation-loop').onchange=e=>{mediaOv(i,{animationLoop:e.target.value},layer);replan();};
+    }
     const videoLoop = li.querySelector('.media-video-loop input');
     if (videoLoop) videoLoop.addEventListener('change', e => { mediaOv(i, { videoLoop: e.target.checked }); replan(); });
-    const videoDuration = li.querySelector('.media-video-duration input');
+    const videoStart = li.querySelector('.media-video-start');
+    if (videoStart) videoStart.addEventListener('change', e => { const value=Number(e.target.value); mediaOv(i,{videoStart:Number.isFinite(value)?Math.max(0,value):0},layer); replan(); });
+    const videoDuration = li.querySelector('.media-video-duration input:not(.media-video-start)');
     if (videoDuration) videoDuration.addEventListener('change', e => { const v = +e.target.value; mediaOv(i, { videoDuration: e.target.value && Number.isFinite(v) && v > 0 ? J.clamp(v, 0.04, 3600) : undefined }, layer); replan(); });
     const placementOpen = li.querySelector('.foreground-placement-open');
     if (placementOpen) placementOpen.addEventListener('click', () => openMediaEditor(i, layer));
     const placementReset = li.querySelector('.foreground-placement-reset');
-    if (placementReset) placementReset.addEventListener('click', () => { mediaOv(i, { placement: null, lock: false, lockedPlacement: undefined, lockedPlacementMode: undefined }); replan(); });
+    if (placementReset) placementReset.addEventListener('click', () => { mediaOv(i, { placement: null, lock: false, lockedPlacement: undefined, lockedPlacementMode: undefined, lockedLayout: undefined, ...autoWindowReset(layer, i) }); replan(); });
     const chroma = li.querySelector('.media-chroma-toggle');
     if (chroma) {
       chroma.addEventListener('change', e => { mediaOv(i, { chromaKey: e.target.checked }); replan(); });
       li.querySelector('.media-chroma-color').addEventListener('change', e => { mediaOv(i, { chromaColor: e.target.value }); replan(); });
     }
     li.querySelector('.dice').addEventListener('click', () => rerollMediaCut(layer, i));
+    li.querySelector('.dice').after(disableRerollButton(layer,i));
+    li.querySelector('.tools').insertBefore(detailButton(() => openCutDetails(layer,i)), li.querySelector('.remove-media-cut'));
+    li.querySelector('.tools').append(...effectFavoriteButtons(layer,i));
     li.querySelector('.lock').addEventListener('click', () => toggleMediaCutLock(layer, i));
     li.querySelector('.remove-media-cut').addEventListener('click', () => removeMediaCut(i, layer));
     ol.appendChild(li); S.mediaLineEls.push(li);
@@ -2122,6 +3631,7 @@ async function restoreMediaAssets() {
     if (J.mediaAssets.has(item.id)) continue;
     try { const blob = await J.loadMedia(item.id); if (blob) { const el = await J.attachMedia(item, blob); el.addEventListener('seeked', () => { S.need = true; }); } } catch (e) {}
   }
+  for(const ref of J.personMaskReferences(S.project).values())try{await J.loadPersonMask(ref);}catch(e){}
   replan();
 }
 function setOv(i, patch) {
@@ -2255,6 +3765,14 @@ function randomPalette() {
   const c = S.project.colors;
   const sc0 = J.STYLES[S.project.style].schemes[0];
   const bg = c.enabled && c.bg ? c.bg : sc0.bg;
+  // A colour theme (genre / theme colour) decides the palette, base colours included when its genre sets them.
+  if (J.colorThemeActive(S.project)) {
+    S.project.colors = J.themedColors(S.project, S.project.style, Math.random, c);
+    const n = S.project.colors;
+    renderColors(); replan(); commit();
+    toast(J.mediaLabel('배색: 테마 색에 맞춰 바꿨습니다', 'Colours: changed to match the colour theme'), [n.accent, n.ghostA, n.ghostB]);
+    return;
+  }
   let p, guard = 0;
   do { p = J.randomPalette(bg); } while (guard++ < 6 && p.ghostA === c.ghostA && p.ghostB === c.ghostB);
   Object.assign(c, { accent: p.accent, ghostA: p.ghostA, ghostB: p.ghostB, accentOn: true });
@@ -2396,6 +3914,7 @@ const themeName = th => { const o = document.querySelector(`.themeSel option[val
 function omakase() {
   if (S.exporting || S.tap) return;
   remember();
+  J.clearPastedLyricEffects(S.project);
   const keepE = lockedEnabled(), keepP = lockedParams();
   const th = J.OMAKASE_THEMES[S.project.themeId] ? S.project.themeId : null;
   const r = J.omakase(S.project, Math.random, { themeId: th });
@@ -2451,6 +3970,7 @@ function rerollPart(part) {
     restoreEnabled(keepE); restoreParams(keepP);
     msg = `분위기: ${J.MOODS[r.mood].name}`;
   } else if (part === 'cut') {
+    J.clearPastedLyricEffects(P);
     shuffleMediaEffects();
     P.seed = (Math.random() * 1e9) | 0;
     msg = '구성: 레이아웃과 움직임 다시 뽑기';
@@ -2485,6 +4005,49 @@ function toast(m, cols) {
 }
 
 /* ---------------- かんたん / 詳細 ---------------- */
+// Share light-dismiss across static and dynamically created dialogs/drawers.
+// Require the gesture to start outside too, so dragging controls out does not dismiss.
+function initOutsideDismiss() {
+  let pressed=null;
+  const outside=(dialog,e)=>{const r=dialog.getBoundingClientRect();return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;};
+  const panelTargets=e=>({
+    settings:S.settingsOpen&&!e.target.closest('#settingsDrawer,#modeEasy,#modePro'),
+    source:S.sourceOpen&&$('app').classList.contains('compact-ui')&&!e.target.closest('.col-left')
+  });
+  document.addEventListener('pointerdown',e=>{
+    pressed=null;if(e.button!==0)return;
+    const dialog=e.target.closest('dialog[open]');
+    if(dialog){if(e.target===dialog&&outside(dialog,e))pressed={dialog};return;}
+    if(document.querySelector('dialog[open]'))return;
+    pressed=panelTargets(e);
+  },true);
+  document.addEventListener('pointercancel',()=>{pressed=null;},true);
+  document.addEventListener('click',e=>{
+    const start=pressed;pressed=null;if(!start)return;
+    if(start.dialog){
+      const dialog=start.dialog;
+      if(dialog.open&&e.target===dialog&&outside(dialog,e)){
+        e.preventDefault();e.stopImmediatePropagation();
+        // Use the existing Escape/cancel guards and close cleanup (no Apply/Save).
+        if(dialog.dispatchEvent(new Event('cancel',{cancelable:true})))dialog.close('cancel');
+      }
+      return;
+    }
+    if(document.querySelector('dialog[open]'))return;
+    const end=panelTargets(e);
+    if(start.settings&&end.settings){S.settingsOpen=false;syncSettingsDrawer();}
+    if(start.source&&end.source){S.sourceOpen=false;syncSourceDrawer();}
+  },true);
+}
+// The fork's drawers (settings / source) are not part of this layout: their calls stay harmless here
+function syncSourceDrawer() {}
+function selectSourceDrawer(tab) {
+  cancelAreaEditor();S.sourceTab=tab;syncSourceTab();
+  if(tab!=='lyrics'){renderMediaList();renderMediaLines();}
+}
+function positionSettingsDrawer() {}
+function syncSettingsDrawer() {}
+function toggleSettingsDrawer(mode) { setMode(mode); }
 function setMode(m) {
   S.mode = m === 'easy' ? 'easy' : m === 'mobile' ? 'mobile' : 'pro';
   const mobile = S.mode === 'mobile', easy = S.mode === 'easy' || mobile;   // 스마트폰 = the 간단 panel, laid out for a phone
@@ -2527,7 +4090,7 @@ function renderFx() {
       + `<button type="button" class="icon ghost lk pro-only" data-lk="${k}" aria-pressed="${lk}" title="${lk ? LOCK_TITLE_OFF : LOCK_TITLE_ON}">${ICON.lock}</button>`;
     const inp = row.querySelector('input'), out = row.querySelector('output');
     row.querySelector('.lk').addEventListener('click', () => toggleParamLock(k));
-    inp.addEventListener('input', () => { S.project.fx[k] = +inp.value; S.project.mood = null; out.textContent = Math.round(inp.value * 100); markUndoGroup(`fx:${k}`); replanSoon(120); });
+    inp.addEventListener('input', () => { S.project.fx[k] = +inp.value; if (k === 'density') for (const ov of Object.values(S.project.overrides || {})) delete ov.divisionDensity; S.project.mood = null; out.textContent = Math.round(inp.value * 100); markUndoGroup(`fx:${k}`); replanSoon(120); });
     box.appendChild(row);
   });
   lockBtn('flash', $('fxFlash').closest('label'));
@@ -2661,14 +4224,12 @@ function renderTech() {
   resetPreviewWatch();
   const lyricEffects = J.lyricEffectSettings(S.project);
   $('lyricAutoPlacement').checked = lyricEffects.autoPlacement;
-  $('lyricAutoSizeRange').hidden = !lyricEffects.autoPlacement;
-  $('lyricAutoSizeMin').value = lyricEffects.sizeMin;
-  $('lyricAutoSizeMax').value = lyricEffects.sizeMax;
-  $('lyricAutoSizeMinValue').textContent = `${lyricEffects.sizeMin}%`;
-  $('lyricAutoSizeMaxValue').textContent = `${lyricEffects.sizeMax}%`;
-  $('lyricAutoSizeSlider').style.setProperty('--range-min', `${lyricEffects.sizeMin / 5}%`);
-  $('lyricAutoSizeSlider').style.setProperty('--range-max', `${lyricEffects.sizeMax / 5}%`);
   $('lyricAvoidForeground').checked = lyricEffects.avoidForeground;
+  // 「画面中央を避ける」 (詳細 > 가사) and 「가사が画面中央を避ける」 (かんたん) are the same setting.
+  for (const input of document.querySelectorAll('.avoid-center-toggle')) input.checked = lyricEffects.avoidCenter && lyricEffects.autoPlacement;
+  $('lyricAvoidCenter').disabled = !lyricEffects.autoPlacement;
+  $('lyricGroupAvoidanceStrength').value = lyricEffects.lyricAvoidanceStrength;
+  $('lyricGroupAvoidanceStrengthValue').textContent = lyricEffects.lyricAvoidanceStrength.toFixed(2);
   $('lyricAvoidanceStrength').value = lyricEffects.avoidanceStrength;
   $('lyricAvoidanceStrengthValue').textContent = lyricEffects.avoidanceStrength.toFixed(2);
   $('lyricAvoidanceStrength').disabled = !lyricEffects.autoPlacement || !lyricEffects.avoidForeground;
@@ -2679,10 +4240,11 @@ function renderTech() {
   $('lyricOpacityMax').value = lyricEffects.opacityMax;
   const box = $('techLists'); box.innerHTML = '';
   const q = ($('techFilter').value || '').trim().toLowerCase();
+  const matches=J.detailSearchQuery(q);
   let total = 0, onAll = 0;
   GROUPS.forEach(([g, label]) => {
     const tbl = J.registry(g), items = techItems(g), en = S.project.enabled[g] || (S.project.enabled[g] = {});
-    const shown = q ? items.filter(k => (tbl[k].name + ' ' + k).toLowerCase().includes(q)) : items;
+    const shown = items.filter(k => matches(tbl[k].name+' '+k));
     const onN = items.filter(k => en[k] !== false).length;
     total += items.length; onAll += onN;
     if (q && !shown.length) return;
@@ -2708,6 +4270,7 @@ function renderTech() {
       l.innerHTML = `<canvas width="${tw}" height="${th}" data-g="${g}" data-k="${k}"></canvas><span class="tcard-name"><input type="checkbox" ${en[k] !== false ? 'checked' : ''}> <span>${escapeHtml(tbl[k].name)}</span>${setBadges(tbl[k])}</span>`;
       const cv = l.querySelector('canvas');
       l.querySelector('input').addEventListener('change', e => { en[k] = e.target.checked; S.project.mood = null; d.querySelector('.tg-cnt').textContent = `${items.filter(x => en[x] !== false).length}/${items.length}`; replanSoon(60); });
+      l.appendChild(J.effectPreviewButton(g,k));
       list.appendChild(l);
     });
     d.querySelector('summary .lk').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); toggleTechLock(g); });
@@ -2727,6 +4290,163 @@ function renderTech() {
 }
 
 /* ---------------- output tab ---------------- */
+const shortExportActive=()=>$('exportSettings').parentElement.id==='exportDialogContent'&&S.exportKind==='short';
+const activeExportProject=()=>shortExportActive()?J.shortExportProject(S.project):S.project;
+let shortPreview=null;
+const shortPreviewAudio={...AP,ctx:null,src:null,startAt:0};
+const shortPreviewHasAudio=()=>!!S.audio?.buffer&&S.project.includeAudio!==false;
+function playShortPreviewAudio(){
+  const p=shortPreview;if(!p)return;
+  shortPreviewAudio.stop();p.audioClock=shortPreviewHasAudio();p.clock=performance.now()-p.t*1000;
+  if(p.audioClock)shortPreviewAudio.play(S.audio.buffer,p.t,J.shortExportRange(S.plan,S.project.shortExport).end);
+}
+function syncShortPreviewMarkers(){
+  const p=shortPreview,time=p?Math.round(p.t*1000)/1000:0,disabled=!!S.exporting||!p?.ready||!shortRangeValid();
+  $('shortSetStart').disabled=disabled||time>=S.plan.duration;
+  $('shortSetEnd').disabled=disabled||time<=0;
+}
+function setShortBoundary(id){
+  const p=shortPreview;if(!p?.ready||S.exporting)return;
+  const duration=S.plan.duration,gap=Math.min(.001,duration),time=J.clamp(Math.round(p.t*1000)/1000,0,duration);
+  if(id==='shortStart'){
+    if(time>=duration)return;
+    $('shortEnd').value=String(Math.max(Number($('shortEnd').value),Math.min(duration,time+gap)));
+  }else{
+    if(time<=0)return;
+    $('shortStart').value=String(Math.min(Number($('shortStart').value),Math.max(0,time-gap)));
+  }
+  $(id).value=String(time);syncShortRange();updateShortExport();prepareShortPreview(time);
+}
+function shortRangeValid(){
+  try{
+    if(!$('shortStartValue').checkValidity()||!$('shortEndValue').checkValidity())throw new Error(J.mediaLabel('시작·끝을 동영상 범위 안에서 지정해 주세요.','Choose a start and end within the video.'));
+    J.shortExportRange(S.plan,S.project.shortExport);$('shortExportError').textContent=shortPreview?.error||'';return true;
+  }
+  catch(error){$('shortExportError').textContent=error.message;return false;}
+}
+function pauseShortPreview(){
+  if(!shortPreview)return;
+  shortPreview.playing=false;
+  shortPreviewAudio.stop();shortPreview.audioClock=false;
+  for(const asset of J.mediaAssets.values())if(asset.type==='video')asset.element.pause();
+  $('shortPreviewPlay').textContent='▶';$('shortPreviewPlay').setAttribute('aria-label',J.mediaLabel('미리보기 재생','Play preview'));
+}
+function stopShortPreview(){
+  if(!shortPreview)return;
+  pauseShortPreview();shortPreview.controller?.abort();cancelAnimationFrame(shortPreview.raf);shortPreview=null;
+}
+async function prepareShortPreview(time,play=false){
+  const p=shortPreview;if(!p||S.exporting)return;p.plan=S.plan;
+  if(!shortRangeValid()){pauseShortPreview();p.controller?.abort();return;}
+  pauseShortPreview();p.controller?.abort();const controller=new AbortController();p.controller=controller;p.ready=false;p.error='';
+  const range=J.shortExportRange(S.plan,S.project.shortExport);
+  p.t=play&&(time<range.start||time>=range.end)?range.start:J.clamp(time,0,S.plan.duration);p.plan=S.plan;syncShortPreviewMarkers();
+  $('shortPreviewTime').textContent=J.fmtTime(p.t);$('shortPreviewSeek').value=String(p.t);
+  try{
+    // Resume in the original button gesture, before waiting for video seeks,
+    // so audio can start on iOS after the selected frame is ready.
+    let audioReady=Promise.resolve();
+    if(play&&shortPreviewHasAudio()){
+      if(!shortPreviewAudio.ctx)shortPreviewAudio.ctx=new (window.AudioContext||window.webkitAudioContext)();
+      if(shortPreviewAudio.ctx.state==='suspended')audioReady=shortPreviewAudio.ctx.resume();
+    }
+    await Promise.all([J.prepareMediaFrame(p.plan,Math.min(p.t,Math.max(0,p.plan.duration-.001)),controller.signal),audioReady]);
+    if(shortPreview!==p||controller.signal.aborted)return;
+    p.ready=true;p.need=true;p.playing=play;p.clock=performance.now()-p.t*1000;
+    if(play)playShortPreviewAudio();
+    $('shortExportError').textContent='';
+    syncShortPreviewMarkers();
+    $('shortPreviewPlay').textContent=play?'❚❚':'▶';$('shortPreviewPlay').setAttribute('aria-label',J.mediaLabel(play?'미리보기 일시 정지':'미리보기 재생',play?'Pause preview':'Play preview'));
+  }catch(error){if(shortPreview===p&&!controller.signal.aborted){p.error=error.message;$('shortExportError').textContent=error.message;pauseShortPreview();}}
+  finally{if(p.controller===controller)p.controller=null;}
+}
+function startShortPreview(){
+  stopShortPreview();if(!shortExportActive())return;
+  const p=shortPreview={renderer:new J.Renderer(),portrait:new J.ShortFrameRenderer(),source:document.createElement('canvas'),t:S.project.shortExport.start,plan:S.plan,ready:false,need:true,playing:false};
+  const tick=now=>{
+    if(shortPreview!==p)return;p.raf=requestAnimationFrame(tick);if(S.exporting)return;
+    if(p.plan!==S.plan){prepareShortPreview(p.t);return;}
+    if(!p.ready)return;
+    if(p.playing){
+      const range=J.shortExportRange(S.plan,S.project.shortExport);p.t=Math.max(range.start,p.audioClock?shortPreviewAudio.time():(now-p.clock)/1000);
+      if(p.t>=range.end){p.t=range.start;playShortPreviewAudio();}
+      J.syncMediaPreview(S.plan,p.t,true);p.need=true;
+    }
+    if(!p.need||p.playing&&now-(p.lastDraw??-Infinity)<1000/Math.min(30,S.plan.fps)-1)return;
+    p.need=false;p.lastDraw=now;
+    try{
+      const canvas=$('shortExportPreview'),fit=Math.min(canvas.width/S.plan.W,canvas.height/S.plan.H),sw=Math.max(1,Math.round(S.plan.W*fit)),sh=Math.max(1,Math.round(S.plan.H*fit));
+      if(p.source.width!==sw||p.source.height!==sh){p.source.width=sw;p.source.height=sh;}
+      p.renderer.frame(p.source.getContext('2d',{alpha:false}),S.plan,Math.min(p.t,Math.max(0,S.plan.duration-.001)),{scale:sw/S.plan.W});
+      p.portrait.frame(canvas.getContext('2d',{alpha:false}),p.source,S.project.shortExport);
+      $('shortPreviewTime').textContent=J.fmtTime(p.t);$('shortPreviewSeek').value=String(p.t);
+      syncShortPreviewMarkers();
+    }catch(error){p.error=error.message;$('shortExportError').textContent=error.message;pauseShortPreview();}
+  };
+  p.raf=requestAnimationFrame(tick);prepareShortPreview(p.t);
+}
+function syncShortRange(fromSliders=true){
+  if(fromSliders){
+    $('shortStartValue').value=Number($('shortStart').value).toFixed(3);$('shortEndValue').value=Number($('shortEnd').value).toFixed(3);
+  }else{
+    for(const [slider,input] of [['shortStart','shortStartValue'],['shortEnd','shortEndValue']])if(Number.isFinite($(input).valueAsNumber))$(slider).value=String($(input).valueAsNumber);
+  }
+  const duration=S.plan.duration,start=Number($('shortStart').value),end=Number($('shortEnd').value);
+  $('shortRange').style.setProperty('--range-start',`${start/duration*100}%`);
+  $('shortRange').style.setProperty('--range-end',`${end/duration*100}%`);
+}
+function initShortExport(){
+  const s=J.shortExportSettings(S.project.shortExport),duration=S.plan.duration;
+  if(s.start>=duration||s.end!=null&&(s.end<=s.start||s.end>duration)){s.start=0;s.end=null;}
+  S.project.shortExport=s;
+  $('shortStart').max=$('shortEnd').max=String(duration);
+  $('shortStartValue').max=$('shortEndValue').max=String(duration);
+  $('shortStartValue').value=String(s.start);$('shortEndValue').value=String(s.end??duration);syncShortRange(false);
+  $('shortFill').value=s.mode;$('shortBlur').value=String(s.blur);$('shortBlurValue').value=String(s.blur);$('shortRes').value=String(s.res);
+  $('shortExportError').textContent='';
+  $('shortPreviewPlay').disabled=$('shortPreviewSeek').disabled=false;
+  $('shortPreviewSeek').min='0';$('shortPreviewSeek').max=String(duration);
+}
+function updateShortExport(rangeChanged=false){
+  const start=$('shortStartValue').value,end=$('shortEndValue').value;
+  S.project.shortExport={start:start===''?NaN:Number(start),end:end===''?NaN:Number(end),mode:$('shortFill').value,blur:Number($('shortBlur').value),res:Number($('shortRes').value)};
+  $('shortBlurValue').value=$('shortBlur').value;
+  syncShortRange(false);
+  const valid=shortRangeValid();$('shortPreviewPlay').disabled=$('shortPreviewSeek').disabled=!valid;
+  if(!valid){pauseShortPreview();shortPreview?.controller?.abort();syncShortPreviewMarkers();}
+  else{
+    $('shortPreviewSeek').min='0';$('shortPreviewSeek').max=String(S.plan.duration);
+    if(rangeChanged)prepareShortPreview(S.project.shortExport.start);else if(shortPreview)shortPreview.need=true;
+  }
+  syncQuality();codecNote();autosave();
+}
+function syncExportSettingsVisibility() {
+  const inDialog=$('exportSettings').parentElement.id==='exportDialogContent';
+  const short=shortExportActive(),mp4=!inDialog||S.exportKind==='mp4'||short,transparent=inDialog&&S.exportKind==='pnga';
+  $('shortExportOptions').hidden=!short;
+  $('shortExportDescription').hidden=!short;
+  for(const id of ['outAspect','outRes','outVideoSize'])$(id).closest('label').hidden=short;
+  for(const id of ['outVideoWidth','outVideoHeight'])$(id).closest('label').hidden=short||$('outVideoSize').value!=='custom';
+  $('outQuality').closest('label').hidden=!mp4;
+  $('outAudio').closest('label').hidden=!inDialog||!mp4;
+  $('outBitrate').closest('label').hidden=!mp4||S.project.quality!=='custom';
+  $('outQP').closest('label').hidden=$('outQPNote').hidden=!mp4||S.project.quality!=='qp';
+  $('outKey').closest('label').hidden=transparent||short;
+  $('exportSettings').querySelector('.key-note').hidden=transparent||short;
+  $('codecNote').hidden=!mp4;
+}
+function syncQuality() {
+  const project=activeExportProject();
+  const names={standard:J.mediaLabel('표준','Standard'),high:J.mediaLabel('높음','High'),max:J.mediaLabel('최고','Maximum'),custom:J.mediaLabel('비트레이트 지정','Custom bitrate'),qp:J.mediaLabel('화질 우선(QP 지정)','Quality priority (QP)')};
+  for(const option of $('outQuality').options){
+    if(option.value==='qp'){option.textContent=names.qp;continue;}
+    let rate;try{rate=J.videoBitrate(project,option.value);}catch{rate=null;}
+    option.textContent=names[option.value]+(rate==null?'':` (${+(rate/1e6).toFixed(3)} Mbps)`);
+  }
+  $('outBitrate').value=String((S.project.exportBitrate ?? J.videoBitrate(project,'high'))/1e6);
+  $('outQP').value=String(S.project.exportQP ?? 12);
+  syncExportSettingsVisibility();
+}
 function syncOut() {
   $('outAspect').value = S.project.aspect; $('outRes').value = String(S.project.res); $('outFps').value = String(S.project.fps);
   $('eAspect').value = S.project.aspect; $('eRes').value = String(S.project.res); $('eFps').value = String(S.project.fps);
@@ -2743,6 +4463,7 @@ function syncOut() {
   }
   for (const id of ['outAspect', 'outRes', 'eAspect', 'eRes']) $(id).disabled = !!size;
   $('outQuality').value = S.project.quality || 'high'; $('outAudio').checked = S.project.includeAudio !== false;
+  syncQuality();
   const k = J.keyMode(S.project) || 'off';
   $('outKey').value = k; $('eKey').value = k;
   $('outCenter').checked = $('eCenter').checked = !!S.project.centerFree;
@@ -2755,52 +4476,93 @@ function syncOut() {
 }
 // the codec check is slow in some browsers: at start-up, let the first preview frames paint before asking
 function codecNoteSoon() { (window.requestIdleCallback || (f => setTimeout(f, 400)))(() => codecNote(), { timeout: 1500 }); }
+let codecNoteVersion=0;
 async function codecNote() {
-  const [w, h] = J.outputSize(S.project);
-  const vc = await J.pickVideoCodec(w, h, S.project.fps, 12e6);
+  const version=++codecNoteVersion,isQP=S.project.quality==='qp';
+  const project=activeExportProject(),[w, h] = J.outputSize(project);
+  let bitrate;try{if(isQP)J.videoQuantizer(project);else bitrate=J.videoBitrate(project);}catch(err){$('codecNote').textContent=err.message;$('btnMP4').disabled=true;$('btnShort').disabled=true;$('eMP4').disabled=true;return;}
+  const vc = await J.pickVideoCodec(w, h, S.project.fps, bitrate,{bitrateMode:isQP?'quantizer':'variable'});
+  if(version!==codecNoteVersion||S.exporting)return;
   $('codecNote').textContent = vc ? `이 브라우저에서는 ${vc.label}(으)로 내보냅니다(${w}×${h} / ${S.project.fps}fps). 내보내는 동안 탭을 열어 두세요.` : '이 브라우저는 영상 인코딩(WebCodecs)을 지원하지 않습니다. Chrome / Edge 최신 버전으로 열거나 연속 PNG를 사용하세요.';
+  if(!vc&&isQP)$('codecNote').textContent='이 브라우저는 화질 우선(QP 지정)을 지원하지 않습니다. 다른 화질 설정이나 PNG 시퀀스를 사용해 주세요.';
   $('btnMP4').disabled = !vc; $('eMP4').disabled = !vc;
+  $('btnShort').disabled=!vc||shortExportActive()&&!shortRangeValid();
   ['btnMP4File', 'eMP4File'].forEach(id => { $(id).hidden = !vc || !canPickFile(); });
   if (!vc) $('eMP4').title = '이 브라우저에서는 MP4 내보내기를 사용할 수 없습니다 (Chrome / Edge 권장)';
 }
-const EXP_BTNS = ['btnMP4', 'btnPNG', 'btnPNGA', 'btnPNGL', 'eMP4', 'btnMP4File', 'eMP4File', 'ePNG', 'ePNGA', 'ePNGL'];
+const EXP_BTNS = ['btnMP4', 'btnShort', 'btnPNG', 'btnPNGA', 'btnPNGL', 'eMP4', 'btnMP4File', 'eMP4File', 'ePNG', 'ePNGA', 'ePNGL'];
 function openExportDialog(kind) {
   if (S.exporting) return;
   pause();
-  const mp4 = kind === 'mp4';
+  const mp4 = kind === 'mp4'||kind==='short';
   S.exportKind = kind;
-  $('exportFilename').value = baseName() + rangeSuffix() + (mp4 ? '.mp4' : kind === 'pnga' ? '_alpha_png.zip' : '_png.zip');
-  $('exportDlgTitle').textContent = mp4 ? 'MP4 내보내기' : kind === 'pnga' ? '투명 PNG (ZIP·배경 없음)' : 'PNG 시퀀스 (ZIP)';
+  $('exportDlg').classList.toggle('short-export-dialog',kind==='short');
+  if(kind==='short')initShortExport();
+  $('exportFilename').value = baseName() + (kind==='short'?'_short.mp4':rangeSuffix() + (mp4 ? '.mp4' : kind === 'pnga' ? '_alpha_png.zip' : '_png.zip'));
+  $('exportDlgTitle').textContent = kind === 'short' ? '쇼츠용 출력' : mp4 ? 'MP4 내보내기' : kind === 'pnga' ? '투명 PNG (ZIP·배경 없음)' : 'PNG 시퀀스 (ZIP)';
   $('exportDialogContent').appendChild($('exportSettings'));
-  for (const [id,type] of [['btnMP4','mp4'],['btnPNG','png'],['btnPNGA','pnga'],['btnPNGL','pnga']]) $(id).hidden = kind !== type;
-  $('outQuality').closest('label').hidden = !mp4;
-  $('outAudio').closest('label').hidden = !mp4;
+  for (const [id,type] of [['btnMP4','mp4'],['btnShort','short'],['btnPNG','png'],['btnPNGA','pnga'],['btnPNGL','pnga']]) $(id).hidden = kind !== type;
+  $('outQuality').closest('label').hidden = !mp4 && kind !== 'short';
+  $('outAudio').closest('label').hidden = !mp4 && kind !== 'short';
   $('outKey').closest('label').hidden = kind === 'pnga';
   $('exportSettings').querySelector('.key-note').hidden = kind === 'pnga';
-  $('codecNote').hidden = !mp4;
+  $('codecNote').hidden = !mp4 && kind !== 'short';
   syncOut(); Promise.resolve(codecNote()).then(() => { if (!mp4) $('btnMP4File').hidden = true; }); $('exportDlg').showModal();
+  if(kind==='short')startShortPreview();
 }
 function restoreExportSettings() {
+  stopShortPreview();
+  $('exportDlg').classList.remove('short-export-dialog');
   $('exportSettingsHome').appendChild($('exportSettings'));
+  $('btnShort').hidden=true;
   for (const id of ['btnMP4','btnPNG','btnPNGA','btnPNGL','codecNote']) $(id).hidden = false;
   for (const id of ['outQuality','outAudio','outKey']) $(id).closest('label').hidden = false;
   $('exportSettings').querySelector('.key-note').hidden = false;
-  codecNote();
+  syncQuality();codecNote();syncMainMediaPreview();S.need=true;
 }
 function baseName() {
   const k = J.keyMode(S.project);
-  return ((S.project.title || 'jizura').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'jizura') + (k ? (k === 'green' ? '_greenback' : '_blackback') : '');
+  const name = S.project.projectName?.trim() || S.project.title || 'jizura';
+  return (name.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'jizura') + (k ? (k === 'green' ? '_greenback' : '_blackback') : '');
 }
-function requestFilename() {
-  const dlg = $('filenameDlg');
-  $('filenameDlgTitle').textContent = 'AE용 내보내기';
-  $('saveFilename').value = baseName() + rangeSuffix() + '_ae.json';
+// 「ファイル名に日時を추가」: _yyyyMMddHHmm (local time) before the extension; the choice is remembered here.
+const fileStamp = (d = new Date()) => '_' + [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()].map((v, i) => String(v).padStart(i ? 2 : 4, '0')).join('');
+function withFileStamp(filename) { const dot = filename.lastIndexOf('.'); return filename.slice(0, dot) + fileStamp() + filename.slice(dot); }
+function syncFilenamePreview() {
+  const ext = $('filenameDlg').dataset.ext || '.jizuraichi', name = J.exportFilename($('saveFilename').value, ext, baseName());
+  $('saveFilenamePreview').textContent = $('saveFilenameDate').checked ? J.mediaLabel('저장 이름:', 'Saved as: ') + withFileStamp(name) : '';
+}
+// Resolves { filename, name }: the file name to write, and its name without extension or added date.
+function requestFilename(kind) {
+  const dlg = $('filenameDlg'), project = kind === 'project' || kind === 'settings', ext = project ? '.jizuraichi' : '.json';
+  $('filenameDlgTitle').textContent = J.mediaLabel(project ? '프로젝트 저장' : 'AE용 내보내기', project ? 'Save project' : 'Export for AE');
+  if (kind === 'settings') $('filenameDlgTitle').textContent = J.mediaLabel('설정만 내보내기', 'Export settings only');
+  // A saved project's name is the next project save's default.
+  const saved = kind === 'project' && S.project.projectName ? S.project.projectName : '';
+  $('saveFilename').value = (saved || baseName() + (kind === 'settings' ? '_settings' : '') + (project ? '' : rangeSuffix() + '_ae')) + ext;
+  dlg.dataset.ext = ext;
+  try { $('saveFilenameDate').checked = localStorage.getItem('jizura.filenameDate') === 'true'; } catch (e) {}
+  syncFilenamePreview();
   dlg.returnValue = ''; dlg.showModal(); $('saveFilename').select();
-  return new Promise(resolve=>dlg.addEventListener('close',()=>resolve(dlg.returnValue === 'save' ? J.exportFilename($('saveFilename').value,'.json',baseName()) : null),{once:true}));
+  return new Promise(resolve=>dlg.addEventListener('close',()=>{
+    if (dlg.returnValue !== 'save') { resolve(null); return; }
+    const plain = J.exportFilename($('saveFilename').value, ext, baseName());
+    try { localStorage.setItem('jizura.filenameDate', String($('saveFilenameDate').checked)); } catch (e) {}
+    resolve({ filename: $('saveFilenameDate').checked ? withFileStamp(plain) : plain, name: plain.slice(0, -ext.length) });
+  },{once:true}));
+}
+function confirmHiddenLayers() {
+  return !['foreground','lyrics','media'].some(layer=>S.project.layerVisibility?.[layer]===false) || window.confirm(J.mediaLabel('숨긴 레이어는 내보내기에 들어가지 않습니다. 계속할까요?','Hidden layers will not be included in the export. Continue?'));
 }
 const canPickFile = () => typeof window.showSaveFilePicker === 'function' && !document.documentElement.classList.contains('cep') && typeof VideoEncoder !== 'undefined';
 async function runExport(kind) {
   if (S.exporting) return;
+  const mp4kind = kind === 'mp4' || kind === 'mp4file' || kind === 'short';
+  if (mp4kind && S.project.quality === 'custom' && !$('outBitrate').reportValidity()) return;
+  if (mp4kind && S.project.quality === 'qp' && !$('outQP').reportValidity()) return;
+  if (kind === 'short' && (!$('exportDlg').open || S.exportKind !== 'short')) { openExportDialog('short'); return; }
+  if (kind === 'short' && (!$('shortStartValue').reportValidity() || !$('shortEndValue').reportValidity() || !shortRangeValid())) return;
+  if (!confirmHiddenLayers()) return;
   // 出力 menu: the dialog's file name wins (the 내보내기 tab / easy panel keep the automatic name)
   const dialogName = ext => $('exportDlg').open && (S.exportKind === kind || kind === 'mp4file' && S.exportKind === 'mp4' || kind === 'pngl' && S.exportKind === 'pnga') ? J.exportFilename($('exportFilename').value, ext, baseName()) : null;
   // 大きな動画用: the save dialog must open straight from the click (before anything is awaited)
@@ -2812,8 +4574,9 @@ async function runExport(kind) {
     } catch (e) { if (e && e.name === 'AbortError') return; toast('저장 위치를 열 수 없습니다: ' + (e && e.message ? e.message : e)); return; }
   }
   pause();
+  if(kind==='short')stopShortPreview();
   const ac = new AbortController(); S.exporting = ac;
-  const settingsInputs = [...$('exportSettings').querySelectorAll('input,select'),$('exportFilename')].map(el=>[el,el.disabled]);
+  const settingsInputs = [...$('exportSettings').querySelectorAll('input,select'),...$('shortExportOptions').querySelectorAll('input,select,button'),$('outAudio'),$('exportFilename')].map(el=>[el,el.disabled]);
   settingsInputs.forEach(([el])=>{el.disabled=true;}); $('btnCloseExport').disabled = true;
   const boxes = [...document.querySelectorAll('.exp-box')];
   const setText = m => boxes.forEach(b => { b.querySelector('.exp-text').textContent = m; });
@@ -2830,16 +4593,18 @@ async function runExport(kind) {
   const proj = S.mode === 'mobile' && (S.project.res || 1080) > 1080 ? Object.assign({}, S.project, { res: 1080 }) : S.project;
   if (proj !== S.project) toast('스마트폰 화면에서는 1080p로 내보냅니다');
   try {
-    await J.ensureFonts(S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS, J.fontsOfPlan(S.plan));
+    await J.ensureFonts(S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS + J.drawingText(S.plan), J.fontsOfPlan(S.plan));
     const lost = J.missingUserFonts(J.fontsOfPlan(S.plan).concat(Object.values(S.project.fonts || {})));
     if (lost.length) throw new Error(`불러온 서체(${[...new Set(lost)].join('·')})가 이 브라우저에 없어 내보내기를 멈췄습니다. 「글꼴」에서 같은 파일을 다시 불러오거나 다른 서체를 선택해 주세요`);
-    if (kind === 'mp4' || kind === 'mp4file') {
-      const plan = S.plan, range = exportRange(), span = J.exportSpan(plan, range);
-      const r = await J.exportMP4({ plan, project: proj, audio: S.project.includeAudio !== false ? S.audio : null, quality: S.project.quality || 'high', onProgress, signal: ac.signal, range, file });
+    if (kind === 'mp4' || kind === 'mp4file' || kind === 'short') {
+      // 쇼츠: the chosen part of the song in a 9:16 frame (its own range, not the line range)
+      const short = kind === 'short' ? { ...S.project.shortExport } : null;
+      const plan = S.plan, range = short ? null : exportRange(), span = short ? (r => ({ t0: r.start, dur: r.end - r.start }))(J.shortExportRange(plan, short)) : J.exportSpan(plan, range);
+      const r = await J.exportMP4({ plan, project: proj, audio: S.project.includeAudio !== false ? S.audio : null, quality: S.project.quality || 'high', onProgress, signal: ac.signal, range, file, short });
       file = null;
       txt.textContent = `완료 ${r.blob ? (r.blob.size / 1048576).toFixed(1) + 'MB · ' : ''}${r.codec}${r.audio ? ' + ' + r.audio.toUpperCase() : ''} · ${((performance.now() - t0) / 1000).toFixed(0)}초`;
       if (r.blob) {
-        const name = dialogName('.mp4') || baseName() + rangeSuffix() + '.mp4';
+        const name = dialogName('.mp4') || baseName() + (short ? '_short' : rangeSuffix()) + '.mp4';
         const res = await J.saveFile(name, r.blob);
         if (res === 'declined') txt.textContent += ' (저장이 취소됨)';
         offerShare(boxes, r.blob, name);
@@ -2856,6 +4621,7 @@ async function runExport(kind) {
       await J.saveFile((kind !== 'pngl' && dialogName('.zip')) || baseName() + rangeSuffix() + (kind === 'pnga' ? '_alpha' : kind === 'pngl' ? '_layers' : '') + '_png.zip', blob);
     }
   } catch (e) {
+    if (ac.signal.aborted || e?.name === 'AbortError') { txt.textContent = '취소했습니다'; return; }
     txt.textContent = '오류: ' + (e && e.message ? e.message : e);
     console.error(e);
     if (file) { try { await file.abort(); } catch (e2) {} }
@@ -2865,6 +4631,7 @@ async function runExport(kind) {
     EXP_BTNS.forEach(id => { $(id).disabled = false; });
     try { if (wake) await wake.release(); } catch (e) {}
     codecNote();
+    if(kind==='short')startShortPreview();
   }
 }
 /* phones: the share sheet is the reliable way to put a video into Photos / Files (a download link often isn't) */
@@ -3102,7 +4869,7 @@ async function prepareAssets() {
 // the previous project back with its files; they go on pagehide / next start when no current setting uses them).
 // An older JSON file saved with 「곡·소재 포함 저장」 carries p.bundle (older still: p.media with .files and no .items):
 // its files go into this browser's storage first. (The binary .jizura files are stored by openFile, then come here.)
-// (project.media is also the 背景 cut settings, which have items[] and no files{}: only the bundle form is taken out)
+// (project.media is also the 배경 cut settings, which have items[] and no files{}: only the bundle form is taken out)
 async function openProject(p) {
   let bundle = p && p.bundle;
   if (!bundle && p && p.media && p.media.files && !Array.isArray(p.media.items)) { bundle = p.media; delete p.media; }
@@ -3173,14 +4940,14 @@ async function draftFromSong() {
 
 /* ---------------- tap sync ---------------- */
 // start from any line: playback begins a little before that line, earlier lines keep their times
-// (single: only that one line is re-tapped, then tap sync ends). On the 前景 / 背景 tabs the media cuts are tapped from the first.
+// (single: only that one line is re-tapped, then tap sync ends). On the 전경 / 배경 tabs the media cuts are tapped from the first.
 function startTap(from = 0, single = false) {
   const layer = activeMediaLayer();
   if (!(layer ? S.plan[layer].cuts.length || S.project[layer].loop : S.plan.lines.length)) return;
   if (layer) { from = 0; single = false; }
   else from = J.clamp(from | 0, 0, S.plan.lines.length - 1);
   const opt = tapOpts();
-  S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop, base: layer ? null : lineShiftBase(), rate: opt.rate };
+  S.tap = { i: from, from, done: [], single, layer, append: !!layer && S.project[layer].loop, fileIndex: 0, base: layer ? null : lineShiftBase(), rate: opt.rate };
   if (!S.project.timing.lineTimes) S.project.timing.lineTimes = {};
   $('tapHint').textContent = S.tap.append ? '탭할 때마다 배경·전경 파일을 순환하며 컷을 추가합니다. 종료할 때까지 계속할 수 있습니다.' : '곡에 맞춰 각 행·컷이 시작되는 순간 Space나 버튼을 누르세요.';
   $('tapPanel').hidden = false; syncTapButtons();
@@ -3222,9 +4989,16 @@ function tapNow() {
   if (S.tap.append) {
     const i = S.tap.i;
     const m = S.project[S.tap.layer];
-    if (i === 0) { m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true; }
+    if(!S.tap.nextItem)return;
+    if (i === 0) {
+      m.timing.lineTimes = {}; m.cutOverrides = {}; m.manualCuts = true;
+      const prefix=S.tap.layer==='foreground'?'f:':'m:';
+      S.project.timelineLinks=S.project.timelineLinks.filter(link=>!link.a.startsWith(prefix)&&!link.b.startsWith(prefix));
+    }
     m.cutCount = i + 1;
-    m.cutOverrides[i] = { itemId: m.items.length ? m.items[i % m.items.length].id : null, technique: null };
+    m.cutOverrides[i] = { itemId: S.tap.nextItem.id, technique: null };
+    if(S.tap.nextItem.file)S.tap.fileIndex++;
+    delete S.tap.nextItem;
     m.timing.lineTimes[i] = +S.t.toFixed(3);
     S.tap.i++;
     replan();
@@ -3287,11 +5061,27 @@ function updateTap() {
   const bb = $('tapBack'); if (bb) bb.disabled = !S.tap.done.length;
   $('tapPanel').classList.toggle('compact', S.tap.done.length >= 3);   // 처음 몇 번이 끝나면 설명을 접어서, 고정해도 방해되지 않도록
   if (S.tap.append) {
-    const order = J.mediaOrder(S.project, S.tap.layer);
-    $('tapLine').textContent = `${S.tap.i + 1}. ${order.length ? order[S.tap.i % order.length].name : '이미지 없음'}`; return;
+    const order = J.mediaOrder(S.project, S.tap.layer), m = S.project[S.tap.layer];
+    if (!S.tap.nextItem) {
+      const choices = J.mediaInsertChoices(S.project, S.tap.layer).filter(id => id !== 'files' || m.loop || S.tap.fileIndex < m.items.length);
+      if (!choices.length) { pause(); stopTap(); return; }
+      const choice = choices[Math.floor(Math.random() * choices.length)];
+      S.tap.nextItem = choice === 'files'
+        ? { id: m.items[S.tap.fileIndex % m.items.length].id, name: (order[S.tap.fileIndex % order.length] || m.items[S.tap.fileIndex % m.items.length]).name, file: true }
+        : J.mediaCopyItems(S.tap.layer).find(item => item.id === choice);
+    }
+    $('tapLine').textContent = `${S.tap.i + 1}. ${S.tap.nextItem.name}`; $('tapLine').title = S.tap.nextItem.name; return;
   }
   const ln = S.tap.layer ? S.plan[S.tap.layer].cuts[S.tap.i] : S.plan.lines[S.tap.i];
   $('tapLine').textContent = ln ? `${S.tap.i + 1}. ${S.tap.layer ? ln.name : ln.interlude ? '[간주]' : ln.text}${S.tap.single ? ' (이 행만)' : ''}` : '—';
+  // the next lyric lines, so the coming starts can be seen ahead (only while tapping lyrics)
+  const lyricQueue = !S.tap.layer && !S.tap.single;
+  for (const offset of [1, 2]) {
+    const el = $('tapLineAhead' + offset); if (!el) continue;
+    const line = lyricQueue ? S.plan.lines[S.tap.i + offset] : null;
+    el.textContent = line ? `${S.tap.i + offset + 1}. ${line.text}` : ''; el.title = line?.text || '';
+    el.parentElement.hidden = !line;
+  }
 }
 
 function shuffleMediaEffects(layers = ['media', 'foreground']) {
@@ -3304,12 +5094,17 @@ const openMediaGroups = { foreground: new Set(), media: new Set() };
 function renderMediaEffects(layer) {
   if (!layer) { for (const target of ['foreground', 'media']) renderMediaEffects(target); return; }
   const box = $(layer + 'EffectsPanel'); if (!box) return;
-  const settings = J.mediaEffectSettings(S.project, layer);
+  const settings = J.mediaEffectSettings(S.project, layer), L = J.mediaLabel;
+  const q=($(layer+'EffectFilter').value||'').trim(),matches=J.detailSearchQuery(q);
+  const search=$(layer+'EffectFilter'),searchRow=search.closest('.row'),searchFocused=document.activeElement===search;
+  const selection=[search.selectionStart,search.selectionEnd];
+  // Retain the search input while rebuilding the panel; place it after settings.
+  searchRow.remove();
   const layerNote = layer === 'foreground' ? '전경의 이미지·동영상에 적용합니다.' : '배경의 이미지·동영상에 적용합니다.';
   const shuffleLabel = layer === 'foreground' ? '전경 섞기' : '배경 섞기';
   const setting = key => box.querySelector(`[data-media-setting="${key}"]`);
   const action = key => box.querySelector(`[data-media-action="${key}"]`);
-  box.innerHTML = `<p class="note">${layerNote} 체크한 기법을 「자동」과 섞기에서 사용합니다. 수동으로 지정한 기법과 잠긴 컷은 유지됩니다.</p><label class="check"><input data-media-setting="autoPlacement" type="checkbox" ${settings.autoPlacement !== false ? 'checked' : ''}><span>배치·크기에도 자동으로 변화를 줍니다<small>수동 배치와 잠금은 유지됩니다. 효과 없음은 중앙에 전체 표시합니다.</small></span></label><div class="media-auto-size-range" data-media-size-range ${settings.autoPlacement !== false ? '' : 'hidden'}><div class="range-title">최소·최대 크기 배율(%)</div><div class="range-pair" data-media-size-slider><input type="range" min="0" max="500" step="5" value="${settings.sizeMin}" data-media-size="min" aria-label="자동 크기의 최소 배율"><input type="range" min="0" max="500" step="5" value="${settings.sizeMax}" data-media-size="max" aria-label="자동 크기의 최대 배율"></div><div class="range-pair-values"><span>최소 <output data-media-size-value="min">${settings.sizeMin}%</output></span><span>최대 <output data-media-size-value="max">${settings.sizeMax}%</output></span></div></div><div class="media-effect-sliders"></div><div class="row"><button type="button" data-media-action="shuffle">${shuffleLabel}</button><button type="button" data-media-action="enable">모두 켜기</button><button type="button" data-media-action="disable">모두 끄기</button></div>`;
+  box.innerHTML = `<p class="note">${layerNote} 체크한 기법을 「자동」과 섞기에서 사용합니다. 수동으로 지정한 기법과 잠긴 컷은 유지됩니다.</p><label class="check"><input data-media-setting="autoPlacement" type="checkbox" ${settings.autoPlacement !== false ? 'checked' : ''}><span>배치·크기에도 자동으로 변화를 줍니다<small>수동 배치와 잠금은 유지됩니다. 효과 없음은 중앙에 전체 표시합니다.</small></span></label><div class="media-effect-sliders"></div><div class="row"><button type="button" data-media-action="shuffle">${shuffleLabel}</button><button type="button" data-media-action="enable">모두 켜기</button><button type="button" data-media-action="disable">모두 끄기</button></div>`;
   const randomNote = document.createElement('p'); randomNote.className = 'note';
   randomNote.textContent = '「자동으로 만들기」에서는 전경·배경 각각의 기법 체크를 무작위로 설정합니다.';
   box.appendChild(randomNote);
@@ -3320,64 +5115,108 @@ function renderMediaEffects(layer) {
     const row = document.createElement('label'); row.className = 'slider'; row.innerHTML = `<span>${name}</span><input data-media-setting="${key}" type="range" min="${key === 'duration' ? .05 : 0}" max="${max}" step="${step}" value="${settings[key]}"><output>${settings[key]}</output>`;
     row.querySelector('input').addEventListener('input', e => { const next = J.mediaEffectSettings(S.project, layer); next[key] = +e.target.value; S.project[layer].effects = next; row.querySelector('output').textContent = e.target.value; markUndoGroup('mediaEffects:' + layer + ':' + key); replanSoon(100); }); box.querySelector('.media-effect-sliders').appendChild(row);
   }
+  box.appendChild(searchRow);
   const groups = MEDIA_EFFECT_GROUPS;
   for (const [group, name] of Object.entries(groups)) {
-    const items = Object.entries(J.MEDIA_TECH).filter(([, def]) => def.group === group);
+    const items = Object.entries(J.MEDIA_TECH).filter(([key, def]) => def.group === group && J.mediaTechAllowed(key, layer));
+    const shown=items.filter(([key,def])=>matches(def.name+' '+key));
+    if (!shown.length) continue;
     const count = enabled => `${items.filter(([key]) => enabled[key] !== false).length}/${items.length}`;
     const section = document.createElement('details'); section.className = 'tgroup media-tech-group'; section.dataset.mediaGroup = group;
-    section.open = openMediaGroups[layer].has(group);
+    section.open = !!q || openMediaGroups[layer].has(group);
     section.addEventListener('toggle', () => {
       if (!section.isConnected) return;
       if (section.open) openMediaGroups[layer].add(group); else openMediaGroups[layer].delete(group);
     });
     section.innerHTML = `<summary><span class="tg-name">${name}</span><span class="tg-cnt mono">${count(settings.enabled)}</span></summary><div class="tg-tools"><button type="button" class="ghost small" data-media-group-action="on">모두 켜기</button><button type="button" class="ghost small" data-media-group-action="off">모두 끄기</button><button type="button" class="ghost small" data-media-group-action="flip">반전</button></div>`;
     const list = document.createElement('div'); list.className = 'checks';
-    for (const [key, def] of items) {
-      const row = document.createElement('label'); row.innerHTML = `<input type="checkbox" data-media-tech="${key}" ${settings.enabled[key] !== false ? 'checked' : ''}><span>${def.name}</span>`;
+    for (const [key, def] of shown) {
+      const row = document.createElement('label'); row.innerHTML = `<input type="checkbox" data-media-tech="${key}" ${settings.enabled[key] !== false ? 'checked' : ''}><span>${escapeHtml(def.name)}${setBadges(def)}</span>`;
       row.querySelector('input').addEventListener('change', e => {
         const next = J.mediaEffectSettings(S.project, layer); next.enabled[key] = e.target.checked; S.project[layer].effects = next;
         section.querySelector('.tg-cnt').textContent = count(next.enabled); replan();
-      }); list.appendChild(row);
+      }); row.appendChild(J.effectPreviewButton('media',key,layer)); list.appendChild(row);
     }
     section.querySelectorAll('[data-media-group-action]').forEach(button => button.addEventListener('click', () => {
       const next = J.mediaEffectSettings(S.project, layer), action = button.dataset.mediaGroupAction;
-      for (const [key] of items) next.enabled[key] = action === 'on' ? true : action === 'off' ? false : next.enabled[key] === false;
+      for (const [key] of shown) next.enabled[key] = action === 'on' ? true : action === 'off' ? false : next.enabled[key] === false;
       S.project[layer].effects = next; openMediaGroups[layer].add(group); renderMediaEffects(layer); replan();
     }));
     section.appendChild(list);
     box.appendChild(section);
   }
-  setting('autoPlacement').onchange = e => { const next = J.mediaEffectSettings(S.project, layer); next.autoPlacement = e.target.checked; S.project[layer].effects = next; renderMediaEffects(layer); replan(); };
-  const sizeRange = box.querySelector('[data-media-size-range]');
-  const sizeSlider = sizeRange.querySelector('[data-media-size-slider]');
-  const syncSizeSlider = (min, max) => {
-    sizeSlider.style.setProperty('--range-min', `${min / 5}%`); sizeSlider.style.setProperty('--range-max', `${max / 5}%`);
-    sizeRange.querySelector('[data-media-size-value="min"]').textContent = `${min}%`;
-    sizeRange.querySelector('[data-media-size-value="max"]').textContent = `${max}%`;
-  };
-  sizeSlider.querySelectorAll('[data-media-size]').forEach(input => input.addEventListener('input', () => {
-    const changed = input.dataset.mediaSize;
-    let min = +sizeSlider.querySelector('[data-media-size="min"]').value, max = +sizeSlider.querySelector('[data-media-size="max"]').value;
-    if (changed === 'min' && min > max) max = min;
-    if (changed === 'max' && max < min) min = max;
-    const next = J.mediaEffectSettings(S.project, layer); next.sizeMin = min; next.sizeMax = max; S.project[layer].effects = next;
-    sizeSlider.querySelector('[data-media-size="min"]').value = min; sizeSlider.querySelector('[data-media-size="max"]').value = max;
-    syncSizeSlider(min, max); markUndoGroup(`mediaEffects:${layer}:size`); replanSoon(100);
-  }));
-  syncSizeSlider(settings.sizeMin, settings.sizeMax);
+  {
+    // Decorations for this layer, laid out like the technique groups; used when "Enable decorations" is on.
+    const items = J.order('decor').filter(key => J.DECOR[key]).map(key => [key, J.DECOR[key]]);
+    const shown=items.filter(([key,def])=>matches(def.name+' '+key));
+    const count = s => `${items.filter(([key]) => J.mediaDecorOn(s, key)).length}/${items.length}`;
+    const section = document.createElement('details'); section.className = 'tgroup media-tech-group'; section.dataset.mediaGroup = 'decor';
+    section.open = !!q || openMediaGroups[layer].has('decor');
+    section.addEventListener('toggle', () => { if (!section.isConnected) return; if (section.open) openMediaGroups[layer].add('decor'); else openMediaGroups[layer].delete('decor'); });
+    section.innerHTML = `<summary><span class="tg-name">${L('장식', 'Decoration')}</span><span class="tg-cnt mono">${count(settings)}</span></summary><p class="note">${L('「장식 사용」을 켜면 체크한 장식을 「자동」 이미지·동영상에 씁니다. 뒤쪽 장식은 소재 아래에 그려집니다.', 'With Enable decorations on, Auto images and videos use the checked decorations. Back decorations are drawn under the source.')}</p><div class="tg-tools"><button type="button" class="ghost small" data-media-group-action="on">${L('모두 켜기', 'Enable all')}</button><button type="button" class="ghost small" data-media-group-action="off">${L('모두 끄기', 'Disable all')}</button><button type="button" class="ghost small" data-media-group-action="flip">${L('반전', 'Invert')}</button></div>`;
+    const list = document.createElement('div'); list.className = 'checks';
+    for (const [key, def] of shown) {
+      const row = document.createElement('label'); row.innerHTML = `<input type="checkbox" data-media-decor="${key}" ${J.mediaDecorOn(settings, key) ? 'checked' : ''}><span></span>`;
+      row.querySelector('span').textContent = def.name + (def.layer === 'back' ? L('(뒤쪽)', ' (back)') : '');
+      row.querySelector('span').insertAdjacentHTML('beforeend',setBadges(def));
+      row.querySelector('input').addEventListener('change', e => {
+        const next = J.mediaEffectSettings(S.project, layer); next.decorEnabled[key] = e.target.checked; S.project[layer].effects = next;
+        section.querySelector('.tg-cnt').textContent = count(next); replan();
+      }); row.appendChild(J.effectPreviewButton('decor', key)); list.appendChild(row);
+    }
+    section.querySelectorAll('[data-media-group-action]').forEach(button => button.addEventListener('click', () => {
+      const next = J.mediaEffectSettings(S.project, layer), act = button.dataset.mediaGroupAction;
+      for (const [key] of shown) next.decorEnabled[key] = act === 'on' ? true : act === 'off' ? false : !J.mediaDecorOn(next, key);
+      S.project[layer].effects = next; openMediaGroups[layer].add('decor'); renderMediaEffects(layer); replan();
+    }));
+    section.appendChild(list); if(shown.length)box.appendChild(section);
+  }
+  setting('autoPlacement').onchange =e => { const next = J.mediaEffectSettings(S.project, layer); next.autoPlacement = e.target.checked; S.project[layer].effects = next; renderMediaEffects(layer); replan(); };
+  {
+    // Decorations (checked in this layer's Decoration group) on automatic media cuts; off by default.
+    const row = document.createElement('label'); row.className = 'check';
+    row.innerHTML = `<input type="checkbox" data-media-setting="decor" ${settings.decor ? 'checked' : ''}><span>${L('장식 사용', 'Enable decorations')}<small>${L('「자동」 이미지·동영상에 아래 「장식」에서 체크한 장식을 붙입니다.', 'Adds the decorations checked below to Auto images and videos.')}</small></span>`;
+    row.querySelector('input').onchange = e => { const next = J.mediaEffectSettings(S.project, layer); next.decor = e.target.checked; S.project[layer].effects = next; replan(); };
+    setting('autoPlacement').closest('label').before(row);
+  }
+  if (layer === 'media') {
+    // Dynamic framing: automatic backgrounds may also be masked into windows (circle, half, band…) that
+    // the lyrics and foreground compose around, next to the plain zoom / pan patterns.
+    const dynamic = document.createElement('label'); dynamic.className = 'check';
+    dynamic.innerHTML = `<input type="checkbox" data-media-setting="dynamicBackground" ${settings.dynamicBackground !== false ? 'checked' : ''} ${settings.autoPlacement === false ? 'disabled' : ''}><span>${L('배경을 다이내믹하게 배치', 'Dynamic background framing')}<small>${L('확대·축소나 마스크(원·절반·띠 등)로 배경을 잘라내고 가사·전경을 그에 맞춰 배치하는 후보를 자동 배치 추첨에 넣습니다.', 'Adds framings that mask the background into windows (circle, half, band…) with lyrics and foreground composed around them to the automatic placement lottery.')}</small></span>`;
+    dynamic.querySelector('input').onchange = e => { const next = J.mediaEffectSettings(S.project, layer); next.dynamicBackground = e.target.checked; S.project[layer].effects = next; replan(); };
+    setting('autoPlacement').closest('label').after(dynamic);
+  }
+  if (layer === 'media') {
+    const row = document.createElement('label'); row.className = 'check';
+    row.innerHTML = `<input type="checkbox" data-media-setting="applyLyricBackground" ${settings.applyLyricBackground !== false ? 'checked' : ''}><span>${L('가사 배경 연출도 적용', 'Apply lyric background effects')}</span>`;
+    row.querySelector('input').onchange = e => { const next = J.mediaEffectSettings(S.project, layer); next.applyLyricBackground = e.target.checked; S.project[layer].effects = next; replan(); };
+    box.prepend(row);
+  }
   action('shuffle').onclick = () => { shuffleMediaEffects([layer]); S.project[layer].seed++; replan(); };
-  const all = value => { const next = J.mediaEffectSettings(S.project, layer); next.enabled = Object.fromEntries(Object.keys(J.MEDIA_TECH).map(key => [key, value])); S.project[layer].effects = next; renderMediaEffects(layer); replan(); };
+  const all = value => { const next = J.mediaEffectSettings(S.project, layer); next.enabled = Object.fromEntries(Object.keys(J.MEDIA_TECH).filter(key => J.mediaTechAllowed(key, layer)).map(key => [key, value])); S.project[layer].effects = next; renderMediaEffects(layer); replan(); };
   action('enable').onclick = () => all(true); action('disable').onclick = () => all(false);
+  if(searchFocused){search.focus({preventScroll:true});search.setSelectionRange(...selection);}
 }
 
 /* ---------------- sync all inputs from project ---------------- */
 function renderThemes() {
-  const ids = J.themeIds(S.project);
-  $('themeLabels').innerHTML = ids.length ? ids.map(id=>`<span class="theme-label">${J.THEMES[id].name}</span>`).join('') : `<span class="muted">미선택: 제한 없음</span>`;
+  const ids = J.themeIds(S.project), ct = J.normalizeColorTheme(S.project.colorTheme);
+  $('themeLabels').innerHTML = ids.length ? ids.map(id=>`<span class="theme-label">${J.THEMES[id].name}</span>`).join('') : `<span class="muted">${J.mediaLabel('미선택: 모든 테마','Not selected: unrestricted')}</span>`;
+  if (S.project.themeBalance === 'unified') {
+    const chip = document.createElement('span'); chip.className = 'theme-label'; chip.textContent = J.mediaLabel('통일감 중시', 'Unified look');
+    $('themeLabels').prepend(chip);
+  }
+  if (J.colorThemeActive(S.project)) {
+    const chip = document.createElement('span'); chip.className = 'theme-label theme-color-label';
+    chip.textContent = J.mediaLabel('색:','Colour: ') + (ct.genre !== 'auto' ? J.COLOR_GENRES[ct.genre].name : '');
+    if (ct.color) { const dot = document.createElement('i'); dot.style.background = ct.color; dot.title = ct.color; chip.append(dot); }
+    $('themeLabels').append(chip);
+  }
 }
 function syncUI() {
   renderThemes();
-  $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || '';
+  $('songTitle').value = S.project.title || ''; $('songArtist').value = S.project.artist || ''; $('projectName').value = S.project.projectName || '';
   $('lyrics').value = S.project.lyrics;
   $('aiPrompt').value = S.project.aiPrompt || '';
   $('bpm').value = S.project.timing.bpm > 0 ? S.project.timing.bpm : '';
@@ -3398,63 +5237,160 @@ function syncUI() {
 /* ---------------- wiring ---------------- */
 function bind() {
   $('timelineLegend').innerHTML = [
-    [ICON.dice,'다시 뽑기',''],
-    [ICON.lock,'잠금',''],
-    [ICON.area,'표시 영역',''],
-    [ICON.details,'상세 편집',''],
-    [ICON.remove,'삭제','remove'],
-    [ICON.frontmost,'맨 앞에 표시',''],
+    ['☰','컷 메뉴(다시 뽑기·잠금·상세 편집·복사 등)',''],
     ['🔗','시작 위치 링크','link'],
     ['×','링크 해제','unlink'],
   ].map(([icon,text,cls])=>`<span class="timeline-legend-item"><span class="timeline-legend-icon ${cls}" aria-hidden="true">${icon}</span><span>${text}</span></span>`).join('');
+  const storageWarning = document.createElement('p');
+  storageWarning.id = 'mediaStorageWarning'; storageWarning.hidden = true;
+  storageWarning.setAttribute('role', 'status');
+  storageWarning.style.cssText = 'flex:0 0 100%;margin:0;padding:8px 12px;border:1px solid var(--amber);color:var(--amber);font-size:12px;white-space:normal';
+  storageWarning.textContent = J.mediaLabel('브라우저에 소재를 저장할 수 없어 임시로 편집하고 있습니다. 곡·소재는 다시 불러오면 사라집니다. 페이지를 닫기 전에 소재 포함 프로젝트를 저장해 주세요.', 'Browser storage is unavailable. Imported audio and media are kept only for this session and will be lost on reload. Save a project with assets before closing this page.');
+  document.querySelector('#app > .bar').appendChild(storageWarning);
+  window.addEventListener('jizura-media-storage', () => { storageWarning.hidden = !J.hasTemporaryMedia(); });
+  window.addEventListener('jizura-media-poster',e=>{
+    for(const img of document.querySelectorAll('img[data-media-thumb]'))if(img.dataset.mediaThumb===e.detail.id)img.src=e.detail.poster;
+    S.need=true;
+  });
+  window.addEventListener('jizura-media-ready',()=>{S.need=true;});
+  window.addEventListener('jizura-media-error',e=>toast(e.detail.message));
+  window.addEventListener('beforeunload', event => {
+    if (J.hasTemporaryMedia()) { event.preventDefault(); event.returnValue = ''; }
+  });
+  const frameToggle=$('showItemFrames');
+  $('showItemFramesLabel').textContent=J.mediaLabel('편집 모드','Edit mode');
+  try {frameToggle.checked=localStorage.getItem('jizura.itemFrames')!=='false';}catch(e){}
+  frameToggle.addEventListener('change',()=>{try{localStorage.setItem('jizura.itemFrames',String(frameToggle.checked));}catch(e){}S.need=true;drawItemFrames();});
+  document.addEventListener('click',e=>{
+    if(S.exporting || S.tap || document.querySelector('dialog[open]'))return;
+    if(e.target.closest('.item-frame-toggle,#areaEditControls'))return;
+    const inside=$('viewport').contains(e.target);
+    if(!inside && S.areaEdit)cancelAreaEditor();
+    if(frameToggle.checked!==inside){frameToggle.checked=inside;frameToggle.dispatchEvent(new Event('change'));}
+  },true);
+  $('itemFrames').addEventListener('click',e=>{
+    if(S.playing)return;
+    const button=e.target.closest('.item-frame-action');
+    if(button){e.stopPropagation();performTimelineAction(button);if(S.areaEdit)showAreaDraft();return;}
+    const target=e.target.closest('[data-select-layer]');if(!target)return;
+    const layer=target.dataset.selectLayer,index=Number(target.dataset.selectIndex);
+    if(layer==='lyrics')openAreaEditor(index,true);else openMediaEditor(index,layer,true);
+  });
 
   $('saveFilename').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('filenameDlg').querySelector('button[value="save"]').click();}});
   const menus = [...document.querySelectorAll('.header-menu')];
   menus.forEach(menu => {
     menu.addEventListener('toggle', () => { if (menu.open) menus.forEach(other=>{if(other!==menu)other.open=false;}); });
-    menu.addEventListener('click', e => { if (e.target.closest('button')) menu.open=false; });
+    menu.addEventListener('click', e => { if (e.target.closest('button,a')) menu.open=false; });
   });
   document.addEventListener('click', e => menus.forEach(menu=>{if(!menu.contains(e.target))menu.open=false;}));
+  document.addEventListener('keydown', e => {if(e.key==='Escape'&&!document.querySelector('dialog[open]')){const menu=menus.find(m=>m.open);if(menu){menu.open=false;menu.querySelector('summary').focus();}}});
   document.addEventListener('keydown', e => {if(e.key==='Escape')menus.forEach(menu=>{menu.open=false;});});
+  ['fileProject','fileSettings'].forEach(id => J.configurePortableFileInput($(id)));
   $('fileProject').closest('label').addEventListener('keydown', e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();$('fileProject').click();}});
   $('fileProject').addEventListener('change',()=>{$('projectMenu').open=false;});
   document.querySelectorAll('[data-export-dialog]').forEach(button=>button.addEventListener('click',()=>openExportDialog(button.dataset.exportDialog)));
-  $('btnCloseExport').addEventListener('click',()=>{if(!S.exporting)$('exportDlg').close();});
-  $('exportDlg').addEventListener('cancel',e=>{if(S.exporting)e.preventDefault();});
+  $('btnCloseExport').addEventListener('click',()=>{if(!S.exporting){stopShortPreview();$('exportDlg').close();}});
+  $('exportDlg').addEventListener('cancel',e=>{if(S.exporting)e.preventDefault();else stopShortPreview();});
   $('exportDlg').addEventListener('close',restoreExportSettings);
+  for(const id of ['shortStart','shortEnd'])$(id).addEventListener('input',()=>{
+    const gap=Math.min(.001,S.plan.duration);
+    if(id==='shortStart')$('shortStart').value=String(Math.min(Number($('shortStart').value),Number($('shortEnd').value)-gap));
+    else $('shortEnd').value=String(Math.max(Number($('shortEnd').value),Number($('shortStart').value)+gap));
+    syncShortRange();updateShortExport(true);
+  });
+  for(const id of ['shortStartValue','shortEndValue'])$(id).addEventListener('input',()=>updateShortExport(true));
+  // Range endpoints and the playhead share one keyboard-accessible track.
+  // Drag a circular endpoint to trim; elsewhere, click or drag to seek.
+  const shortRange=$('shortRange');let rangeDrag=null;
+  const moveShortRange=e=>{
+    if(!rangeDrag||e.pointerId!==rangeDrag.pointer||$(rangeDrag.id).disabled)return;
+    const rect=shortRange.getBoundingClientRect(),fraction=J.clamp((e.clientX-rect.left-10)/Math.max(1,rect.width-20),0,1),input=$(rangeDrag.id);
+    input.value=String(fraction*S.plan.duration);input.dispatchEvent(new Event('input',{bubbles:true}));
+  };
+  shortRange.addEventListener('pointerdown',e=>{
+    if(e.button!==0||$('shortStart').disabled||$('shortEnd').disabled)return;
+    e.preventDefault();
+    const rect=shortRange.getBoundingClientRect(),time=J.clamp((e.clientX-rect.left-10)/Math.max(1,rect.width-20),0,1)*S.plan.duration;
+    const startDistance=Math.abs(time-Number($('shortStart').value)),endDistance=Math.abs(time-Number($('shortEnd').value));
+    const nearEndpoint=Math.min(startDistance,endDistance)/S.plan.duration*Math.max(1,rect.width-20)<=10&&Math.abs(e.clientY-rect.top-22)<=10;
+    const id=nearEndpoint?(startDistance<endDistance?'shortStart':'shortEnd'):'shortPreviewSeek';
+    rangeDrag={id,pointer:e.pointerId};$(id).focus({preventScroll:true});shortRange.setPointerCapture(e.pointerId);moveShortRange(e);
+  });
+  shortRange.addEventListener('pointermove',moveShortRange);
+  const endRangeDrag=e=>{if(rangeDrag?.pointer===e.pointerId)rangeDrag=null;};
+  for(const event of ['pointerup','pointercancel','lostpointercapture'])shortRange.addEventListener(event,endRangeDrag);
+  for(const id of ['shortFill','shortRes'])$(id).addEventListener('change',()=>updateShortExport());
+  $('shortBlur').addEventListener('input',()=>updateShortExport());
+  $('shortPreviewPlay').addEventListener('click',()=>{
+    if(!shortPreview)return;
+    if(shortPreview.playing||shortPreview.controller){shortPreview.controller?.abort();pauseShortPreview();}
+    else prepareShortPreview(shortPreview.t,true);
+  });
+  $('shortPreviewSeek').addEventListener('input',e=>prepareShortPreview(Number(e.target.value)));
+  $('shortSetStart').addEventListener('click',()=>setShortBoundary('shortStart'));
+  $('shortSetEnd').addEventListener('click',()=>setShortBoundary('shortEnd'));
+  document.fonts?.addEventListener('loadingdone',()=>{if(shortPreview)shortPreview.need=true;});
+  // 통일감 중시 / にぎやかさ重視: the note shows the side that is switched on.
+  const themeBalanceNote = () => {
+    const L = J.mediaLabel, unified = document.querySelector('#themesDlg input[name=themeBalance]:checked')?.value === 'unified';
+    $('themeBalanceNote').textContent = unified
+      ? L('자동으로 만들기에서 켜는 연출을 줄이고 같은 연출을 이어 쓰기 쉽게 합니다. 1장면 안이나 빈 행으로 나뉜 가사 묶음 안에서는 같은 강조도의 가사에 같은 연출을 씁니다.', 'Randomize switches on far fewer effects and favours repeating the same ones. Within a block (a One scene group, or lyrics between blank lines), lyrics of the same emphasis get the same effects.')
+      : L('기본 동작입니다. 자동으로 만들기가 폭넓은 연출을 후보로 넣어 컷마다 변화가 있는 다채로운 모습으로 만듭니다.', 'The standard behaviour. Randomize draws on a wide range of effects and varies them from cut to cut for a lively look.');
+  };
+  document.querySelectorAll('#themesDlg input[name=themeBalance]').forEach(input => input.addEventListener('change', themeBalanceNote));
   $('btnThemes').addEventListener('click', () => {
     const selected = new Set(J.themeIds(S.project));
-    $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${category === 'genre' ? '장르' : '취향'}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');
+    document.querySelector(`#themesDlg input[name=themeBalance][value=${S.project.themeBalance === 'unified' ? 'unified' : 'lively'}]`).checked = true;
+    themeBalanceNote();
+    $('themeChoices').innerHTML = ['genre','taste'].map(category => `<fieldset><legend>${J.mediaLabel(category === 'genre' ? '곡 장르' : '취향',category === 'genre' ? 'Music genre' : 'Taste')}</legend>${Object.entries(J.THEMES).filter(([,t])=>t.category===category).map(([id,t])=>`<label class="check"><input type="checkbox" data-theme="${id}" ${selected.has(id)?'checked':''}><span>${t.name}<small>${t.description}</small></span></label>`).join('')}</fieldset>`).join('');
+    // Colour: a genre and one theme colour for random palettes, taking priority over the themes above.
+    const ct = J.normalizeColorTheme(S.project.colorTheme), L = J.mediaLabel, colors = document.createElement('fieldset'); colors.className = 'theme-colors';
+    colors.innerHTML = `<legend>${L('색','Colour')}</legend><p class="note">${L('무작위 배색(자동·「색 배합」 버튼)에 씁니다. 곡 장르·취향 테마의 배색보다 우선합니다.','Used by random palettes (Randomize and the Colours button), taking priority over music-genre and taste themes.')}</p><label class="theme-color-row"><span>${L('배색 장르','Colour genre')}</span><select id="colorGenre"></select></label><small id="colorGenreNote" class="muted"></small><label class="check"><input type="checkbox" id="colorThemeOn"><span>${L('테마 색 쓰기','Use a theme colour')}<small>${L('이 색을 강조색으로 삼고 다른 색을 맞춥니다.','Uses this colour as the accent and matches the other colours to it.')}</small></span></label><label class="theme-color-row"><span>${L('테마 색','Theme colour')}</span><input type="color" id="colorThemeColor"></label>`;
+    const genre = colors.querySelector('#colorGenre');
+    for (const id of J.COLOR_GENRE_ORDER) genre.add(new Option(J.COLOR_GENRES[id].name, id));
+    genre.value = ct.genre;
+    const genreNote = () => { colors.querySelector('#colorGenreNote').textContent = J.COLOR_GENRES[genre.value].description; };
+    genre.addEventListener('change', genreNote); genreNote();
+    colors.querySelector('#colorThemeOn').checked = !!ct.color;
+    colors.querySelector('#colorThemeColor').value = (ct.color || '#FF4F8B').toLowerCase();
+    colors.querySelector('#colorThemeColor').addEventListener('input', () => { colors.querySelector('#colorThemeOn').checked = true; });
+    $('themeChoices').append(colors);
     $('themesDlg').showModal();
   });
   $('btnApplyThemes').addEventListener('click', () => {
-    S.project.themes = [...$('themeChoices').querySelectorAll('input:checked')].map(el=>el.dataset.theme);
+    const before = JSON.stringify(J.normalizeColorTheme(S.project.colorTheme)), balanceBefore = S.project.themeBalance;
+    S.project.themeBalance = document.querySelector('#themesDlg input[name=themeBalance]:checked')?.value === 'unified' ? 'unified' : 'lively';
+    S.project.themes = [...$('themeChoices').querySelectorAll('input[data-theme]:checked')].map(el=>el.dataset.theme);
+    S.project.colorTheme = J.normalizeColorTheme({ genre: $('colorGenre').value, color: $('colorThemeOn').checked ? $('colorThemeColor').value : null });
+    // A changed colour theme is applied right away, so the choice shows immediately.
+    if (JSON.stringify(S.project.colorTheme) !== before && J.colorThemeActive(S.project)) {
+      remember(); S.project.colors = J.themedColors(S.project, S.project.style, Math.random); renderColors(); replan(); commit();
+    }
     renderThemes(); autosave(); $('themesDlg').close();
+    // The unified look also shapes how the current lyrics are planned (shared effects, repeats).
+    if (S.project.themeBalance !== balanceBefore) { remember(); replan(); commit(); }
   });
-  $('btnClearThemes').addEventListener('click', () => $('themeChoices').querySelectorAll('input').forEach(el=>el.checked=false));
+  $('btnClearThemes').addEventListener('click', () => { $('themeChoices').querySelectorAll('input[type="checkbox"]').forEach(el=>el.checked=false); $('colorGenre').value = 'auto'; $('colorGenre').dispatchEvent(new Event('change')); });
 
+  $('lyricGroupAvoidanceStrength').addEventListener('input', e => {
+    S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), lyricAvoidanceStrength: +e.target.value };
+    $('lyricGroupAvoidanceStrengthValue').textContent = (+e.target.value).toFixed(2);
+    markUndoGroup('lyricGroupAvoidanceStrength'); replanSoon(100);
+  });
   $('lyricAvoidanceStrength').addEventListener('input', e => {
     S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), avoidanceStrength: +e.target.value };
     $('lyricAvoidanceStrengthValue').textContent = (+e.target.value).toFixed(2);
     markUndoGroup('lyricAvoidanceStrength'); replanSoon(100);
   });
+  // The easy-mode switch has no separate automatic-placement toggle, so turning it on also enables placement.
+  for (const input of document.querySelectorAll('.avoid-center-toggle')) input.addEventListener('change', e => {
+    S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), avoidCenter: e.target.checked, ...(e.target.checked ? { autoPlacement: true } : {}) };
+    renderTech(); replan();
+  });
   for (const [id, key] of [['lyricAutoPlacement', 'autoPlacement'], ['lyricAvoidForeground', 'avoidForeground'], ['lyricRandomBlend', 'randomBlend'], ['lyricRandomOpacity', 'randomOpacity']]) {
     $(id).addEventListener('change', e => { S.project.lyricEffects = { ...J.lyricEffectSettings(S.project), [key]: e.target.checked }; renderTech(); replan(); });
   }
-  const updateAutoLyricSize = changed => {
-    let min = +$('lyricAutoSizeMin').value, max = +$('lyricAutoSizeMax').value;
-    if (changed === 'min' && min > max) max = min;
-    if (changed === 'max' && max < min) min = max;
-    const settings = { ...J.lyricEffectSettings(S.project), sizeMin: min, sizeMax: max };
-    S.project.lyricEffects = settings;
-    $('lyricAutoSizeMin').value = min; $('lyricAutoSizeMax').value = max;
-    $('lyricAutoSizeMinValue').textContent = `${min}%`; $('lyricAutoSizeMaxValue').textContent = `${max}%`;
-    $('lyricAutoSizeSlider').style.setProperty('--range-min', `${min / 5}%`);
-    $('lyricAutoSizeSlider').style.setProperty('--range-max', `${max / 5}%`);
-    markUndoGroup('lyricAutoSize'); replanSoon(100);
-  };
-  $('lyricAutoSizeMin').addEventListener('input', () => updateAutoLyricSize('min'));
-  $('lyricAutoSizeMax').addEventListener('input', () => updateAutoLyricSize('max'));
   for (const [id, key] of [['lyricOpacityMin', 'opacityMin'], ['lyricOpacityMax', 'opacityMax']]) {
     $(id).addEventListener('change', e => {
       const settings = J.lyricEffectSettings(S.project);
@@ -3466,12 +5402,40 @@ function bind() {
       S.project.lyricEffects = settings; renderTech(); replan();
     });
   }
+  for(const [id,layer] of [['insertLyricAtPlayhead','lyrics'],['insertForegroundAtPlayhead','foreground'],['insertBackgroundAtPlayhead','media']])$(id).addEventListener('click',()=>openInsertAtPlayhead(layer));
+  for(const layer of ['foreground','lyrics','media']){
+    const button=document.createElement('button');button.type='button';button.dataset.layer=layer;
+    button.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="M3 3l18 18"/></svg>';
+    button.addEventListener('click',()=>{if(S.exporting)return;S.project.layerVisibility ||= {};S.project.layerVisibility[layer]=S.project.layerVisibility[layer]===false;replan();});
+    $('layerVisibilityControls').append(button);
+  }
+  $('splitForegroundCut').addEventListener('click',()=>openSplitMediaCut('foreground'));
+  $('splitBackgroundCut').addEventListener('click',()=>openSplitMediaCut('media'));
+  $('relayoutAtPlayhead').addEventListener('click',()=>{S.playheadMenu=null;relayoutAtPlayhead();syncPlayheadMenu();});
+  for(const [id,layer] of [['endForegroundHere','foreground'],['endLyricHere','lyrics'],['endBackgroundHere','media']])$(id).addEventListener('click',()=>playheadEnd(layer,false));
+  for(const [id,layer] of [['untilNextForeground','foreground'],['untilNextLyric','lyrics'],['untilNextBackground','media']])$(id).addEventListener('click',()=>playheadEnd(layer,true));
+  document.querySelector('.playhead-secondary').addEventListener('click',e=>{if(e.target.closest('[data-playhead-action]')){S.playheadMenu=null;syncPlayheadMenu();}});
+  initPlayheadMenu();
   $('timelineZoomOut').addEventListener('click', () => setTimelineZoom(S.timelineZoom / 1.5));
   $('timelineZoomIn').addEventListener('click', () => setTimelineZoom(S.timelineZoom * 1.5));
   $('timelineZoomOut').disabled = true;
-  $('sourceLyrics').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'lyrics'; syncSourceTab(); });
-  $('sourceMedia').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'media'; renderMediaList(); renderMediaLines(); });
-  $('sourceForeground').addEventListener('click', () => { cancelAreaEditor(); S.sourceTab = 'foreground'; renderMediaList(); renderMediaLines(); });
+  // A dedicated touch scrollbar leaves boundary dragging and seeking intact.
+  const panLabel=document.createElement('label');panLabel.className='timeline-touch-scroll';
+  panLabel.textContent=J.mediaLabel('타임라인 가로 이동','Scroll timeline');
+  const pan=document.createElement('input');pan.type='range';pan.id='timelinePan';pan.min='0';pan.max='0';pan.value='0';pan.disabled=true;pan.setAttribute('aria-label',panLabel.textContent);panLabel.append(pan);
+  $('timelineScroll').closest('.timeline-with-visibility').after(panLabel);
+  pan.addEventListener('input',()=>{$('timelineScroll').scrollLeft=+pan.value;});
+  $('timelineScroll').addEventListener('scroll',syncTimelinePan,{passive:true});
+  // Timeline dragging prevents the browser's default focus change. End lyric
+  // editing before those handlers run, including cut controls and link markers.
+  $('timelineScroll').addEventListener('pointerdown',()=>{
+    if(document.activeElement===$('lyrics'))$('lyrics').blur();
+  },{capture:true});
+  for(const type of ['wheel','pointerdown','touchstart'])$('timelineScroll').addEventListener(type,()=>{timelineUserScroll=performance.now();},{passive:true});
+  $('timelinePan')?.addEventListener('pointerdown',()=>{timelineUserScroll=performance.now();});
+  $('sourceLyrics').addEventListener('click',()=>selectSourceDrawer('lyrics'));
+  $('sourceMedia').addEventListener('click',()=>selectSourceDrawer('media'));
+  $('sourceForeground').addEventListener('click',()=>selectSourceDrawer('foreground'));
   $('btnMediaFromLyrics').addEventListener('click', insertMediaFromLyrics);
   $('mediaLyricInsertMode').addEventListener('change', e => {
     const layer = activeMediaLayer(); if (!layer) return;
@@ -3507,12 +5471,27 @@ function bind() {
   });
   areaOverlay.addEventListener('pointercancel', () => { if (!S.areaEdit) return; if (S.areaEdit.drag) { S.areaEdit.draft = S.areaEdit.drag.previous; S.areaEdit.angle = S.areaEdit.drag.previousAngle; } S.areaEdit.drag = null; areaOverlay.style.cursor = ''; $('areaEditRect').style.cursor = ''; showAreaDraft(); });
   $('mediaAreaAspectLock').addEventListener('change', e => { if (!S.areaEdit) return; S.areaEdit.lockAspect = e.target.checked; if (e.target.checked) S.areaEdit.ratio = S.areaEdit.draft.h / S.areaEdit.draft.w; showAreaDraft(); });
-  $('mediaAreaWidth').addEventListener('change', e => { if (!S.areaEdit) return; const w = J.clamp(+e.target.value / 100, 0.005, S.areaEdit.kind === 'lyric' ? 1 : 4); setMediaDraftSize(w, S.areaEdit.lockAspect ? w * S.areaEdit.ratio : S.areaEdit.draft.h); });
-  $('mediaAreaHeight').addEventListener('change', e => { if (!S.areaEdit) return; const h = J.clamp(+e.target.value / 100, 0.005, S.areaEdit.kind === 'lyric' ? 1 : 4); setMediaDraftSize(S.areaEdit.lockAspect ? h / S.areaEdit.ratio : S.areaEdit.draft.w, h); });
+  $('mediaAreaWidth').addEventListener('change', e => { if (!S.areaEdit) return; const w = J.clamp(+e.target.value / 100, 0.005, 4); setMediaDraftSize(w, S.areaEdit.lockAspect ? w * S.areaEdit.ratio : S.areaEdit.draft.h); });
+  $('mediaAreaHeight').addEventListener('change', e => { if (!S.areaEdit) return; const h = J.clamp(+e.target.value / 100, 0.005, 4); setMediaDraftSize(S.areaEdit.lockAspect ? h / S.areaEdit.ratio : S.areaEdit.draft.w, h); });
+  document.addEventListener('scroll',()=>{if(S.areaEdit)positionAreaEditor();},{capture:true,passive:true});
   $('mediaAreaAngle').addEventListener('input', e => { if (!S.areaEdit || e.target.value === '') return; S.areaEdit.angle = J.clamp(+e.target.value || 0, -180, 180); showAreaDraft(); });
-  $('areaResetFull').addEventListener('click', () => { if (!S.areaEdit || S.areaEdit.kind !== 'lyric') return; S.areaEdit.autoDraft = null; S.areaEdit.draft = { x: 0, y: 0, w: 1, h: 1 }; S.areaEdit.ratio = 1; S.areaEdit.angle = 0; showAreaDraft(); });
+  $('areaResetFull').addEventListener('click',()=>{
+    const edit=S.areaEdit;if(!edit)return;
+    edit.autoDraft=null;edit.angle=0;
+    if(edit.kind==='lyric'){edit.draft={x:0,y:0,w:1,h:1};edit.ratio=1;}
+    else {
+      const dimensions=J.mediaSourceDimensions(S.plan,S.plan[edit.kind].cuts[edit.index],S.t);if(!dimensions)return;
+      edit.draft=J.mediaPlacementRect(null,dimensions.width,dimensions.height,S.plan.W,S.plan.H);edit.lockAspect=true;edit.ratio=edit.draft.h/edit.draft.w;
+    }
+    showAreaDraft();
+  });
   $('areaResetAuto').addEventListener('click', () => {
-    const edit = S.areaEdit; if (!edit || edit.kind !== 'lyric') return;
+    const edit = S.areaEdit; if (!edit) return;
+    if(edit.kind!=='lyric'){
+      const {area,cut}=automaticMediaArea(edit.kind,edit.index);if(!area)return;
+      edit.draft=area;edit.ratio=area.h/area.w;edit.angle=cut.placement?.angle||0;edit.lockAspect=cut.placement?.lockAspect!==false;
+      edit.autoDraft=JSON.stringify(J.lyricArea({...area,angle:edit.angle,lockAspect:edit.lockAspect}));showAreaDraft();return;
+    }
     const project = { ...S.project, overrides: { ...S.project.overrides, [edit.index]: { ...S.project.overrides[edit.index], area: undefined, lockedAreas: undefined } } };
     const area = J.plan(project, audioLike()).cuts.find(c => c.line === edit.index && c.part === 0)?.area || { x: 0, y: 0, w: 1, h: 1, angle: 0, lockAspect: true };
     edit.draft = { ...area }; edit.ratio = area.h / area.w; edit.angle = area.angle; edit.lockAspect = area.lockAspect;
@@ -3522,7 +5501,23 @@ function bind() {
   $('areaApplyOne').addEventListener('click', () => applyAreaEditor(false));
   $('areaApplyFollowing').addEventListener('click', () => applyAreaEditor(true));
   $('areaCancel').addEventListener('click', cancelAreaEditor);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.areaEdit) { e.preventDefault(); cancelAreaEditor(); } });
+  $('areaDelete').addEventListener('click',()=>{
+    const edit=S.areaEdit;
+    if(!edit || S.playing || S.exporting || S.tap)return;
+    const {kind,index}=edit;
+    const part=kind==='lyric' ? J.lyricCutsAt(S.plan,S.t).find(c=>c.line===index)?.part || 0 : 0;
+    const L=J.mediaLabel,dialog=document.createElement('dialog');dialog.id='areaDeleteDialog';dialog.className='insert-cut-dialog';
+    dialog.innerHTML=`<form method="dialog"><p>${L('이 컷을 삭제할까요?','Delete this cut?')}</p><div class="row"><button value="cancel">${L('취소','Cancel')}</button><button value="delete" class="area-delete-confirm">${L('삭제','Delete')}</button></div></form>`;
+    dialog.addEventListener('close',()=>{
+      const remove=dialog.returnValue==='delete';dialog.remove();
+      if(!remove || S.areaEdit!==edit)return;
+      cancelAreaEditor();
+      if(kind==='lyric')removeLyricCut(index,part);else removeMediaCut(index,kind);
+    },{once:true});
+    dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close('cancel');}});
+    document.body.append(dialog);dialog.showModal();dialog.querySelector('[value="cancel"]').focus();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.areaEdit && !document.querySelector('dialog[open]')) { e.preventDefault(); cancelAreaEditor(); } });
   $('mediaFiles').addEventListener('change', async e => { const files = Array.from(e.target.files || []); e.target.value = ''; await addMediaFiles(files, activeMediaLayer() || 'media'); });
   const mediaPane = $('mediaPane');
   const hasFiles = e => Array.from(e.dataTransfer && e.dataTransfer.types || []).includes('Files');
@@ -3539,8 +5534,44 @@ function bind() {
     if (e.target.checked && !m.cutCount) m.cutCount = Math.min(1000, m.items.length * 2);
     replan();
   });
-  $('mediaBlend').addEventListener('change', e => { S.project.foreground.blend = e.target.value; replan(); });
-  $('mediaOpacity').addEventListener('change', e => { S.project.foreground.opacity = J.clamp(+e.target.value || 0, 0, 100); replan(); });
+  $('lyricInputTools').addEventListener('click', e => {
+    const button=e.target.closest('[data-lyric-insert]'); if (!button) return;
+    const input=$('lyrics'), start=input.selectionStart, end=input.selectionEnd;
+    const selected=input.value.slice(start,end), kind=button.dataset.lyricInsert;
+    const pairs={cut:['/','/'],break:['\\n','\\n'],strong:['*','*'],soft:['~','~'],scene:['{','}'],separate:['{-','-}'],empty:['｜','｜']};
+    let [before,after]=pairs[kind], middle=selected;
+    if (kind==='empty') {
+      // Preserve the selected text's half/full-width spacing, but remove its glyphs.
+      const blank = selected ? [...selected].map(ch=>ch==='\n'?'\n':/[\u0000-\u007f\uff61-\uff9f]/.test(ch)?' ':'　').join('') : '　　　　';
+      before=start && input.value[start-1]!=='\n'?'\n':'';
+      middle=blank.split('\n').map(line=>'｜'+(line || '　　　　')+'｜').join('\n');
+      after='\n';
+    }
+    if (kind==='cut' || kind==='break') { if (!selected) after=''; }
+    if (kind==='scene' || kind==='separate') {
+      before=(start && input.value[start-1]!=='\n'?'\n':'')+before+'\n';
+      after='\n'+after+(end<input.value.length && input.value[end]!=='\n'?'\n':'');
+    }
+    // Commit pending typing first, then give every helper click its own undo step.
+    clearTimeout(replanTimer); recordUndoState(); markUndoGroup(null); U.lastGroup=null;
+    input.setRangeText(before+middle+after,start,end,'end');
+    reconcileLyricLines(S.project.lyrics,input.value);
+    S.project.lyrics=input.value;
+    replan();
+    input.focus();
+    const cursor=start+before.length+middle.length+after.length;
+    if (kind==='empty') input.setSelectionRange(cursor,cursor);
+    else input.setSelectionRange(start+before.length,start+before.length+middle.length);
+  });
+  for (const event of ['focus','blur','scroll']) $('lyrics').addEventListener(event, syncLyricPlaybackHighlight);
+  new ResizeObserver(syncLyricPlaybackHighlight).observe($('lyrics'));
+  $('lyrics').addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    if (e.code==='KeyZ' || e.code==='KeyY') {
+      e.preventDefault(); e.stopPropagation();
+      undoMove(e.code==='KeyY' || e.shiftKey ? 1 : -1);
+    }
+  });
   $('lyrics').addEventListener('input', e => {
     const changedCount = reconcileLyricLines(S.project.lyrics, e.target.value);
     S.project.lyrics = e.target.value;
@@ -3557,13 +5588,16 @@ function bind() {
   });
   $('songTitle').addEventListener('input', e => { S.project.title = e.target.value; markUndoGroup('title'); replanSoon(300); });
   $('songArtist').addEventListener('input', e => { S.project.artist = e.target.value; markUndoGroup('artist'); replanSoon(300); });
+  $('projectName').addEventListener('input', e => { S.project.projectName = e.target.value; markUndoGroup('projectName'); replanSoon(300); });
+  $('saveFilename').addEventListener('input', syncFilenamePreview);
+  $('saveFilenameDate').addEventListener('change', syncFilenamePreview);
   $('btnSyntax').addEventListener('click', e => { const s = $('syntax'); s.hidden = !s.hidden; e.target.setAttribute('aria-expanded', String(!s.hidden)); });
   $('bpm').addEventListener('change', e => { S.project.timing.bpm = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
   $('offset').addEventListener('change', e => { S.project.timing.offset = Math.max(0, parseFloat(e.target.value) || 0); replan(); });
   $('lineScale').addEventListener('change', e => { S.project.timing.lineScale = J.clamp(parseFloat(e.target.value) || 1, 0.3, 4); replan(); });
   $('snap').addEventListener('change', e => { S.project.timing.snap = e.target.checked; replan(); });
   $('btnResetTimes').addEventListener('click', () => { const layer = activeMediaLayer(), timing = layer ? S.project[layer].timing : S.project.timing; timing.lineTimes = {}; if (!layer) timing.cutTimes = {}; replan(); });
-  $('audioFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadAudioFile(f); });
+  $('audioFile').addEventListener('change', e => { const f = e.target.files?.[0];e.target.value='';if (f) openAudioImport(f); });
   $('btnRemoveAudio').addEventListener('click', removeAudio);
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('btnDraft').addEventListener('click', draftFromSong);
@@ -3579,6 +5613,45 @@ function bind() {
   });
   $('tapCount').addEventListener('change', () => { saveTapOpts(); $('tapBtn').focus(); });
   $('tapStop').addEventListener('click', () => { pause(); stopTap(); });
+  $('effectFavorites').textContent=J.mediaLabel('☆ 즐겨찾기 연출','☆ Favorite effects');
+  $('effectFavorites').onclick=()=>openEffectFavorites();
+  const screenshot=$('previewScreenshot');
+  screenshot.textContent=J.mediaLabel('스크린숏','Screenshot');
+  screenshot.title=J.mediaLabel('내보내기 설정의 해상도로 미리보기를 PNG로 저장','Save preview as PNG at the export resolution');
+  screenshot.addEventListener('click',async()=>{
+    screenshot.disabled=true;
+    try{
+      const time=S.t,filename=J.exportFilename(`${baseName()}_preview_${time.toFixed(3).replace('.','-')}`,'.png');
+      const [w,h]=J.outputSize(S.project),canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      const previousRes=J.glyphs.maxRes;
+      try{
+        J.glyphs.maxRes=h>=1000?768:512;
+        // Prepare the animation at the captured project time, then render at the output size.
+        await J.prepareAPNGFrames(S.plan,time);
+        drawPreviewFrame(canvas.getContext('2d'),{renderer:new J.Renderer(),time});
+      }finally{J.glyphs.maxRes=previousRes;}
+      const blob=await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error(J.mediaLabel('PNG를 만들 수 없습니다','Could not create PNG'))),'image/png'));
+      await J.saveFile(filename,blob);
+    }catch(error){toast(J.mediaLabel('스크린숏을 저장할 수 없습니다:','Could not save screenshot: ')+error.message);}
+    finally{screenshot.disabled=false;}
+  });
+  $('previewFullscreen').addEventListener('click',async()=>{
+    try { await $('viewport').requestFullscreen(); }
+    catch { $('viewport').classList.add('preview-fullscreen');document.body.classList.add('preview-fullscreen-open');sizeViewport(); }
+  });
+  const exitPreviewFullscreen=()=>{
+    if(document.fullscreenElement)document.exitFullscreen();
+    $('viewport').classList.remove('preview-fullscreen');document.body.classList.remove('preview-fullscreen-open');sizeViewport();
+  };
+  $('exitPreviewFullscreen').addEventListener('click',exitPreviewFullscreen);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('viewport').classList.contains('preview-fullscreen'))exitPreviewFullscreen();});
+  document.addEventListener('fullscreenchange',()=>{sizeViewport();S.need=true;});
+  $('fullscreenPlay').addEventListener('click',()=>{S.playing?pause():play();updateTimeUI();});
+  const fullscreenScrub=$('fullscreenScrub');
+  fullscreenScrub.addEventListener('input',()=>{S.scrubbing=true;seek(fullscreenScrub.value/10000*S.plan.duration);updateTimeUI();});
+  fullscreenScrub.addEventListener('change',()=>{S.scrubbing=false;updateTimeUI();});
+  document.addEventListener('fullscreenchange',()=>{S.scrubbing=false;updateTimeUI();});
   $('btnPlay').addEventListener('click', () => (S.playing ? pause() : play()));
   $('btnUndo').addEventListener('click', () => undoMove(-1));
   $('btnRedo').addEventListener('click', () => undoMove(1));
@@ -3594,7 +5667,7 @@ function bind() {
     S.loop = LOOP_CYCLE[(i < 0 ? 0 : i + 1) % LOOP_CYCLE.length];
     syncLoopBtn(); S.need = true;
   });
-  $('btnShuffle').addEventListener('click', () => { remember(); shuffleMediaEffects(); S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); commit(); });
+  $('btnShuffle').addEventListener('click', () => { remember(); J.clearPastedLyricEffects(S.project); shuffleMediaEffects(); S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); commit(); });
   const sc = $('scrub');
   sc.addEventListener('input', () => { S.scrubbing = true; seek(sc.value / 10000 * S.plan.duration); });
   sc.addEventListener('change', () => { S.scrubbing = false; });
@@ -3652,8 +5725,9 @@ function bind() {
       const h = layer === 'lyrics' && !S.tap && !S.exporting ? tlHandleAt(e) : -1;
       if (h >= 0) { tl.setPointerCapture(e.pointerId); TL.drag = h; TL.base = lineShiftBase(); pause(); tl.style.cursor = 'ew-resize'; drag = { mode: 'handle' }; return; }
       const boundary = !S.exporting && !S.tap && timelineBoundaryAt(e, layer);
-      const limits = boundary && boundaryGroupLimits(boundary.ref);
-      drag = boundary && limits && limits.max > limits.min ? { ...boundary, min: limits.min, max: limits.max, mode: 'boundary', originX: e.clientX, preview: boundary.start, moved: false, duration: S.plan.duration } : { mode: 'seek' };
+      const limits = boundary && (boundary.mode === 'end' ? boundary : boundaryGroupLimits(boundary.ref));
+      drag = boundary && limits && limits.max > limits.min ? { ...boundary, min: limits.min, max: limits.max, mode: boundary.mode === 'end' ? 'end' : 'boundary', originX: e.clientX, preview: boundary.start, moved: false, duration: S.plan.duration } : { mode: 'seek' };
+      e.preventDefault();
       tl.setPointerCapture(e.pointerId);
       if (boundary) { pause(); S.timelineDrag = drag; }
       else timelineSeek(e);
@@ -3677,9 +5751,10 @@ function bind() {
     tl.addEventListener('pointerup', () => {
       if (!drag) return;
       if (drag.mode === 'handle') { cancelAnimationFrame(raf); TL.drag = -1; flushSave(); renderLines(); drawTimeline(); }
-      else if (drag.mode === 'boundary') {
+      else if (drag.mode === 'boundary' || drag.mode === 'end') {
         S.timelineDrag = null;
-        if (drag.moved) commitTimelineBoundary(drag);
+        if (drag.moved && drag.mode === 'end') { setCutEnd(drag.layer, drag.key, drag.preview); replan(); }
+        else if (drag.moved) commitTimelineBoundary(drag);
         else seek(drag.start);
         drawTimeline();
         drawTimelineLinks();
@@ -3743,6 +5818,7 @@ function bind() {
   }));
   $('fxFlash').addEventListener('change', e => { S.project.fx.flash = e.target.checked; replan(); });
   $('techFilter').addEventListener('input', () => renderTech());
+  for(const layer of ['foreground','media'])$(layer+'EffectFilter').addEventListener('input',()=>renderMediaEffects(layer));
   const setSwitch = (cls, key, on, msgOn, msgOff) => document.querySelectorAll('.' + cls).forEach(el => el.addEventListener('change', e => {
     remember();
     S.project[key] = e.target.checked;
@@ -3763,8 +5839,8 @@ function bind() {
   $('fxInterCredit').addEventListener('change', e => { S.project.fx.interCredit = e.target.checked; replan(); });
   $('fxHideNo').addEventListener('change', e => { remember(); S.project.fx.hideNo = e.target.checked; replan(); commit(); });
   $('fxHideTime').addEventListener('change', e => { remember(); S.project.fx.hideTime = e.target.checked; replan(); commit(); });
-  $('seed').addEventListener('change', e => { S.project.seed = parseInt(e.target.value, 10) || 0; replan(); });
-  $('btnSeed').addEventListener('click', () => { S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); });
+  $('seed').addEventListener('change', e => { J.clearPastedLyricEffects(S.project); S.project.seed = parseInt(e.target.value, 10) || 0; replan(); });
+  $('btnSeed').addEventListener('click', () => { J.clearPastedLyricEffects(S.project); S.project.seed = (Math.random() * 1e9) | 0; $('seed').value = S.project.seed; replan(); });
   const colorToggle = (flag, keys) => e => {
     remember();
     const c = S.project.colors; c[flag] = e.target.checked;
@@ -3852,13 +5928,26 @@ function bind() {
     });
   }
   ['outFps', 'eFps'].forEach(id => $(id).addEventListener('change', e => { S.project.fps = +e.target.value; syncOut(); replan(); codecNote(); }));
-  $('outQuality').addEventListener('change', e => { S.project.quality = e.target.value; autosave(); });
+  $('outQuality').addEventListener('change', e => {
+    S.project.quality=e.target.value;
+    if(e.target.value==='custom'&&S.project.exportBitrate==null)S.project.exportBitrate=J.videoBitrate(activeExportProject(),'high');
+    syncQuality();codecNote();autosave();
+  });
+  $('outBitrate').addEventListener('input',e=>{
+    S.project.exportBitrate=Number(e.target.value)*1e6;
+    const selection=$('outQuality').querySelector('[value="custom"]');
+    selection.textContent=J.mediaLabel('비트레이트 지정','Custom bitrate')+(e.target.validity.valid?` (${+e.target.value} Mbps)`:'');
+    codecNote();autosave();
+  });
   ['outKey', 'eKey'].forEach(id => $(id).addEventListener('change', e => {
     S.project.keyBg = e.target.value; syncOut(); replan(); flushSave();
     const k = J.keyMode(S.project);
     toast(k ? `배경: ${k === 'green' ? '그린 스크린' : '블랙 배경'}(흰 글자와 연출만)` : '배경: 일반(스타일 색 배합)');
   }));
-  $('outAudio').addEventListener('change', e => { S.project.includeAudio = e.target.checked; autosave(); });
+  $('outQP').addEventListener('input',e=>{
+    S.project.exportQP=e.target.value===''?NaN:Number(e.target.value);codecNote();autosave();
+  });
+  $('outAudio').addEventListener('change', e => { S.project.includeAudio = e.target.checked;if(shortPreview?.playing)playShortPreviewAudio();autosave(); });
   document.querySelectorAll('.centerDirSel').forEach(el => el.addEventListener('change', e => {
     S.project.centerDir = e.target.value; syncOut(); replan(); flushSave();
     toast(e.target.value === 'lr' ? '세로 화면: 좌우로 나눕니다' : '세로 화면: 위아래로 나눕니다');
@@ -3869,6 +5958,8 @@ function bind() {
     toast(e.target.checked ? `가운데를 비웠습니다: 문자와 연출을 ${tall ? '위아래' : '좌우'}에 배치합니다` : '가운데 비우기를 해제했습니다');
   }));
   $('btnMP4').addEventListener('click', () => runExport('mp4'));
+  $('eMP4').addEventListener('click', () => runExport('mp4'));
+  $('btnShort').addEventListener('click', () => runExport('short'));
   ['btnMP4File', 'eMP4File'].forEach(id => $(id).addEventListener('click', () => runExport('mp4file')));
   $('btnPNG').addEventListener('click', () => runExport('png'));
   $('btnPNGA').addEventListener('click', () => runExport('pnga'));
@@ -3877,8 +5968,8 @@ function bind() {
   $('ePNGA').addEventListener('click', () => runExport('pnga'));
   $('ePNGL').addEventListener('click', () => runExport('pngl'));
   document.querySelectorAll('.exp-cancel').forEach(b => b.addEventListener('click', () => { if (S.exporting) S.exporting.abort(); }));
-  $('eMP4').addEventListener('click', () => runExport('mp4'));
   // かんたんモード
+  initOutsideDismiss();
   $('modeEasy').addEventListener('click', () => setMode('easy'));
   $('modeMobile').addEventListener('click', () => setMode('mobile'));
   $('btnOmakaseTop').addEventListener('click', omakase);
@@ -3898,21 +5989,52 @@ function bind() {
   $('ePalette').addEventListener('click', () => { randomPalette(); restartPreview(); });
   // 利用について（出力物の権利・ライセンス）
   const dlg = $('termsDlg');
-  const openTerms = () => { if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', ''); };
+  let termsOpener=null;
+  const openTerms = e => { termsOpener=e.currentTarget; if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', ''); };
+  dlg.addEventListener('close',()=>{const target=termsOpener?.closest('#helpMenu')?$('helpMenu').querySelector('summary'):termsOpener;target?.focus();});
   document.querySelectorAll('.terms-open').forEach(b => b.addEventListener('click', openTerms));
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });   // click on the backdrop
   $('btnSave').addEventListener('click', () => J.saveFile(baseName() + '.jizura.json', JSON.stringify(Object.assign({}, S.project, { appVersion: '@VERSION@' }), null, 1)));
   $('btnSaveAll').addEventListener('click', saveBundle);
   $('btnAE').addEventListener('click', async () => {
     if (S.projectBusy || S.exporting) return;
-    const filename = await requestFilename(); if (!filename) return;
+    if (!confirmHiddenLayers()) return;
+    const filename = (await requestFilename('ae'))?.filename; if (!filename) return;
     try { await J.saveFile(filename, JSON.stringify(J.planForAE(S.plan, S.project, exportRange()), null, 1)); }
     catch (err) { toast('저장할 수 없습니다: ' + err.message); }
+  });
+  $('btnSaveSettings').addEventListener('click', async () => {
+    if (S.projectBusy || S.exporting) return;
+    const filename = (await requestFilename('settings'))?.filename; if (!filename) return;
+    S.projectBusy = true; $('btnSaveSettings').disabled = true;
+    try { await J.saveFile(filename, await J.packProject(J.settingsProject(S.project), null)); }
+    catch (err) { toast(J.mediaLabel('저장할 수 없습니다:', 'Could not save: ') + err.message); }
+    finally { S.projectBusy = false; $('btnSaveSettings').disabled = false; }
+  });
+  $('fileSettings').closest('label').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('fileSettings').click(); }
+  });
+  $('fileSettings').addEventListener('change', async e => {
+    const file = e.target.files?.[0]; if (!file) return;
+    $('projectMenu').open = false;
+    if (S.projectBusy || S.exporting) { e.target.value = ''; return; }
+    S.projectBusy = true;
+    try {
+      const loaded = await J.unpackProject(file);
+      for (const entry of loaded.files) if (entry.kind === 'font') await J.saveFontFile(entry.id,entry.file);
+      await J.restoreFontFiles(loaded.project.userFonts);
+      pause(); if (S.areaEdit) cancelAreaEditor();
+      S.project = mergeProject(J.applyProjectSettings(S.project,loaded.project));
+      fontKey = ''; syncUI(); replan(); flushSave();
+      toast(J.mediaLabel('설정을 불러왔습니다', 'Settings imported'));
+    } catch (err) { toast(J.mediaLabel('설정을 불러올 수 없습니다:', 'Could not import settings: ') + err.message); }
+    finally { S.projectBusy = false; e.target.value = ''; }
   });
   $('btnNew').addEventListener('click', () => { if (!S.exporting && !S.projectBusy) $('newProjectDlg').showModal(); });
   $('btnCreateProject').addEventListener('click', () => {
     const project = J.defaultProject(); project.lyrics = ''; project.aspect = $('newProjectAspect').value;
     replaceProject(project, null, null, new Map()); $('newProjectDlg').close();
+    $('btnThemes').click();
   });
   audioNameDefault = $('audioName').textContent;
   $('btnClearLyrics').addEventListener('click', clearLyrics);
@@ -3939,8 +6061,16 @@ function bind() {
   $('resetDlg').addEventListener('close', () => { if ($('resetDlg').returnValue === 'reset') resetAll(); });
   $('fileProject').addEventListener('change', async e => { const f = e.target.files && e.target.files[0]; await openFile(f); e.target.value = ''; });
   document.addEventListener('keydown', e => {
+    // Ctrl+S / ⌘S saves the project (also while typing) instead of the browser's "save page".
+    if(S.areaEdit)return;
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.code === 'KeyS') {
+      e.preventDefault();
+      if (!e.repeat && !S.projectBusy && !S.exporting && !document.querySelector('dialog[open]')) $('btnSave').click();
+      return;
+    }
     const tag = (e.target && e.target.tagName) || '';
     const typing = (e.target && e.target.isContentEditable) || /INPUT|TEXTAREA|SELECT/.test(tag) && e.target.type !== 'range' && e.target.type !== 'checkbox';
+    if(document.querySelector('dialog[open]')&&!e.altKey&&(e.ctrlKey||e.metaKey)&&['KeyZ','KeyY'].includes(e.code))return;
     if (!typing && !e.altKey && (e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); undoMove(e.shiftKey ? 1 : -1); return; }
     if (!typing && !e.altKey && e.ctrlKey && e.code === 'KeyY') { e.preventDefault(); undoMove(1); return; }
     if (S.tap && (e.code === 'Space' || e.code === 'Enter') && !typing) { e.preventDefault(); tapNow(); return; }
@@ -3955,6 +6085,7 @@ function bind() {
   });
   window.addEventListener('resize', () => { sizeViewport(); drawTimeline(); drawTimelineLinks(); });
   if (window.ResizeObserver) new ResizeObserver(() => { sizeViewport(); drawTimeline(); drawTimelineLinks(); }).observe($('viewport'));
+  if(window.ResizeObserver){const observer=new ResizeObserver(sizeViewport);for(const el of document.querySelector('.col-stage').children)if(el.id!=='viewport')observer.observe(el);}
   if (window.ResizeObserver) new ResizeObserver(drawTimelineLinks).observe($('timelineStack'));
   bindFollow();
 }
@@ -4061,11 +6192,83 @@ async function restoreFonts() {
   fontKey = ''; renderFontRoles(); replan();
   if (missing.length) toast(`불러온 서체(${missing.join('·')})가 이 브라우저에 없습니다. 「글꼴」에서 같은 파일을 다시 불러와 주세요(그동안은 비슷한 서체로 표시합니다)`);
 }
+function openAudioImport(file) {
+  if(S.projectBusy||S.exporting){toast(J.mediaLabel('처리가 끝난 뒤에 불러와 주세요','Wait for the current operation before importing'));return;}
+  pause();
+  const L=J.mediaLabel,video=J.isVideoFile(file),dialog=document.createElement('dialog');
+  dialog.id='audioImportDialog';dialog.className='insert-cut-dialog';
+  dialog.innerHTML=`<form><h2>${L('곡·동영상 불러오기','Import audio / video')}</h2><p class="audio-import-name"></p><label class="row"><input name="matchDuration" type="checkbox" checked>${L('만들 동영상의 길이를 맞추기','Match output duration to this file')}</label>${video?`<label class="row"><input name="background" type="checkbox" checked>${L('배경으로도 넣기','Also import as background')}</label><p class="hint">${L('배경 동영상은 맨 앞에 넣습니다. 기존 배경 컷은 뒤로 밀립니다.','The video is inserted at the beginning. Existing background cuts move after it.')}</p>`:''}<div class="row"><button type="button" data-cancel>${L('취소','Cancel')}</button><button type="submit">${L('불러오기','Import')}</button></div></form>`;
+  dialog.querySelector('.audio-import-name').textContent=file.name;
+  dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+  dialog.querySelector('form').onsubmit=e=>{e.preventDefault();const options={matchDuration:dialog.querySelector('[name=matchDuration]').checked,background:!!dialog.querySelector('[name=background]')?.checked};dialog.close();importAudioFile(file,options);};
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
+}
+async function importAudioFile(f,options={matchDuration:true,background:false}) {
+  if(S.projectBusy||S.exporting)return false;
+  audioSeq++;                                  // an older song still being analysed must not win
+  S.projectBusy=true;
+  const project = S.project, request = S.audioLoad = (S.audioLoad || 0) + 1;
+  const previousDuration=S.plan.duration,video=J.isVideoFile(f),assets=new Map();
+  const loading=importProgressDialog('audioLoadingDialog',video?J.mediaLabel('동영상을 불러오는 중','Loading video'):J.mediaLabel('곡을 불러오는 중','Loading audio'));
+  const report=(text,value=null)=>loading.report(text+':'+f.name,value);
+  $('audioName').textContent = '분석 중…';
+  try {
+    pause();
+    report(J.mediaLabel('파일을 읽는 중','Reading file'));
+    await new Promise(resolve=>setTimeout(resolve,0));
+    const sourceFile=await J.snapshotMediaFile(f,(loaded,total)=>report(J.mediaLabel('파일을 읽는 중','Reading file')+(total?` ${Math.round(loaded/total*100)}%`:''),total?loaded/total:null));
+    let audio=null,audioError=null;
+    try{audio=await J.analyzeAudio(sourceFile,p=>report(p.phase==='read'?J.mediaLabel('음성을 읽는 중','Reading audio'):p.phase==='decode'?J.mediaLabel('음성을 푸는 중','Decoding audio'):J.mediaLabel('박자·파형을 분석하는 중','Analyzing beats and waveform')));}
+    catch(error){if(!video||!options.background)throw error;audioError=error;}
+    if(video)report(J.mediaLabel('동영상 길이를 확인하는 중','Checking video duration'));
+    const duration=video?await J.videoFileDuration(sourceFile):audio.duration;
+    if (S.project !== project || S.audioLoad !== request) return false;
+    let audioFile=null;
+    if(audio){
+      report(J.mediaLabel('음성을 저장할 준비를 하는 중','Preparing audio for saving'));
+      await new Promise(resolve=>setTimeout(resolve,0));
+      audioFile=await J.snapshotMediaFile(video?J.audioWaveFile(audio.buffer,f.name):sourceFile);
+    }
+    let item=null;
+    if(video&&options.background){
+      if(S.plan.media.cuts.length>=1000)throw new Error(J.mediaLabel('배경 컷 수 상한에 도달했습니다','Background cut limit reached'));
+      item={id:crypto.randomUUID(),name:f.name,size:f.size,type:'video',duration};
+      report(J.mediaLabel('배경 동영상을 준비하는 중','Preparing background video'));
+      await J.attachMedia(item,sourceFile,assets);
+      report(J.mediaLabel('배경 동영상을 브라우저에 저장하는 중','Saving background video in browser'));
+      await J.storeMedia(item.id,sourceFile);
+    }
+    let audioAsset=null;
+    if(audioFile){
+      audioAsset={id:'audio_'+crypto.randomUUID(),name:audioFile.name,type:audioFile.type};
+      report(J.mediaLabel('음성을 브라우저에 저장하는 중','Saving audio in browser'));
+      await J.storeMedia(audioAsset.id,audioFile);
+    }
+    if (S.project !== project || S.audioLoad !== request) return false;
+    if(item){
+      const m=project.media,cuts=S.plan.media.cuts,overrides={0:{itemId:item.id,technique:'none',entrance:'none',departure:'none',videoStart:0,videoDuration:duration,videoLoop:false}},times={0:0};
+      cuts.forEach((cut,i)=>{overrides[i+1]={...m.cutOverrides[i],itemId:cut.itemId};times[i+1]=cut.start+duration;});
+      m.items.push(item);m.manualCuts=true;m.randomOrder=false;m.cutCount=cuts.length+1;m.cutOverrides=overrides;m.timing.lineTimes=times;
+      for(const link of project.timelineLinks)for(const side of ['a','b'])if(link[side].startsWith('m:'))link[side]='m:'+(+link[side].slice(2)+1);
+      for(const [id,asset] of assets){J.mediaAssets.set(id,asset);asset.element.addEventListener('seeked',()=>{S.need=true;});}assets.clear();
+    }
+    if(audio){if(project.audioAsset)queueMediaDeletion(project.audioAsset.id);S.audio=audio;S.audioFile=audioFile;project.audioAsset=audioAsset;project.audioName=audioFile.name;}
+    project.durationOverride=options.matchDuration?duration:previousDuration;
+    refreshAudioName();
+    if(audio)S.project.timing.snap = true;
+    report(J.mediaLabel('편집 화면을 갱신하는 중','Updating editor'));
+    syncUI(); replan();
+    if(audioError)toast(J.mediaLabel('동영상을 불러왔습니다. 음성을 꺼낼 수 없어 곡은 바꾸지 않았습니다.','Video imported. Audio could not be extracted, so the existing song was kept.'));
+    return true;
+  } catch (err) {
+    if (S.project === project && S.audioLoad === request) { refreshAudioName(); toast(J.mediaLabel('곡을 불러올 수 없습니다:','Could not import audio: ') + err.message); }
+    return false;
+  } finally {releaseProjectAssets(assets);loading.close();S.projectBusy=false;}
+}
 
 function releaseProjectAssets(assets) {
   for (const asset of assets.values()) {
-    if (asset.type === 'video') { asset.element.pause(); asset.element.removeAttribute('src'); asset.element.load(); }
-    URL.revokeObjectURL(asset.url);
+    J.releaseMediaAsset(asset);
   }
   assets.clear();
 }
@@ -4157,5 +6360,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 J.ui = S;
 // hooks for hosts that embed the app (the After Effects CEP panel)
 J.uiApi = { toast, replan, syncUI, pause, seek, flushSave, loadAudioFile, restartPreview, exportRange, exportRangeLines, saveBundle, openProject, openFile, removeAsset, setLineStart, startTap,
-  selectCut, cutPanelSelector: '#cutPanel', cutPanelSections: ['[data-cut-section="pick"]', '[data-cut-section="layer"]', '[data-cut-section="line"]'] };
+  selectCut, cutPanelSelector: '#cutPanel', cutPanelSections: ['[data-cut-section="pick"]', '[data-cut-section="layer"]', '[data-cut-section="line"]'],
+  replaceProject, ensureFonts, splitMediaCut, insertLyricAtPlayhead, removeLyricCut, removeMediaCut, connectTimelineBoundaries,
+  boundaryGroupLimits, commitTimelineBoundary };
 })();

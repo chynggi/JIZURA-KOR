@@ -7,12 +7,12 @@ const E = J.E;
 
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; };
 
+// The latest-starting cut still showing at t (cuts may overlap).
 J.cutAt = (plan, t) => {
   const cs = plan.cuts; let lo = 0, hi = cs.length - 1, ans = -1;
   while (lo <= hi) { const m = (lo + hi) >> 1; if (cs[m].start <= t) { ans = m; lo = m + 1; } else hi = m - 1; }
-  if (ans < 0) return null;
-  const c = cs[ans];
-  return t < c.end ? c : null;
+  for (let i = ans; i >= 0; i--) if (t < cs[i].end) return cs[i];
+  return null;
 };
 
 class Renderer {
@@ -56,27 +56,27 @@ class Renderer {
 
   /* main entry: draw frame at time t into ctx (canvas px = design * scale) */
   frame(ctx, plan, t, opt = {}) {
+    const hidden=plan.layerVisibility || {};
+    opt={...opt,noForeground:opt.noForeground || hidden.foreground===false,noMedia:opt.noMedia || hidden.media===false,noLyrics:opt.noLyrics || hidden.lyrics===false,noHud:opt.noHud || hidden.lyrics===false,noPost:opt.noPost || hidden.lyrics===false};
     const W = plan.W, H = plan.H, scale = opt.scale || 1;
     const cw = ctx.canvas.width, ch = ctx.canvas.height;
     const foregroundCut = plan.foreground && J.mediaAt(plan, t, 'foreground');
     // 透過PNG 前景／後景 (opt.layer): the 전경 컷 belongs to the front layer only, the 배경 컷 to the back layer only
-    if (!opt.noForeground && opt.layer !== 'back' && foregroundCut && J.mediaAssets.has(foregroundCut.itemId)) {
+    if (!opt.noForeground && opt.layer !== 'back' && foregroundCut && J.mediaCutsAt(plan, t, 'foreground').some(c => J.mediaAssets.has(c.itemId))) {
       const step = J.stepDur(plan.fx, plan.fps);
       const frontmost = !opt.noLyrics && J.lyricCutsAt(plan, Math.floor(t / step + 1e-6) * step).some(c => c.frontmost);
       this.frame(ctx, plan, t, Object.assign({}, opt, { noForeground: true, lyricLayer: 'below' }));
       const layer = this.ensure(this.foregroundLayer || (this.foregroundLayer = document.createElement('canvas')), cw, ch);
-      const lx = layer.getContext('2d'); lx.setTransform(1, 0, 0, 1, 0, 0); lx.globalAlpha = 1; lx.globalCompositeOperation = 'source-over'; lx.filter = 'none'; lx.clearRect(0, 0, cw, ch);
-      J.drawMedia(lx, plan, t, this, 'foreground', !!opt.previewEdit);
-      const previousForeground = foregroundCut.index > 0 && plan.foreground.cuts[foregroundCut.index - 1];
-      if (!opt.previewEdit && foregroundCut.chromaKey && foregroundCut.trans && previousForeground && J.mediaAssets.has(previousForeground.itemId) && Math.abs(previousForeground.end - foregroundCut.start) < 0.06 && t - foregroundCut.start < foregroundCut.transDur) {
-        const mask = this.ensure(this.foregroundKeyMask || (this.foregroundKeyMask = document.createElement('canvas')), cw, ch);
-        const mx = mask.getContext('2d'); mx.setTransform(1, 0, 0, 1, 0, 0); mx.globalAlpha = 1; mx.globalCompositeOperation = 'source-over'; mx.filter = 'none'; mx.clearRect(0, 0, cw, ch);
-        J.drawMediaCut(mx, foregroundCut, t, { noEnter: true, noExit: true, previewEdit: !!opt.previewEdit });
-        lx.globalCompositeOperation = 'destination-in'; lx.drawImage(mask, 0, 0); lx.globalCompositeOperation = 'source-over';
+      const lx = layer.getContext('2d');
+      // Overlapping foreground cuts (own end times) composite bottom first, each with its own opacity and blend.
+      for (const cut of J.mediaCutsAt(plan, t, 'foreground').filter(c => J.mediaAssets.has(c.itemId))) {
+        lx.setTransform(1, 0, 0, 1, 0, 0); lx.globalAlpha = 1; lx.globalCompositeOperation = 'source-over'; lx.filter = 'none'; lx.clearRect(0, 0, cw, ch);
+        J.drawForegroundLayer(lx, plan, t, this, !!opt.previewEdit, cut);
+        if(!opt.previewEdit && J.maskBehindPersons)J.maskBehindPersons(layer,plan,t,'behindForeground',cut);
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = cut.opacity / 100;
+        ctx.globalCompositeOperation = { normal: 'source-over', multiply: 'multiply', screen: 'screen', overlay: 'overlay' }[cut.blend] || 'source-over';
+        ctx.drawImage(layer, 0, 0); ctx.restore();
       }
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = plan.foreground.opacity / 100;
-      ctx.globalCompositeOperation = { normal: 'source-over', multiply: 'multiply', screen: 'screen' }[plan.foreground.blend] || 'source-over';
-      ctx.drawImage(layer, 0, 0); ctx.restore();
       if (frontmost) {
         // Blend frontmost cuts against the finished foreground, not against a
         // transparent intermediate layer where Multiply/Overlay lose meaning. 소재 stay below the 전경 컷 (noAssets).
@@ -86,8 +86,10 @@ class Renderer {
     }
     // 배경 컷: drawn first, under everything else of this frame (透過PNG: only in the back layer)
     const mediaCut = !opt.noMedia && (!opt.transparent || opt.layer === 'back') && plan.media && J.mediaAt(plan, t);
-    const backgroundMedia = mediaCut && J.mediaAssets.has(mediaCut.itemId);
-    const fx = plan.fx, st = plan.style, fps = plan.fps;
+    const backgroundMedia = !!mediaCut && J.mediaCutsAt(plan, t, 'media').some(J.mediaSourceAvailable);
+    // a cut's own effect settings (cut details) replace the project's for its frames
+    const effectCut = J.cutAt(plan,t);
+    const fx = effectCut?.effectFx || plan.fx, st = effectCut?.effectStyle || plan.style, fps = plan.fps;
     // motion is quantised to 'koma' drawings per second (24fps timebase); random flicker runs on a <=24Hz clock
     const stepDur = J.stepDur(fx, fps);
     const clock = J.komaOf(fx) > 0 ? stepDur : 1 / 24;
@@ -100,7 +102,7 @@ class Renderer {
     const visible = cut => !opt.noLyrics && (opt.lyricLayer === 'above' ? cut.frontmost : opt.lyricLayer === 'below' || deferFrontmost ? !cut.frontmost : true);
     const activeCuts = at => J.lyricCutsAt(plan, at).filter(visible)
       .sort((a, b) => Number(!!a.frontmost) - Number(!!b.frontmost) || a.index - b.index).map(J.lyricRenderCut);
-    const sc = st.schemes[mainCut ? mainCut.scheme % st.schemes.length : 0] || st.schemes[0];
+    const sc = mainCut?.palette || st.schemes[mainCut ? mainCut.scheme % st.schemes.length : 0] || st.schemes[0];
     const allowFilter = this.filterOK && !opt.fast;
     // A frontmost transition needs the same backdrop for both its frames.
     let backdrop = null;
@@ -116,12 +118,26 @@ class Renderer {
     if (!opt.preserveCanvas) ctx.clearRect(0, 0, cw, ch);
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     // ---------- background ----------
-    const key = plan.keyBg && J.KEY_BG && J.KEY_BG[plan.keyBg] ? plan.keyBg : null;   // 合成用: white-on-black, finished in keyFinish()
+    const key = !opt.copyLyrics && plan.keyBg && J.KEY_BG && J.KEY_BG[plan.keyBg] ? plan.keyBg : null;   // 合成用: white-on-black, finished in keyFinish()
     if (backgroundMedia) {
       if (!opt.transparent) { ctx.fillStyle = st.schemes[0].bg; ctx.fillRect(0, 0, W, H); }
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-      J.drawMedia(ctx, plan, t, this, 'media', !!opt.previewEdit); ctx.restore();
+      const mediaLayer=this.ensure(this.mediaCompositeLayer || (this.mediaCompositeLayer=document.createElement('canvas')),cw,ch);
+      const mx=mediaLayer.getContext('2d');
+      // Overlapping background cuts composite bottom first, each with its own mask, opacity and blend.
+      for (const cut of J.mediaCutsAt(plan, t, 'media').filter(J.mediaSourceAvailable)) {
+        mx.setTransform(1,0,0,1,0,0);mx.globalAlpha=1;mx.globalCompositeOperation='source-over';mx.clearRect(0,0,cw,ch);
+        J.drawMedia(mx, plan, t, this, 'media', !!opt.previewEdit, cut);
+        // A transition between windowed cuts has already masked each side (drawMedia).
+        const masked = this.maskHandled === cut; this.maskHandled = null;
+        if (!opt.previewEdit && J.maskMediaLayer && !masked) J.maskMediaLayer(mediaLayer, cut, t, plan);
+        ctx.globalAlpha=cut.opacity/100;
+        ctx.globalCompositeOperation={normal:'source-over',multiply:'multiply',screen:'screen',overlay:'overlay'}[cut.blend] || 'source-over';
+        ctx.drawImage(mediaLayer,0,0);
+      }
+      ctx.restore();
     }
+    else if (hidden.media===false && !opt.transparent) { ctx.fillStyle='#000';ctx.fillRect(0,0,W,H); }
     else if (key && !opt.transparent) { ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, W, H); }
     else if (!opt.transparent) {
       ctx.fillStyle = sc.bg; ctx.fillRect(0, 0, W, H);
@@ -137,17 +153,6 @@ class Renderer {
         ctx.drawImage(this.paper(W, H), 0, 0, W, H);
         ctx.filter = 'none'; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       }
-    }
-    if (mainCut && mainCut.blank && !activeCuts(tq).length) {
-      // a blank lyric cut still shows the 소재 (behind and in front: there are no lyrics between them)
-      const bl = opt.transparent ? opt.layer || null : null;
-      if (!key && !opt.noAssets && J.drawAssets && plan.assets && plan.assets.length) {
-        if (bl !== 'front') J.drawAssets(ctx, plan, 'back');
-        if (bl !== 'back') J.drawAssets(ctx, plan, 'front');
-      }
-      ctx.restore();
-      if (key && !opt.noPost && !backgroundMedia) this.keyFinish(ctx, key, opt);
-      return;
     }
     // ---------- camera & chroma amounts ----------
     const u = H / 1080;
@@ -180,7 +185,8 @@ class Renderer {
     // ---------- background graphic (per line) ----------
     // 透過PNG 前景／後景 (opt.layer): 'back' = background graphic + the decorations behind the lyrics, 'front' = the rest
     const layer = opt.transparent ? opt.layer || null : null;
-    if (!backgroundMedia && (!opt.transparent || layer === 'back') && !key && mainCut && mainCut.bg && mainCut.bg !== 'none' && J.BG[mainCut.bg]) {
+    // over a 배경 컷 only when its 「가사 배경 연출도 적용」 is on
+    if (hidden.lyrics!==false && hidden.media!==false && (opt.copyLyrics || plan.media?.applyLyricBackground !== false && (!opt.transparent || layer === 'back')) && !key && mainCut && mainCut.bg && mainCut.bg !== 'none' && J.BG[mainCut.bg]) {
       const env = this.makeEnv(ctx, plan, mainCut, sc, { pass: 'main', t: tq, lt: tq - mainCut.start, ltb: tq - mainCut.start, step, scale, allowFilter, energy, beat: beatInfo, bgOnly: true });
       ctx.save();
       try { J.BG[mainCut.bg].draw(env, mainCut.bgP || {}); } catch (e) { console.warn('bg', mainCut.bg, e); }
@@ -228,7 +234,9 @@ class Renderer {
       // Flatten glyphs, decorations and ghost passes once before applying the
       // cut's opacity. Reuse the buffer even for long groups of retained lyrics.
       let target = ctx;
-      if (opacity !== 1 || composite !== 'source-over' || backgroundMedia && !opt.noPost) {
+      const mask = J.activeMask ? J.activeMask(cut) : null;
+      const personOcclusion = !opt.copyLyrics && J.personOccluders?.(plan,t,'behindLyrics').length;
+      if (opacity !== 1 || composite !== 'source-over' || backgroundMedia && !opt.noPost || mask || personOcclusion) {
         const buf = this.ensure(this.lyricCutLayer || (this.lyricCutLayer = mk(2, 2)), cw, ch);
         target = buf.getContext('2d'); target.setTransform(1, 0, 0, 1, 0, 0); target.globalAlpha = 1; target.globalCompositeOperation = 'source-over'; target.filter = 'none';
         target.clearRect(0, 0, cw, ch); target.setTransform(scale, 0, 0, scale, 0, 0);
@@ -236,7 +244,7 @@ class Renderer {
       for (const P of contentPasses) {
         if (!P.cuts.has(ck)) continue;
         const tp = P.tp;
-        const csc = st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
+        const csc = cut.palette || st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
         const lt = tp - cut.start, motion = cut.motionScale ?? 1;
         const Z = plan.centerFree && cut.zone ? cut.zone : null;
         const envOptions = {
@@ -251,7 +259,9 @@ class Renderer {
         // Reuse one canvas for a cut's focus blur. A later cut's camera must not
         // blur earlier retained lyrics, and each glyph should only draw once.
         const blur = allowFilter ? (cam.blur || 0) * motion : 0;
-        if (blur > .4) {
+        // A source mask needs this pass on its own canvas, like the focus blur.
+        const sourceMask = mask && mask.target === 'source';
+        if (blur > .4 || sourceMask) {
           const buf = this.ensure(this.camLayer || (this.camLayer = mk(2, 2)), cw, ch);
           X = buf.getContext('2d'); X.setTransform(1, 0, 0, 1, 0, 0); X.globalAlpha = 1; X.globalCompositeOperation = 'source-over'; X.filter = 'none';
           X.clearRect(0, 0, cw, ch); X.setTransform(scale, 0, 0, scale, 0, 0);
@@ -277,20 +287,26 @@ class Renderer {
         if (cam.skx) X.transform(1, 0, Math.tan(cam.skx * J.DEG * motion), 1, 0, 0);
         X.scale(cs * J.lerp(1, cam.sx ?? 1, motion), cs * J.lerp(1, cam.sy ?? 1, motion)); X.translate(-contentW / 2, -contentH / 2);
         if (X === target) X.globalCompositeOperation = blend;
+        // Content units: the display area, moved by the camera; the source mask follows them.
+        const contentMatrix = sourceMask ? X.getTransform() : null;
         this.drawCut(env);
         X.restore();
+        if (sourceMask) J.applyMaskToCanvas(X.canvas, mask, contentMatrix, contentW, contentH, { cut, t: tp, plan });
         if (X !== target) {
           target.save(); target.setTransform(1, 0, 0, 1, 0, 0); target.globalAlpha = 1; target.globalCompositeOperation = blend;
-          target.filter = `blur(${(blur * scale).toFixed(1)}px)`; target.drawImage(X.canvas, 0, 0); target.restore();
+          target.filter = blur > .4 ? `blur(${(blur * scale).toFixed(1)}px)` : 'none'; target.drawImage(X.canvas, 0, 0); target.restore();
         }
       }
       if (target !== ctx) {
-        const cutScheme = st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
+        const cutScheme = cut.palette || st.schemes[cut.scheme % st.schemes.length] || st.schemes[0];
         if (backgroundMedia && !opt.noPost) {
           const layerOptions = { ...opt, transparent: true };
           this.post(target, plan, t, tq, step, cutScheme, scale, layerOptions, allowFilter);
           if (key) this.keyFinish(target, key, layerOptions);
         }
+        // The cut mask applies to the finished cut, after its effects, in stage units.
+        if (mask && mask.target === 'cut') J.applyMaskToCanvas(target.canvas, mask, new DOMMatrix([scale, 0, 0, scale, 0, 0]), W, H, { cut, t: tq, plan });
+        if(personOcclusion)J.maskBehindPersons(target.canvas,plan,t,'behindLyrics');
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = opacity; ctx.globalCompositeOperation = composite;
         ctx.drawImage(target.canvas, 0, 0); ctx.restore();
       }
@@ -315,7 +331,7 @@ class Renderer {
         const bx = B.getContext('2d'); bx.setTransform(1, 0, 0, 1, 0, 0); bx.globalCompositeOperation = 'copy'; bx.drawImage(ctx.canvas, 0, 0); bx.globalCompositeOperation = 'source-over';
         if (backdrop) { const ax = A.getContext('2d'); ax.setTransform(1, 0, 0, 1, 0, 0); ax.globalCompositeOperation = 'copy'; ax.drawImage(backdrop, 0, 0); ax.globalCompositeOperation = 'source-over'; }
         this.frame(A.getContext('2d'), plan, Math.max(prev.start, prev.end - 1e-3), Object.assign({}, opt, { noTrans: true, noPost: true, noHud: true }));
-        const psc = st.schemes[prev.scheme % st.schemes.length] || st.schemes[0];
+        const psc = prev.palette || st.schemes[prev.scheme % st.schemes.length] || st.schemes[0];
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
         try { J.TRANS[mainCut.trans].draw(ctx, A, B, J.clamp(lt / dur), { cw, ch, sc, scPrev: psc, st, P: mainCut.transP || {}, step, t, scale, allowFilter, seed: mainCut.seed | 0, tmp: (w, h) => this.ensure(this.transC || (this.transC = mk(2, 2)), w, h) }); }
         catch (e) { console.warn('trans', mainCut.trans, e); }
@@ -418,8 +434,9 @@ class Renderer {
     const area = cut && cut.area && !o.zone && !o.bgOnly && !o.fullFrame ? cut.area : null;
     // 中央を空ける: a cut lives in its side band / 표시 영역: a cut lives in its area
     const W = o.zone ? o.zone.w : area ? plan.W * area.w : plan.W, H = o.zone ? o.zone.h : area ? plan.H * area.h : plan.H;
-    const env = Object.assign({ ctx, W, H, sc, st: plan.style, fx: plan.fx, fps: plan.fps, cut, plan }, o);
-    if (cut && cut.motionScale < 1) env.fx = Object.assign({}, plan.fx, { motion: plan.fx.motion * cut.motionScale });
+    // a cut's own palette / effect style / fonts / effect settings (cut details)
+    const env = Object.assign({ ctx, W, H, sc: cut?.palette || sc, st: {...(cut?.effectStyle || plan.style),...(cut?.fonts ? {fonts:cut.fonts} : {})}, fx: cut?.effectFx || plan.fx, fps: plan.fps, cut, plan }, o);
+    if (cut && cut.motionScale < 1) env.fx = Object.assign({}, env.fx, { motion: env.fx.motion * cut.motionScale });
     if (cut) {
       env.pIn = J.clamp(o.lt / Math.max(0.01, cut.inDur));
       env.pOut = cut.outDur > 0 ? J.clamp((o.lt - (cut.dur - cut.outDur)) / cut.outDur) : 0;
@@ -490,7 +507,7 @@ class Renderer {
     if (env.layer !== 'front') for (const d of decor) { const D = J.DECOR[d.id]; if (D && D.layer === 'back') try { D.draw(env, null, d); } catch (e) { console.warn(e); } }
     if (env.layer === 'back') return null;                // 後景だけ: the lyrics and the front decorations go to the other layer
     let bb = null;
-    try { bb = L.render(env); } catch (e) { console.warn('layout', cut.layout, e); }
+    try { if (!cut.effectsOnly) bb = L.render(env); } catch (e) { console.warn('layout', cut.layout, e); }
     for (const d of decor) { const D = J.DECOR[d.id]; if (D && D.layer === 'front') try { D.draw(env, bb, d); } catch (e) { console.warn(e); } }
     return bb;
   }
@@ -540,15 +557,18 @@ class Renderer {
 
   post(ctx, plan, t, tq, step, sc, scale, opt, allowFilter) {
     const cw = ctx.canvas.width, ch = ctx.canvas.height;
-    const fx = plan.fx, st = plan.style;
+    const effectCut = J.cutAt(plan,tq);
+    const fx = effectCut?.effectFx || plan.fx, st = effectCut?.effectStyle || plan.style;
     const active = plan.events.filter(ev => t >= ev.t && t < ev.t + Math.max(ev.dur, 1 / plan.fps));
-    const needScratch = active.some(ev => ['slice', 'block', 'zoom', 'mosaic'].includes(ev.type) || (J.FXE[ev.type] && J.FXE[ev.type].scratch)) || (!opt.fast && (st.glow || 0) > 0);
+    const baseEvent=ev=>J.FXE[ev.type]?.customBase?{...ev,type:J.FXE[ev.type].customBase}:ev;
+    const needScratch = active.map(baseEvent).some(ev => ['slice', 'block', 'zoom', 'mosaic'].includes(ev.type) || (J.FXE[ev.type] && J.FXE[ev.type].scratch)) || (!opt.fast && (st.glow || 0) > 0);
     const S = needScratch ? this.ensure(this.scratch, cw, ch) : null;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const copy = () => { const sx = S.getContext('2d'); sx.globalCompositeOperation = 'copy'; sx.drawImage(ctx.canvas, 0, 0); sx.globalCompositeOperation = 'source-over'; };
     const clock24 = Math.floor(t * 24);           // glitch randomness changes at most 24 times a second at any output fps
     const guard = opt.transparent ? this.alphaGuard(ctx, S, sc) : null;   // 透過: effects must not fill the empty background
-    for (const ev of active) {
+    for (const event of active) {
+      const ev = baseEvent(event);                  // a custom effect draws as its base effect, then its own layer
       // progress clamped to 0..1 (an event shorter than one output frame is still shown for that frame — k would pass 1)
       const k0 = (t - ev.t) / Math.max(ev.dur, 1e-3), k = Number.isFinite(k0) ? J.clamp(k0, 0, 1) : 0;
       const st2 = clock24;
@@ -557,9 +577,10 @@ class Renderer {
       if (D && D.draw) {
         if (D.scratch) copy();
         try {
-          D.draw(ctx, ev, k, { cw, ch, S, sc, st: plan.style, step: st2, t, scale, renderer: this, allowFilter, opt, transparent: !!opt.transparent, tmp: (w, h) => this.ensure(this.tiny, w, h), tmp2: (w, h) => this.ensure(this.small2 || (this.small2 = mk(2, 2)), w, h) });
+          D.draw(ctx, ev, k, { cw, ch, S, sc, st, step: st2, t, scale, renderer: this, allowFilter, opt, transparent: !!opt.transparent, tmp: (w, h) => this.ensure(this.tiny, w, h), tmp2: (w, h) => this.ensure(this.small2 || (this.small2 = mk(2, 2)), w, h) });
         } catch (e) { console.warn('fx', ev.type, e); }
         ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.imageSmoothingEnabled = true;
+        J.drawCustomEvent?.(ctx,event,k,sc);
         if (guard) guard.end();
         continue;
       }
@@ -601,10 +622,11 @@ class Renderer {
         ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 0.85 * (1 - k); ctx.drawImage(T, 0, 0, cw, ch); ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = true;
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      J.drawCustomEvent?.(ctx,event,k,sc);
       if (guard) guard.end();
     }
     // bloom
-    const glow = (st.glow || 0.6) * 0.5 * (fx.texture ?? 0.6);
+    const glow = (st.glow ?? 0.6) * 0.5 * (fx.texture ?? 0.6);
     if (!opt.fast && allowFilter && glow > 0.05 && !opt.transparent) {
       const sw = Math.round(cw / 4), sh = Math.round(ch / 4);
       const Sm = this.ensure(this.small, sw, sh), sx = Sm.getContext('2d');

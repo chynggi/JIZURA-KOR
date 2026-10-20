@@ -40,46 +40,66 @@ const VIDEO_CANDS = [
   { codec: 'vp09.00.51.08', mux: 'vp9', label: 'VP9' },
   { codec: 'av01.0.12M.08', mux: 'av1', label: 'AV1' },
 ];
-// hardware encoders often refuse very high bitrates (52 Mbps+ for 1080p60 at 最高) — keep them in a range they accept
-J.videoBitrate = (w, h, fps, quality) => {
-  const want = w * h * fps * (quality === 'max' ? 0.42 : quality === 'high' ? 0.28 : 0.16);
-  const px = w * h, cap = px <= 2.2e6 ? 40e6 : px <= 3.8e6 ? 60e6 : 90e6;
+// One source for the UI labels, codec probe and actual video encoder (bits/s).
+// hardware encoders often refuse very high bitrates (52 Mbps+ for 1080p60 at 최고) — the presets stay in a range they accept;
+// a typed bitrate (임의 비트레이트) is used as given
+J.videoBitrate = (project, quality = project.quality || 'high', fps = project.fps) => {
+  const [w, h] = J.outputSize(project), px = w * h;
+  if (quality === 'custom') {
+    const bitrate = project.exportBitrate ?? px * fps * 0.28;
+    if (!Number.isFinite(bitrate) || bitrate < 1 || bitrate > Number.MAX_SAFE_INTEGER) throw new Error('비트레이트는 양수로 지정해 주세요.');
+    return Math.round(bitrate);
+  }
+  const want = px * fps * (quality === 'max' ? 0.42 : quality === 'high' ? 0.28 : 0.16);
+  const cap = px <= 2.2e6 ? 40e6 : px <= 3.8e6 ? 60e6 : 90e6;
   return Math.round(Math.min(want, cap));
 };
-const vcfg = (c, w, h, fps, bitrate, hw) => {
-  const cfg = { codec: c.codec, width: w, height: h, bitrate, framerate: fps };
+// 화질 우선 (QP 지정): H.264's 0–51 quantizer per frame
+J.videoQuantizer = project => {
+  const qp = project.exportQP ?? 12;
+  if (!Number.isInteger(qp) || qp < 0 || qp > 51) throw new Error('QP는 0~51의 정수로 지정해 주세요.');
+  return qp;
+};
+const vcfg = (c, w, h, fps, bitrate, hw, mode = 'variable') => {
+  const cfg = { codec: c.codec, width: w, height: h, framerate: fps };
+  if (mode === 'quantizer') cfg.bitrateMode = 'quantizer'; else cfg.bitrate = bitrate;
   if (hw) cfg.hardwareAcceleration = hw;
   if (c.mux === 'avc') cfg.avc = { format: 'avc' };
   return cfg;
 };
-async function supported(cfg) { try { const s = await VideoEncoder.isConfigSupported(cfg); return !!(s && s.supported); } catch (e) { return false; } }
+// (a quantizer config only counts when the browser keeps it: it must never fall back to another bitrate mode)
+async function supported(cfg) { try { const s = await VideoEncoder.isConfigSupported(cfg); return !!(s && s.supported && (cfg.bitrateMode !== 'quantizer' || s.config.bitrateMode === 'quantizer')); } catch (e) { return false; } }
+// QP keeps H.264's 0–51 scale: never another codec
+const candsFor = mode => VIDEO_CANDS.filter(c => mode !== 'quantizer' || c.mux === 'avc');
 const codecMemo = new Map();   // the answer never changes for a page load; asking the browser again costs ~100 ms
-J.pickVideoCodec = (w, h, fps, bitrate) => {
-  const key = [w, h, fps, bitrate].join('/');
+J.pickVideoCodec = (w, h, fps, bitrate, { bitrateMode = 'variable' } = {}) => {
+  const key = [w, h, fps, bitrate, bitrateMode].join('/');
   if (!codecMemo.has(key)) codecMemo.set(key, (async () => {
     if (typeof VideoEncoder === 'undefined') return null;
-    for (const c of VIDEO_CANDS) { const cfg = vcfg(c, w, h, fps, bitrate); if (await supported(cfg)) return Object.assign({}, c, { cfg }); }
+    for (const c of candsFor(bitrateMode)) { const cfg = vcfg(c, w, h, fps, bitrate, null, bitrateMode); if (await supported(cfg)) return Object.assign({}, c, { cfg }); }
     return null;
   })());
   return codecMemo.get(key).then(vc => vc && Object.assign({}, vc, { cfg: Object.assign({}, vc.cfg) }));
 };
 /* the encoders to try, best first: the browser's choice, then the same codec in software (GPU encoders are the usual
    reason an export fails every time on one PC), then a simpler profile / lower bitrate in software, then VP9 */
-J.videoAttempts = async (w, h, fps, bitrate) => {
+J.videoAttempts = async (w, h, fps, bitrate, mode = 'variable') => {
   if (typeof VideoEncoder === 'undefined') return [];
+  const q = mode === 'quantizer', cands = candsFor(mode);
   const out = [], seen = new Set();
   const add = async (c, hw, br) => {
     const key = c.codec + '|' + (hw || '') + '|' + br;
     if (seen.has(key) || out.length >= 5) return;
-    const cfg = vcfg(c, w, h, fps, br, hw);
+    const cfg = vcfg(c, w, h, fps, br, hw, mode);
     if (await supported(cfg)) { seen.add(key); out.push(Object.assign({}, c, { cfg, hw: hw || 'auto' })); }
   };
   let first = null;
-  for (const c of VIDEO_CANDS) { const cfg = vcfg(c, w, h, fps, bitrate); if (await supported(cfg)) { first = c; break; } }
+  for (const c of cands) { const cfg = vcfg(c, w, h, fps, bitrate, null, mode); if (await supported(cfg)) { first = c; break; } }
   if (first) { await add(first, null, bitrate); await add(first, 'prefer-software', bitrate); }
-  const avc = VIDEO_CANDS.filter(c => c.mux === 'avc' && c !== first);
-  for (const c of avc) { await add(c, 'prefer-software', Math.round(bitrate * 0.7)); if (out.length >= 3) break; }
-  for (const c of VIDEO_CANDS.filter(c => c.mux !== 'avc')) await add(c, 'prefer-software', Math.round(bitrate * 0.7));
+  const lower = q ? bitrate : Math.round(bitrate * 0.7);
+  const avc = cands.filter(c => c.mux === 'avc' && c !== first);
+  for (const c of avc) { await add(c, 'prefer-software', lower); if (out.length >= 3) break; }
+  for (const c of cands.filter(c => c.mux !== 'avc')) await add(c, 'prefer-software', lower);
   return out;
 };
 J.pickAudioCodec = async (sr, chn) => {
@@ -94,7 +114,7 @@ async function resample(buffer, sr, duration, offset = 0) {
   const chn = Math.min(2, buffer.numberOfChannels);
   const len = Math.ceil(duration * sr);
   const oc = new OfflineAudioContext(chn, len, sr);
-  const src = oc.createBufferSource(); src.buffer = buffer; src.connect(oc.destination); src.start(0, Math.max(0, offset));
+  const src = oc.createBufferSource(); src.buffer = buffer; src.connect(oc.destination); if (offset < buffer.duration) src.start(0, Math.max(0, offset));
   return oc.startRendering();
 }
 /* part of the song to export: range = { t0, t1 } in seconds (選んだ行だけ), default the whole plan */
@@ -156,20 +176,28 @@ class BlockStore {                    // positioned writes into a list of blocks
   }
   blob(type) { return new Blob(this.blocks.map(b => b.u), { type }); }
 }
+// o: { plan, project, audio, quality, onProgress, signal, range: { t0, t1 } (선택한 행만), file (큰 동영상용) | fileStream,
+//      short: the 쇼츠 settings (9:16, the chosen part of the song, the frame fitted into the portrait one) }
 J.exportMP4 = async (o) => {
-  const { plan, project, audio, quality = 'high', onProgress, signal, range, file = null } = o;
+  const { plan, audio, onProgress, signal, short = null } = o, file = o.file || o.fileStream || null;
+  const project = short ? J.shortExportProject(o.project, short) : o.project;
+  const quality = o.quality || project.quality || 'high';
+  const range = short ? (r => ({ t0: r.start, t1: r.end }))(J.shortExportRange(plan, short)) : o.range;
   J.mediaTransitionFrame = null;
   J.foregroundTransitionFrame = null;
   const [w, h] = J.outputSize(project);
-  const fps = plan.fps, bitrate = J.videoBitrate(w, h, fps, quality);
-  const attempts = await J.videoAttempts(w, h, fps, bitrate);
+  const fps = plan.fps;
+  const qp = quality === 'qp' ? J.videoQuantizer(project) : null;
+  const bitrate = qp == null ? J.videoBitrate(project, quality, fps) : undefined;
+  const attempts = await J.videoAttempts(w, h, fps, bitrate, qp == null ? 'variable' : 'quantizer');
+  if (!attempts.length && qp != null) throw new Error('이 브라우저는 화질 우선(QP 지정)을 지원하지 않습니다. 다른 화질 설정이나 PNG 시퀀스를 사용해 주세요.');
   if (!attempts.length) throw new Error('이 브라우저는 동영상 인코딩(WebCodecs)을 지원하지 않습니다. 최신 Chrome 또는 Edge로 열어 주세요.');
   const tried = [];
   for (let k = 0; k < attempts.length; k++) {
     const vc = attempts[k];
     try {
       if (file && k > 0) { await file.seek(0); await file.truncate(0); }
-      const r = await encodeMP4(Object.assign({}, o, { w, h, vc, note: k > 0 ? `(${vc.label}·소프트웨어로 재시도 ${k})` : '' }));
+      const r = await encodeMP4(Object.assign({}, o, { project, range, file, short, qp, w, h, vc, note: k > 0 ? `(${vc.label}·소프트웨어로 재시도 ${k})` : '' }));
       r.tried = tried; return r;
     } catch (e) {
       if (signal && signal.aborted) throw new Error('취소했습니다');
@@ -181,7 +209,7 @@ J.exportMP4 = async (o) => {
   const err = new Error('MP4를 내보낼 수 없습니다. ' + (file ? '' : '「큰 동영상용(파일에 바로 저장)」을 쓰거나, ') + '해상도·fps·화질을 낮춰 보세요. 자세히: ' + tried.join(' / '));
   err.detail = tried; throw err;
 };
-async function encodeMP4({ plan, project, audio, onProgress, signal, range, file, w, h, vc, note }) {
+async function encodeMP4({ plan, project, audio, onProgress, signal, range, file, short, qp, w, h, vc, note }) {
   const span = J.exportSpan(plan, range);
   const fps = plan.fps;
   let ac = null;
@@ -198,7 +226,11 @@ async function encodeMP4({ plan, project, audio, onProgress, signal, range, file
   const ctx = canvas.getContext('2d', { alpha: false });
   const R = new J.Renderer();
   const total = Math.max(1, Math.round(span.dur * fps));
-  const scale = w / plan.W;
+  // 쇼츠: the frame is drawn at the plan's own shape, then fitted into the portrait frame
+  const source = short ? document.createElement('canvas') : canvas;
+  if (short) { const fit = Math.min(w / plan.W, h / plan.H); source.width = Math.max(1, Math.round(plan.W * fit)); source.height = Math.max(1, Math.round(plan.H * fit)); }
+  const sourceCtx = short ? source.getContext('2d', { alpha: false }) : ctx, portrait = short ? new J.ShortFrameRenderer() : null;
+  const scale = source.width / plan.W;
   const prevRes = J.glyphs.maxRes; J.glyphs.maxRes = h >= 1000 ? 768 : 512;
   const closeEnc = () => { try { if (venc && venc.state !== 'closed') venc.close(); } catch (e) {} };
   try {
@@ -214,9 +246,10 @@ async function encodeMP4({ plan, project, audio, onProgress, signal, range, file
           if (err) throw err;
           if (venc.state === 'closed') throw new Error('인코더가 멈췄습니다');
           await J.prepareMediaFrame(plan, span.t0 + i / fps, signal);
-          R.frame(ctx, plan, span.t0 + i / fps, { scale });
+          R.frame(sourceCtx, plan, span.t0 + i / fps, { scale });
+          if (portrait) portrait.frame(ctx, source, short);
           const vf = new VideoFrame(canvas, { timestamp: Math.round(i * frameUs), duration: Math.round(frameUs) });
-          try { venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0 }); } finally { vf.close(); }
+          try { venc.encode(vf, { keyFrame: i === next || i % (fps * 2) === 0, ...(qp == null ? {} : { avc: { quantizer: qp } }) }); } finally { vf.close(); }
           let deadline = Date.now() + 30000;
           // (time in the background doesn't count: a phone pauses the encoder while the page is hidden)
           while (venc.encodeQueueSize > 4 && !err) { await waitDequeue(venc); if (document.hidden) deadline = Date.now() + 30000; if (Date.now() > deadline) throw new Error('인코더가 응답하지 않습니다'); }
@@ -357,6 +390,8 @@ J.AE_MAP = {
 // picks the closest counterpart itself (from the exported metadata / J.AE_MAP) for anything it lacks.
 J.planForAE = (plan, project, range) => {
   const clean = JSON.parse(JSON.stringify(plan, (k, v) => (k === 'energy' || k === 'buffer' || k === 'peaks' ? undefined : v)));
+  if(plan.layerVisibility?.lyrics===false){clean.cuts=[];clean.lines=[];clean.events=[];clean.retainedCutIndices=[];clean.hud=false;}
+  for(const layer of ['foreground','media'])if(plan.layerVisibility?.[layer]===false && clean[layer])clean[layer].cuts=[];
   clean.version = 2;
   clean.width = J.outputSize(project)[0]; clean.height = J.outputSize(project)[1];
   clean.extra = project.extra === true; clean.wa = project.wa !== false;

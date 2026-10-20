@@ -163,10 +163,9 @@ function inject() {
     tim.after(row);
   }
   $('audioFile') && $('audioFile').addEventListener('change', () => { aeAudio = null; document.querySelectorAll('.ae-audio-row').forEach(el => { el.hidden = true; }); });
-  // easy mode export: AE first
-  const eMP4 = $('eMP4');
-  if (eMP4) {
-    eMP4.classList.remove('primary');
+  // Keep AE actions in the header Export menu alongside the browser exports.
+  const menu = $('outputMenu') && $('outputMenu').querySelector('.header-menu-items');
+  if (menu) {
     const box = document.createElement('div'); box.className = 'ae-box';
     box.innerHTML = '<div class="outbtns"></div><label class="row ae-audio-row" hidden><input type="checkbox" class="ae-audio-in" checked><span>곡(<span class="ae-audio-name"></span>)을 컴포에 넣기</span></label><label class="row ae-light-row" title="색 어긋남 복제·종이 질감·글로·입자·일부 화면 효과를 생략해 After Effects에서의 재생을 가볍게 합니다(긴 곡에 추천)"><input type="checkbox" class="ae-light"><span>경량(AE에서 재생을 가볍게)</span></label><div class="ae-prog" hidden><i></i></div><p class="note ae-status">—</p>';
     box.querySelector('.outbtns').append(btn('eAEBuild', 'After Effects에 컴포 만들기', 'primary ae-build', buildInAE), btn('eAECancel', '중지', 'small ae-cancel', cancelBuild));

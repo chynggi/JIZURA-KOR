@@ -1,0 +1,123 @@
+/* Isolated technique previews: never replace or save the editor project. */
+(() => {
+'use strict';
+// Label/export tooling also loads src files without browser APIs.
+if (typeof Image === 'undefined') return;
+let dialog, canvas, heading, frame=0, generation=0, assetId=null, current=null;
+const image=new Image();image.src='__EFFECT_PREVIEW_IMAGE__';
+J.effectPreviewImage=image; // Shared by the favorites gallery without duplicating the embedded asset.
+// Media previews only: these values drive the preview, never the project.
+const MEDIA_SLIDERS=[['motion','움직임 강도','Motion intensity',0,2],['treatment','가공 강도','Treatment intensity',0,1],['duration','등장·퇴장 시간','Entrance / exit (s)',.05,1.5]];
+function stop(){generation++;cancelAnimationFrame(frame);frame=0;if(assetId)J.mediaAssets.delete(assetId);assetId=null;current=null;}
+function ensureDialog(){
+  if(dialog)return;
+  dialog=document.createElement('dialog');dialog.id='effectPreviewDialog';
+  dialog.innerHTML='<form method="dialog"><button class="effect-preview-close" value="close">×</button></form><h2 id="effectPreviewName"></h2><canvas width="640" height="360"></canvas><div class="effect-preview-seek"><span class="tc effect-preview-now">00:00.00</span><span class="tc muted">/</span><span class="tc muted effect-preview-dur">00:00.00</span><div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div><div class="effect-preview-settings" hidden></div><p class="effect-preview-error" hidden></p>';
+  dialog.setAttribute('aria-labelledby','effectPreviewName');
+  dialog.querySelector('button').setAttribute('aria-label',J.mediaLabel('닫기','Close'));
+  dialog.querySelector('.effect-preview-seek .progress').setAttribute('aria-label',J.mediaLabel('재생 위치','Playback position'));
+  document.body.append(dialog);canvas=dialog.querySelector('canvas');heading=dialog.querySelector('h2');
+  // The close event is queued: if the preview was reopened meanwhile (close, then ▶ at once), keep the new one.
+  dialog.addEventListener('close',()=>{if(!dialog.open)stop();});
+
+}
+J.makeEffectPreviewPlan=(group,key,layer='lyrics',id,settings)=>{
+  // Media phases last at most 30% of a cut, so long entrance/exit times get longer preview cuts.
+  const cutLength=layer!=='lyrics'&&settings?.duration>.9?Math.ceil(settings.duration/.3*10)/10:3;
+  const project=J.defaultProject();project.customEffects=JSON.parse(JSON.stringify(J.ui?.project.customEffects||[]));project.lyrics='[00:00]미리보기|루비\n[00:03]미리보기|루비';project.durationOverride=cutLength*2;
+  project.title='';project.aspect='16:9';project.res=640;project.fps=30;project.seed=2468;
+  project.fx={...project.fx,hud:'off',texture:0,chroma:0,glitch:0,decor:0,onTwos:false,koma:0};
+  for(const i of [0,1])project.overrides[i]={single:true,layout:'center',enter:'cut',hold:'still',exit:'cut',treat:'none',bg:'none',cam:'none',trans:'none',decor:group==='decor'?[key]:[]};
+  if(layer!=='lyrics'){
+    project.lyrics='';
+    const def=J.MEDIA_TECH[key],m=project[layer]=J.normalizeMedia(null);
+    m.items=[{id,name:'Preview',type:'image',width:image.naturalWidth,height:image.naturalHeight}];m.manualCuts=true;m.cutCount=2;m.timing.lineTimes={0:0,1:cutLength};
+    m.effects={...J.mediaEffectSettings(project,layer),...(settings||{}),autoPlacement:false,applyLyricBackground:false};
+    for(const i of [0,1])m.cutOverrides[i]={itemId:id,technique:def.stage?'none':key,entrance:'none',departure:'none',...(def.stage==='enter'?{entrance:key}:def.stage==='exit'?{departure:key}:{})};
+  }
+  if(group==='fx'&&key==='chroma')project.fx.chroma=.7;
+  const plan=J.plan(project);
+  plan.events=[];plan.beats=J.beatGrid(120,0,6);
+  if(layer==='lyrics')for(const cut of plan.cuts){
+    if(cut.line<0)continue;
+    if(group!=='decor')cut.decor=[];cut.bg='none';cut.cam='none';cut.trans=null;
+    const details={inDur:.8,outDur:.8};
+    if(group==='decor')details.decor=cut.decor;
+    else if(group==='fx'){plan.events.push({t:cut.start+.6,type:key,amp:1,dur:Math.max(.4,(J.FXE[key]?.dur||12)/24)});}
+    else {details[group]=key;if(group==='trans')details.transDur=.9;}
+    J.applyCutDetails(cut,details,plan,'lyrics');
+  }
+  else {plan.media=J.planMedia(project,plan,null,'media');plan.foreground=J.planMedia(project,plan,null,'foreground');}
+  return plan;
+};
+// The looped part of a preview plan: entrances replay about 1 s after finishing,
+// exits start 0.5 s before leaving, everything else plays the whole plan.
+J.effectPreviewWindow=(plan,group,layer,def)=>{
+  const stage=layer==='lyrics'?group:def?.stage,cut=layer==='lyrics'?plan.cuts[0]:plan[layer].cuts[0];
+  const phase=which=>layer==='lyrics'?cut[which==='enter'?'inDur':'outDur']||0:Math.min(cut.effectSettings?.duration || .45,(cut.end-cut.start)*.3);
+  if(stage==='enter'){
+    // Lyrics: the last glyph starts stagger × (glyphs − 1) later.
+    const length=phase('enter')+(layer==='lyrics'?(cut.stagger||0)*Math.max(0,[...(cut.text||'')].length-1):0);
+    return {offset:cut.start,cycle:Math.min(cut.end-cut.start,length+1)};
+  }
+  if(stage==='exit'){const offset=Math.max(cut.start,cut.end-phase('exit')-.5);return {offset,cycle:cut.end-offset};}
+  return {offset:0,cycle:layer==='lyrics'?6:plan[layer].cuts[plan[layer].cuts.length-1].end};
+};
+const showError=err=>{const error=dialog.querySelector('.effect-preview-error');error.textContent=J.mediaLabel('미리보기를 재생할 수 없습니다:','Could not play preview: ')+err.message;error.hidden=false;};
+// (Re)start the loop for the current preview; slider changes restart it from the beginning.
+function run(){
+  if(!current||!dialog.open)return;
+  cancelAnimationFrame(frame);
+  const token=++generation,{group,key,layer,def,settings}=current;
+  try{
+    const plan=J.makeEffectPreviewPlan(group,key,layer,assetId,settings);
+    const renderer=new J.Renderer(),start=performance.now();
+    const {offset,cycle}=J.effectPreviewWindow(plan,group,layer,def);
+    // Display-only seek bar: position within the looped window.
+    const seek=dialog.querySelector('.effect-preview-seek'),bar=seek.querySelector('.progress'),fill=bar.querySelector('i'),now=seek.querySelector('.effect-preview-now');
+    seek.querySelector('.effect-preview-dur').textContent=J.fmtTime(cycle+1e-6);// fmtTime floors: 1.45 must not read 1.44
+    const draw=time=>{if(token!==generation||!dialog.open)return;const elapsed=((time-start)/1000)%cycle,t=offset+elapsed;renderer.frame(canvas.getContext('2d'),plan,t,{scale:canvas.width/plan.W,noHud:true});
+      const pct=Math.round(elapsed/cycle*1000)/10;fill.style.width=pct+'%';bar.setAttribute('aria-valuenow',String(Math.round(pct)));now.textContent=J.fmtTime(elapsed);frame=requestAnimationFrame(draw);};
+    frame=requestAnimationFrame(draw);
+  }catch(err){showError(err);}
+}
+function renderSettings(){
+  const box=dialog.querySelector('.effect-preview-settings');box.innerHTML='';
+  box.hidden=!current||current.layer==='lyrics';if(box.hidden)return;
+  const L=J.mediaLabel;
+  for(const [key,ja,en,min,max] of MEDIA_SLIDERS){
+    const row=document.createElement('label');row.className='slider';
+    row.innerHTML=`<span>${L(ja,en)}</span><input type="range" min="${min}" max="${max}" step="0.05" value="${current.settings[key]}" data-preview-setting="${key}"><output>${current.settings[key]}</output>`;
+    row.querySelector('input').addEventListener('input',e=>{current.settings[key]=+e.target.value;row.querySelector('output').textContent=e.target.value;run();});
+    box.appendChild(row);
+  }
+  const note=document.createElement('p');note.className='note';
+  note.textContent=L('미리보기에만 반영됩니다. 프로젝트 설정은 자세히 → 전경/배경에서 바꿉니다.','Applies to this preview only. Change the project in Details → Foreground / Background.');
+  box.appendChild(note);
+}
+J.openEffectPreview=async(group,key,layer='lyrics')=>{
+  ensureDialog();stop();J.uiApi?.pause();
+  const token=generation,def=layer==='lyrics'?J.registry(group)[key]:J.MEDIA_TECH[key];
+  if(!def)return;
+  // Media sliders start from the layer's current Details values.
+  const s=layer!=='lyrics'?J.mediaEffectSettings(J.ui?.project||J.defaultProject(),layer):null;
+  current={group,key,layer,def,settings:s?{motion:s.motion,treatment:s.treatment,duration:s.duration}:null};
+  heading.textContent=def.name;canvas.setAttribute('aria-label',def.name);
+  dialog.querySelector('.effect-preview-error').hidden=true;renderSettings();
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+  dialog.querySelector('.effect-preview-seek .progress i').style.width='0%';dialog.querySelector('.effect-preview-now').textContent=J.fmtTime(0);
+  if(!dialog.open)dialog.showModal();
+  try{
+    if(layer!=='lyrics'){await image.decode();if(token!==generation||!dialog.open)return;assetId='__jizura_effect_preview__';J.mediaAssets.set(assetId,{element:image,type:'image'});}
+    await J.ensureFonts('미리보기 루비',J.fontsOfPlan(J.makeEffectPreviewPlan(group,key,layer,assetId,current.settings)));
+    if(token!==generation||!dialog.open)return;
+    run();
+  }catch(err){if(token!==generation)return;showError(err);stop();}
+};
+J.effectPreviewButton=(group,key,layer='lyrics')=>{
+  const button=document.createElement('button');button.type='button';button.className='effect-preview-play';button.textContent='▶';
+  button.dataset.previewGroup=group;button.dataset.previewKey=key;button.dataset.previewLayer=layer;
+  button.title=J.mediaLabel('미리보기 재생','Play preview');button.setAttribute('aria-label',button.title);
+  button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();J.openEffectPreview(group,key,layer);});return button;
+};
+})();
