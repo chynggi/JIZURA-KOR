@@ -48,15 +48,16 @@
     <!-- ================= left: lyrics & timing ================= -->
     <section class="col col-left" aria-label="가사와 타이밍">
       <div id="tapPanel" class="tapbox" hidden>
-        <div class="hint" id="tapHint">음원에 맞춰 각 행이 시작되는 순간 <span class="kbd">Space</span> 또는 버튼을 누르세요. 잘못 눌렀다면 <span class="kbd">Backspace</span> 또는 ‘한 번 되돌리기’. 중간 행부터 다시 하려면 행 목록의 ◎를 누르세요.</div>
-        <div class="next">다음: <b id="tapLine">—</b></div>
+        <div class="hint" id="tapHint">음원에 맞춰 각 행이 시작되는 순간 <span class="kbd">Space</span> 또는 버튼을 누르세요. 잘못 눌렀다면 <span class="kbd">Backspace</span> 또는 ‘한 번 되돌리기’. 중간 행부터 다시 하려면 행 목록의 ◎를 누르세요. 한 행에 컷이 여러 개면 컷이 바뀌는 순간 <span class="kbd">Tab</span>을 눌러 그 컷의 시작 시각도 맞출 수 있습니다.</div>
+        <div class="tap-opts"><label>속도 <select id="tapRate" aria-label="탭하는 동안의 재생 속도"><option value="1">1×</option><option value="0.75">0.75×</option><option value="0.5">0.5×</option></select></label><label><input type="checkbox" id="tapCount"> 카운트다운</label></div>
+        <div class="next">다음: <b id="tapLine">—</b><b id="tapCountNum" class="tap-count" hidden></b></div>
         <button id="tapBtn" class="tap">TAP</button>
         <button id="tapBack" class="ghost">한 번 되돌리기</button>
         <button id="tapStop" class="ghost">종료</button>
       </div>
       <nav class="source-tabs" role="tablist" aria-label="가사·배경·전경"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
       <div class="sec" id="lyricsPane">
-        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
+        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><label class="file ghost small" title="LRC 파일(타임스탬프가 붙은 가사)을 불러와 지금 가사를 바꿉니다(‘실행 취소’로 되돌릴 수 있습니다)">LRC 불러오기<input id="fileLrc" type="file" accept=".lrc,.txt,text/plain"></label><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
         <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option><option value="en">English</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
@@ -166,6 +167,7 @@
           <button id="btnNext" class="ghost small icon-txt" title="다음 안으로 이동" aria-label="다음 안">▶</button>
         </span>
         <button id="btnShuffle" class="accent" title="설정은 그대로 구조만 다시 뽑기(잠긴 행 유지)">셔플</button>
+        <select class="themeSel" aria-label="자동 연출 방향" title="자동 연출 방향(고르면 그 방향 안에서 자동으로 만들고, 필요한 부품 스위치도 켭니다)"><option value="">방향 없음</option><option value="lyricpv">문자 PV</option><option value="kinetic">키네틱</option><option value="wa">일본풍</option><option value="horror">호러</option><option value="pop">팝</option><option value="ballad">발라드</option></select>
         <button id="btnOmakase" class="primary" title="스타일·분위기·연출·색 배합을 통째로 무작위(키 R)">자동</button>
       </div>
       <div class="tl-bar">
@@ -209,6 +211,7 @@
       <div id="easyPanel" class="easy" hidden>
         <div class="easy-hero">
           <button id="btnOmakaseBig" class="omakase">자동으로 만들기</button>
+          <label class="theme-row">연출 방향<select class="themeSel" aria-label="자동 연출 방향"><option value="">방향 없음</option><option value="lyricpv">문자 PV</option><option value="kinetic">키네틱</option><option value="wa">일본풍</option><option value="horror">호러</option><option value="pop">팝</option><option value="ballad">발라드</option></select><small class="muted">고르면 그 방향 안에서 자동으로 만듭니다</small></label>
           <div class="ai-action"><button id="btnAiPickBig" class="primary">AI로 고르기(β)</button><a class="ai-guide" href="https://github.com/chynggi/JIZURA-KOR/blob/main/docs/DECISION_GUIDE.md" target="_blank" rel="noopener">가이드</a></div>
           <p class="hint">AI로 고르기를 사용하면 가사를 이 PC에서 실행 중인 로컬 결정 서버로 보내 스타일·분위기·행별 레이아웃과 동작을 고릅니다. decision_server.py 실행이 필요합니다. 테마와 추가 지시는 「테마와 AI로 고르기」 칸에서 정합니다.</p>
           <p class="hint">누를 때마다 스타일·분위기·움직임·색 배합·구성이 통째로 바뀝니다. 키보드 <span class="kbd">R</span> 로도 실행할 수 있습니다.</p>
@@ -253,7 +256,8 @@
           <label class="check center-free"><input id="eCenter" class="center-toggle" type="checkbox"><span>가운데 비우기(캐릭터용)<small>가운데에 캐릭터 등을 겹칠 것을 전제로, 가로 화면에서는 좌우, 세로 화면에서는 위아래에 문자와 연출을 행마다 번갈아 배치합니다. 배경과 화면 효과는 화면 전체 그대로입니다(미리보기에는 비우는 범위를 점선으로 표시)</small></span></label>
           <label class="row center-dir" hidden>세로 화면일 때<select class="centerDirSel" aria-label="세로 화면에서 나누는 방법"><option value="tb">위아래로 나누기</option><option value="lr">좌우로 나누기</option></select></label>
           <div class="rng-row"><span class="rng-lab">내보낼 범위</span><select class="rngFrom" aria-label="내보낼 범위의 첫 행"></select><span class="muted">〜</span><select class="rngTo" aria-label="내보낼 범위의 마지막 행"></select><span class="rngInfo muted mono"></span></div>
-          <div class="outbtns"><button id="eMP4" class="primary">MP4 내보내기</button><button id="eMP4File" class="ghost mp4file" hidden title="저장할 파일을 먼저 고르고 거기에 바로 기록합니다. 긴 곡이나 1080p 이상에서 브라우저 메모리가 부족해 실패할 때 사용하세요(Chrome / Edge)">큰 동영상용(파일에 바로 저장)</button></div>
+          <div class="outbtns"><button id="eMP4" class="primary">MP4 내보내기</button><button id="eMP4File" class="ghost mp4file" hidden title="저장할 파일을 먼저 고르고 거기에 바로 기록합니다. 긴 곡이나 1080p 이상에서 브라우저 메모리가 부족해 실패할 때 사용하세요(Chrome / Edge)">큰 동영상용(파일에 바로 저장)</button><button id="eLRC" class="ghost" title="각 행의 시작 시각을 붙인 가사(.lrc)를 내보냅니다. 내보낼 범위를 골랐다면 그 행만, 동영상 처음부터의 시각으로 내보냅니다">LRC 내보내기</button></div>
+          <div class="outbtns out-png"><button id="ePNG" class="ghost">PNG 시퀀스 (ZIP)</button><button id="ePNGA" class="ghost">투명 PNG (ZIP·배경 없음)</button><button id="ePNGL" class="ghost" title="후경(배경 그래픽과 가사 뒤 장식)과 전경(가사, 장식, 고스트)을 각각 back / front 폴더에 투명 PNG로 내보냅니다. 화면 전체 효과는 양쪽에 적용되므로 전경을 후경 위에 겹치면 일반 화면과 같은 모습이 됩니다.">투명 PNG 전경/후경 (ZIP)</button></div>
           <button class="terms-open linkish">내보낸 동영상의 권리</button>
           <div class="exp-box" hidden>
             <button class="exp-share primary" hidden>공유하여 저장</button>
@@ -303,6 +307,10 @@
         <div class="row" style="margin-top:6px">
           <label class="row" style="gap:6px"><input id="fxFlash" type="checkbox"> 플래시</label>
           <label class="row" style="gap:6px">스텝 <select id="fxKoma" title="움직임을 초당 몇 장으로 그릴지(출력 fps와는 별개)"><option value="0">전체(출력 fps 그대로)</option><option value="12">2스텝(초당 12장)</option><option value="8">3스텝(초당 8장)</option></select></label>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <label class="row" style="gap:6px" title="레이아웃이나 장식이 덧붙이는 ‘No.01’ ‘#03’ 같은 숫자를 그리지 않습니다(가사에 들어 있는 숫자는 그대로)"><input id="fxHideNo" type="checkbox"> 장식 숫자 숨기기</label>
+          <label class="row" style="gap:6px" title="레이아웃이나 장식이 덧붙이는 ‘00:12.34’ 같은 시각을 그리지 않습니다(가사에 들어 있는 시각은 그대로)"><input id="fxHideTime" type="checkbox"> 장식 시각 숨기기</label>
         </div>
         <div class="fields" style="margin-top:12px">
           <label class="field">HUD<select id="fxHud"><option value="auto">스타일에 따름</option><option value="on">항상 표시</option><option value="off">표시 안 함</option></select></label>
@@ -370,6 +378,7 @@
           <button id="btnMP4File" class="mp4file" hidden title="저장할 파일을 먼저 고르고 거기에 바로 기록합니다. 긴 곡이나 1080p 이상에서 브라우저 메모리가 부족해 실패할 때 사용하세요(Chrome / Edge)">MP4(큰 동영상용·파일에 바로 저장)</button>
           <button id="btnPNG">PNG 시퀀스 (ZIP)</button>
           <button id="btnPNGA">투명 PNG (ZIP·배경 없음)</button>
+          <button id="btnLRC" title="각 행의 시작 시각을 붙인 가사(.lrc)를 내보냅니다. 내보낼 범위를 골랐다면 그 행만, 동영상 처음부터의 시각으로 내보냅니다">가사(LRC)</button>
           <button id="btnPNGL" title="후경(배경 그래픽과 가사 뒤 장식)과 전경(가사, 장식, 고스트)을 각각 back / front 폴더에 투명 PNG로 내보냅니다. 화면 전체 효과는 양쪽에 적용되므로 전경을 후경 위에 겹치면 일반 화면과 같은 모습이 됩니다.">투명 PNG 전경/후경 (ZIP)</button>
         </div>
         <div class="exp-box" hidden style="margin-top:12px">
