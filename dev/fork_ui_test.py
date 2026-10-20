@@ -126,6 +126,8 @@ async def test_project_file(b, url):
     assert await p.locator('#fileProject').get_attribute('accept') == '.jizura,.jizuraichi,.json'
     await p.locator('#projectMenu summary').click(); await p.locator('#btnNew').click()
     await p.locator('#newProjectAspect').select_option('9:16'); await p.locator('#btnCreateProject').click()
+    # 포크: 새 프로젝트를 만들면 테마 설정이 열린다 — 닫고 진행
+    await p.locator('#themesDlg').wait_for(state='visible'); await p.keyboard.press('Escape')
     assert await p.evaluate('[J.ui.project.lyrics,J.ui.project.aspect,J.ui.plan.cuts.length,J.mediaAssets.size,J.ui.audio]') == ['', '9:16', 0, 0, None]
     await p.locator('#songTitle').fill('Portable test'); await p.locator('#songTitle').dispatch_event('input')
     await p.locator('#sourceForeground').click()
@@ -134,7 +136,9 @@ async def test_project_file(b, url):
     video = bytes(await p.evaluate(MAKE_WEBM))
     await p.locator('#sourceMedia').click()
     await p.locator('#mediaFiles').set_input_files({'name': 'clip.webm', 'mimeType': 'video/webm', 'buffer': video})
+    await p.wait_for_function('!J.ui.projectBusy')   # 포크: 소재를 불러오는 동안에는 곡을 받지 않는다
     await p.locator('#audioFile').set_input_files({'name': 'tone.wav', 'mimeType': 'audio/wav', 'buffer': wav})
+    await p.locator('#audioImportDialog button[type=submit]').click()   # 포크: 곡·동영상 불러오기 대화상자
     await p.wait_for_function('!!J.ui.audioFile')
     await p.locator('#sourceLyrics').click()   # 배경·전경 탭에서는 곡·타이밍 섹션(#bpm)이 숨는다
     await p.locator('#bpm').fill('144'); await p.locator('#bpm').dispatch_event('change')
@@ -172,6 +176,7 @@ async def test_project_file(b, url):
     await q.locator('#newProjectAspect').select_option('1:1')
     await q.screenshot(path=os.path.join(SHOTS, 'fork-new-project-ko.png'))
     await q.locator('#btnCreateProject').click()
+    await q.locator('#themesDlg').wait_for(state='visible'); await q.keyboard.press('Escape')
     state = await q.evaluate('[J.ui.project.title,J.ui.project.lyrics,J.ui.project.aspect,J.ui.project.timing.bpm,J.ui.audio,J.ui.project.audioAsset||null,J.mediaAssets.size,J.ui.plan.cuts.length,J.ui.project.media.items.length,J.ui.project.foreground.items.length]')
     assert state == ['', '', '1:1', 0, None, None, 0, 0, 0, 0], state
     assert await q.locator('#btnUndo').is_disabled() and await q.locator('#btnPrev').is_disabled()
@@ -189,7 +194,7 @@ async def test_export_menu(b, url):
     await pg.locator('#btnTerms').click()
     text = await pg.locator('.terms-fork').inner_text()
     assert '이 사이트는 오리지널판을 기반으로 한 fork판입니다.' in text and '브라우저 안에서만 처리합니다' in text, text   # 포크 일본어 문구 → 우리 한국어 문구
-    assert await pg.locator('.terms-fork a').get_attribute('href') == 'https://github.com/hirazisora/JIZURA'
+    assert await pg.locator('.terms-fork a').first.get_attribute('href') == 'https://github.com/hirazisora/JIZURA'
     await pg.locator('#termsDlg button').click()
     await pg.locator('#projectMenu summary').click(); assert await pg.locator('#btnNew').is_visible()
     await pg.locator('#outputMenu summary').click()
@@ -283,6 +288,13 @@ async def test_cropped_edges(b, url):
     assert not errs, errs
     await pg.close()
 
+# 포크: 컷 상세 편집은 탭(기본·스타일·모션…)으로 나뉜다 — 필드가 있는 탭을 열고(접힌 묶음도 펼치고) 그 필드를 돌려준다
+async def fld(modal, name):
+    await modal.evaluate('''(m,f)=>{const el=m.querySelector(`[data-detail-field="${f}"]`);if(!el)return;
+      const panel=el.closest('[data-detail-tab-panel]');if(panel&&panel.hidden)m.querySelector(`[data-detail-tab="${panel.dataset.detailTabPanel}"]`).click();
+      for(let d=el.closest('details');d;d=d.parentElement.closest('details'))d.open=true;}''', name)
+    return modal.locator(f'[data-detail-field="{name}"]')
+
 # ---------------------------------------------------------------- cut_details_test.cjs
 async def test_cut_details(b, url):
     pg, errs = await new_page(b, url)
@@ -294,33 +306,33 @@ async def test_cut_details(b, url):
     assert not errs, errs
     original = await pg.evaluate('JSON.stringify(J.ui.project)')
     modal = pg.locator('#cutDetailsDialog')
-    await pg.locator('#timelineLinks [data-action="details"][data-layer="lyrics"]').first.dispatch_event('pointerdown', {'button': 0})
-    await modal.locator('[data-detail-field="text"]').fill('변경 취소')
+    await pg.locator('#timelineLinks [data-action="menu"][data-layer="lyrics"]').first.dispatch_event('pointerdown', {'button': 0}); await pg.locator('#timelineCutMenu [data-action="details"]').click()   # 포크: 컷 메뉴
+    await (await fld(modal, 'text')).fill('변경 취소')
     await modal.get_by_role('button', name='취소', exact=True).click()
     assert await pg.evaluate('JSON.stringify(J.ui.project)') == original
     # 포크: 행 목록 #lineList .cut-details-open → 컷 패널 ②의 상세 편집 버튼(Task 7)
     panel = await select_lyric_cut(pg, 0, 0)
     await panel.locator('[data-cut-ctl="details"]').click()
-    await modal.locator('[data-detail-field="text"]').fill('편집한 컷')
-    await modal.locator('[data-detail-field="opacity"]').fill('42')
-    await modal.locator('[data-detail-field="blend"]').select_option('overlay')
-    await modal.locator('[data-detail-field="hold"]').select_option('still')
-    await modal.locator('[data-detail-field="area.w"]').fill('0.6')
+    await (await fld(modal, 'text')).fill('편집한 컷')
+    await (await fld(modal, 'opacity')).fill('42')
+    await (await fld(modal, 'blend')).select_option('overlay')
+    await (await fld(modal, 'hold')).select_option('still')
+    await (await fld(modal, 'area.w')).fill('60')   # 포크: 표시 영역은 % 단위
     await modal.get_by_role('button', name='적용', exact=True).click()
     saved = await pg.evaluate('()=>{J.uiApi.replan();return J.ui.plan.cuts.filter(c=>c.line>=0&&Number.isInteger(c.part)).map(c=>({text:c.text,opacity:c.opacity,blend:c.blend,area:c.area}));}')
     assert saved[0]['text'] == '편집한 컷' and saved[0]['opacity'] == 42 and saved[0]['blend'] == 'overlay' and saved[0]['area']['w'] == .6, saved[0]
     assert saved[1]['text'] != saved[0]['text']
     for layer in ['foreground', 'media']:
-        await pg.locator(f'#timelineLinks [data-action="details"][data-layer="{layer}"]').first.dispatch_event('pointerdown', {'button': 0})
-        await modal.locator('[data-detail-field="technique"]').select_option('beatPulse')
-        await modal.locator('[data-detail-field="bpm"]').fill('90')
-        await modal.locator('[data-detail-field="placement.angle"]').fill('25')
+        await pg.locator(f'#timelineLinks [data-action="menu"][data-layer="{layer}"]').first.dispatch_event('pointerdown', {'button': 0}); await pg.locator('#timelineCutMenu [data-action="details"]').click()
+        await (await fld(modal, 'technique')).select_option('beatPulse')
+        await (await fld(modal, 'bpm')).fill('90')
+        await (await fld(modal, 'placement.angle')).fill('25')
         await modal.get_by_role('button', name='적용', exact=True).click()
         value = await pg.evaluate('layer=>{J.uiApi.replan();return J.ui.plan[layer].cuts[0];}', layer)
         assert value['technique'] == 'beatPulse' and value['bpm'] == 90 and value['placement']['angle'] == 25, value
     await pg.evaluate("()=>{J.ui.project.timelineLinks=[{a:'l:1:0',b:'f:1'}];J.uiApi.replan();}")
-    await pg.locator('#timelineLinks [data-action="details"][data-layer="foreground"][data-index="1"]').dispatch_event('pointerdown', {'button': 0})
-    await modal.locator('[data-detail-field="start"]').fill('4.5')
+    await pg.locator('#timelineLinks [data-action="menu"][data-layer="foreground"][data-index="1"]').dispatch_event('pointerdown', {'button': 0}); await pg.locator('#timelineCutMenu [data-action="details"]').click()
+    await (await fld(modal, 'start')).fill('4.5')
     await modal.get_by_role('button', name='적용', exact=True).click()
     starts = '[J.ui.plan.cuts.find(c=>c.line===1&&c.part===0).start,J.ui.plan.foreground.cuts[1].start]'
     assert await pg.evaluate(starts) == [4.5, 4.5]
@@ -337,6 +349,7 @@ EMPHASIS = r'''() => {
   const project = J.defaultProject();
   project.title = ''; project.durationOverride = 4;
   project.fx = { ...project.fx, koma: 0, chroma: 0, texture: 0, hud: 'off' };
+  project.lyricEffects = { ...project.lyricEffects, autoPlacement: false };   // 포크: 자동 배치가 기본 켜짐 — 여기서는 겹침 순서만 본다
   project.overrides = { 0: { single: true }, 1: { single: true } };
   const element = document.createElement('canvas'); element.width = 320; element.height = 180;
   const x = element.getContext('2d'); x.fillStyle = '#ff0000'; x.fillRect(0, 0, 320, 180);
@@ -381,7 +394,7 @@ COMPOSITING = r'''async () => {
   const check=(ok,message)=>{if(!ok)throw new Error(message);};
   const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   const p=J.defaultProject();p.lyrics='[00:00]Same words';p.videoSize={w:320,h:180};
-  p.fx={...p.fx,koma:0,chroma:0,texture:0,hud:'off',density:1};p.overrides={0:{single:true}};
+  p.fx={...p.fx,koma:0,chroma:0,texture:0,hud:'off',density:1};p.overrides={0:{single:true}};p.lyricEffects={...p.lyricEffects,autoPlacement:false};
   const defaults=J.plan(p).cuts[0];
   check(defaults.blend==='normal'&&defaults.opacity===100,'new cuts default to Normal and 100%');
   const values=plan=>plan.cuts.filter(c=>Number.isInteger(c.part)).map(c=>({blend:c.blend,opacity:c.opacity}));
@@ -514,7 +527,8 @@ async def test_lyric_compositing(b, url):
     assert (await cuts())[0]['opacity'] == 48, 'manual opacity survives shuffle'
     assert (await cuts())[0]['blend'] == 'overlay', 'manual blend survives shuffle'
     await (await first()).locator('.lyric-composite-auto').click()
-    assert (await project())['lyricCutOptions'].get('0:0') is None
+    # 포크: 컷마다 자동 결과(autoEffects)를 lyricCutOptions에 보관한다 — 수동 합성 지정만 사라졌는지 본다
+    assert not {'blend', 'opacity'} & set((await project())['lyricCutOptions'].get('0:0') or {})
     assert await (await first()).locator('.lyric-cut-blend').input_value() == ''
     await pg.locator('#lineList .lock').first.click()
     locked = [c for c in await cuts() if c['line'] == 0]
@@ -556,7 +570,7 @@ LYRIC_FEATURES = r'''async () => {
   const plan = J.plan(p), group = plan.cuts.filter(c => c.group != null);
   check(group.length === 4, 'separate phrase cuts must remain in the timeline');
   check(group.every(c => c.displayEnd === 6), 'a group lasts through its last lyric cut');
-  check(group[0].end < group[0].displayEnd, 'retention must not change timeline boundaries');
+  check(group.every(c => c.end === c.displayEnd), '1장면: every cut of the group ends with its last lyric cut');   // 포크: 그룹 컷의 끝을 마지막 가사에 맞춘다
   check(J.lyricCutsAt(plan,4.5).length === 4 && J.lyricCutsAt(plan,.1).length === 1, 'seek backward and forward must reconstruct the stack');
   check(J.lyricCutsAt(plan,6).every(c => c.group == null), 'group disappears at its end');
   const multiline = plan.cuts.filter(c => c.line === 3);
@@ -566,7 +580,7 @@ LYRIC_FEATURES = r'''async () => {
   check(new Set(glyphs.map(g => g.y)).size === 2 && !glyphs.some(g => g.ch === '\n'), 'line breaks render as two rows');
   check(group.find(c => c.line === 1).frontmost, 'asterisk emphasis enables frontmost');
   check(group.find(c => c.line === 2).motionScale < 1, 'suppression reduces motion');
-  check(plan.cuts.every(c => !c.area), 'automatic areas default to off');
+  check(J.lyricEffectSettings({}).autoPlacement && plan.cuts.filter(c => c.line >= 0).every(c => c.area), 'automatic areas default to on');   // 포크: 자동 배치 기본 켜짐
   const fg = {id:'lyric-test-foreground',name:'foreground.png',type:'image',width:640,height:360};
   const placement = {cx:.65,cy:.5,w:.4,h:.8,lockAspect:false,angle:15};
   p.foreground = {...p.foreground,items:[fg],manualCuts:true,cutCount:2,
@@ -574,7 +588,7 @@ LYRIC_FEATURES = r'''async () => {
   p.lyricEffects = {autoPlacement:true,avoidForeground:true};
   const auto = J.plan(p), fore = J.planMedia(p,auto,null,'foreground');
   for (const cut of auto.cuts.filter(c => c.line < 3 && !c.emphasis)) {
-    for (const f of fore.cuts.filter(f => f.start < cut.end && f.end + .6 > cut.start))
+    for (const f of fore.cuts.filter(f => f.start < (cut.slotEnd ?? cut.end) && f.end + .6 > cut.start))
       check(overlap(cut.area,J.foregroundBounds(p,auto,f)) < 1e-8, 'automatic area must avoid all overlapping foreground cuts');
   }
   const words = '[00:00]First\n[00:01]Second\n[00:02]Third';
@@ -588,13 +602,24 @@ LYRIC_FEATURES = r'''async () => {
   const retained = groupedPlan.cuts.filter(c => c.group != null);
   check(retained.length === 3 && retained.every(c => c.displayEnd === 4), 'independent areas preserve grouped lifetimes');
   check(new Set(retained.map(c => JSON.stringify(c.area))).size === 3, 'retained cuts must receive their own varied areas');
-  check(same(groupedPlan.cuts.map(c => c.area),individualPlan.cuts.map(c => c.area)), 'braces must not change per-cut automatic placement');
+  // 포크: a 1장면 group is composed as one scene now (own sizes, no collisions) around the foreground.
+  const groupFore = J.planMedia(groupedProject,groupedPlan,null,'foreground');
+  check(retained.every(c => c.arrangement && c.areaMode === 'auto'), '1장면 groups are composed as one scene');
+  for (const c of retained) for (const f of groupFore.cuts.filter(f => f.start < (c.slotEnd ?? c.end) && f.end + .6 > c.start))
+    check(overlap(c.area,J.foregroundBounds(groupedProject,groupedPlan,f)) < 1e-8, '1장면 cuts avoid the foreground');
+  check(!same(groupedPlan.cuts.map(c => c.area),individualPlan.cuts.map(c => c.area)), 'and differ from separate per-cut placement');
   const active = J.lyricCutsAt(groupedPlan,2.5).map(J.lyricRenderCut);
   check(active.length === 3 && same(active.map(c => c.area),retained.map(c => c.area)), 'simultaneously retained lyrics render with their individual areas');
   check(same(retained.map(c => c.area),J.plan(groupedProject).cuts.filter(c => c.group != null).map(c => c.area)), 'grouped areas are reproducible');
   check(!same(retained.map(c => c.area),J.plan({...groupedProject,seed:1235}).cuts.filter(c => c.group != null).map(c => c.area)), 'shuffle varies grouped areas');
   const strong = auto.cuts.find(c => c.emphasis);
-  check(overlap(strong.area,J.foregroundBounds(p,auto,fore.cuts[0])) > .05, 'emphasis ignores foreground avoidance');
+  // 포크: emphasis may lie over the foreground (alone, or as the big word of a composed scene), so across seeds some do.
+  let overlays = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const q = J.plan({...p,seed}), fq = J.planMedia({...p,seed},q,null,'foreground'), e = q.cuts.find(c => c.emphasis);
+    if (overlap(e.area,J.foregroundBounds(p,q,fq.cuts[0])) > .03) overlays++;
+  }
+  check(overlays >= 3, 'emphasis ignores foreground avoidance ' + overlays + '/20');
   const noAvoid = J.plan({...p,lyricEffects:{autoPlacement:true,avoidForeground:false}});
   check(noAvoid.cuts[0].area.w * noAvoid.cuts[0].area.h > auto.cuts[0].area.w * auto.cuts[0].area.h, 'avoidance off restores unconstrained area');
   const variant = type => {
@@ -766,47 +791,6 @@ async def test_media_rhythm(b, url):
     print('  media rhythm', {k: result[k] for k in ('count', 'migrated')})
     await pg.close()
 
-# ---------------------------------------------------------------- media_size_slider_test.cjs
-async def test_media_size_slider(b, url):
-    pg, errs = await new_page(b, url)
-    assert not errs, 'Editor initialization must complete without errors'
-    await pg.locator('#modePro').click()
-    for layer in ['foreground', 'media']:
-        await pg.locator('#sourceForeground' if layer == 'foreground' else '#sourceMedia').click()
-        await pg.locator('#mediaFiles').set_input_files(svg('circle.svg', '<circle cx="80" cy="45" r="30" fill="cyan"/>', 160, 90))
-        await pg.wait_for_function('layer => J.ui.plan[layer].cuts[0]?.placement', arg=layer)
-    for layer in ['foreground', 'media']:
-        other = 'media' if layer == 'foreground' else 'foreground'
-        untouched = await pg.evaluate('other => JSON.stringify(J.ui.project[other].effects)', other)
-        await pg.locator(f'[data-tab="{layer}Fx"]').click()
-        panel = pg.locator(f'#{layer}EffectsPanel')
-        mn, mx = panel.locator('[data-media-size="min"]'), panel.locator('[data-media-size="max"]')
-        width_before = await pg.evaluate('layer => J.ui.plan[layer].cuts[0].placement.w', layer)
-        await mn.scroll_into_view_if_needed()
-        box = await mn.bounding_box()
-        await pg.mouse.move(box['x'] + 7 + (box['width'] - 14) * .15, box['y'] + box['height'] / 2)
-        await pg.mouse.down()
-        await pg.mouse.move(box['x'] + 7 + (box['width'] - 14) * .4, box['y'] + box['height'] / 2, steps=8)
-        await pg.mouse.up()
-        raw = await mn.input_value(); value = int(float(raw))
-        assert value > 125, 'Dragging the minimum thumb must change the range'
-        assert await mx.input_value() == raw, 'Crossing the maximum must move both bounds'
-        assert await panel.locator('[data-media-size-value="min"]').text_content() == f'{raw}%'
-        assert await panel.locator('[data-media-size-value="max"]').text_content() == f'{raw}%'
-        await pg.wait_for_function('({layer, value}) => J.ui.plan[layer].cuts[0].effectSettings.sizeMin === value', arg={'layer': layer, 'value': float(raw)})
-        assert await pg.evaluate('({layer, w}) => J.ui.plan[layer].cuts[0].placement.w > w', {'layer': layer, 'w': width_before}), 'The preview plan must use the new size'
-        await mx.focus(); await mx.press('Home')
-        await pg.wait_for_function('layer => J.ui.plan[layer].cuts[0].effectSettings.sizeMax === 0', arg=layer)
-        assert await mn.input_value() == '0'
-        assert await panel.locator('[data-media-size-value="max"]').text_content() == '0%'
-        await panel.locator('[data-media-setting="autoPlacement"]').uncheck()
-        assert not await panel.locator('[data-media-size-range]').is_visible()
-        await panel.locator('[data-media-setting="autoPlacement"]').check()
-        assert await mn.input_value() == '0', 'Rebuilding the panel must preserve the range'
-        assert await pg.evaluate('other => JSON.stringify(J.ui.project[other].effects)', other) == untouched, 'Settings must stay local to their layer'
-    assert not errs, 'Slider operations must not throw: ' + repr(errs)
-    await pg.close()
-
 # ---------------------------------------------------------------- media_phases_test.cjs
 MEDIA_PHASES = r"""()=>{
  const failures=[],check=(ok,s)=>{if(!ok)failures.push(s)},item=J.ui.project.foreground.items[0];
@@ -825,7 +809,7 @@ MEDIA_PHASES = r"""()=>{
  }
  for(const [key] of Object.entries(J.MEDIA_TECH).filter(([,d])=>d.group==='bpm')) {
   const c=plan({technique:key,entrance:'none',departure:'none',placement:{cx:.5,cy:.5,w:.4}},120);
-  check(raster(c,1.01)!==raster(c,key==='beatStep'?1.63:1.13),key+': visible beat motion');
+  check(key==='beatFlip'?raster(c,1.51)!==raster(c,1.75):raster(c,1.01)!==raster(c,key==='beatStep'?1.63:1.13),key+': visible beat motion');   // beatFlip은 4박 중 4번째 박에서만 뒤집힌다
   const state=(cut,t)=>J.mediaBeatState(cut,(t-cut.start)/(cut.end-cut.start),120,80);
   const a=state(c,1.125),b=state({...c,start:.7,end:6.1},1.125),fast=state({...c,bpm:240},.5625);
   for(const k of Object.keys(a)){check(Math.abs(a[k]-b[k])<1e-9,key+': absolute clock '+k);check(Math.abs(a[k]-fast[k])<1e-9,key+': BPM speed '+k)}
@@ -864,7 +848,11 @@ async def test_media_phases(b, url):
         await pg.locator(f'#{layer}EffectsPanel [data-media-action="disable"]').click()
         await pg.locator(f'#{layer}EffectsPanel [data-media-action="shuffle"]').click()
         assert await pg.evaluate(cut0 % '[c.entrance,c.departure]', layer) == locked
+        before_unlock = await pg.evaluate(cut0 % '[c.enter,c.exit]', layer)
         await pg.locator('#mediaLineList .lock').click()
+        # 포크: 자동 연출 결과는 autoEffects 캐시로 유지된다 — 잠금을 풀어도 그대로고, 섞기를 눌러야 다시 뽑힌다
+        assert await pg.evaluate(cut0 % '[c.enter,c.exit]', layer) == before_unlock, 'unlocking keeps the automatic effects'
+        await pg.locator(f'#{layer}EffectsPanel [data-media-action="shuffle"]').click()
         assert await pg.evaluate(cut0 % '[c.enter,c.exit]', layer) == ['cut', 'cut']
         await pg.locator(f'#{layer}EffectsPanel [data-media-action="enable"]').click()
         await enter.select_option('enter_flipY'); await exit_.select_option('exit_squeezeX')
@@ -900,7 +888,9 @@ async def test_media_random_order(b, url):
         }""", layer)
         assert all(shuffled['sequence']) and shuffled['ids'][2] is None, shuffled
         assert shuffled['sources'] == baseline['ids'] and shuffled['times'] == baseline['times'] and shuffled['overrides'] == baseline['overrides']
-        assert await pg.locator('.media-cut-file').first.is_disabled()
+        # 포크: 무작위 순서여도 소재를 고를 수 있고, 바꾸면 무작위 순서가 꺼진다(title 안내)
+        assert await pg.locator('.media-cut-file').first.is_enabled()
+        assert '무작위 순서를 끕니다' in (await pg.locator('.media-cut-file').first.get_attribute('title'))
         await rnd.uncheck()
         assert await pg.evaluate(ids, layer) == baseline['ids']
         assert await pg.locator('.media-cut-file').first.is_enabled()
@@ -954,7 +944,9 @@ AUTO_PLACEMENT = r"""()=>{
       for(const cut of first) {
         const r=J.mediaPlacementRect(cut.placement,width,height,W,H);
         if(Math.abs(r.w*W/(r.h*H)-width/height)>1e-8)failures.push('aspect ratio changed');
-        if(layer==='media') {
+        if(layer==='media' && cut.bgLayout) {
+          // 포크: a dynamic layout fills its mask window; the whole-stage rules are for plain framings.
+        } else if(layer==='media') {
           const fit=J.mediaPlacementRect(null,width,height,W,H);
           if(r.w<fit.w-1e-9||r.h<fit.h-1e-9)failures.push('background smaller than 100% full fit');
           for(const [start,extent] of [[r.x,r.w],[r.y,r.h]]) {
@@ -971,14 +963,14 @@ AUTO_PLACEMENT = r"""()=>{
       if(!same(plan()[0].placement,locked.placement))failures.push('lock did not preserve framing');
       if(plan()[1].placement!==null)failures.push('disabled automatic placement still active');
       const manual={cx:.2,cy:.7,w:.34,h:.25,lockAspect:false,angle:27};
-      project[layer].cutOverrides[0]={technique:'iris',placement:manual};
+      project[layer].cutOverrides[0]={technique:'pushIn',placement:manual};
       if(!same(plan()[0].placement,manual))failures.push('manual placement changed');
       delete project.mediaEffects;
       project[layer].cutOverrides[0]={technique:'none'};
       if(plan()[0].placement!==null)failures.push('no-effects framing changed');
       project[layer].cutOverrides[0]={enter:'slide',layout:'cover'};
       if(plan()[0].placement!==null)failures.push('legacy framing changed');
-      project[layer].cutOverrides[0]={technique:'iris',lock:true,lockedSeed:2};
+      project[layer].cutOverrides[0]={technique:'pushIn',lock:true,lockedSeed:2};
       if(plan()[0].placement!==null)failures.push('old locked framing changed');
     }
   }
@@ -1104,12 +1096,17 @@ async def test_media_effects(b, url):
         await pg.locator(f'{fx} [data-media-action="shuffle"]').click()
         assert await pg.evaluate(cut0 % 'technique', layer) == 'pushIn'
         await tech.select_option('')
+        # 포크: 기법 후보를 꺼도 이미 정해진 컷은 유지된다 — 섞기를 눌러야 반영된다
+        resolved = await pg.evaluate(cut0 % 'technique', layer)
         await pg.locator(f'{fx} [data-media-action="disable"]').click()
+        assert await pg.evaluate(cut0 % 'technique', layer) == resolved, 'turning candidates off keeps resolved cuts'
+        await pg.locator(f'{fx} [data-media-action="shuffle"]').click()
         assert await pg.evaluate(cut0 % 'technique', layer) == 'none'
         await pg.locator(f'{fx} details').filter(has=pg.locator('[data-media-tech="pixelScatter"]')).locator('summary').click()
         await pg.locator(f'{fx} [data-media-tech="pixelScatter"]').check()
+        assert await pg.evaluate(cut0 % 'technique', layer) == 'none', 'checking a candidate does not reroll'
+        await pg.locator(f'{fx} [data-media-action="shuffle"]').click()
         assert await pg.evaluate(cut0 % 'entrance', layer) == 'pixelScatter'
-        assert await pg.evaluate(cut0 % 'technique', layer) == 'none'
         await pg.locator(f'{fx} [data-media-action="enable"]').click()
         await tech.select_option('none')
         await pg.locator(f'{fx} [data-media-action="shuffle"]').click()
@@ -1170,14 +1167,19 @@ async def test_media_layer_settings(b, url):
     await pg.locator('#fileProject').set_input_files(json_file('shared.jizura.json', legacy))
     await pg.wait_for_function('J.ui.plan.foreground.cuts.length === 6')
     snapshot = lambda layer: pg.evaluate('layer => ({project:J.ui.project[layer],cuts:J.ui.plan[layer].cuts})', layer)
+    # 포크: 전경은 배경의 다이내믹 배치에 맞춰 놓인다 — 배경 탭을 바꾸면 전경의 배치만 따라갈 수 있다
+    def settings_only(v, layer):
+        if layer != 'media': return v
+        drop = {'placement', 'composition', 'compositionZone', 'placementMode'}
+        strip = lambda x: {k: strip(w) for k, w in x.items() if k not in drop} if isinstance(x, dict) else [strip(w) for w in x] if isinstance(x, list) else x
+        return strip(v)
     for layer in ['foreground', 'media']:
         initial = await snapshot(layer)
-        # 옛 공유 값은 그대로 옮겨진다. 그 뒤 포크에 생긴 크기 범위(sizeMin/sizeMax)는 기본값으로 채워진다(포크 테스트가 더 오래됨)
-        size_defaults = await pg.evaluate("(({sizeMin, sizeMax}) => ({sizeMin, sizeMax}))(J.mediaEffectSettings({}, 'media'))")
-        expected = dict(legacy['mediaEffects'], **size_defaults)
-        assert initial['project']['effects'] == expected, 'old shared values must survive migration'
+        # 옛 공유 값은 그대로 옮겨진다. 그 뒤에 생긴 설정은 기본값을 받는다(포크 테스트와 같다)
+        kept = lambda effects: {k: effects.get(k) for k in legacy['mediaEffects']}
+        assert kept(initial['project']['effects']) == legacy['mediaEffects'], 'old shared values must survive migration'
         assert all(c['technique'] == 'neonContour' and c['placement'] is None for c in initial['cuts'])
-        assert all(c['effectSettings'] == expected for c in initial['cuts']), initial['cuts'][0]['effectSettings']
+        assert all(kept(c['effectSettings']) == legacy['mediaEffects'] for c in initial['cuts']), initial['cuts'][0]['effectSettings']
     assert await pg.evaluate('J.ui.project.foreground.effects.enabled === J.ui.project.media.effects.enabled') is False
     assert await pg.evaluate("Object.hasOwn(J.ui.project, 'mediaEffects')") is False
     tech_count = await pg.evaluate('Object.keys(J.MEDIA_TECH).length')
@@ -1187,8 +1189,9 @@ async def test_media_layer_settings(b, url):
         await tab.click()
         assert await tab.inner_text() == ('전경' if layer == 'foreground' else '배경')   # 포크 前景/背景
         assert await panel.is_visible() and not await pg.locator(f'#{other}EffectsPanel').is_visible()
-        assert await panel.locator('[data-media-tech]').count() == tech_count
-        assert await panel.locator('details[data-media-group]').count() == 8
+        allowed = await pg.evaluate('layer=>Object.keys(J.MEDIA_TECH).filter(key=>J.mediaTechAllowed(key,layer)).length', layer)
+        assert await panel.locator('[data-media-tech]').count() == allowed
+        assert await panel.locator('details[data-media-group]').count() == (10 if layer == 'media' else 9)   # 기법 분류 8(+배경의 마스크) + 장식
         assert await panel.locator('details[open]').count() == 0, 'categories initially collapse independently per layer'
         assert not await panel.locator('[data-media-tech]').first.is_visible()
         cinema = panel.locator('[data-media-group="cinema"]'); total = await cinema.locator('[data-media-tech]').count()
@@ -1213,28 +1216,37 @@ async def test_media_layer_settings(b, url):
             await pg.wait_for_function('({layer,key,value}) => J.ui.plan[layer].cuts.every(c => c.effectSettings[key] === value)', arg={'layer': layer, 'key': key, 'value': value})
         await panel.locator('[data-media-setting="autoPlacement"]').check()
         assert all(c['placementMode'] == 'auto' for c in (await snapshot(layer))['cuts'])
-        assert await snapshot(other) == untouched, 'sliders and automatic placement must stay local to the tab'
+        assert settings_only(await snapshot(other), layer) == settings_only(untouched, layer), 'sliders and automatic placement must stay local to the tab'
+        resolved = lambda cuts: [dict(c, effectSettings={k: v for k, v in c['effectSettings'].items() if k != 'enabled'}) for c in cuts]
+        before_disable = resolved((await snapshot(layer))['cuts'])
         await panel.locator('[data-media-action="disable"]').click()
+        assert await panel.locator('[data-media-tech]:checked').count() == 0
+        assert resolved((await snapshot(layer))['cuts']) == before_disable, 'candidate edits preserve resolved cut effects until an explicit shuffle'
+        await panel.locator('[data-media-action="shuffle"]').click()
         assert all(c['technique'] == 'none' for c in (await snapshot(layer))['cuts'])
         technique = 'neonContour' if layer == 'foreground' else 'pushIn'
         await panel.locator('details').filter(has=pg.locator(f'[data-media-tech="{technique}"]')).locator('summary').click()
         await panel.locator(f'[data-media-tech="{technique}"]').check()
-        assert all(c['technique'] == technique for c in (await snapshot(layer))['cuts'])
+        assert all(c['technique'] == 'none' for c in (await snapshot(layer))['cuts']), 'checking a candidate does not reroll existing cuts'
         await pg.locator('#btnUndo').click()
         assert all(c['technique'] == 'none' for c in (await snapshot(layer))['cuts'])
         assert not await panel.locator(f'[data-media-tech="{technique}"]').is_checked()
         await pg.locator('#btnRedo').click()
+        assert await panel.locator(f'[data-media-tech="{technique}"]').is_checked()
+        assert all(c['technique'] == 'none' for c in (await snapshot(layer))['cuts']), 'redo restores candidates without rerolling'
+        await panel.locator('[data-media-action="shuffle"]').click()
         assert all(c['technique'] == technique for c in (await snapshot(layer))['cuts'])
         await panel.locator('[data-media-action="enable"]').click()
-        assert await panel.locator('[data-media-tech]:checked').count() == tech_count
-        assert await snapshot(other) == untouched, 'enable/disable and undo must stay local to the tab'
+        assert await panel.locator('[data-media-tech]:checked').count() == allowed
+        assert all(c['technique'] == technique for c in (await snapshot(layer))['cuts']), 'enabling candidates preserves resolved effects'
+        assert settings_only(await snapshot(other), layer) == settings_only(untouched, layer), 'candidate edits, undo and tab shuffle must stay local to the tab'
         await pg.locator('#btnUndo').click()
         before_shuffle = await snapshot(layer)
         await panel.locator('[data-media-action="shuffle"]').click()
         after_shuffle = await snapshot(layer)
         assert [c['placement'] for c in after_shuffle['cuts']] != [c['placement'] for c in before_shuffle['cuts']]
         assert after_shuffle['project']['effects'] == before_shuffle['project']['effects']
-        assert await snapshot(other) == untouched, 'tab shuffle must not change the other layer or its material order'
+        assert settings_only(await snapshot(other), layer) == settings_only(untouched, layer), 'tab shuffle must not change the other layer or its material order'
     before_global = {l: await snapshot(l) for l in ['foreground', 'media']}
     await pg.locator('#btnShuffle').click()
     for layer in ['foreground', 'media']:
@@ -1256,17 +1268,21 @@ async def test_media_layer_settings(b, url):
     for layer in ['foreground', 'media']:
         before, after = before_random[layer], after_random[layer]
         effects = after['project']['effects']
-        rest = lambda proj: {k: v for k, v in proj.items() if k != 'effects'}
-        assert rest(after['project']) == rest(before['project']), 'omakase changes media candidate checks without changing material/cut settings'
+        def manual(proj):
+            rest = {k: v for k, v in proj.items() if k != 'effects'}
+            rest['cutOverrides'] = {i: {k: v for k, v in o.items() if k != 'autoEffects'} for i, o in rest['cutOverrides'].items()}
+            return rest
+        assert manual(after['project']) == manual(before['project']), 'omakase preserves material and explicit cut settings'
         assert effects['enabled'] != before['project']['effects']['enabled']
         assert [c['technique'] for c in after['cuts'][:3]] == ['iris', 'none', 'glitch'], 'manual, no-effects and locked cuts stay fixed'
         assert after['cuts'][3]['itemId'] is None
         assert all(effects['enabled'].get(c['technique']) for c in after['cuts'][4:]), 'automatic cuts must use enabled techniques'
         panel = pg.locator(f'#{layer}EffectsPanel')
         ui_checks = await panel.locator('[data-media-tech]').evaluate_all('inputs=>Object.fromEntries(inputs.map(el=>[el.dataset.mediaTech,el.checked]))')
-        assert ui_checks == effects['enabled'], 'omakase updates visible checkbox state'
+        assert ui_checks == {k: v for k, v in effects['enabled'].items() if k in ui_checks}, 'omakase updates visible checkbox state'
         for group in await panel.locator('details').all():
-            total = await group.locator('[data-media-tech]').count(); on = await group.locator('[data-media-tech]:checked').count()
+            kind = '[data-media-decor]' if await group.get_attribute('data-media-group') == 'decor' else '[data-media-tech]'   # 장식은 장식 수를 센다
+            total = await group.locator(kind).count(); on = await group.locator(kind + ':checked').count()
             assert await group.locator('.tg-cnt').inner_text() == f'{on}/{total}'
     await pg.locator('#btnUndo').click()
     for layer in ['foreground', 'media']:
@@ -1332,11 +1348,11 @@ async def test_media_lyrics_insert(b, url):
     }''')
     await pg.locator('#fileProject').set_input_files(json_file('fixture.json', fixture))
     await pg.wait_for_function('J.ui.plan.lines.length === 5')
-    assert await pg.evaluate('J.ui.plan.cuts.some(c => c.part === 1) && J.ui.plan.cuts.some(c => c.blank) && J.ui.plan.cuts.some(c => c.line === -1)') is True
+    assert await pg.evaluate('J.ui.plan.cuts.some(c => c.part === 1) && J.ui.plan.cuts.some(c => c.manualEnd && Math.abs(c.end - 7) < 1e-6) && J.ui.plan.cuts.some(c => c.line === -1)') is True
     project = lambda: pg.evaluate('structuredClone(J.ui.project)')
     lyric_targets = lambda mode: pg.evaluate('''mode => J.ui.plan.cuts
-      .filter(c => mode === 'cut' ? c.line >= 0 || c.blank : c.line >= 0 && c.part === 0)
-      .map(c => ({start:c.start,ref:c.blank ? `l:blank:${c.blankId}` : `l:${c.line}:${c.part}`}))''', mode)
+      .filter(c => mode === 'cut' ? c.line >= 0 : c.line >= 0 && c.part === 0)
+      .map(c => ({start:c.start,ref:`l:${c.line}:${c.part}`}))''', mode)
     starts = lambda layer: pg.evaluate('layer => J.ui.plan[layer].cuts.map(c => c.start)', layer)
     for mode in ['cut', 'line']:
         for layer in ['foreground', 'media']:
@@ -1382,7 +1398,7 @@ async def test_media_lyrics_insert(b, url):
         if mode == 'cut':
             targets = await lyric_targets(mode)
             assert len(targets) > 5
-            assert any(c['ref'] == 'l:blank:blank-test' for c in targets)
+            assert not any(c['ref'].startswith('l:blank:') for c in targets)
             assert any(c['ref'].endswith(':interlude') for c in targets), targets
             # 긴 간주의 분할 조각(l:N:interlude:k)은 우리 쪽에서 일부러 링크 표시·드래그 대상이 아니다(0578b12) → 선은 그 조각을 뺀 수
             drawn = [c for c in targets if not re.search(r':interlude:\d+$', c['ref'])]
@@ -1392,7 +1408,8 @@ async def test_media_lyrics_insert(b, url):
             for ref in ['l:0:1', 'l:1:0']:
                 target = next(c for c in await lyric_targets(mode) if c['ref'] == ref)
                 duration = await pg.evaluate('J.ui.plan.duration')
-                rect = await pg.locator('#mediaTimeline').bounding_box(); y = rect['y'] + rect['height'] - 8
+                # 포크 레이아웃은 타임라인이 더 넓어 이 지점에 메뉴 버튼이 없다. 우리 폭에서는 하단 8px가 컷 메뉴 버튼에 가리므로 6px로 잡는다
+                rect = await pg.locator('#mediaTimeline').bounding_box(); y = rect['y'] + rect['height'] - 6
                 await pg.mouse.move(rect['x'] + target['start'] / duration * rect['width'], y); await pg.mouse.down()
                 await pg.mouse.move(rect['x'] + (target['start'] + .3) / duration * rect['width'], y, steps=8); await pg.mouse.up()
                 moved = await lyric_targets(mode)
@@ -1402,7 +1419,7 @@ async def test_media_lyrics_insert(b, url):
     assert await pg.locator('#timelineLinks .link-wire').count() == 10, 'both layers link to five lyric line starts'
     # 배경 경계 하나를 끌면 세 레이어 묶음 전체가 움직인다
     timing = await pg.evaluate('({start:J.ui.plan.media.cuts[1].start,duration:J.ui.plan.duration})')
-    box = await pg.locator('#mediaTimeline').bounding_box(); y = box['y'] + box['height'] - 8
+    box = await pg.locator('#mediaTimeline').bounding_box(); y = box['y'] + box['height'] - 6   # 하단 8px는 컷 메뉴 버튼이 가린다
     await pg.mouse.move(box['x'] + timing['start'] / timing['duration'] * box['width'], y); await pg.mouse.down()
     await pg.mouse.move(box['x'] + (timing['start'] + .5) / timing['duration'] * box['width'], y, steps=8); await pg.mouse.up()
     s3 = await pg.evaluate('[J.ui.plan.media.cuts[1].start,J.ui.plan.foreground.cuts[1].start,J.ui.plan.lines[1].start]')
@@ -1435,7 +1452,7 @@ async def test_media_lyrics_insert(b, url):
     await pg.close()
 
 TESTS = [test_themes, test_project_file, test_export_menu, test_cropped_edges, test_cut_details, test_emphasis_frontmost,
-         test_lyric_compositing, test_lyric_features, test_media_rhythm, test_media_size_slider, test_media_phases,
+         test_lyric_compositing, test_lyric_features, test_media_rhythm, test_media_phases,
          test_media_random_order, test_media_auto_placement, test_media_effects, test_media_layer_settings, test_media_lyrics_insert]
 
 async def main(names):

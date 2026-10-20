@@ -31,12 +31,14 @@ const romaOfText = t => { if (hasLatin(t) || !t) return null; const r = J.romaji
 const romajiOf = env => romaOfText(env.cut.text);
 const altCopy = env => {
   const c = env.cut;
+  if (c.note) return c.note;
   if (c.lineText && strip(c.lineText) !== strip(c.text)) return flat(c.lineText);
   return c.note || romajiOf(env) || 'No.' + lineNo(env);
 };
 /* real secondary copy only (null when the cut is the whole line and has no reading) */
 const deckCopy = env => {
   const c = env.cut;
+  if (c.note) return c.note;
   if (c.lineText && strip(c.lineText) !== strip(c.text)) return flat(c.lineText);
   return c.note || romajiOf(env) || null;
 };
@@ -226,7 +228,7 @@ function fitBlock(text, font, aw, ah, o = {}, maxLines = 4) {
 const rowW = (text, font, size) => { let w = 0; for (const ch of text) w += J.metrics.adv(font, ch) * size; return w; };
 /* one-call text row for dense secondary copy (main pass only); sp = extra px after each glyph */
 function fastRow(env, text, font, size, x, y, sp, color, alpha, align = 'left') {
-  if (env.pass !== 'main' || alpha <= 0.01 || !text) return;
+  if (env.pass !== 'main' || alpha <= 0.01 || !text || J.hideDecoText(env, text)) return;
   const ctx = env.ctx;
   if (!('letterSpacing' in ctx)) { env.draw({ text, font, size, x, y, align, track: sp / size, color, alpha, ghost: false }); return; }
   ctx.save();

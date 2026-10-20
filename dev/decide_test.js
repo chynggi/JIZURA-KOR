@@ -76,7 +76,8 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
 {
   const real = vm.createContext({ window: {}, document: { createElement: () => ({ getContext: () => ({}) }), fonts: { add() {} } } });
   const src = require('node:path').join(__dirname, '..', 'src');
-  for (const f of fs.readdirSync(src).sort()) if (f < '08c' || /^11[pq]_/.test(f)) vm.runInContext(fs.readFileSync(require('node:path').join(src, f), 'utf8'), real);
+  // omakase는 효과 기법 무작위 선택까지 보므로 08c~08e 계열과 11p/11q를 함께 로드한다
+  for (const f of fs.readdirSync(src).sort()) if (f.endsWith('.js') && (f < '08c' || /^08[c-e]/.test(f) || /^11[pq]_/.test(f))) vm.runInContext(fs.readFileSync(require('node:path').join(src, f), 'utf8'), real);
   const R = real.window.J, base = R.defaultProject();
   for (let i = 0; i < 20; i++) assert.notEqual(R.omakase(Object.assign({}, base, { horror: false }), Math.random, { mood: 'horror' }).mood, 'horror', 'horror mood with the horror switch off');
   assert.equal(R.omakase(Object.assign({}, base, { horror: true }), Math.random, { mood: 'horror' }).mood, 'horror');

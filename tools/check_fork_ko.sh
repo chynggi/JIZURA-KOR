@@ -3,7 +3,8 @@
 cd "$(dirname "$0")/.."
 BASE="${1:-main}"
 # src/08c_jev.js: 이미 제거된 기능(Jev)의 잔여 코드라 문구 번역 대상이 아니다(기존 허용 목록).
-added() { git diff "$BASE" -- src app/body.html ae ':!ae/data.json' ':!src/08c_jev.js' | grep '^+' | grep -v '^+++' | grep -vP '^\+\s*(//|/\*|\*)'; }
+# src/08k_detail_search.js: 상세 편집 유사 검색의 동의어 사전(한국어·일본어·영어 별칭을 함께 둔다).
+added() { git diff "$BASE" -- src app/body.html ae ':!ae/data.json' ':!src/08c_jev.js' ':!src/08k_detail_search.js' | grep '^+' | grep -v '^+++' | grep -vP '^\+\s*(//|/\*|\*)'; }
 # 정당한 비-UI 줄(문구가 아니라 데이터·코드): 문자 분류용 전각 약물 정규식, 가사 언어 판별용 무작위 글자 풀
 # (일본어/번체/간체/한국어/영어를 모두 갖추고 있으며 한국어 풀도 이미 포함), 로마자 변환·작은 가나 판정 같은
 # 가사 판별 헬퍼, 글자가 없을 때 쓰는 대체 글자('字')·장식용 가운뎃점('・') 같은 표시되지 않는 기본값.

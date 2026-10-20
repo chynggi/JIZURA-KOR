@@ -6,7 +6,7 @@ from playwright.async_api import async_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')
 # 로컬 글꼴 가져오기 단언용: Windows 전용 C:/Windows/Fonts/arial.ttf 대신 이 환경의 실제 ttf를 쓴다
-LOCAL_TTF = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+LOCAL_TTF = next((f for f in ['/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 'C:/Windows/Fonts/arialbd.ttf'] if os.path.exists(f)), '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf')
 
 @contextlib.contextmanager
 def serve(port=8766):
@@ -530,7 +530,8 @@ async def test_layered_export_media(b, url):
     await pg.close()
 
 async def test_blank_cut_keeps_assets(b, url):
-    # 빈 가사 컷에서도 소재(뒤·앞)는 보여야 한다
+    # 빈 구간에서도 소재(뒤·앞)는 보여야 한다.
+    # 무표시 컷은 폐지됐다: 옛 프로젝트는 앞 컷의 종료 시각으로 이관되고, 그 뒤는 간주 컷이 이어진다.
     pg, errs = await open_app(b, url)
     r = await pg.evaluate('''async () => {
       document.querySelector('#modePro').click();
@@ -538,20 +539,22 @@ async def test_blank_cut_keeps_assets(b, url):
       ta.value = '하나\\n둘'; ta.dispatchEvent(new Event('input', { bubbles: true }));
       await new Promise(r => setTimeout(r, 1500));
       const P = J.ui.project;
-      P.timing.lineTimes = { 0: 2, 1: 10 }; P.lyricBlankCuts = [{ id: 'b1', beforeLine: 1, start: 7 }];
+      P.timing.lineTimes = { 0: 2, 1: 10 };
+      // 옛 무표시 컷(7초부터)과 같은 상태: 0행 컷을 7초에 끝낸다
+      P.lyricCutOptions = { '0:0': { untilNext: false, endTime: 7 } };
       J.uiApi.replan();''' + STUB_LAYERS + '''
-      const plan = J.ui.plan, blank = plan.cuts.find(c => c.blank);
+      const plan = J.ui.plan, gap = plan.cuts.find(c => c.line === 0 && c.part === 'interlude');
       plan.assets = [{ id: 'x' }]; plan.media = { cuts: [] }; plan.foreground = { cuts: [] };
-      const out = { blank: !!blank };
+      const out = { gap: !!gap };
       try {
-        new J.Renderer().frame(ctx, plan, (blank.start + blank.end) / 2, OPT);
+        new J.Renderer().frame(ctx, plan, (gap.start + gap.end) / 2, OPT);
         out.back = at(0.2); out.front = at(0.5);
       } finally { restore(); }
       return out;
     }''')
-    assert r['blank'], r
-    assert near(r['back'], (0, 255, 0)), f'빈 컷에서 소재(뒤)가 사라졌습니다: {r}'
-    assert near(r['front'], (0, 0, 255)), f'빈 컷에서 소재(앞)가 사라졌습니다: {r}'
+    assert r['gap'], r
+    assert near(r['back'], (0, 255, 0)), f'빈 구간에서 소재(뒤)가 사라졌습니다: {r}'
+    assert near(r['front'], (0, 0, 255)), f'빈 구간에서 소재(앞)가 사라졌습니다: {r}'
     assert not errs, errs
     await pg.close()
 
@@ -753,7 +756,8 @@ async def test_cut_panel_unified(b, url):
     assert await pg.evaluate("!!J.mediaAt(J.ui.plan, J.ui.t)")
     md = panel.locator('[data-cut-section="layer"] [data-media-details="media"]')
     assert await md.count() == 1
-    assert await pg.locator('#mediaLineList .cut-details-open').count() == 0
+    # 포크: 배경·전경 목록의 각 컷에도 상세 편집 버튼이 남아 있다
+    assert await pg.locator('#mediaLineList .cut-details-open').count() == 1
     await md.click()
     assert await pg.locator('#cutDetailsDialog').count() == 1
     await pg.locator('#cutDetailsDialog').get_by_role('button', name='취소', exact=True).click()

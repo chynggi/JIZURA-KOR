@@ -3,7 +3,7 @@ This fork's sources are Korean, so the other editions (app/english.py and app/i1
 are not rebuilt here; en/, zh-hant/, zh-hans/, id/, ko/ and vi/ index.html are kept as shipped upstream.
 usage: python3 build.py            -> index.html (GitHub Pages)
        python3 build.py --dev      -> also dev/www/jizura.js + dev/www/test.html for the test tools"""
-import glob, os, sys
+import glob, os, sys, base64
 from app.english import localize_body, localize_js
 ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(ROOT)
@@ -11,6 +11,7 @@ read = lambda p: open(p, encoding='utf-8').read()
 VERSION = read('VERSION').strip()
 sources = sorted(glob.glob('src/*.js'))
 js = '\n'.join(read(f) for f in sources)
+js = js.replace('__EFFECT_PREVIEW_IMAGE__', 'data:image/png;base64,' + base64.b64encode(open('assets/effect-preview.png', 'rb').read()).decode('ascii'))
 mux = '/*! mp4-muxer v5.2.2 | MIT License | (c) 2023 Vanilagy | see THIRD_PARTY_NOTICES.md */\n' + read('vendor/mp4-muxer.min.js')
 def build(lang):
     english = lang == 'en'
@@ -31,6 +32,7 @@ def build(lang):
         marker = '/* ============================================================\n   JIZURA — editor UI'
         if marker not in script: raise ValueError('Could not find browser UI entry point')
         script = script.replace(marker, read('app/english.js') + '\n' + marker, 1)
+    script = script.replace('__EFFECT_PREVIEW_IMAGE__', 'data:image/png;base64,' + base64.b64encode(open('assets/effect-preview.png', 'rb').read()).decode('ascii'))
     html = f'''<!doctype html>
 <html lang="{lang}">
 <head>

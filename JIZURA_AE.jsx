@@ -1,5 +1,5 @@
 #target aftereffects
-/*  JIZURA \u5B57\u9762 \u2014 lyric motion panel for Adobe After Effects  (v0.9.0)
+/*  JIZURA \u5B57\u9762 \u2014 lyric motion panel for Adobe After Effects  (v0.10.1)
     Put this file in:  After Effects <version>/Support Files/Scripts/ScriptUI Panels/
     Restart AE, then open  Window > JIZURA_AE.jsx
     (Or run it once via File > Scripts > Run Script File... as a floating window.)
@@ -100,6 +100,15 @@ function jzParseLyrics(raw) {
         var s = s0, times = [], m;
         while ((m = s.match(/^\[(\d+):(\d+(?:[.:]\d+)?)\]/))) { times.push(parseInt(m[1], 10) * 60 + parseFloat(m[2].replace(':', '.'))); s = s.substr(m[0].length); }
         s = jzTrim(s);
+        // \u9593\u594F: [\u9593\u594F] / [\u9593\u594F 8] \u2014 also [interlude] [inst] [\u95F4\u594F] [\uAC04\uC8FC]
+        var im = s.match(/^\[\s*(\u9593\u594F|\u95F4\u594F|interlude|instrumental|inst|\uAC04\uC8FC)(?:\s*[:\uFF1A]?\s*(\d+(?:\.\d+)?)\s*(?:s|sec|\u79D2|\uCD08)?)?\s*\]$/i);
+        if (im) {
+            var ib = { text: '', interlude: true, secs: im[2] ? parseFloat(im[2]) : null, note: null, impact: false, emph: [], manual: null, gapBefore: gap, lrc: null };
+            gap = false;
+            if (times.length) { for (var it = 0; it < times.length; it++) { var ic = jzCopy(ib); ic.lrc = times[it]; lines.push(ic); } }
+            else lines.push(ib);
+            continue;
+        }
         var note = null, bar = s.indexOf('|');
         if (bar >= 0) { note = jzTrim(s.substr(bar + 1)) || null; s = jzTrim(s.substr(0, bar)); }
         // extended LRC word times: <mm:ss.xx> before a word marks when it is sung (kept as \u0001 until the text is final)
@@ -35681,7 +35690,7 @@ function jzTidyTree(comp) {
 // Walks a built comp tree, evaluates every expression at a few times and collects AE's own error messages
 // (Property.expressionError), plus the substitutions and warnings of the build. Used by the panels'
 // "\u8A3A\u65AD\u30EC\u30DD\u30FC\u30C8" button; the report is plain text so it can be sent as-is.
-var JZ_PANEL_VERSION = '0.9.0';
+var JZ_PANEL_VERSION = '0.10.1';
 // parts this panel can build, counted like the browser (its expression groups' orders)
 function jzPartsCount() {
     var n = 0, g, i, o = JZ_DATA.orders || {};

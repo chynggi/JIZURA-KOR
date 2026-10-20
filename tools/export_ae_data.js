@@ -9,6 +9,7 @@ const ctx2d = new Proxy({}, { get: (t, k) => k === 'measureText' ? (() => ({ wid
   : (k === 'getImageData' || k === 'createImageData') ? (() => ({ data: new Uint8ClampedArray(4) })) : (typeof k === 'string' && /^create/.test(k)) ? (() => ({ addColorStop: noop })) : noop, set: () => true });
 const el = () => ({ getContext: () => ctx2d, style: {}, width: 0, height: 0, appendChild: noop, addEventListener: noop, setAttribute: noop, classList: { add: noop, remove: noop, toggle: noop } });
 global.window = global;
+global.addEventListener = noop;      // 08m_person_cutout.js가 인물 마스크 이벤트를 구독한다(내보내기에는 화면이 없다)
 global.document = { createElement: el, getElementById: () => null, querySelectorAll: () => [], head: { appendChild: noop }, fonts: { load: async () => [], ready: Promise.resolve() }, addEventListener: noop };
 global.localStorage = { getItem: () => null, setItem: noop };
 global.OffscreenCanvas = function () { return el(); };
