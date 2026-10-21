@@ -4103,6 +4103,7 @@ function renderFx() {
   $('fxHud').value = S.project.fx.hud || 'auto';
   $('fxInterCount').value = S.project.fx.interCount || 'auto';
   $('fxInterCredit').checked = !!S.project.fx.interCredit;
+  $('fxInterPreview').checked = S.project.fx.interPreview !== false;
   $('fxHideNo').checked = !!S.project.fx.hideNo; $('fxHideTime').checked = !!S.project.fx.hideTime;
   $('seed').value = S.project.seed;
 }
@@ -5840,6 +5841,7 @@ function bind() {
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
   $('fxInterCount').addEventListener('change', e => { S.project.fx.interCount = e.target.value; replan(); });
   $('fxInterCredit').addEventListener('change', e => { S.project.fx.interCredit = e.target.checked; replan(); });
+  $('fxInterPreview').addEventListener('change', e => { S.project.fx.interPreview = e.target.checked; replan(); });
   $('fxHideNo').addEventListener('change', e => { remember(); S.project.fx.hideNo = e.target.checked; replan(); commit(); });
   $('fxHideTime').addEventListener('change', e => { remember(); S.project.fx.hideTime = e.target.checked; replan(); commit(); });
   $('seed').addEventListener('change', e => { J.clearPastedLyricEffects(S.project); S.project.seed = parseInt(e.target.value, 10) || 0; replan(); });

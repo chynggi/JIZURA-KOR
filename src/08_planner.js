@@ -35,7 +35,7 @@ J.defaultProject = () => ({
   seed: 20260922,
   aspect: '16:9', res: 1080, fps: 24,
   shortExport: {start:0,end:null,mode:'zoom',blur:35,res:1080},
-  fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', interCount: 'auto', interCredit: false, bgSwitch: 0.35, react: 0, hideNo: false, hideTime: false },
+  fx: { motion: 0.7, glitch: 0.55, chroma: 0.7, decor: 0.5, density: 0.55, texture: 0.6, flash: true, onTwos: true, koma: 12, hud: 'auto', interCount: 'auto', interCredit: false, interPreview: true, bgSwitch: 0.35, react: 0, hideNo: false, hideTime: false },
   enabled: Object.fromEntries(J.GROUP_KEYS.map(g => [g, Object.fromEntries(J.order(g).map(k => [k, true]))])),
   timing: { bpm: 0, offset: 0.4, snap: true, tail: 0.9, lineTimes: {}, cutTimes: {}, lineScale: 1 },
   overrides: {},
@@ -776,7 +776,10 @@ J.plan = (project, audio, chain) => {
       if (fxOn('slice') && dur > 0.8 && rng.chance(g * 0.4)) addEvent(cs + rng.range(0.35, 0.8) * dur, 'slice', 0.4 + g * 0.4, 2 * F);
       // the newer effect library: at most one per cut boundary (plus rare mid-cut accents)
       if (plan.cuts.length > 1 || k > 0 || li > 0) {
-        const pick = pickFx(rng, st, en, fx, emph, fxHistory, 'edge');
+        let pick = pickFx(rng, st, en, fx, emph, fxHistory, 'edge');
+        // 이 컷만의 지정: a chosen library effect, or 'none' for no edge effect
+        if (tech.fx === 'none') pick = null;
+        else if (tech.fx && J.FXE[tech.fx] && !J.FXE[tech.fx].builtin) pick = tech.fx;
         if (pick) { const D2 = J.FXE[pick]; const d = (D2.dur || 4) * F; addEvent(cs - (D2.pre ? D2.pre * F : 0), pick, (D2.amp || 1) * (0.7 + 0.5 * g + (emph ? 0.3 : 0)), d); fxHistory.push(pick); }
       }
       if (dur > 1.1) { const pick = pickFx(rng, st, en, fx, emph, fxHistory, 'mid'); if (pick) { const D2 = J.FXE[pick]; addEvent(cs + rng.range(0.4, 0.75) * dur, pick, (D2.amp || 1) * (0.5 + 0.4 * g), (D2.dur || 3) * F); } }
@@ -809,7 +812,8 @@ J.plan = (project, audio, chain) => {
         const params = Object.assign(J.LAYOUTS.interlude.plan(rk), fx.interCount === 'on' ? { variant: 'counter' } : fx.interCount === 'off' ? { variant: 'rings' } : {});
         // 추가 연출: countdown / next-line preview / progress bar / energy bars (countdown only on the last part)
         if (project.extra === true && fx.interCount !== 'on' && (fx.interCount === 'off' || rk.chance(0.67))) {
-          const pool = k === nSeg - 1 ? INTER_EXTRA : INTER_EXTRA.filter(v => v !== 'countdown');
+          // 간주에 다음 가사 off: never the next-line preview
+          const pool = INTER_EXTRA.filter(v => (k === nSeg - 1 || v !== 'countdown') && (fx.interPreview !== false || v !== 'preview'));
           params.variant = fx.interCount === 'off' ? rk.pick(pool.concat('rings')) : rk.pick(pool);
         }
         if (nSeg > 1) params.end = nextStart;
