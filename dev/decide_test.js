@@ -83,3 +83,79 @@ vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
   assert.equal(R.omakase(Object.assign({}, base, { horror: true }), Math.random, { mood: 'horror' }).mood, 'horror');
   assert.equal(R.omakase(base, Math.random, { mood: 'calm' }).mood, 'calm');
 }
+
+// AI에게 전부 맡기기: 컷 수 → 컷별 연출 10개 항목, 요청 본문은 서버 한도(64KB) 아래
+(async () => {
+  const reg = {
+    layout: { center: { name: 'center', fits: () => true }, huge: { name: 'huge', fits: n => n <= 4 }, wide: { name: 'wide', fits: () => true, busy: true }, long: { name: 'long', fits: n => n >= 9 }, title: { name: 'title', fits: () => true, special: true } },
+    enter: { blur: { name: 'blur' }, pop: { name: 'pop', minDur: 1 } },
+    exit: { drift: { name: 'drift' }, fall: { name: 'fall' } },
+    hold: { still: { name: 'still' }, sway: { name: 'sway' } },
+    decor: { dots: { name: 'dots' }, frame: { name: 'frame', layer: 'back' } },
+    treat: { none: { name: 'none' }, glow: { name: 'glow' } },
+    bg: { none: { name: 'none' }, grid: { name: 'grid' }, soft: { name: 'soft', subtle: true } },
+    cam: { push: { name: 'push' }, orbit: { name: 'orbit' } },
+    trans: { cut: { name: 'cut' }, wipe: { name: 'wipe' } },
+    fx: { chroma: { name: 'chroma', builtin: true }, ripple: { name: 'ripple' }, burst: { name: 'burst', edge: false } },
+  };
+  // many long layout descriptions: one cut's questions are big, so the cuts must be split over several requests
+  for (let i = 0; i < 200; i++) reg.layout[`x${i}`] = { name: 'x'.repeat(100), fits: () => true };
+  const J = {
+    MOODS: { calm: { name: 'Calm' } }, STYLE_ORDER: ['paper'], STYLES: { paper: { name: 'Paper', desc: 'soft' } },
+    registry: g => reg[g], order: g => Object.keys(reg[g]), LAYOUTS: reg.layout, FXE: reg.fx,
+    parseLyrics: lyrics => ({ lines: lyrics.split('\n').map(text => ({ text })) }),
+    chunkText: text => text.split(' '),
+    omakase: (project, rnd, c) => ({ mood: c.mood, style: c.style, overrides: { 2: { lock: true } } }),
+    // stand-in planner: line li is split into overrides[li].cuts word groups of 0.4 s each
+    plan: p => {
+      const cuts = [{ line: -1, part: 0, text: 'title', start: 0, end: 1 }];
+      J.parseLyrics(p.lyrics).lines.forEach((ln, li) => {
+        const words = ln.text.split(' '), n = (p.overrides[li] || {}).cuts || 1, per = Math.ceil(words.length / n);
+        for (let k = 0; k < n; k++) cuts.push({ line: li, part: k, text: words.slice(k * per, k * per + per).join(' '), start: li + k * 0.4, end: li + k * 0.4 + 0.4, emph: false });
+        cuts.push({ line: li, part: 'interlude', text: '', start: 9, end: 10 });
+      });
+      return { cuts };
+    },
+  };
+  const want = { layout: 'wide', enter: 'pop', exit: 'fall', hold: 'sway', decor: 'frame', treat: 'glow', bg: 'grid', cam: 'orbit', trans: 'none', fx: 'ripple' };
+  const sent = [];
+  const context = { J, location: { origin: 'http://127.0.0.1:8765' }, fetch: async (url, options) => {
+    sent.push(options.body);
+    const { questions } = JSON.parse(options.body), answers = {};
+    for (const [key, q] of Object.entries(questions)) {
+      const keys = Object.keys(q.criteria), g = key.split('_')[0];
+      answers[key] = { type: 'choice', choice: key === 'hold_0_1' ? 'zzz' : g === 'cuts' ? keys.at(-1) : keys.includes(want[g]) ? want[g] : keys[0] };
+    }
+    return { ok: true, json: async () => ({ answers }) };
+  } };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync('src/08c_jev.js', 'utf8'), context);
+  const project = { lyrics: 'a b c\nd e\nf g h', overrides: { 2: { lock: true } } };
+  const progress = [];
+  const look = await J.decideDirect(project, { onProgress: p => progress.push(p) });
+  const qs = sent.map(b => JSON.parse(b).questions);
+  assert.deepEqual(Object.keys(qs[0]).sort(), ['mood', 'style']);
+  assert.deepEqual(Object.keys(qs[1]).sort(), ['cuts_0', 'cuts_1'], 'a locked line is not asked');
+  assert.deepEqual(Object.keys(qs[1].cuts_0.criteria), ['1', '2', '3']);
+  assert.ok(sent.every(b => Buffer.byteLength(b) <= 60000), 'every request stays under the server limit');
+  assert.ok(sent.length > 3, 'big option lists split the cuts over several requests');
+  const cutQs = Object.assign({}, ...qs.slice(2));
+  assert.equal(Object.hasOwn(cutQs.layout_0_0.criteria, 'title'), false, 'special layouts are never offered');
+  assert.equal(Object.hasOwn(cutQs.layout_0_0.criteria, 'long'), false, 'a layout that does not fit the text is not offered');
+  assert.equal(Object.hasOwn(cutQs, 'enter_0_0'), false, 'with one fitting choice the question is skipped');
+  assert.deepEqual(Object.keys(cutQs.fx_0_0.criteria).sort(), ['none', 'ripple']);
+  assert.equal(Object.hasOwn(cutQs.bg_0_0.criteria, 'none'), false, 'a background is always shown');
+  assert.equal(Object.keys(cutQs).some(k => k.endsWith('_2_0')), false, 'no cut of a locked line is asked');
+  assert.equal(look.mood, 'calm');
+  assert.equal(look.style, 'paper');
+  assert.equal(look.overrides[0].cuts, 3);
+  assert.equal(look.overrides[1].cuts, 2);
+  assert.deepEqual({ ...look.overrides[0].cutTech[0] }, { layout: 'wide', exit: 'fall', hold: 'sway', treat: 'glow', cam: 'orbit', trans: 'none', fx: 'ripple' },
+    'busy layout: the back decor and the non-subtle background are dropped');
+  assert.equal(Object.hasOwn(look.overrides[0].cutTech[1], 'hold'), false, 'an answer outside the choices is left to the planner');
+  assert.deepEqual({ ...look.overrides[2] }, { lock: true });
+  assert.deepEqual({ ...progress.at(-1) }, { stage: 'effects', done: 5, total: 5 });
+  const ctl = new AbortController(); ctl.abort();
+  await assert.rejects(J.decideDirect(project, { signal: ctl.signal }), /취소/);
+  console.log('DIRECT OK');
+})().catch(error => { console.error(error); process.exitCode = 1; });
