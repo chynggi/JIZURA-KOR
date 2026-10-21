@@ -3952,6 +3952,36 @@ async function aiPick() {
     ['btnAiPick', 'btnAiPickBig'].forEach(id => { $(id).disabled = false; });
   }
 }
+// AI에게 전부 맡기기: every cut decided by the model; the same buttons cancel while it runs
+const AI_DIRECT = ['btnAiDirect', 'btnAiDirectBig'], AI_DIRECT_LABEL = 'AI에게 전부 맡기기(β)';
+let aiDirectCtl = null;
+async function aiDirect() {
+  if (aiDirectCtl) { aiDirectCtl.abort(); return; }
+  if (aiBusy || S.exporting || S.tap) return;
+  aiBusy = true; aiDirectCtl = new AbortController();
+  ['btnAiPick', 'btnAiPickBig'].forEach(id => { $(id).disabled = true; });
+  AI_DIRECT.forEach(id => { $(id).textContent = '취소'; });
+  showMsg('AI 연출 중: 분위기·스타일 고르는 중…');
+  try {
+    const lyrics = S.project.lyrics, aiPrompt = S.project.aiPrompt;
+    const look = await J.decideDirect(S.project, { audio: audioLike(), signal: aiDirectCtl.signal,
+      onProgress: p => showMsg(p.stage === 'cuts' ? 'AI 연출 중: 행별 컷 수 고르는 중…' : `AI 연출 중 ${p.done}/${p.total}컷`) });
+    if (S.project.lyrics !== lyrics || S.project.aiPrompt !== aiPrompt) throw new Error('고르는 동안 가사나 추가 지시가 바뀌었습니다. 다시 실행하세요');
+    remember();
+    Object.assign(S.project, look);
+    fontKey = ''; syncUI(); replan(); commit();
+    toast(`AI에게 전부 맡기기: ${J.STYLES[look.style].name} × ${J.MOODS[look.mood].name}`);
+    restartPreview();
+  } catch (e) {
+    toast(`AI에게 전부 맡기기: ${e.message || e}`);
+    console.error(e);
+  } finally {
+    showMsg(null);
+    aiBusy = false; aiDirectCtl = null;
+    ['btnAiPick', 'btnAiPickBig'].forEach(id => { $(id).disabled = false; });
+    AI_DIRECT.forEach(id => { $(id).textContent = AI_DIRECT_LABEL; });
+  }
+}
 // change just one aspect of the current look
 function rerollPart(part) {
   if (S.exporting || S.tap) return;
@@ -5986,6 +6016,7 @@ function bind() {
   $('btnOmakaseBig').addEventListener('click', omakase);
   $('btnAiPick').addEventListener('click', aiPick);
   $('btnAiPickBig').addEventListener('click', aiPick);
+  AI_DIRECT.forEach(id => $(id).addEventListener('click', aiDirect));
   ['btnPrev', 'btnPrev2'].forEach(id => $(id).addEventListener('click', () => histGo(-1)));
   ['btnNext', 'btnNext2'].forEach(id => $(id).addEventListener('click', () => histGo(1)));
   $('eStyle').addEventListener('click', () => rerollPart('style'));
