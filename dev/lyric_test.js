@@ -26,4 +26,8 @@ const strength = J.parseLyrics(String.raw`plain *BIG/LOUD* ~small\nquiet~`).line
 assert.equal(strength.text, 'plain BIG LOUD small\nquiet');
 assert.deepEqual(Array.from(strength.strengthSpans, x => ({...x})), [{ start: 5, end: 12, strong: true }, { start: 12, end: 22, strong: false }]);
 assert.equal(J.parseLyrics('{\nOpen group').lines[0].group, 0, 'an unfinished group remains usable while typing');
+assert.equal(J.joinWords(['괜찮아,', '이']), '괜찮아, 이', 'Hangul words keep their space after a comma');
+assert.equal(J.joinWords(['나가,', '세상', '모든']), '나가, 세상 모든');
+assert.equal(J.joinWords(['그래…', '우린']), '그래… 우린');
+assert.equal(J.joinWords(['君に、', '夢を']), '君に、夢を', 'Japanese chunks stay joined without spaces');
 console.log('Lyric parsing tests passed');

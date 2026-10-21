@@ -198,7 +198,8 @@ J.joinWords = arr => {
   return arr.reduce((acc, w, i) => {
     if (!i) return w;
     if (/[-‐–—]$/.test(acc)) return acc + w;
-    return acc + (latin || (HG.test([...acc].pop()) && HG.test([...w][0])) ? ' ' : '') + w;
+    // a comma / ellipsis after a Hangul word keeps the space (나가, 세상)
+    return acc + (latin || (HG.test([...acc.replace(/[,.!?…~'"’”)]+$/, '')].pop()) && HG.test([...w][0])) ? ' ' : '') + w;
   }, '');
 };
 /* mostly Latin letters (English, Indonesian, Vietnamese … lyrics) */
