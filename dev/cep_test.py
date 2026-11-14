@@ -89,7 +89,7 @@ async def main():
 
 async def run():
     async with async_playwright() as p:
-        b = await p.chromium.launch()
+        b = await p.chromium.launch(channel=os.environ.get("JIZURA_BROWSER") or None)
         # ---- A: with Node (temp-file path), pro mode
         ctx = await b.new_context(viewport={'width': 1280, 'height': 860})
         await ctx.add_init_script("try{localStorage.setItem('jizura.mode','pro')}catch(e){}")

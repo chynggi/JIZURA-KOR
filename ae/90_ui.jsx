@@ -32,11 +32,13 @@ function jzUI(thisObj) {
     cKin.helpTip = '단어마다 움직이고 튀고 쌓이는, 움직임 중심의 부품(약 50개)';
     var cHor = gSw.add('checkbox', undefined, '호러 연출도 사용'); cHor.value = jzGet('horror', '0') === '1';
     cHor.helpTip = '으스스한 분위기의 부품(약 50개)과 배색 세트 3종. 켜면 자동으로 만들기의 분위기에 「호러」가 추가됩니다(호러 부품은 분위기가 「호러」일 때만 사용합니다)';
+    var cX2 = gSw.add('checkbox', undefined, '추가 연출 2도 사용'); cX2.value = jzGet('extra2', '0') === '1';
+    cX2.helpTip = 'v0.12에서 추가된 부품. 타이포·키네틱·호러·일본풍의 새 부품은 각각의 체크도 켜져 있을 때 사용합니다';
     var gLang = gSw.add('group'); gLang.spacing = 4; gLang.add('statictext', undefined, '가사 언어');
     var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en'];
     var ddLang = gLang.add('dropdownlist', undefined, ['자동 판정', '日本語', '繁體中文', '简体中文', '한국어', 'English']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
     ddLang.helpTip = '중국어(번체·간체)나 한국어 가사는 그 문자를 가진 서체로 조판합니다(각 스타일 서체의 분위기에 가까운 것으로 대체). 자동 판정은 가나·한글·번체/간체 고유 글자로 판단합니다';
-    function switches() { return { extra: cExtra.value, wa: cWa.value, typo: cTypo.value, kinetic: cKin.value, horror: cHor.value, lang: JZ_LANG_KEYS[ddLang.selection ? ddLang.selection.index : 0] }; }
+    function switches() { return { extra: cExtra.value, wa: cWa.value, typo: cTypo.value, kinetic: cKin.value, horror: cHor.value, extra2: cX2.value, lang: JZ_LANG_KEYS[ddLang.selection ? ddLang.selection.index : 0] }; }
     var gS = t1.add('group'); gS.add('statictext', undefined, '스타일');
     var styleNames = [], i;
     for (i = 0; i < JZ_DATA.styleOrder.length; i++) { var stI = JZ_DATA.styles[JZ_DATA.styleOrder[i]]; styleNames.push(stI.name + (stI.extra || stI.wa ? '  〔' + (stI.extra ? '추가' : '') + (stI.extra && stI.wa ? '·' : '') + (stI.wa ? '일본풍' : '') + '〕' : '') + (stI.set === 'horror' ? '  〔호〕' : '')); }
@@ -230,7 +232,7 @@ function jzUI(thisObj) {
         jzPut('size', ddSize.selection.index); jzPut('fps', ddFps.selection.index); jzPut('timing', rLayer.value ? 'layer' : rComp.value ? 'comp' : 'auto');
         jzPut('bpm', eBpm.text); jzPut('lineScale', eScale.text); jzPut('audio', cAudio.value ? '1' : '0'); jzPut('seed', eSeed.text);
         jzPut('twos', cTwos.value ? '1' : '0'); jzPut('flash', cFlash.value ? '1' : '0'); jzPut('hud', ddHud.selection.index); jzPut('interCount', ddInter.selection.index); jzPut('interCredit', cCredit.value ? '1' : '0');
-        jzPut('extra', cExtra.value ? '1' : '0'); jzPut('wa', cWa.value ? '1' : '0'); jzPut('typo', cTypo.value ? '1' : '0'); jzPut('kinetic', cKin.value ? '1' : '0'); jzPut('horror', cHor.value ? '1' : '0'); jzPut('key', ddKey.selection.index); jzPut('center', cCenter.value ? '1' : '0'); jzPut('centerDir', ddCDir.selection ? ddCDir.selection.index : 0); jzPut('light', cLight.value ? '1' : '0'); jzPut('lang', ddLang.selection ? ddLang.selection.index : 0);
+        jzPut('extra', cExtra.value ? '1' : '0'); jzPut('wa', cWa.value ? '1' : '0'); jzPut('typo', cTypo.value ? '1' : '0'); jzPut('kinetic', cKin.value ? '1' : '0'); jzPut('horror', cHor.value ? '1' : '0'); jzPut('extra2', cX2.value ? '1' : '0'); jzPut('key', ddKey.selection.index); jzPut('center', cCenter.value ? '1' : '0'); jzPut('centerDir', ddCDir.selection ? ddCDir.selection.index : 0); jzPut('light', cLight.value ? '1' : '0'); jzPut('lang', ddLang.selection ? ddLang.selection.index : 0);
         var sl = [sMotion, sGlitch, sChroma, sDecor, sDensity, sTexture, sBg]; for (var k = 0; k < sl.length; k++) jzPut(sl[k].key, sl[k].value);
         var active = app.project.activeItem, W = 1920, H = 1080, fps = [24, 30, 60][ddFps.selection.index], dur = null;
         var sz = ddSize.selection.index;
@@ -253,7 +255,7 @@ function jzUI(thisObj) {
             lyrics: lyr.text, title: eTitle.text, artist: eArtist.text, style: JZ_DATA.styleOrder[ddStyle.selection.index], seed: parseInt(eSeed.text, 10) || 1,
             fx: { motion: sMotion.value / 100, glitch: sGlitch.value / 100, chroma: sChroma.value / 100, decor: sDecor.value / 100, density: sDensity.value / 100, texture: sTexture.value / 100, bgSwitch: sBg.value / 100, onTwos: cTwos.value, flash: cFlash.value, hud: false, interCount: ['auto', 'on', 'off'][ddInter.selection.index], interCredit: cCredit.value },
             width: W, height: H, fps: fps, bpm: parseFloat(eBpm.text) || 0, starts: starts, enabled: en, offset: 0.4, lineScale: parseFloat(eScale.text) || 1, duration: dur,
-            extra: sw.extra, wa: sw.wa, typo: sw.typo, kinetic: sw.kinetic, horror: sw.horror, lang: sw.lang, centerFree: cCenter.value, centerDir: ddCDir.selection && ddCDir.selection.index === 1 ? 'lr' : 'tb'
+            extra: sw.extra, wa: sw.wa, typo: sw.typo, kinetic: sw.kinetic, horror: sw.horror, extra2: sw.extra2, lang: sw.lang, centerFree: cCenter.value, centerDir: ddCDir.selection && ddCDir.selection.index === 1 ? 'lr' : 'tb'
         };
         var st = JZ_DATA.styles[o.style];
         o.fx.hud = ddHud.selection.index === 1 ? true : ddHud.selection.index === 2 ? false : !!st.hud;

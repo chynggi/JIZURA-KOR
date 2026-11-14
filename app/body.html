@@ -63,7 +63,7 @@
       </div>
       <nav class="source-tabs" role="tablist" aria-label="가사·배경·전경"><button id="sourceForeground" role="tab" aria-selected="false">전경</button><button id="sourceLyrics" role="tab" aria-selected="true">가사</button><button id="sourceMedia" role="tab" aria-selected="false">배경</button></nav>
       <div class="sec" id="lyricsPane">
-        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><label class="file ghost small" title="LRC 파일(타임스탬프가 붙은 가사)을 불러와 지금 가사를 바꿉니다(‘실행 취소’로 되돌릴 수 있습니다)">LRC 불러오기<input id="fileLrc" type="file" accept=".lrc,.txt,text/plain"></label><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
+        <div class="sec-h"><h2>가사</h2><span class="sec-btns"><label class="file ghost small" title="LRC 파일(타임스탬프가 붙은 가사)이나 자막 파일(SRT / VTT)을 불러와 지금 가사를 바꿉니다(‘실행 취소’로 되돌릴 수 있습니다). 파일을 화면에 드롭해도 불러올 수 있습니다">LRC / SRT 불러오기<input id="fileLrc" type="file" accept=".lrc,.srt,.vtt,.txt,text/plain"></label><button id="btnClearLyrics" class="ghost small" title="가사와 행별 타이밍·설정·내보낼 범위를 지웁니다(「실행 취소」나 Ctrl+Z로 복구 가능)">가사 지우기</button><button id="btnSyntax" class="ghost small" aria-expanded="false">표기법</button></span></div>
         <div class="lyrics-editor">
         <textarea id="lyrics" rows="9" spellcheck="false" aria-label="가사 (한 행 = 한 프레이즈)"></textarea>
           <div id="lyricPlaybackHighlight" class="lyric-playback-highlight" aria-hidden="true" hidden><div></div></div>
@@ -244,6 +244,7 @@
             <label class="check"><input id="eLyricAvoidCenter" class="avoid-center-toggle" type="checkbox"><span>가사가 화면 가운데를 피하기<small>가사를 자동 배치할 때 화면 가운데를 비웁니다. *강조*한 가사는 가운데에도 놓습니다.</small></span></label>
             <label class="check"><input id="eExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>첫 공개 이후 추가된 약 350개 연출, 12개 스타일, 6개 글꼴도 자동 생성과 셔플 후보에 포함합니다. 끄면 초기 공개판의 연출만 사용합니다.</small></span></label>
             <label class="check"><input id="eWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>초롱, 엽서, 쇼지, 부채, 가문 문양, 세이가이하, 벚꽃잎 등의 일본풍 그래픽입니다. 끄면 자동 생성과 셔플에서 선택되지 않습니다.</small></span></label>
+            <label class="check"><input class="extra2-toggle" type="checkbox"><span>추가 연출 2도 사용<small>v0.12에서 추가된 부품(「추2」 표시). 타이포·키네틱·호러·일본풍의 새 부품은 각각의 스위치도 켜져 있을 때 사용합니다</small></span></label>
             <label class="check"><input class="typo-toggle" type="checkbox" checked><span>타이포 부품도 사용<small>선·숫자·글자 배치만으로 보여주는, 타이포다운 부품(약 50개)</small></span></label>
             <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>키네틱 부품도 사용<small>단어마다 움직이고 튀고 쌓이는, 움직임 중심의 부품(약 50개)</small></span></label>
             <label class="check"><input class="horror-toggle" type="checkbox"><span>호러 연출도 사용<small>으스스한 분위기의 부품(약 50개)과 배색 세트 3종. 켜면 자동으로 만들기의 분위기에 「호러」가 추가됩니다</small></span></label>
@@ -363,6 +364,7 @@
         <div class="pick-sets">
           <label class="check"><input id="tExtra" class="extra-toggle" type="checkbox"><span>추가 연출도 사용<small>「추가」 표시가 있는 기법·스타일·서체. 끄면 자동/셔플에서 첫 공개 버전의 연출만 사용합니다</small></span></label>
           <label class="check"><input id="tWa" class="wa-toggle" type="checkbox" checked><span>일본풍 연출도 사용<small>「일본풍」 표시가 있는 기법과 스타일. 끄면 자동/셔플에서는 선택되지 않습니다(추가 분류 판정 이후 적용. 행마다 수동 지정한 경우에는 사용할 수 있습니다)</small></span></label>
+          <label class="check"><input class="extra2-toggle" type="checkbox"><span>추가 연출 2도 사용<small>v0.12에서 추가된 부품(「추2」 표시). 타이포·키네틱·호러·일본풍의 새 부품은 각각의 스위치도 켜져 있을 때 사용합니다</small></span></label>
           <label class="check"><input class="typo-toggle" type="checkbox" checked><span>타이포 부품도 사용<small>「타」로 표시된 기법. 끄면 자동으로 만들기나 셔플에서 선택되지 않습니다</small></span></label>
           <label class="check"><input class="kinetic-toggle" type="checkbox" checked><span>키네틱 부품도 사용<small>「키」로 표시된 기법. 끄면 자동으로 만들기나 셔플에서 선택되지 않습니다</small></span></label>
           <label class="check"><input class="horror-toggle" type="checkbox"><span>호러 연출도 사용<small>「호」로 표시된 기법과 스타일. 자동으로 만들기에서는 분위기가 「호러」일 때만 사용합니다</small></span></label>
@@ -524,3 +526,4 @@
   <div class="terms-foot"><button value="cancel">취소</button><button value="save" class="primary">저장</button></div>
  </form>
 </dialog>
+<div id="dropHint" class="drop-hint" hidden><div><strong>여기에 드롭해서 불러오기</strong><span>곡(mp3 / wav 등)·가사(LRC / SRT / 텍스트)·프로젝트(.json)</span></div></div>

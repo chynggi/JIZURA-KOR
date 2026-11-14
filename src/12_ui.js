@@ -196,11 +196,12 @@ function mergeProject(p) {
   J.migrateLyricCompositing(o);
   return o;
 }
-const SET_UI = { horror: { name: '호러', badge: '호' }, typo: { name: '타이포', badge: '타' }, kinetic: { name: '키네틱', badge: '키' } };
+const SET_UI = { horror: { name: '호러', badge: '호' }, typo: { name: '타이포', badge: '타' }, kinetic: { name: '키네틱', badge: '키' }, extra2: { name: '추가 연출 2', badge: '추2' } };
 function setBadges(d) {
   return (d && d.custom ? '<span class="set-badge ex" title="'+J.mediaLabel('가져온 자체 연출','Imported custom effect')+'">'+J.mediaLabel('추가','Added')+'</span>' : '')
     + (d && d.extra && !d.custom ? '<span class="set-badge ex" title="첫 공개 버전 이후 추가">추가</span>' : '') + (d && d.wa ? '<span class="set-badge" title="일본풍 연출">일본풍</span>' : '')
-    + (d && d.set && SET_UI[d.set] ? `<span class="set-badge set-${d.set}" title="${SET_UI[d.set].name}">${SET_UI[d.set].badge}</span>` : '');
+    + (d && d.set && SET_UI[d.set] ? `<span class="set-badge set-${d.set}" title="${SET_UI[d.set].name}">${SET_UI[d.set].badge}</span>` : '')
+    + (d && d.x2 && d.set !== 'extra2' ? `<span class="set-badge set-extra2" title="${SET_UI.extra2.name}">${SET_UI.extra2.badge}</span>` : '');
 }
 function loadLocal() { try { const s = localStorage.getItem(LS_KEY); if (s) return mergeProject(JSON.parse(s)); } catch (e) {} return mergeProject(null); }
 function pendingMediaDeletes() { try { const ids = JSON.parse(localStorage.getItem(MEDIA_DELETE_KEY) || '[]'); return Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : []; } catch (e) { return []; } }
@@ -911,11 +912,12 @@ function relock(layer, index) {
 function rerollLyricLine(index) {
   const line = S.plan.lines[index]; if (!line) return;
   const current = S.project.overrides[index] || {};
+  remember();   // one step of 이전 안 / 다음 안, so a reroll can be taken back
   J.clearPastedLyricEffects(S.project,index);
   // A locked line re-rolls its effects but keeps its place (re-layout is 再配置's job).
   setOv(index, { seed: (current.seed | 0) + 1, ...LYRIC_UNLOCK, ...(current.lock ? { lock: true, lockedAreas: current.lockedAreas } : {}) });
   relock('lyrics', index);
-  replan(); seek(line.start + 0.001);
+  replan(); commit(); seek(line.start + 0.001);
 }
 function disableAndReroll(layer,index,part=null) {
   const project=S.project;
@@ -958,8 +960,9 @@ function disableRerollButton(layer,index,part=null){
 function toggleLyricLineLock(index) {
   const line = S.plan.lines[index]; if (!line) return;
   const current = S.project.overrides[index] || {};
+  remember();
   setOv(index, current.lock ? LYRIC_UNLOCK : lyricLockPatch(index));
-  replan();
+  replan(); commit();
 }
 function emphasisFrontmostHint() {
   return '*강조*한 가사는 항상 맨 앞에 표시됩니다. 해제하려면 가사의 * 표시를 지우세요.';
@@ -2737,8 +2740,8 @@ function renderLines() {
         ${ln.interlude ? '' : `<select class="lay pro-only" aria-label="레이아웃 선택"></select>`}
         <button class="icon ghost tapfrom" title="이 행부터 탭으로 동기화 다시 하기(Shift+클릭: 이 행만)" aria-label="${i + 1}행부터 탭">${ICON.tap}</button>
         <button class="icon ghost rng" title="내보낼 범위로 지정(Shift+클릭으로 범위 확장)" aria-pressed="${R && i >= R.from && i <= R.to ? 'true' : 'false'}" aria-label="${i + 1}행을 내보낼 범위로">${ICON.range}</button>
-        ${ln.interlude ? '' : `<button class="icon ghost dice" title="이 행 다시 뽑기">${ICON.dice}</button>`}
-        ${ln.interlude ? '' : `<button class="icon ghost lock" title="이 행의 구성 잠금" aria-pressed="${o.lock ? 'true' : 'false'}">${ICON.lock}</button>`}
+        ${ln.interlude ? '' : `<button class="icon ghost dice" title="이 행 다시 뽑기(재생 위치의 행은 D 키)">${ICON.dice}</button>`}
+        ${ln.interlude ? '' : `<button class="icon ghost lock" title="이 행의 구성 잠금(재생 위치의 행은 L 키)" aria-pressed="${o.lock ? 'true' : 'false'}">${ICON.lock}</button>`}
       </span></div>`;
     const q = sel => li.querySelector(sel);
     if (q('.lay')) lazyLay(q('.lay'), o.layout || '');
@@ -2762,7 +2765,7 @@ function renderLines() {
     q('.txt').addEventListener('dblclick', () => editLine(li, ln));
     q('.edit').addEventListener('click', () => editLine(li, ln));
     q('.lyric-area-thumb').addEventListener('click', () => openAreaEditor(i));
-    if (q('.lay')) q('.lay').addEventListener('change', e => { setOv(i, { layout: e.target.value || undefined }); replan(); });
+    if (q('.lay')) q('.lay').addEventListener('change', e => { remember(); setOv(i, { layout: e.target.value || undefined }); replan(); commit(); });
     if (q('.ncut')) q('.ncut').addEventListener('change', e => { remember(); setOv(i, { cuts: +e.target.value || undefined, single: undefined }); replan(); commit(); seek(ln.start + 0.001); });
     q('.tapfrom').addEventListener('click', e => startTap(i, e.shiftKey));
     q('.rng').addEventListener('click', e => setExportRange(i, e.shiftKey));
@@ -2830,8 +2833,8 @@ function editLine(li, ln) {
   inp.addEventListener('blur', () => finish(true));
 }
 
-// LRC 불러오기: replaces the lyrics (and everything tied to line numbers, like 가사 지우기); one undo step
-function loadLrc(text) {
+// LRC / SRT 불러오기 (sub: from J.srtToLyrics): replaces the lyrics (and everything tied to line numbers, like 가사 지우기); one undo step
+function loadLrc(text, sub) {
   if (S.tap || S.exporting) return;
   const P = S.project;
   pause();
@@ -2840,7 +2843,8 @@ function loadLrc(text) {
   $('lyrics').value = P.lyrics;
   replan(); flushSave(); seek(0);
   const n = J.parseLyrics(P.lyrics).lines.filter(l => l.lrc != null).length;
-  toast(`LRC를 불러왔습니다(시각이 있는 행 ${n}개 · ‘실행 취소’로 되돌릴 수 있습니다)`);
+  if (sub) toast(`자막 파일을 불러왔습니다(${sub.lines}행 · 간주 ${sub.gaps}곳 · ‘실행 취소’로 되돌릴 수 있습니다)`);
+  else toast(`LRC를 불러왔습니다(시각이 있는 행 ${n}개 · ‘실행 취소’로 되돌릴 수 있습니다)`);
 }
 function saveLrc() {
   const R = exportRangeLines(), r = exportRange();
@@ -3637,6 +3641,8 @@ async function restoreMediaAssets() {
   for(const ref of J.personMaskReferences(S.project).values())try{await J.loadPersonMask(ref);}catch(e){}
   replan();
 }
+// the lyric line under the playhead (-1: title card or none)
+function lineAtPlayhead() { const c = J.cutAt(S.plan, S.t); return c && c.line >= 0 ? c.line : -1; }
 function setOv(i, patch) {
   // A later line-wide selection supersedes the corresponding per-cut edit.
   for (const [key, options] of Object.entries(S.project.lyricCutOptions || {})) if (key.startsWith(`${i}:`) && options.details) {
@@ -5864,6 +5870,7 @@ function bind() {
   setSwitch('wa-toggle', 'wa', true, '일본풍 연출: 사용', '일본풍 연출: 사용 안 함 (자동 생성·셔플에서 제외)');
   setSwitch('typo-toggle', 'typo', true, '타이포 부품: 사용', '타이포 부품: 사용 안 함(자동으로 만들기·셔플에서 선택되지 않습니다)');
   setSwitch('kinetic-toggle', 'kinetic', true, '키네틱 부품: 사용', '키네틱 부품: 사용 안 함(자동으로 만들기·셔플에서 선택되지 않습니다)');
+  setSwitch('extra2-toggle', 'extra2', true, '추가 연출 2: 사용', '추가 연출 2: 사용 안 함');
   setSwitch('horror-toggle', 'horror', true, '호러 연출: 사용(자동으로 만들기의 분위기에 「호러」가 추가됩니다)', '호러 연출: 사용 안 함');
   setSwitch('unify-toggle', 'unify', true, '통일감: 켬(파트별로 맞추고 킬링 파트·모프·굵기도 사용)', '통일감: 끔');
   setSwitch('typeset-toggle', 'typeset', true, '문자 정렬: 켬(자간·조사·영문·0.2초 먼저·효과 절제)', '문자 정렬: 끔');
@@ -6079,15 +6086,7 @@ function bind() {
     document.querySelectorAll('.themeSel').forEach(x => { x.value = el.value; });
     flushSave();
   }));
-  $('fileLrc').addEventListener('change', async e => {
-    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
-    if (f.size > 2e6) { toast('LRC 파일이 너무 큽니다'); return; }
-    let text = '';
-    try { const buf = await f.arrayBuffer(); try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e2) { text = new TextDecoder('shift_jis').decode(buf); } }
-    catch (err) { toast('LRC를 불러올 수 없습니다'); return; }
-    if (S.project.lyrics.trim() && !window.confirm('지금 가사를 LRC 내용으로 바꿀까요? (행별 시각·지정·내보낼 범위도 지워집니다. ‘실행 취소’로 되돌릴 수 있습니다)')) return;
-    loadLrc(text);
-  });
+  $('fileLrc').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; openLyricFile(f); });
   ['btnLRC', 'eLRC'].forEach(id => $(id).addEventListener('click', saveLrc));
   $('btnReset').addEventListener('click', () => {
     const dlg = $('resetDlg');
@@ -6118,12 +6117,50 @@ function bind() {
     else if (e.code === 'ArrowRight') seek(S.t + (e.shiftKey ? 1 : 1 / S.plan.fps));
     else if (e.code === 'ArrowLeft') seek(S.t - (e.shiftKey ? 1 : 1 / S.plan.fps));
     else if (e.code === 'KeyR' && !e.metaKey && !e.ctrlKey && !e.altKey && !S.exporting) { e.preventDefault(); omakase(); }
+    else if (e.code === 'KeyD' && !e.metaKey && !e.ctrlKey && !e.altKey) { const i = lineAtPlayhead(); if (i >= 0 && !S.exporting && !S.plan.lines[i].interlude) { e.preventDefault(); rerollLyricLine(i); } }
+    else if (e.code === 'KeyL' && !e.metaKey && !e.ctrlKey && !e.altKey) { const i = lineAtPlayhead(); if (i >= 0 && !S.exporting && !S.plan.lines[i].interlude) { e.preventDefault(); toggleLyricLineLock(i); } }
   });
   window.addEventListener('resize', () => { sizeViewport(); drawTimeline(); drawTimelineLinks(); });
   if (window.ResizeObserver) new ResizeObserver(() => { sizeViewport(); drawTimeline(); drawTimelineLinks(); }).observe($('viewport'));
   if(window.ResizeObserver){const observer=new ResizeObserver(sizeViewport);for(const el of document.querySelector('.col-stage').children)if(el.id!=='viewport')observer.observe(el);}
   if (window.ResizeObserver) new ResizeObserver(drawTimelineLinks).observe($('timelineStack'));
   bindFollow();
+  bindDrop();
+}
+
+/* lyric file (.lrc / .txt, or .srt / .vtt subtitles): from the file input or dropped on the window */
+async function openLyricFile(f) {
+  if (!f || S.tap || S.exporting) return;
+  if (f.size > 2e6) { toast('LRC 파일이 너무 큽니다'); return; }
+  let text = '';
+  try { const buf = await f.arrayBuffer(); try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e2) { text = new TextDecoder('shift_jis').decode(buf); } }
+  catch (err) { toast('LRC를 불러올 수 없습니다'); return; }
+  if (S.project.lyrics.trim() && !window.confirm('지금 가사를 LRC 내용으로 바꿀까요? (행별 시각·지정·내보낼 범위도 지워집니다. ‘실행 취소’로 되돌릴 수 있습니다)')) return;
+  // SRT / WebVTT subtitles: each block becomes a timed line, and a pause after a block's end time becomes an interlude
+  if (J.isSubtitleText(text)) { const sub = J.srtToLyrics(text); if (!sub) { toast('LRC를 불러올 수 없습니다'); return; } loadLrc(sub.lyrics, sub); }
+  else loadLrc(text);
+}
+/* files dropped anywhere on the window: a song, lyrics (LRC / SRT / VTT / text) or a saved project (.jizura / .json) */
+function bindDrop() {
+  const hint = $('dropHint'); let depth = 0;
+  const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  const show = on => { if (hint) hint.hidden = !on; };
+  window.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); depth++; show(true); });
+  window.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  window.addEventListener('dragleave', e => { if (!hasFiles(e)) return; depth = Math.max(0, depth - 1); if (!depth) show(false); });
+  window.addEventListener('drop', e => {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); depth = 0; show(false);
+    if (S.exporting || S.tap) return;
+    const files = Array.from(e.dataTransfer.files || []);
+    const ext = f => (f.name.match(/\.([^.]+)$/) || ['', ''])[1].toLowerCase();
+    const song = files.find(f => /^audio\//.test(f.type) || ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext(f)));
+    const proj = files.find(f => ['jizura', 'jizuraichi', 'json'].includes(ext(f)));
+    const lyr = files.find(f => ['lrc', 'srt', 'vtt', 'txt'].includes(ext(f)));
+    if (proj) { openFile(proj); return; }            // a project brings its own lyrics
+    if (!song && !lyr) { toast('불러올 수 있는 것은 곡·가사(LRC / SRT)·프로젝트(.jizura / .json)입니다'); return; }
+    (async () => { if (lyr) await openLyricFile(lyr); if (song) loadAudioFile(song); })();
+  });
 }
 
 /* song file -> beat analysis (file input, or a host such as the After Effects panel) */
