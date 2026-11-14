@@ -138,7 +138,7 @@ const fnt = (rng, st, roles) => rng.pick(fontsOf(st, roles || ['display']));
 
 /* 1 kzShove — every new word rams the row from the right; the row gives way as a chain and re-centres */
 LAY('kzShove', {
-  name: '押し出し列', en: 'Shove Along', tags: ['pop', 'graphic'], w: 1.2, ae: 'marquee', fits: n => n >= 2 && n <= 18, enterBias: EB,
+  name: '밀어내기 줄', en: 'Shove Along', tags: ['pop', 'graphic'], w: 1.2, ae: 'marquee', fits: n => n >= 2 && n <= 18, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st), hot: rng.chance(0.65), mark: rng.chance(0.7), from: rng.pick(['side', 'side', 'diag']) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -176,7 +176,7 @@ LAY('kzShove', {
 
 /* 2 kzConveyor — the words ride in on belts that brake to a halt; the key word hops when the belt stops */
 LAY('kzConveyor', {
-  name: 'コンベア', en: 'Conveyor Belt', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'marquee', fits: n => n >= 2 && n <= 18, enterBias: EB,
+  name: '컨베이어', en: 'Conveyor Belt', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'marquee', fits: n => n >= 2 && n <= 18, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st), dir: rng.pick([1, -1]), key: rng.int(0, 5), rollers: rng.chance(0.7), alt: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, ctx } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -221,7 +221,7 @@ LAY('kzConveyor', {
 
 /* 3 kzSwingKnock — each word swings in on a long rod like a wrecking ball; the hit sends a tilt wave down the row */
 LAY('kzSwingKnock', {
-  name: 'スイング打ち', en: 'Swing Knock', tags: ['pop', 'graphic'], w: 1, ae: 'wave', fits: n => n >= 2 && n <= 16, enterBias: EB,
+  name: '스윙 타격', en: 'Swing Knock', tags: ['pop', 'graphic'], w: 1, ae: 'wave', fits: n => n >= 2 && n <= 16, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st), R: rng.pick([0.55, 0.9, 0.9]), amp: rng.range(30, 40), rod: rng.chance(0.75), acc: rng.int(0, 5) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -256,7 +256,7 @@ LAY('kzSwingKnock', {
 
 /* 4 kzReadLens — the whole line is there; a reading point travels word to word and the word under it swells, pushing its neighbours aside */
 LAY('kzReadLens', {
-  name: '読み点ズーム', en: 'Reading Lens', tags: ['editorial', 'pop', 'emotional', 'calm'], w: 1.2, ae: 'mixed', fits: n => n >= 3 && n <= 18,
+  name: '읽는 자리 줌', en: 'Reading Lens', tags: ['editorial', 'pop', 'emotional', 'calm'], w: 1.2, ae: 'mixed', fits: n => n >= 3 && n <= 18,
   plan(rng, cut, st) { return { font: fnt(rng, st, ['display', 'serif']), mag: rng.range(1.45, 1.7), end: rng.pick(['key', 'even', 'key']), dim: rng.chance(0.6), bar: rng.chance(0.7), key: rng.int(0, 5) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -296,7 +296,7 @@ LAY('kzReadLens', {
 
 /* 5 kzGateSwing — words hinge on a spine and swing open like gates, one after another; open gates rattle */
 LAY('kzGateSwing', {
-  name: 'ゲート開き', en: 'Gate Swing', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'stack', fits: n => n >= 2 && n <= 16, enterBias: EB,
+  name: '게이트 열림', en: 'Gate Swing', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'stack', fits: n => n >= 2 && n <= 16, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st, ['display', 'serif']), mode: rng.pick(['alt', 'alt', 'left', 'right']), up: rng.pick([1, 1, -1]), acc: rng.int(0, 5), dots: rng.chance(0.75) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -326,7 +326,7 @@ LAY('kzGateSwing', {
 
 /* 6 kzHopSteps — a staircase is built tread by tread and each word hops up from the previous step */
 LAY('kzHopSteps', {
-  name: '階段ホップ', en: 'Hop Steps', tags: ['pop', 'graphic'], w: 1, ae: 'diag', fits: n => n >= 2 && n <= 15, enterBias: EB,
+  name: '계단 홉', en: 'Hop Steps', tags: ['pop', 'graphic'], w: 1, ae: 'diag', fits: n => n >= 2 && n <= 15, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st), dx: rng.range(0.6, 1.05), acc: rng.int(0, 5), riser: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env);
@@ -361,7 +361,7 @@ LAY('kzHopSteps', {
 
 /* 7 kzFoldOut — a folded leaflet: each word unfolds out of the edge of the previous one */
 LAY('kzFoldOut', {
-  name: '折り出し', en: 'Fold Out', tags: ['editorial', 'graphic', 'pop', 'calm'], w: 1, ae: 'labels', fits: n => n >= 2 && n <= 16, enterBias: EB,
+  name: '접혀 나오기', en: 'Fold Out', tags: ['editorial', 'graphic', 'pop', 'calm'], w: 1, ae: 'labels', fits: n => n >= 2 && n <= 16, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st, ['display', 'serif']), mode: rng.pick(['chain', 'chain', 'stack']), crease: rng.chance(0.8), acc: rng.int(0, 5) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -391,7 +391,7 @@ LAY('kzFoldOut', {
 
 /* 8 kzSagLine — words slide down a taut line from the edge; the line sags and bounces under each one's weight */
 LAY('kzSagLine', {
-  name: 'たわむ線', en: 'Sagging Line', tags: ['calm', 'emotional', 'pop', 'graphic'], w: 1, ae: 'wave', fits: n => n >= 2 && n <= 16, enterBias: EB,
+  name: '처지는 선', en: 'Sagging Line', tags: ['calm', 'emotional', 'pop', 'graphic'], w: 1, ae: 'wave', fits: n => n >= 2 && n <= 16, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st, ['display', 'serif']), sag: rng.range(0.8, 1.2), clip: rng.chance(0.75), acc: rng.int(0, 5) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -427,7 +427,7 @@ LAY('kzSagLine', {
 
 /* 9 kzSlingshot — a rubber band under the block is drawn back with each word and fires it up into its place */
 LAY('kzSlingshot', {
-  name: 'ゴム発射', en: 'Slingshot', tags: ['pop', 'graphic'], w: 0.9, ae: 'scatter', fits: n => n >= 2 && n <= 16, enterBias: EB,
+  name: '고무줄 발사', en: 'Slingshot', tags: ['pop', 'graphic'], w: 0.9, ae: 'scatter', fits: n => n >= 2 && n <= 16, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st), deep: rng.range(0.6, 1), acc: rng.int(0, 5), posts: rng.chance(0.8), hot: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -455,7 +455,7 @@ LAY('kzSlingshot', {
 
 /* 10 kzWedge — the line stands closed; the key word drops in and wedges the others apart */
 LAY('kzWedge', {
-  name: '割り込み', en: 'Wedge In', tags: ['pop', 'graphic', 'emotional'], w: 1.2, ae: 'mixed', fits: n => n >= 2 && n <= 18, emph: 1.3,
+  name: '끼어들기', en: 'Wedge In', tags: ['pop', 'graphic', 'emotional'], w: 1.2, ae: 'mixed', fits: n => n >= 2 && n <= 18, emph: 1.3,
   plan(rng, cut, st) { return { font: fnt(rng, st), how: rng.pick(['drop', 'drop', 'rise', 'inflate']), key: rng.int(0, 5), marks: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -503,7 +503,7 @@ LAY('kzWedge', {
 
 /* 11 kzTiltTray — a tray tips one way, then the other: the lines slide to the walls, thud, and settle in the middle when it levels */
 LAY('kzTiltTray', {
-  name: '傾く盤', en: 'Tilting Tray', tags: ['pop', 'graphic', 'calm'], w: 0.9, ae: 'stack', fits: n => n >= 2 && n <= 18,
+  name: '기우는 판', en: 'Tilting Tray', tags: ['pop', 'graphic', 'calm'], w: 0.9, ae: 'stack', fits: n => n >= 2 && n <= 18,
   plan(rng, cut, st) { return { font: fnt(rng, st, ['display', 'serif']), th: rng.range(4, 6.5), sgn: rng.pick([1, -1]), frame: rng.pick(['tray', 'tray', 'floor']), acc: rng.int(0, 5) }; },
   render(env) {
     const { W, H, sc, ctx } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -534,7 +534,7 @@ LAY('kzTiltTray', {
 
 /* 12 kzRelay — one word holds the stage; when the next arrives the old one shrinks away into a small running line above */
 LAY('kzRelay', {
-  name: '主役リレー', en: 'Lead Relay', tags: ['pop', 'editorial', 'emotional', 'graphic'], w: 1.1, ae: 'mixed', fits: n => n >= 3 && n <= 18, enterBias: EB,
+  name: '주인공 릴레이', en: 'Lead Relay', tags: ['pop', 'editorial', 'emotional', 'graphic'], w: 1.1, ae: 'mixed', fits: n => n >= 3 && n <= 18, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st), acc: rng.chance(0.7), rule: rng.chance(0.7), al: rng.pick(['center', 'center', 'left']) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -569,7 +569,7 @@ LAY('kzRelay', {
 
 /* 13 kzLineFeed — the lyric is fed out of a slot line by line in jerky steps, then the sheet glides up to the middle */
 LAY('kzLineFeed', {
-  name: '行送り', en: 'Line Feed', tags: ['editorial', 'graphic', 'glitch', 'pop'], w: 1, ae: 'type', fits: n => n >= 2 && n <= 16, enterBias: EB,
+  name: '줄 넘김', en: 'Line Feed', tags: ['editorial', 'graphic', 'glitch', 'pop'], w: 1, ae: 'type', fits: n => n >= 2 && n <= 16, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st, ['display', 'body', 'mono']), al: rng.pick(['left', 'left', 'center']), paper: rng.chance(0.6), acc: rng.int(0, 5), steps: rng.pick([2, 3, 3]) }; },
   render(env) {
     const { W, H, sc, ctx } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -604,7 +604,7 @@ LAY('kzLineFeed', {
 
 /* 14 kzLob — every word is lobbed from a corner along a spinning arc and lands in its place with a little bounce */
 LAY('kzLob', {
-  name: '放物線', en: 'Lob', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'scatter', fits: n => n >= 2 && n <= 16, enterBias: EB,
+  name: '포물선', en: 'Lob', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'scatter', fits: n => n >= 2 && n <= 16, enterBias: EB,
   plan(rng, cut, st) { return { font: fnt(rng, st), from: rng.pick(['bl', 'br', 'alt']), spin: rng.pick([180, 270, 360]), trail: rng.chance(0.8), acc: rng.int(0, 5) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -634,7 +634,7 @@ LAY('kzLob', {
 
 /* 15 kzInchworm — the line crawls into place like an inchworm: it bunches up into an arch, then stretches forward, again and again */
 LAY('kzInchworm', {
-  name: '尺取り歩き', en: 'Inchworm Crawl', tags: ['pop', 'calm', 'graphic'], w: 0.9, ae: 'wave', fits: n => n >= 3 && n <= 18,
+  name: '자벌레 걸음', en: 'Inchworm Crawl', tags: ['pop', 'calm', 'graphic'], w: 0.9, ae: 'wave', fits: n => n >= 3 && n <= 18,
   plan(rng, cut, st) { return { font: fnt(rng, st), cyc: rng.pick([2, 3, 3]), dir: rng.pick([1, 1, -1]), acc: rng.int(0, 5), track: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc } = env, c = env.cut, Pm = c.params, lt = env.lt, u = U(env), port = isPort(env);
@@ -708,7 +708,7 @@ function axis(env, bb, pref) {
 }
 
 /* 1 kzImpactTicks — a fan of ticks kicks out from under each word as it lands */
-DEC('kzImpactTicks', { name: '着地の火花', en: 'Impact Ticks', tags: ['pop', 'graphic'], w: 1, ae: 'sparks', layer: 'front',
+DEC('kzImpactTicks', { name: '착지 불꽃', en: 'Impact Ticks', tags: ['pop', 'graphic'], w: 1, ae: 'sparks', layer: 'front',
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc } = env, u = U(env), o = dIO(env, 0.1); if (o <= 0.01) return;
     const ts = wordTimes(env), n = ts.length, A = axis(env, bb, D.low ? -1 : 1), col = accOn(sc), N = 5 + (D.n | 0), lw = Math.max(2, u * 0.0065);
@@ -726,7 +726,7 @@ DEC('kzImpactTicks', { name: '着地の火花', en: 'Impact Ticks', tags: ['pop'
   } });
 
 /* 2 kzBounceDot — a ball hops along the lyric, landing on each word on its beat and leaving a mark */
-DEC('kzBounceDot', { name: '読み玉', en: 'Bouncing Ball', tags: ['pop', 'calm', 'emotional'], w: 1.1, ae: 'dots', layer: 'front',
+DEC('kzBounceDot', { name: '읽기 공', en: 'Bouncing Ball', tags: ['pop', 'calm', 'emotional'], w: 1.1, ae: 'dots', layer: 'front',
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc, ctx } = env, u = U(env), o = dIO(env, 0.15); if (o <= 0.01) return;
     const ts = wordTimes(env), n = ts.length, A = axis(env, bb, D.low ? 1 : -1), col = accOn(sc), sub = subOn(sc), lt = env.lt;
@@ -751,7 +751,7 @@ DEC('kzBounceDot', { name: '読み玉', en: 'Bouncing Ball', tags: ['pop', 'calm
   } });
 
 /* 3 kzUnderRun — an underline shoots forward one word at a time, arrow first, overshooting each stop */
-DEC('kzUnderRun', { name: '走る下線', en: 'Running Underline', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'arrows', layer: 'front',
+DEC('kzUnderRun', { name: '달리는 밑줄', en: 'Running Underline', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'arrows', layer: 'front',
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc } = env, u = U(env), o = dIO(env, 0.25); if (o <= 0.01) return;
     const ts = wordTimes(env), n = ts.length, A = axis(env, bb, D.low ? -1 : 1), col = accOn(sc), sub = subOn(sc), lt = env.lt;
@@ -765,7 +765,7 @@ DEC('kzUnderRun', { name: '走る下線', en: 'Running Underline', tags: ['pop',
   } });
 
 /* 4 kzWobbleArcs — cartoon shake marks: nested arcs at both ends of the lyric jump outwards on every word */
-DEC('kzWobbleArcs', { name: '揺れマーク', en: 'Wobble Marks', tags: ['pop', 'graphic', 'emotional'], w: 0.9, ae: 'rings', layer: 'front',
+DEC('kzWobbleArcs', { name: '흔들림 표시', en: 'Wobble Marks', tags: ['pop', 'graphic', 'emotional'], w: 0.9, ae: 'rings', layer: 'front',
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc, W, H } = env, u = U(env), o = dIO(env, 0.2); if (o <= 0.01) return;
     const ts = wordTimes(env), k = Math.max(0, curIdx(ts, env.lt)), tau = env.lt - ts[k], col = D.accent ? accOn(sc) : subOn(sc);
@@ -782,7 +782,7 @@ DEC('kzWobbleArcs', { name: '揺れマーク', en: 'Wobble Marks', tags: ['pop',
   } });
 
 /* 5 kzMarchFrame — a dashed frame whose dashes march round the lyric and lurch forward with every word */
-DEC('kzMarchFrame', { name: '行進する破線', en: 'Marching Frame', tags: ['graphic', 'editorial', 'glitch', 'pop'], w: 0.9, ae: 'brackets', layer: 'front',
+DEC('kzMarchFrame', { name: '행진하는 파선', en: 'Marching Frame', tags: ['graphic', 'editorial', 'glitch', 'pop'], w: 0.9, ae: 'brackets', layer: 'front',
   draw(env, bb0, D) {
     if (env.pass !== 'main') return;
     const bb = getBB(env, bb0), { sc, ctx, W, H } = env, u = U(env), o = dIO(env, 0.3); if (o <= 0.01) return;
@@ -813,7 +813,7 @@ function cornerSpot(env, bb, w, h, D) {
 }
 
 /* 6 kzMetronome — a small metronome in a corner; its arm swings across once for every word */
-DEC('kzMetronome', { name: '拍の針', en: 'Metronome Arm', tags: ['editorial', 'graphic', 'calm', 'pop'], w: 0.8, ae: 'shapes', layer: 'front', subtle: true,
+DEC('kzMetronome', { name: '박자 바늘', en: 'Metronome Arm', tags: ['editorial', 'graphic', 'calm', 'pop'], w: 0.8, ae: 'shapes', layer: 'front', subtle: true,
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc } = env, u = U(env), o = dIO(env, 0.3); if (o <= 0.01) return;
     const Lr = u * 0.18, sp = cornerSpot(env, bb, Lr * 1.5, Lr * 1.2, D); if (!sp) return;
@@ -831,7 +831,7 @@ DEC('kzMetronome', { name: '拍の針', en: 'Metronome Arm', tags: ['editorial',
   } });
 
 /* 7 kzSpringCoils — coil springs brace the lyric against the frame edges; they stretch with it and jiggle on every word */
-DEC('kzSpringCoils', { name: 'ばね支え', en: 'Spring Coils', tags: ['pop', 'graphic', 'calm'], w: 0.9, ae: 'waveform', layer: 'front',
+DEC('kzSpringCoils', { name: '용수철 받침', en: 'Spring Coils', tags: ['pop', 'graphic', 'calm'], w: 0.9, ae: 'waveform', layer: 'front',
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc, W, H } = env, u = U(env), o = dIO(env, 0.3); if (o <= 0.01) return;
     const ts = wordTimes(env), k = Math.max(0, curIdx(ts, env.lt)), jig = pls(env.lt - ts[k], 6, 26), sub = subOn(sc), col = accOn(sc);
@@ -854,7 +854,7 @@ DEC('kzSpringCoils', { name: 'ばね支え', en: 'Spring Coils', tags: ['pop', '
   } });
 
 /* 8 kzChevronRun — a lane of chevrons marches in the reading direction; a bright patch keeps pace with the current word */
-DEC('kzChevronRun', { name: '流れる山形', en: 'Chevron Lane', tags: ['graphic', 'pop', 'glitch'], w: 0.9, ae: 'arrows', layer: 'front',
+DEC('kzChevronRun', { name: '흐르는 산 모양', en: 'Chevron Lane', tags: ['graphic', 'pop', 'glitch'], w: 0.9, ae: 'arrows', layer: 'front',
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc } = env, u = U(env), o = dIO(env, 0.3); if (o <= 0.01) return;
     const ts = wordTimes(env), n = ts.length, A = axis(env, bb, D.low ? -1 : 1), lt = env.ltb, k = Math.max(0, curIdx(ts, lt));
@@ -870,7 +870,7 @@ DEC('kzChevronRun', { name: '流れる山形', en: 'Chevron Lane', tags: ['graph
   } });
 
 /* 9 kzWhooshCurls — looping wind curls whip off the lyric each time a word arrives */
-DEC('kzWhooshCurls', { name: '巻き風', en: 'Whoosh Curls', tags: ['pop', 'emotional', 'calm', 'graphic'], w: 0.9, ae: 'slash', layer: 'front',
+DEC('kzWhooshCurls', { name: '감기는 바람', en: 'Whoosh Curls', tags: ['pop', 'emotional', 'calm', 'graphic'], w: 0.9, ae: 'slash', layer: 'front',
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc } = env, u = U(env), o = dIO(env, 0.1); if (o <= 0.01) return;
     const ts = wordTimes(env), n = ts.length, col = D.accent ? accOn(sc) : subOn(sc), lw = Math.max(2.5, u * 0.006), lt = env.lt, life = 0.8;
@@ -890,7 +890,7 @@ DEC('kzWhooshCurls', { name: '巻き風', en: 'Whoosh Curls', tags: ['pop', 'emo
   } });
 
 /* 10 kzPushRods — piston rods come in from the frame edges and tap the lyric, alternating sides with the words */
-DEC('kzPushRods', { name: '押しピストン', en: 'Push Rods', tags: ['graphic', 'pop', 'glitch'], w: 0.9, ae: 'bars', layer: 'front',
+DEC('kzPushRods', { name: '밀어내는 피스톤', en: 'Push Rods', tags: ['graphic', 'pop', 'glitch'], w: 0.9, ae: 'bars', layer: 'front',
   draw(env, bb0, D) {
     const bb = getBB(env, bb0), { sc, W, H } = env, u = U(env), o = dIO(env, 0.3); if (o <= 0.01) return;
     const ts = wordTimes(env), lt = env.lt, sub = subOn(sc), col = accOn(sc), e = E.outExpo(clamp(lt / 0.4));
@@ -931,7 +931,7 @@ const BG = (k, d) => J.register('bg', k, Object.assign({}, d, { draw(env, Q) { c
 const bs = rng => rng.int(1, 1e9);
 
 /* 1 kzKickStreaks — streaks in the travel direction that surge at every cut and coast in between */
-BG('kzKickStreaks', { name: '加速する筋', en: 'Kick Streaks', tags: ['pop', 'graphic', 'glitch'], w: 1, subtle: true,
+BG('kzKickStreaks', { name: '가속 줄기', en: 'Kick Streaks', tags: ['pop', 'graphic', 'glitch'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), ang: rng.pick([0, 0, 180, -18, 162, 90]), n: rng.int(12, 18), k: rng.range(0.07, 0.1) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, u = Math.min(W, H), c = env.cut, n = Q.n || 14, k = Q.k || 0.06;
@@ -949,7 +949,7 @@ BG('kzKickStreaks', { name: '加速する筋', en: 'Kick Streaks', tags: ['pop',
   } });
 
 /* 2 kzRollSquare — a huge square tumbles corner over corner along the floor */
-BG('kzRollSquare', { name: '転がる四角', en: 'Rolling Square', tags: ['graphic', 'pop', 'calm'], w: 1,
+BG('kzRollSquare', { name: '구르는 사각형', en: 'Rolling Square', tags: ['graphic', 'pop', 'calm'], w: 1,
   plan: rng => ({ seed: bs(rng), dir: rng.pick([1, -1]), per: rng.range(2.6, 3.6), s: rng.range(0.5, 0.66), k: rng.range(0.04, 0.055), two: rng.chance(0.6) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, u = Math.min(W, H), k = Q.k || 0.045, dir = Q.dir || 1, fl = H * 0.9;
@@ -970,7 +970,7 @@ BG('kzRollSquare', { name: '転がる四角', en: 'Rolling Square', tags: ['grap
   } });
 
 /* 3 kzBounceDiscs — a few big soft discs bounce slowly across the floor, squashing as they land */
-BG('kzBounceDiscs', { name: '弾む円', en: 'Bouncing Discs', tags: ['pop', 'calm', 'emotional'], w: 1, subtle: true,
+BG('kzBounceDiscs', { name: '튀는 원', en: 'Bouncing Discs', tags: ['pop', 'calm', 'emotional'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), n: rng.int(3, 4), k: rng.range(0.045, 0.06), dir: rng.pick([1, -1]) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, u = Math.min(W, H), k = Q.k || 0.05, n = Q.n || 3, fl = H * 0.97, t = env.t;
@@ -987,7 +987,7 @@ BG('kzBounceDiscs', { name: '弾む円', en: 'Bouncing Discs', tags: ['pop', 'ca
   } });
 
 /* 4 kzRockHorizon — the lower half of the frame is a plane that rocks like a see-saw, with a disc rolling to the low side */
-BG('kzRockHorizon', { name: '揺れる地平', en: 'Rocking Horizon', tags: ['calm', 'emotional', 'graphic', 'editorial'], w: 1, subtle: true,
+BG('kzRockHorizon', { name: '흔들리는 지평선', en: 'Rocking Horizon', tags: ['calm', 'emotional', 'graphic', 'editorial'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), amp: rng.range(3.5, 6.5), per: rng.range(5, 8), y: rng.pick([0.64, 0.7, 0.74]), k: rng.range(0.045, 0.06), ball: rng.chance(0.75) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, u = Math.min(W, H), k = Q.k || 0.05, w = TAU / (Q.per || 6), ph = ((Q.seed || 1) % 100) / 100 * TAU, t = env.t;
@@ -1014,7 +1014,7 @@ const gearPath = (ctx, cx, cy, R, n, rot) => {
   }
   ctx.closePath();
 };
-BG('kzBigGears', { name: '噛み合う歯車', en: 'Meshing Gears', tags: ['graphic', 'editorial', 'pop', 'glitch'], w: 0.9,
+BG('kzBigGears', { name: '맞물린 톱니바퀴', en: 'Meshing Gears', tags: ['graphic', 'editorial', 'pop', 'glitch'], w: 0.9,
   plan: rng => ({ seed: bs(rng), flip: rng.chance(0.5), spd: rng.range(3, 6) * rng.pick([1, -1]), k: rng.range(0.035, 0.05), nA: rng.pick([16, 18, 22]), ang: rng.range(-50, -20) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, u = Math.min(W, H), k = Q.k || 0.04, nA = Q.nA || 18, nB = Math.round(nA * 0.6), nC = Math.round(nA * 0.42);
@@ -1036,7 +1036,7 @@ BG('kzBigGears', { name: '噛み合う歯車', en: 'Meshing Gears', tags: ['grap
   } });
 
 /* 6 kzSqueezeLines — a field of parallel lines carries a compression wave: they bunch up and spread out as it passes */
-BG('kzSqueezeLines', { name: '疎密の波', en: 'Compression Wave', tags: ['calm', 'graphic', 'editorial', 'glitch'], w: 1, subtle: true,
+BG('kzSqueezeLines', { name: '소밀파', en: 'Compression Wave', tags: ['calm', 'graphic', 'editorial', 'glitch'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), vert: rng.chance(0.7), n: rng.int(30, 40), per: rng.range(4.5, 7) * rng.pick([1, -1]), lam: rng.range(0.55, 0.85), k: rng.range(0.1, 0.14) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, u = Math.min(W, H), vert = Q.vert !== false, L = vert ? W : H, n = Q.n || 36, k = Q.k || 0.12;

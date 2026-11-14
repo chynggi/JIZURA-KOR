@@ -68,7 +68,7 @@ const linesOf = (env, raw, perL, perP) => J.splitLines(raw, isPort(env) ? perP :
 
 /* 1. keyhole: the line sits in the round head of a keyhole cut out of the dark; the hole drifts, something walks past inside */
 regL('hzKeyhole', {
-  name: '鍵穴', en: 'Keyhole', tags: TAGS.concat(['graphic']), w: 0.9, busy: true, ae: 'circle', fits: n => n >= 1 && n <= 16,
+  name: '열쇠 구멍', en: 'Keyhole', tags: TAGS.concat(['graphic']), w: 0.9, busy: true, ae: 'circle', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), sh: rng.range(0.36, 0.6), dir: rng.pick([-1, 1]), dr: rng.range(0.5, 1), pass: rng.chance(0.85) };
   },
@@ -111,7 +111,7 @@ regL('hzKeyhole', {
 
 /* 2. the room that is too big: a small line pressed against one wall, the rest is an empty room with a door at the far end */
 regL('hzEmptyRoom', {
-  name: '広すぎる部屋', en: 'Empty Room', tags: TAGS.concat(['calm', 'editorial']), w: 1, ae: 'center', fits: n => n >= 1 && n <= 16,
+  name: '너무 넓은 방', en: 'Empty Room', tags: TAGS.concat(['calm', 'editorial']), w: 1, ae: 'center', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'body'])), side: rng.pick([-1, 1]), vy: rng.range(-1, 1), door: rng.chance(0.85), open: rng.range(0.3, 0.6) };
   },
@@ -147,7 +147,7 @@ regL('hzEmptyRoom', {
 
 /* 3. the same line again and again — and one copy is wrong */
 regL('hzWrongCopy', {
-  name: '一行だけ違う', en: 'Wrong Copy', tags: TAGS.concat(['glitch', 'graphic']), w: 1, ae: 'stack', fits: n => n >= 1 && n <= 16,
+  name: '한 줄만 다름', en: 'Wrong Copy', tags: TAGS.concat(['glitch', 'graphic']), w: 1, ae: 'stack', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), k: rng.int(3, 5), wr: rng(), kind: rng.pick(['mirror', 'reverse', 'drop', 'flip']), acc: rng.chance(0.55), gi: rng() };
   },
@@ -188,7 +188,7 @@ regL('hzWrongCopy', {
 
 /* 4. a sign hanging from the ceiling — one of its wires has snapped, it hangs crooked and creaks */
 regL('hzHangSign', {
-  name: '傾いた吊り看板', en: 'Crooked Sign', tags: TAGS.concat(['graphic', 'emotional']), w: 0.9, treat: 'safe', ae: 'labels', fits: n => n >= 1 && n <= 16,
+  name: '기울어진 매단 간판', en: 'Crooked Sign', tags: TAGS.concat(['graphic', 'emotional']), w: 0.9, treat: 'safe', ae: 'labels', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), v: rng.pick(['snap', 'snap', 'two']), side: rng.pick([-1, 1]), amp: rng.range(0.7, 1.2), tilt: rng.range(5, 8.5), ph: rng.range(0, 6) };
   },
@@ -237,7 +237,7 @@ regL('hzHangSign', {
 
 /* 5. the floor indicator: the light travels along the floors and stops where there is no floor */
 regL('hzElevator', {
-  name: '存在しない階', en: 'Wrong Floor', tags: TAGS.concat(['graphic', 'editorial']), w: 0.9, ae: 'center', fits: n => n >= 1 && n <= 16,
+  name: '존재하지 않는 층', en: 'Wrong Floor', tags: TAGS.concat(['graphic', 'editorial']), w: 0.9, ae: 'center', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), v: rng.pick(['gap', 'beyond', 'below']), n0: rng.int(5, 7), stop: rng.range(0.4, 0.55) };
   },
@@ -289,7 +289,7 @@ regL('hzElevator', {
 
 /* 6. the line over dark water: its reflection arrives late, ripples, and once moves by itself */
 regL('hzReflection', {
-  name: '遅れる水鏡', en: 'Late Reflection', tags: TAGS.concat(['emotional', 'calm']), w: 1, ae: 'stack', fits: n => n >= 1 && n <= 16,
+  name: '늦게 비치는 수면', en: 'Late Reflection', tags: TAGS.concat(['emotional', 'calm']), w: 1, ae: 'stack', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), lag: rng.range(0.4, 0.8), rip: rng.range(0.7, 1.3), odd: rng.chance(0.7), at: rng.range(0.45, 0.7), dir: rng.pick([-1, 1]) };
   },
@@ -333,7 +333,7 @@ regL('hzReflection', {
 
 /* 7. a fogged window: the line is wiped into the condensation with a finger and starts to run */
 regL('hzFogWindow', {
-  name: '曇り窓の指文字', en: 'Fogged Window', tags: TAGS.concat(['emotional']), w: 0.9, busy: true, treat: 'safe', ae: 'center', fits: n => n >= 1 && n <= 16,
+  name: '김 서린 창의 손글씨', en: 'Fogged Window', tags: TAGS.concat(['emotional']), w: 0.9, busy: true, treat: 'safe', ae: 'center', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: handOf(rng, st), bar: rng.range(0.22, 0.3), drip: rng.range(0.45, 0.9), tilt: rng.range(-2.5, 2.5) };
   },
@@ -378,7 +378,7 @@ regL('hzFogWindow', {
 
 /* 8. a voicemail from a number that does not exist: card with an unknown caller, a waveform with a dead stretch, the line as the message */
 regL('hzVoicemail', {
-  name: '非通知の留守電', en: 'Unknown Voicemail', tags: TAGS.concat(['editorial', 'glitch']), w: 0.9, treat: 'safe', ae: 'pill', fits: n => n >= 1 && n <= 16,
+  name: '발신자 불명 음성 메시지', en: 'Unknown Voicemail', tags: TAGS.concat(['editorial', 'glitch']), w: 0.9, treat: 'safe', ae: 'pill', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['body', 'serif', 'display'])), hh: rng.int(2, 4), mm: rng.int(0, 59), z0: rng.range(0.3, 0.55), zw: rng.range(0.12, 0.22), gl: rng.range(0.45, 0.75) };
   },
@@ -428,7 +428,7 @@ regL('hzVoicemail', {
 
 /* 9. under a street lamp: the line stands in the cone of the only light, everything else is night, and the lamp is failing */
 regL('hzStreetLamp', {
-  name: '街灯の下', en: 'Street Lamp', tags: TAGS.concat(['emotional', 'calm']), w: 1, busy: true, ae: 'center', fits: n => n >= 1 && n <= 16,
+  name: '가로등 아래', en: 'Street Lamp', tags: TAGS.concat(['emotional', 'calm']), w: 1, busy: true, ae: 'center', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), side: rng.pick([-1, 1]), rate: rng.range(0.4, 0.9), moths: rng.int(3, 6) };
   },
@@ -481,7 +481,7 @@ regL('hzStreetLamp', {
 
 /* 10. a note torn in two: the pieces start joined, tear apart and lie crooked, the line split between them */
 regL('hzTornNote', {
-  name: '破れた書き置き', en: 'Torn Note', tags: TAGS.concat(['emotional', 'editorial']), w: 1, treat: 'safe', ae: 'labels', fits: n => n >= 1 && n <= 16,
+  name: '찢어진 쪽지', en: 'Torn Note', tags: TAGS.concat(['emotional', 'editorial']), w: 1, treat: 'safe', ae: 'labels', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: handOf(rng, st), rotA: rng.range(-4.5, -1.5), rotB: rng.range(2, 5.5), dx: rng.range(0.02, 0.045), side: rng.pick([-1, 1]), rule: rng.chance(0.6) };
   },
@@ -537,7 +537,7 @@ regL('hzTornNote', {
 
 /* 11. the strip of light under a door — and two shadows that walk into it and stop */
 regL('hzUnderDoor', {
-  name: '扉の下の影', en: 'Under the Door', tags: TAGS.concat(['emotional', 'graphic']), w: 1, ae: 'center', fits: n => n >= 1 && n <= 16,
+  name: '문 아래 그림자', en: 'Under the Door', tags: TAGS.concat(['emotional', 'graphic']), w: 1, ae: 'center', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), from: rng.pick([-1, 1]), at: rng.range(0.28, 0.42), knob: rng.pick([-1, 1]), fx: rng.range(-0.18, 0.18) };
   },
@@ -584,7 +584,7 @@ regL('hzUnderDoor', {
 
 /* 12. seen from inside a closet: horizontal slats open just enough to read the line, and someone walks past outside */
 regL('hzSlats', {
-  name: '鎧戸の隙間', en: 'Through Slats', tags: TAGS.concat(['graphic', 'glitch']), w: 0.9, busy: true, ae: 'center', fits: n => n >= 1 && n <= 16,
+  name: '덧문 틈새', en: 'Through Slats', tags: TAGS.concat(['graphic', 'glitch']), w: 0.9, busy: true, ae: 'center', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display'])), duty: rng.range(0.26, 0.33), at: rng.range(0.35, 0.6), dir: rng.pick([-1, 1]), pass: rng.chance(0.85) };
   },
@@ -615,7 +615,7 @@ regL('hzSlats', {
 
 /* 13. a clock that has stopped: the second hand keeps trying the same second; the line stands beside the dial */
 regL('hzStoppedClock', {
-  name: '止まった時計', en: 'Stopped Clock', tags: TAGS.concat(['editorial', 'calm']), w: 0.9, ae: 'mixed', fits: n => n >= 1 && n <= 16,
+  name: '멈춘 시계', en: 'Stopped Clock', tags: TAGS.concat(['editorial', 'calm']), w: 0.9, ae: 'mixed', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), hh: rng.int(1, 11), mm: rng.int(3, 57), ss: rng.int(5, 50), stick: rng.range(0.25, 0.45), flip: rng.chance(0.5), roman: rng.chance(0.5) };
   },
@@ -651,7 +651,7 @@ regL('hzStoppedClock', {
 
 /* 14. closer after every blink: a far figure on an empty floor; each time the light drops out it is standing nearer */
 regL('hzCloser', {
-  name: '近づく人影', en: 'Closer Each Blink', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'center', fits: n => n >= 1 && n <= 16,
+  name: '다가오는 사람 그림자', en: 'Closer Each Blink', tags: TAGS.concat(['emotional']), w: 0.8, ae: 'center', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), side: rng.pick([-1, 1]), k: rng.int(3, 4), vx: rng.range(0.42, 0.58) };
   },
@@ -693,7 +693,7 @@ regL('hzCloser', {
 
 /* 15. stairs going down: each line of the lyric on a lower, smaller step; below them the steps go dark — and something is climbing */
 regL('hzStairs', {
-  name: '下りていく階段', en: 'Stairs Down', tags: TAGS.concat(['graphic', 'emotional']), w: 1, ae: 'stack', fits: n => n >= 1 && n <= 16,
+  name: '내려가는 계단', en: 'Stairs Down', tags: TAGS.concat(['graphic', 'emotional']), w: 1, ae: 'stack', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), q: rng.range(0.82, 0.87), climb: rng.chance(0.85), at: rng.range(0.25, 0.4), vx: rng.range(-0.04, 0.04) };
   },
@@ -741,7 +741,7 @@ regL('hzStairs', {
 
 /* pairs of small lights far from the words: they open late, blink, and are shut again before the cut ends */
 regD('hzPairEyes', {
-  name: '闇の中の目', en: 'Eyes in the Dark', tags: TAGS.concat(['emotional']), w: 1, layer: 'front', subtle: true, ae: 'dots',
+  name: '어둠 속의 눈', en: 'Eyes in the Dark', tags: TAGS.concat(['emotional']), w: 1, layer: 'front', subtle: true, ae: 'dots',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { sc } = env, s = Pd.seed | 0, u = U(env), n = 1 + (Pd.n | 0);
@@ -764,7 +764,7 @@ regD('hzPairEyes', {
 
 /* a head-shaped shadow leaning in from the side edge; it pulls back the moment anything changes */
 regD('hzPeeker', {
-  name: '覗き込む影', en: 'Peeking Shape', tags: TAGS.concat(['emotional', 'graphic']), w: 0.8, layer: 'front', ae: 'shapes',
+  name: '들여다보는 그림자', en: 'Peeking Shape', tags: TAGS.concat(['emotional', 'graphic']), w: 0.8, layer: 'front', ae: 'shapes',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env), ctx = env.ctx, dir = Pd.right ? -1 : 1;
@@ -790,7 +790,7 @@ regD('hzPeeker', {
 
 /* wet footprints that come towards the words one step at a time and stop short of them */
 regD('hzFootprints', {
-  name: '近づく足跡', en: 'Footprints', tags: TAGS.concat(['emotional']), w: 0.9, layer: 'back', subtle: true, ae: 'dots',
+  name: '다가오는 발자국', en: 'Footprints', tags: TAGS.concat(['emotional']), w: 0.9, layer: 'back', subtle: true, ae: 'dots',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env), ctx = env.ctx, out = 1 - E.inCubic(env.pOut);
@@ -815,7 +815,7 @@ regD('hzFootprints', {
 
 /* a glyph of the line turns up somewhere it should not be — mirrored, faint, twitching */
 regD('hzStrayGlyph', {
-  name: 'はぐれた一字', en: 'Stray Glyph', tags: TAGS.concat(['glitch']), w: 0.8, layer: 'front', ae: 'shapes',
+  name: '떨어져 나온 한 글자', en: 'Stray Glyph', tags: TAGS.concat(['glitch']), w: 0.8, layer: 'front', ae: 'shapes',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { sc } = env, s = Pd.seed | 0, u = U(env);
@@ -838,7 +838,7 @@ regD('hzStrayGlyph', {
 
 /* long shadow fingers that creep out of a corner towards the words and stop just short of them */
 regD('hzFingers', {
-  name: '忍び寄る指', en: 'Creeping Fingers', tags: TAGS.concat(['emotional', 'graphic']), w: 0.8, layer: 'front', ae: 'bars',
+  name: '다가오는 손가락', en: 'Creeping Fingers', tags: TAGS.concat(['emotional', 'graphic']), w: 0.8, layer: 'front', ae: 'bars',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env);
@@ -864,7 +864,7 @@ regD('hzFingers', {
 
 /* handprints on the glass: pale smears pressed against the frame one after another, slowly running */
 regD('hzHandprints', {
-  name: '窓の手形', en: 'Handprints', tags: TAGS.concat(['emotional']), w: 0.7, layer: 'front', ae: 'blobs',
+  name: '창문 손자국', en: 'Handprints', tags: TAGS.concat(['emotional']), w: 0.7, layer: 'front', ae: 'blobs',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { sc } = env, s = Pd.seed | 0, u = U(env), ctx = env.ctx, out = 1 - E.inCubic(env.pOut);
@@ -897,7 +897,7 @@ regD('hzHandprints', {
 
 /* a bare bulb on a cord at the top of the frame: it swings, stutters and goes out before the cut does */
 regD('hzBareBulb', {
-  name: '揺れる裸電球', en: 'Bare Bulb', tags: TAGS.concat(['emotional']), w: 0.9, layer: 'front', ae: 'shapes',
+  name: '흔들리는 백열전구', en: 'Bare Bulb', tags: TAGS.concat(['emotional']), w: 0.9, layer: 'front', ae: 'shapes',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, sc } = env, s = Pd.seed | 0, u = U(env), ctx = env.ctx;
@@ -928,7 +928,7 @@ regD('hzBareBulb', {
 
 /* a small door at the edge of the frame that opens by itself, a little, and is shut when the cut leaves */
 regD('hzDoorAjar', {
-  name: '開きかけの扉', en: 'Door Ajar', tags: TAGS.concat(['emotional', 'graphic']), w: 0.8, layer: 'front', ae: 'shapes',
+  name: '반쯤 열린 문', en: 'Door Ajar', tags: TAGS.concat(['emotional', 'graphic']), w: 0.8, layer: 'front', ae: 'shapes',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env);
@@ -951,7 +951,7 @@ regD('hzDoorAjar', {
 
 /* a cobweb spun into a top corner, thread by thread, with one line let down from it */
 regD('hzCobweb', {
-  name: '隅の蜘蛛の巣', en: 'Cobweb', tags: TAGS.concat(['calm', 'graphic']), w: 0.9, layer: 'front', subtle: true, ae: 'leaders',
+  name: '구석 거미줄', en: 'Cobweb', tags: TAGS.concat(['calm', 'graphic']), w: 0.9, layer: 'front', subtle: true, ae: 'leaders',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env), out = 1 - E.inCubic(env.pOut);
@@ -991,7 +991,7 @@ regD('hzCobweb', {
 
 /* old film: hairline scratches that stay for a few frames, and dirt that jumps around the edges */
 regD('hzFilmDirt', {
-  name: '古いフィルムの傷', en: 'Film Dirt', tags: TAGS.concat(['glitch', 'editorial']), w: 0.9, layer: 'front', subtle: true, ae: 'slash',
+  name: '낡은 필름 긁힘', en: 'Film Dirt', tags: TAGS.concat(['glitch', 'editorial']), w: 0.9, layer: 'front', subtle: true, ae: 'slash',
   draw(env, bb0, Pd) {
     if (env.pass !== 'main') return;
     const bb = center(env, bb0), { W, H, sc } = env, s = Pd.seed | 0, u = U(env), st = env.step;
@@ -1046,7 +1046,7 @@ const vign = (env, ctx, a, r0 = 0.3) => {
 
 /* banks of fog sliding past each other at different heights and speeds */
 regB('hzFogBanks', {
-  name: '流れる霧', en: 'Drifting Fog', tags: TAGS.concat(['calm', 'emotional']), w: 1, subtle: true,
+  name: '흐르는 안개', en: 'Drifting Fog', tags: TAGS.concat(['calm', 'emotional']), w: 1, subtle: true,
   plan: rng => ({ seed: rng.int(1, 1e9), n: rng.int(4, 6), sp: rng.range(0.6, 1.3), a: rng.range(0.1, 0.15) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, t = env.t, u = U(env), s = Pm.seed | 0, fi = E.outCubic(clamp(bgT(env) / 1));
@@ -1067,7 +1067,7 @@ regB('hzFogBanks', {
 
 /* one hanging light swinging slowly: its cone sweeps the room and the dark follows it */
 regB('hzSwingLight', {
-  name: '揺れる灯り', en: 'Swinging Light', tags: TAGS.concat(['emotional']), w: 0.9,
+  name: '흔들리는 불빛', en: 'Swinging Light', tags: TAGS.concat(['emotional']), w: 0.9,
   plan: rng => ({ seed: rng.int(1, 1e9), x: rng.range(0.38, 0.62), amp: rng.range(11, 18), w: rng.range(0.55, 0.85), half: rng.range(13, 18) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, t = env.t, u = U(env), s = Pm.seed | 0, fi = E.outCubic(clamp(bgT(env) / 0.8));
@@ -1094,7 +1094,7 @@ regB('hzSwingLight', {
 
 /* a row of houses far away: their windows go dark one after another until a single one is left, and then that one too */
 regB('hzFarWindows', {
-  name: '消える窓明かり', en: 'Windows Going Out', tags: TAGS.concat(['calm', 'emotional']), w: 0.9, subtle: true,
+  name: '꺼지는 창 불빛', en: 'Windows Going Out', tags: TAGS.concat(['calm', 'emotional']), w: 0.9, subtle: true,
   plan: rng => ({ seed: rng.int(1, 1e9), n: rng.int(6, 9), per: rng.range(20, 28), keep: rng.int(0, 8) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, u = U(env), s = Pm.seed | 0, t = bgT(env), fi = E.outCubic(clamp(t / 0.8)), per = Pm.per || 24, cyc = wrap(t, per), st = Math.floor(env.t * 24);
@@ -1123,7 +1123,7 @@ regB('hzFarWindows', {
 
 /* car lights from the street: a window-shaped patch of light slides across the wall, stretches and is gone; then nothing for a while */
 regB('hzHeadlights', {
-  name: '通り過ぎる光', en: 'Passing Headlights', tags: TAGS.concat(['calm', 'emotional']), w: 0.9, subtle: true,
+  name: '지나가는 헤드라이트', en: 'Passing Headlights', tags: TAGS.concat(['calm', 'emotional']), w: 0.9, subtle: true,
   plan: rng => ({ seed: rng.int(1, 1e9), per: rng.range(6.5, 9.5), y: rng.range(0.34, 0.5), dir: rng.pick([-1, 1]), a: rng.range(0.1, 0.15), cols: rng.int(2, 3) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, u = U(env), t = bgT(env), fi = E.outCubic(clamp(t / 0.6)), per = Pm.per || 8, D = 3.3, dir = Pm.dir || 1;
@@ -1145,7 +1145,7 @@ regB('hzHeadlights', {
 
 /* a corridor of ceiling lights: they die one by one from the far end towards you, the dark holds, then they all come back */
 regB('hzHallLights', {
-  name: '消えていく照明', en: 'Lights Going Out', tags: TAGS.concat(['graphic', 'emotional']), w: 0.9,
+  name: '꺼져 가는 조명', en: 'Lights Going Out', tags: TAGS.concat(['graphic', 'emotional']), w: 0.9,
   plan: rng => ({ seed: rng.int(1, 1e9), vx: rng.range(0.42, 0.58), n: rng.int(7, 9), per: rng.range(12, 16) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, u = U(env), s = Pm.seed | 0, t = bgT(env), fi = E.outCubic(clamp(t / 0.7)), per = Pm.per || 14, cyc = wrap(t, per), st = Math.floor(env.t * 24);
@@ -1178,7 +1178,7 @@ regB('hzHallLights', {
 
 /* power lines at dusk: sagging wires between two poles, and the small dark shapes sitting on them leave one at a time */
 regB('hzWires', {
-  name: 'たるんだ電線', en: 'Sagging Wires', tags: TAGS.concat(['calm', 'emotional']), w: 0.8, subtle: true,
+  name: '늘어진 전선', en: 'Sagging Wires', tags: TAGS.concat(['calm', 'emotional']), w: 0.8, subtle: true,
   plan: rng => ({ seed: rng.int(1, 1e9), n: rng.int(3, 4), birds: rng.int(5, 8), per: rng.range(20, 28), x1: rng.range(0.1, 0.2), x2: rng.range(0.74, 0.86), y: rng.range(0.16, 0.26) }),
   draw(env, Pm, ctx) {
     const { W, H, sc } = env, u = U(env), s = Pm.seed | 0, tt = env.t, t = bgT(env), fi = E.outCubic(clamp(t / 0.8)), per = Pm.per || 24, cyc = wrap(t, per);

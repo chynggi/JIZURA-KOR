@@ -135,7 +135,7 @@ function D(key, name, en, tags, w, ae, layer, fn, extra) {
 /* ============================================================ particles that follow a rule */
 
 /* 積もる粒 — small squares fall one by one and pile up on the top edge of the lyric */
-D('xmSettle', '積もる粒', 'Settling Grains', ['pop', 'emotional', 'calm'], 1, 'dots', 'front', (env, bb, p, t, o, u) => {
+D('xmSettle', '쌓이는 알갱이', 'Settling Grains', ['pop', 'emotional', 'calm'], 1, 'dots', 'front', (env, bb, p, t, o, u) => {
   const { W, H, sc } = env, s = p.seed, sz = (p.big ? 17 : 13) * u, gap = 8 * u;
   const top = bb.y0 - gap > sz * 5;                                  // room for a pile above the lyric, else pile on the floor
   const xa = top ? bb.x0 : 0, xw = top ? bw(bb) : W, base = top ? bb.y0 - gap : H;
@@ -153,7 +153,7 @@ D('xmSettle', '積もる粒', 'Settling Grains', ['pop', 'emotional', 'calm'], 1
 });
 
 /* よける群れ — a stream of short dashes crosses the screen and parts around the lyric like water round a stone */
-D('xmSwarm', 'よける群れ', 'Parting Swarm', ['graphic', 'emotional', 'calm', 'glitch'], 1.2, 'sparks', 'front', (env, bb, p, t, o, u) => {
+D('xmSwarm', '비켜 가는 무리', 'Parting Swarm', ['graphic', 'emotional', 'calm', 'glitch'], 1.2, 'sparks', 'front', (env, bb, p, t, o, u) => {
   const { W, H, sc } = env, s = p.seed, M = 34 + p.n * 14, dir = p.right ? 1 : -1, gap = 26 * u;
   const cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2, a = bw(bb) / 2 * 1.35 + gap * 2, B = (bh(bb) / 2 + gap) / 0.72;
   const m = 40 * u, span = W + 2 * m, e = ein(t, 0.5, 0, E.outCubic), sp = SP(env), acc = ACC(env);
@@ -170,7 +170,7 @@ D('xmSwarm', 'よける群れ', 'Parting Swarm', ['graphic', 'emotional', 'calm'
 });
 
 /* 跳ねる玉 — balls hop along the top of the lyric (or a floor line under it), squashing and leaving a mark where they land */
-D('xmBounce', '跳ねる玉', 'Bouncing Balls', ['pop', 'graphic'], 1, 'dots', 'front', (env, bb, p, t, o, u) => {
+D('xmBounce', '튀는 공', 'Bouncing Balls', ['pop', 'graphic'], 1, 'dots', 'front', (env, bb, p, t, o, u) => {
   const { H, sc } = env, gap = 10 * u, r = (p.big ? 22 : 16) * u, m = MG(env) * 0.4;
   const up = bb.y0 - gap - 2 * r - m, dn = H - m - bb.y1 - gap - 2 * r;
   let top = !p.low; if ((top ? up : dn) < 44 * u) top = !top;
@@ -189,7 +189,7 @@ D('xmBounce', '跳ねる玉', 'Bouncing Balls', ['pop', 'graphic'], 1, 'dots', '
 });
 
 /* 導火線 — a fuse beside the lyric burns down over the cut: a spitting spark eats the line and leaves ash dots */
-D('xmFuse', '導火線', 'Burning Fuse', ['pop', 'glitch', 'emotional'], 0.9, 'sparks', 'front', (env, bb, p, t, o, u) => {
+D('xmFuse', '도화선', 'Burning Fuse', ['pop', 'glitch', 'emotional'], 0.9, 'sparks', 'front', (env, bb, p, t, o, u) => {
   const { W, H, sc } = env, s = p.seed, gap = 24 * u, m = MG(env) * 0.5, vert = bh(bb) > bw(bb) * 1.25;
   let A, B, nx = 0, ny = 0;
   if (!vert) {
@@ -223,7 +223,7 @@ D('xmFuse', '導火線', 'Burning Fuse', ['pop', 'glitch', 'emotional'], 0.9, 's
 });
 
 /* 吸いつく粒 — scattered dust is pulled in and sticks along an invisible frame round the lyric, then creeps along it */
-D('xmMagnet', '吸いつく粒', 'Magnet Dust', ['graphic', 'glitch', 'emotional'], 1, 'dots', 'front', (env, bb, p, t, o, u) => {
+D('xmMagnet', '달라붙는 알갱이', 'Magnet Dust', ['graphic', 'glitch', 'emotional'], 1, 'dots', 'front', (env, bb, p, t, o, u) => {
   const { W, H, sc } = env, s = p.seed, f = frame(env, bb, PAD(bb, u)), N = 34 + p.n * 14, Lp = 2 * (f.w + f.h), mn = Math.min(W, H);
   const per = d => { d = mod(d, Lp); if (d < f.w) return [f.x0 + d, f.y0, 0, -1]; d -= f.w; if (d < f.h) return [f.x1, f.y0 + d, 1, 0]; d -= f.h; if (d < f.w) return [f.x1 - d, f.y1, 0, 1]; d -= f.w; return [f.x0, f.y1 - d, -1, 0]; };
   const out = E.inCubic(env.pOut || 0), acc = ACC(env), dr = t * 12 * u * SP(env) * (p.right ? 1 : -1);
@@ -237,7 +237,7 @@ D('xmMagnet', '吸いつく粒', 'Magnet Dust', ['graphic', 'glitch', 'emotional
 });
 
 /* 振り子の波 — a row of pendulums of graded length swings in and out of phase, forming travelling wave patterns */
-D('xmPendulum', '振り子の波', 'Pendulum Wave', ['calm', 'graphic', 'emotional'], 1, 'dots', 'front', (env, bb, p, t, o, u) => {
+D('xmPendulum', '흔들 추 물결', 'Pendulum Wave', ['calm', 'graphic', 'emotional'], 1, 'dots', 'front', (env, bb, p, t, o, u) => {
   const { W, H, sc } = env, gap = 16 * u, rb = 8.5 * u, m = MG(env) * 0.5;
   const dn = H - m - bb.y1 - gap - rb * 2, up = bb.y0 - gap - rb * 2 - m;
   let low = p.low; if ((low ? dn : up) < 64 * u) low = !low;
@@ -255,7 +255,7 @@ D('xmPendulum', '振り子の波', 'Pendulum Wave', ['calm', 'graphic', 'emotion
 });
 
 /* 粒の噴水 — particles jet up from the bottom edge in arcs and fall back, born and dying in a loop */
-D('xmFountain', '粒の噴水', 'Particle Fountain', ['pop', 'emotional'], 0.9, 'sparks', 'front', (env, bb, p, t, o, u) => {
+D('xmFountain', '알갱이 분수', 'Particle Fountain', ['pop', 'emotional'], 0.9, 'sparks', 'front', (env, bb, p, t, o, u) => {
   const { W, H, sc } = env, s = p.seed, M = 36 + p.n * 12, Tl = 1.25 / SP(env), Tf = Tl * 0.94, acc = ACC(env), a2 = ACC2(env);
   const ems = p.corner ? [0.12, 0.88] : [p.right ? 0.86 : 0.14];
   for (let k = 0; k < ems.length; k++) for (let i = 0; i < M; i++) {
@@ -269,7 +269,7 @@ D('xmFountain', '粒の噴水', 'Particle Fountain', ['pop', 'emotional'], 0.9, 
 });
 
 /* ドミノ倒し — a row of upright bars topples in a chain along the lyric, then stands back up from the far end */
-D('xmDominoes', 'ドミノ倒し', 'Dominoes', ['pop', 'graphic', 'editorial'], 1, 'bars', 'front', (env, bb, p, t, o, u) => {
+D('xmDominoes', '도미노 쓰러뜨리기', 'Dominoes', ['pop', 'graphic', 'editorial'], 1, 'bars', 'front', (env, bb, p, t, o, u) => {
   const { W, H, sc } = env, gap = 14 * u, h = (p.big ? 68 : 52) * u, w = 8.5 * u, m = MG(env) * 0.4, ctx = env.ctx;
   const dn = H - m - bb.y1 - gap - h, up = bb.y0 - gap - h - m;
   let low = p.low; if ((low ? dn : up) < 0) low = !low; if ((low ? dn : up) < 0) return;
@@ -290,7 +290,7 @@ D('xmDominoes', 'ドミノ倒し', 'Dominoes', ['pop', 'graphic', 'editorial'], 
 });
 
 /* ピンポン — a two-paddle rally in the free band beside the lyric: the ball zigzags, the paddles track it */
-D('xmPong', 'ピンポン', 'Pong Rally', ['pop', 'glitch', 'graphic'], 0.6, 'dots', 'front', (env, bb, p, t, o, u) => {
+D('xmPong', '핑퐁', 'Pong Rally', ['pop', 'glitch', 'graphic'], 0.6, 'dots', 'front', (env, bb, p, t, o, u) => {
   const { W, sc } = env, m = MG(env), hB = (p.big ? 210 : 160) * u, bd = band(env, bb, hB, p.low, 20 * u, false); if (!bd) return;
   const e = ein(t, 0.45), xa = m * 1.2, xb = W - m * 1.2, pw = 13 * u, ph = 66 * u, bs = 11 * u, sp = SP(env), acc = ACC(env);
   const y0 = bd.y + bs, y1 = bd.y + bd.h - bs, mid = (y0 + y1) / 2;
@@ -304,7 +304,7 @@ D('xmPong', 'ピンポン', 'Pong Rally', ['pop', 'glitch', 'graphic'], 0.6, 'do
 });
 
 /* ベルト運搬 — a conveyor belt beside the lyric carries simple shapes along and drops them off the end */
-D('xmConveyor', 'ベルト運搬', 'Conveyor Belt', ['pop', 'graphic'], 0.7, 'shapes', 'front', (env, bb, p, t, o, u) => {
+D('xmConveyor', '벨트 운반', 'Conveyor Belt', ['pop', 'graphic'], 0.7, 'shapes', 'front', (env, bb, p, t, o, u) => {
   const { W, sc } = env, s = p.seed, m = MG(env), bd = band(env, bb, 140 * u, p.low, 14 * u); if (!bd) return;
   const ctx = env.ctx, e = ein(t, 0.45, 0, E.outCubic), dir = p.right ? 1 : -1, sz = 17 * u, v = 90 * u * SP(env), spc = 120 * u;
   let xa = Math.max(m, bb.x0 - 30 * u), xb = Math.min(W - m, bb.x1 + 30 * u);
@@ -330,7 +330,7 @@ D('xmConveyor', 'ベルト運搬', 'Conveyor Belt', ['pop', 'graphic'], 0.7, 'sh
 /* ============================================================ shapes that build */
 
 /* 階段ブロック — blocks drop into a screen corner and build a staircase; a dot keeps hopping up the steps */
-D('xmStairs', '階段ブロック', 'Step Blocks', ['pop', 'graphic'], 1, 'bars', 'front', (env, bb, p, t, o, u) => {
+D('xmStairs', '계단 블록', 'Step Blocks', ['pop', 'graphic'], 1, 'bars', 'front', (env, bb, p, t, o, u) => {
   const { W, H, sc } = env, b = (p.big ? 56 : 44) * u, S = 4 + p.n, g = 3 * u, sx = p.right ? -1 : 1, sy = p.low ? -1 : 1;
   const X0 = p.right ? W : 0, Y0 = p.low ? H : 0, out = 1 - o, acc = ACC(env);
   const cellX = j => (sx > 0 ? X0 + j * b : X0 - (j + 1) * b), cellY = i => (sy > 0 ? Y0 + i * b : Y0 - (i + 1) * b);
@@ -349,7 +349,7 @@ D('xmStairs', '階段ブロック', 'Step Blocks', ['pop', 'graphic'], 1, 'bars'
 });
 
 /* 積む立方体 — isometric cubes drop in one after another and stack into a small pile in a free corner */
-D('xmIsoCubes', '積む立方体', 'Iso Cubes', ['graphic', 'pop', 'editorial'], 1, 'shapes', 'front', (env, bb, p, t, o, u) => {
+D('xmIsoCubes', '쌓이는 정육면체', 'Iso Cubes', ['graphic', 'pop', 'editorial'], 1, 'shapes', 'front', (env, bb, p, t, o, u) => {
   const { sc } = env, s = p.seed, a = (p.big ? 46 : 36) * u, sp = spot(env, bb, a * 5.4, a * 6.2, p, 14 * u); if (!sp) return;
   const ox = sp.cx, oy = sp.y + a * 3.6, kx = a * 0.866, acc = ACC(env);
   const cL = J.mix(sc.fg, sc.bg, 0.55), cR = J.mix(sc.fg, sc.bg, 0.28);
@@ -366,7 +366,7 @@ D('xmIsoCubes', '積む立方体', 'Iso Cubes', ['graphic', 'pop', 'editorial'],
 });
 
 /* スライドパズル — a 3×3 tile puzzle in a free corner; one tile at a time slides into the empty cell */
-D('xmSlide', 'スライドパズル', 'Sliding Tiles', ['graphic', 'pop', 'glitch'], 0.8, 'shapes', 'front', (env, bb, p, t, o, u) => {
+D('xmSlide', '슬라이드 퍼즐', 'Sliding Tiles', ['graphic', 'pop', 'glitch'], 0.8, 'shapes', 'front', (env, bb, p, t, o, u) => {
   const { sc } = env, s = p.seed, ts = (p.big ? 60 : 46) * u, g = 7 * u, wd = ts * 3 + g * 2, sp = spot(env, bb, wd, wd, p, 16 * u); if (!sp) return;
   const grid = [0, 1, 2, 3, 4, 5, 6, 7, -1], stepT = 0.48 / SP(env), ph = Math.max(0, (t - 0.55) / stepT), m = Math.min(Math.floor(ph), 400);
   let hole = 8, prev = -1, mvFrom = -1;
@@ -382,7 +382,7 @@ D('xmSlide', 'スライドパズル', 'Sliding Tiles', ['graphic', 'pop', 'glitc
 });
 
 /* 歯車 — two meshed gears in a free corner turn against each other at their tooth ratio */
-D('xmGears', '歯車', 'Gears', ['graphic', 'editorial', 'pop'], 0.9, 'rings', 'front', (env, bb, p, t, o, u) => {
+D('xmGears', '톱니바퀴', 'Gears', ['graphic', 'editorial', 'pop'], 0.9, 'rings', 'front', (env, bb, p, t, o, u) => {
   const { sc } = env, k = p.big ? 1.9 : 1.5, R1 = 56 * u * k, N1 = 12, N2 = 7, R2 = R1 * N2 / N1, md = 9 * u * k, phi = -28 * DEG;
   const w = R1 + (R1 + R2) * Math.cos(phi) + R2 + md * 2 + 8 * u, h = R1 * 2 + md * 2 + 26 * u * k, sp = spot(env, bb, w, h, p, 14 * u); if (!sp) return;
   const fl = p.right ? -1 : 1, c1x = fl > 0 ? sp.x + md + 4 * u + R1 : sp.x + w - md - 4 * u - R1, c1y = sp.y + h - md - 4 * u - R1;
@@ -406,7 +406,7 @@ D('xmGears', '歯車', 'Gears', ['graphic', 'editorial', 'pop'], 0.9, 'rings', '
 });
 
 /* 並べ替え棒 — a row of shuffled bars sorts itself: neighbours light up and swap places until the heights are in order */
-D('xmSortBars', '並べ替え棒', 'Sorting Bars', ['graphic', 'editorial', 'glitch'], 0.9, 'bars', 'front', (env, bb, p, t, o, u) => {
+D('xmSortBars', '정렬 막대', 'Sorting Bars', ['graphic', 'editorial', 'glitch'], 0.9, 'bars', 'front', (env, bb, p, t, o, u) => {
   const { sc } = env, s = p.seed, N = 8 + p.n * 2, k = p.big ? 1.9 : 1.5, bwid = 9 * u * k, pit = 15 * u * k, hm = 84 * u * k;
   const sp = spot(env, bb, N * pit, hm + 8 * u, p, 14 * u); if (!sp) return;
   const arr = []; for (let i = 0; i < N; i++) arr.push(i);
@@ -426,7 +426,7 @@ D('xmSortBars', '並べ替え棒', 'Sorting Bars', ['graphic', 'editorial', 'gli
 });
 
 /* 分割パイ — a segmented donut assembles wedge by wedge in a free corner; one wedge sits apart and kicks out on the beat */
-D('xmPie', '分割パイ', 'Exploded Pie', ['pop', 'editorial', 'graphic'], 0.9, 'shapes', 'front', (env, bb, p, t, o, u) => {
+D('xmPie', '분리 파이', 'Exploded Pie', ['pop', 'editorial', 'graphic'], 0.9, 'shapes', 'front', (env, bb, p, t, o, u) => {
   const { sc } = env, s = p.seed, Rd = (p.big ? 124 : 96) * u, sp = spot(env, bb, Rd * 2 + 50 * u, Rd * 2 + 50 * u, p, 14 * u); if (!sp) return;
   const K = 3 + p.n, fr = []; let sum = 0;
   for (let i = 0; i < K; i++) { fr.push(RR(0.6, 1.7, s, i, 1)); sum += fr[i]; }
@@ -444,7 +444,7 @@ D('xmPie', '分割パイ', 'Exploded Pie', ['pop', 'editorial', 'graphic'], 0.9,
 });
 
 /* 散布図 — a small chart in a free corner: axes draw on, data points pop in one by one, then a trend line runs through them */
-D('xmScatter', '散布図', 'Scatter Plot', ['editorial', 'graphic', 'calm'], 0.9, 'dots', 'front', (env, bb, p, t, o, u) => {
+D('xmScatter', '산점도', 'Scatter Plot', ['editorial', 'graphic', 'calm'], 0.9, 'dots', 'front', (env, bb, p, t, o, u) => {
   const { sc } = env, s = p.seed, w = (p.big ? 330 : 260) * u, h = w * 0.72, sp = spot(env, bb, w, h, p, 14 * u); if (!sp) return;
   const x0 = sp.x + 10 * u, y0 = sp.y + h - 10 * u, pw = w - 18 * u, phh = h - 18 * u, M = 10 + p.n * 5, up = p.v % 2 === 0, e = ein(t, 0.45, 0, E.outCubic);
   const fy = x => (up ? 0.14 + 0.7 * x : 0.86 - 0.7 * x);
@@ -461,7 +461,7 @@ D('xmScatter', '散布図', 'Scatter Plot', ['editorial', 'graphic', 'calm'], 0.
 /* ============================================================ accents that react */
 
 /* 拍ステップ — a step-sequencer row beside the lyric: the lit square advances one step on every beat */
-D('xmBeatSteps', '拍ステップ', 'Beat Steps', ['pop', 'graphic', 'glitch'], 1.1, 'dots', 'front', (env, bb, p, t, o, u) => {
+D('xmBeatSteps', '박자 스텝', 'Beat Steps', ['pop', 'graphic', 'glitch'], 1.1, 'dots', 'front', (env, bb, p, t, o, u) => {
   const { W, sc } = env, K = 8, s2 = (p.big ? 40 : 30) * u, g = s2 * 0.55, wid = K * s2 + (K - 1) * g, m = MG(env);
   const bd = band(env, bb, s2 * 1.7, p.low, 18 * u); if (!bd) return;
   const cx = cl((bb.x0 + bb.x1) / 2, m + wid / 2, W - m - wid / 2), yc = bd.y + bd.h / 2, b = BT(env, t), idx = mod(b.idx, K), pulse = Math.exp(-b.since * 7), acc = ACC(env);
@@ -475,7 +475,7 @@ D('xmBeatSteps', '拍ステップ', 'Beat Steps', ['pop', 'graphic', 'glitch'], 
 });
 
 /* 針メーター — an analogue dial in a free corner; the needle follows the loudness of the music */
-D('xmGauge', '針メーター', 'Needle Gauge', ['graphic', 'editorial', 'glitch'], 0.9, 'rings', 'front', (env, bb, p, t, o, u) => {
+D('xmGauge', '바늘 계기', 'Needle Gauge', ['graphic', 'editorial', 'glitch'], 0.9, 'rings', 'front', (env, bb, p, t, o, u) => {
   const { sc } = env, Rd = (p.big ? 140 : 108) * u, sp = spot(env, bb, Rd * 2 + 24 * u, Rd + 30 * u, p, 14 * u); if (!sp) return;
   const cx = sp.cx, cy = sp.y + sp.h - 14 * u, e = ein(t, 0.5, 0, E.outCubic), acc = ACC(env), al = o;
   ring(env, cx, cy, Rd, sc.fg, 2.6 * u, al, Math.PI, Math.PI + Math.PI * e);
@@ -491,7 +491,7 @@ D('xmGauge', '針メーター', 'Needle Gauge', ['graphic', 'editorial', 'glitch
 });
 
 /* 斜線の影 — an offset drop shadow of the lyric block made only of diagonal hatching that sweeps on and creeps */
-D('xmHatch', '斜線の影', 'Hatch Shadow', ['editorial', 'graphic', 'pop'], 1.2, 'stripes', 'front', (env, bb, p, t, o, u) => {
+D('xmHatch', '빗금 그림자', 'Hatch Shadow', ['editorial', 'graphic', 'pop'], 1.2, 'stripes', 'front', (env, bb, p, t, o, u) => {
   const { W, H } = env, f = frame(env, bb, PAD(bb, u, 0.8)), d = (18 + p.n * 11) * u, dx = p.right ? d : -d, dy = p.low ? d : -d, ctx = env.ctx;
   const e = ein(t, 0.55, 0, E.inOutCubic), sp = 11 * u, x0 = f.x0 + dx, y0 = f.y0 + dy, cnt = Math.ceil((f.w + f.h) / sp) + 1, off = mod(t * 9 * u * SP(env), sp);
   ctx.beginPath(); ctx.rect(x0, y0, f.w, f.h); ctx.clip();
@@ -505,7 +505,7 @@ D('xmHatch', '斜線の影', 'Hatch Shadow', ['editorial', 'graphic', 'pop'], 1.
 /* ============================================================ back-layer patterns (kept faint) */
 
 /* 増える角 — a large faint polygon behind the lyric keeps gaining and losing a corner: triangle → square → … → octagon */
-D('xmPolyGrow', '増える角', 'Growing Polygon', ['graphic', 'calm', 'editorial'], 1, 'shapes', 'back', (env, bb, p, t, o, u) => {
+D('xmPolyGrow', '늘어나는 각', 'Growing Polygon', ['graphic', 'calm', 'editorial'], 1, 'shapes', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = Math.min(W, H), c = LN(env), dir = p.right ? 1 : -1;
   const cx = p.corner ? W * (p.right ? 0.8 : 0.2) : W * 0.5, cy = p.corner ? H * (p.low ? 0.74 : 0.26) : H * 0.5;
   const R0 = m * (p.corner ? 0.25 : 0.4) * (p.big ? 1.12 : 1) * ein(t, 0.5, 0, E.outCubic);
@@ -518,7 +518,7 @@ D('xmPolyGrow', '増える角', 'Growing Polygon', ['graphic', 'calm', 'editoria
 }, { subtle: true });
 
 /* 三角タイル — a triangle lattice spreads from a screen corner; cells fill in, breathe and empty again */
-D('xmTriLattice', '三角タイル', 'Triangle Lattice', ['graphic', 'pop', 'glitch'], 1, 'grid', 'back', (env, bb, p, t, o, u) => {
+D('xmTriLattice', '삼각 타일', 'Triangle Lattice', ['graphic', 'pop', 'glitch'], 1, 'grid', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, s = p.seed, m = Math.min(W, H), sd = m * 0.088 * (p.big ? 1.2 : 1), hT = sd * 0.866, c = DIM(env), acc = ACC(env);
   const ox = p.right ? W : 0, oy = p.low ? H : 0, sx = p.right ? -1 : 1, sy = p.low ? -1 : 1, reach = m * (0.5 + 0.06 * p.n), rows = Math.ceil(reach / hT), cols = Math.ceil(reach / (sd / 2));
   for (let r = 0; r < rows; r++) for (let q = -1; q < cols; q++) {
@@ -534,7 +534,7 @@ D('xmTriLattice', '三角タイル', 'Triangle Lattice', ['graphic', 'pop', 'gli
 });
 
 /* 点灯ドット — a dot-matrix panel behind the lyric; a diagonal wave of larger, brighter dots keeps rolling through it */
-D('xmDotWave', '点灯ドット', 'Dot Matrix Wave', ['graphic', 'glitch', 'pop', 'calm'], 1.1, 'grid', 'back', (env, bb, p, t, o, u) => {
+D('xmDotWave', '점등 도트', 'Dot Matrix Wave', ['graphic', 'glitch', 'pop', 'calm'], 1.1, 'grid', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = Math.min(W, H), d = m * 0.042, strip = p.v >= 3, ctx = env.ctx, dir = p.right ? 1 : -1;
   const cols = Math.min(64, Math.floor(W * 0.92 / d)), rows = Math.min(26, Math.max(3, Math.round(H * (strip ? 0.2 : 0.52) / d)));
   const cy = strip ? H * (p.low ? 0.82 : 0.18) : H * 0.5, x0 = W / 2 - (cols - 1) * d / 2, y0 = cy - (rows - 1) * d / 2, sp = SP(env);
@@ -553,7 +553,7 @@ D('xmDotWave', '点灯ドット', 'Dot Matrix Wave', ['graphic', 'glitch', 'pop'
 });
 
 /* 等高線 — nested wobbly closed curves like a contour map draw themselves behind the lyric and drift slowly */
-D('xmContour', '等高線', 'Contour Lines', ['calm', 'editorial', 'emotional'], 1.1, 'rings', 'back', (env, bb, p, t, o, u) => {
+D('xmContour', '등고선', 'Contour Lines', ['calm', 'editorial', 'emotional'], 1.1, 'rings', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, s = p.seed, m = Math.min(W, H), c = LN(env), ax = W > H ? 1.4 : 1, ay = H > W ? 1.4 : 1, sp = SP(env), M = 60;
   for (let hI = 0; hI < (p.n >= 2 ? 2 : 1); hI++) {
     const cx = W * (hI ? RR(0.12, 0.88, s, hI, 1) : RR(0.38, 0.62, s, 0, 1)), cy = H * (hI ? RR(0.15, 0.85, s, hI, 2) : RR(0.4, 0.6, s, 0, 2)), Rm = m * (hI ? 0.24 : 0.5), K = hI ? 4 : (p.big ? 7 : 6);
@@ -571,7 +571,7 @@ D('xmContour', '等高線', 'Contour Lines', ['calm', 'editorial', 'emotional'],
 }, { subtle: true });
 
 /* モアレ — two sets of fine concentric rings slide over each other; the interference bands swing round */
-D('xmMoire', 'モアレ', 'Moire Rings', ['graphic', 'glitch', 'calm'], 0.6, 'rings', 'back', (env, bb, p, t, o, u) => {
+D('xmMoire', '모아레', 'Moire Rings', ['graphic', 'glitch', 'calm'], 0.6, 'rings', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = Math.min(W, H), c = LN(env), K = 12 + p.n * 2, spc = m * 0.03, ctx = env.ctx;
   const cx = p.corner ? W * (p.right ? 0.78 : 0.22) : W * 0.5, cy = p.corner ? H * (p.low ? 0.72 : 0.28) : H * 0.5;
   const an = t * 0.4 * SP(env) * (p.right ? 1 : -1) + p.r * TAU, d = spc * 1.5 * ein(t, 0.8, 0, E.outCubic);
@@ -587,7 +587,7 @@ D('xmMoire', 'モアレ', 'Moire Rings', ['graphic', 'glitch', 'calm'], 0.6, 'ri
 }, { subtle: true });
 
 /* 円弧タイル — a patch of quarter-arc tiles grows from a corner; tiles keep turning a quarter so the paths re-route */
-D('xmTruchet', '円弧タイル', 'Truchet Tiles', ['graphic', 'pop', 'editorial'], 0.9, 'grid', 'back', (env, bb, p, t, o, u) => {
+D('xmTruchet', '원호 타일', 'Truchet Tiles', ['graphic', 'pop', 'editorial'], 0.9, 'grid', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, s = p.seed, m = Math.min(W, H), c = m * 0.092 * (p.big ? 1.2 : 1), col = LN(env), ctx = env.ctx;
   const ox = p.right ? W : 0, oy = p.low ? H : 0, sx = p.right ? -1 : 1, sy = p.low ? -1 : 1, reach = m * (0.5 + 0.05 * p.n), nn = Math.ceil(reach / c), T = 2.8 / SP(env);
   ctx.strokeStyle = col; ctx.lineWidth = 3.6 * u; ctx.lineCap = 'butt';
@@ -604,7 +604,7 @@ D('xmTruchet', '円弧タイル', 'Truchet Tiles', ['graphic', 'pop', 'editorial
 });
 
 /* スピログラフ — a faint spirograph curve is traced by a moving pen behind the lyric, then turns slowly */
-D('xmSpiro', 'スピログラフ', 'Spirograph', ['calm', 'graphic', 'emotional'], 0.9, 'rings', 'back', (env, bb, p, t, o, u) => {
+D('xmSpiro', '스피로그래프', 'Spirograph', ['calm', 'graphic', 'emotional'], 0.9, 'rings', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = Math.min(W, H), [a, b, d] = [[5, 3, 2.2], [7, 3, 2.4], [8, 5, 3.6], [7, 2, 1.6], [9, 4, 3], [10, 3, 2.4]][mod(p.v, 6)];
   const cx = p.corner ? W * (p.right ? 0.78 : 0.22) : W * 0.5, cy = p.corner ? H * (p.low ? 0.72 : 0.28) : H * 0.5;
   const S = m * (p.corner ? 0.25 : 0.4) * (p.big ? 1.1 : 1) / (a - b + d), n = 64 * b, q = E.inOutCubic(cl(t / 1.9)), cnt = Math.ceil(n * q);
@@ -618,7 +618,7 @@ D('xmSpiro', 'スピログラフ', 'Spirograph', ['calm', 'graphic', 'emotional'
 }, { subtle: true });
 
 /* 絞り羽根 — a camera-iris of straight blades behind the lyric opens on entry, breathes with the beat and closes on exit */
-D('xmIris', '絞り羽根', 'Iris Blades', ['graphic', 'emotional', 'editorial'], 1, 'rings', 'back', (env, bb, p, t, o, u) => {
+D('xmIris', '조리개 날', 'Iris Blades', ['graphic', 'emotional', 'editorial'], 1, 'rings', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = Math.min(W, H), c = LN(env), N = 5 + p.n;
   const cx = p.corner ? W * (p.right ? 0.78 : 0.22) : W * 0.5, cy = p.corner ? H * (p.low ? 0.7 : 0.3) : H * 0.5, Rd = m * (p.corner ? 0.27 : 0.42) * (p.big ? 1.08 : 1);
   const e = ein(t, 0.6, 0, E.outCubic), pulse = Math.exp(-BT(env, t).since * 5) * (env.beat ? 1 : 0.4);
@@ -634,7 +634,7 @@ D('xmIris', '絞り羽根', 'Iris Blades', ['graphic', 'emotional', 'editorial']
 }, { subtle: true });
 
 /* 渦巻く四角 — squares nested corner-to-edge inside each other form a whirl whose twist slowly tightens and relaxes */
-D('xmWhirl', '渦巻く四角', 'Whirl Squares', ['graphic', 'calm', 'glitch'], 0.9, 'shapes', 'back', (env, bb, p, t, o, u) => {
+D('xmWhirl', '소용돌이 사각', 'Whirl Squares', ['graphic', 'calm', 'glitch'], 0.9, 'shapes', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = Math.min(W, H), c = LN(env), K = 11 + p.n * 2;
   const cx = p.corner ? W * (p.right ? 0.8 : 0.2) : W * 0.5, cy = p.corner ? H * (p.low ? 0.72 : 0.28) : H * 0.5;
   const dl = (8 + 5 * Math.sin(t * 0.5 * SP(env) + p.r * TAU)) * DEG * (p.right ? 1 : -1), k2 = 1 / (Math.cos(Math.abs(dl)) + Math.sin(Math.abs(dl)));
@@ -648,7 +648,7 @@ D('xmWhirl', '渦巻く四角', 'Whirl Squares', ['graphic', 'calm', 'glitch'], 
 }, { subtle: true });
 
 /* 重なる波 — three flat layers of filled waves rise from the bottom (or hang from the top) edge and roll at different speeds */
-D('xmWaves', '重なる波', 'Layered Waves', ['calm', 'emotional', 'pop'], 1, 'waveform', 'back', (env, bb, p, t, o, u) => {
+D('xmWaves', '겹치는 물결', 'Layered Waves', ['calm', 'emotional', 'pop'], 1, 'waveform', 'back', (env, bb, p, t, o, u) => {
   const { W, H } = env, c = DIM(env), sy = p.low ? 1 : -1, edge = p.low ? H + 4 : -4, sp = SP(env), n = 48;
   for (let k = 0; k < 3; k++) {
     const e = ein(t, 0.6, k * 0.08, E.outCubic) * o, yb = H * (p.low ? 0.8 + 0.055 * k : 0.2 - 0.055 * k) + sy * (1 - e) * H * 0.26;

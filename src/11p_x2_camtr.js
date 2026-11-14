@@ -26,7 +26,7 @@ const beat2 = (env, per) => {
 
 reg('cam', 'xqArcSweep', {
   // one pass along a shallow arc: sideways travel, a rise in the middle, and the frame leaning into the curve
-  name: '弧を描く', en: 'Arc Sweep', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'driftDiag',
+  name: '호 그리기', en: 'Arc Sweep', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'driftDiag',
   plan: rng => ({ dir: rng.pick([1, -1]), v: rng.pick([1, 1, -1]), a: rng.range(0.02, 0.026) }),
   get(env, Q) {
     const K = KM(env), u = cuOf(env), e = (u * 0.5 + E.inOutSine(u) * 0.5) * 2 - 1, d = Q.dir || 1, v = Q.v || 1;
@@ -35,7 +35,7 @@ reg('cam', 'xqArcSweep', {
 
 reg('cam', 'xqWindUp', {
   // backs off a little first (anticipation), then pushes in on an S-curve and holds the tighter framing
-  name: '溜めて寄る', en: 'Wind-Up Dolly', tags: ['emotional', 'pop', 'editorial'], w: 1.1, ae: 'dollyIn',
+  name: '모았다 다가가기', en: 'Wind-Up Dolly', tags: ['emotional', 'pop', 'editorial'], w: 1.1, ae: 'dollyIn',
   plan: rng => ({ a: rng.range(0.055, 0.075), b: rng.range(0.018, 0.026) }),
   get(env, Q) {
     const K = KM(env), dur = env.cut.dur, t1 = Math.min(0.45, dur * 0.25), t2 = Math.max(0.3, dur * 0.5);
@@ -45,7 +45,7 @@ reg('cam', 'xqWindUp', {
 
 reg('cam', 'xqFocusHunt', {
   // autofocus hunting: soft, almost sharp, soft again, then it locks — with the lens breathing along
-  name: 'ピント迷い', en: 'Focus Hunt', tags: ['emotional', 'calm', 'glitch'], w: 0.7, ae: 'focusIn',
+  name: '초점 헤맴', en: 'Focus Hunt', tags: ['emotional', 'calm', 'glitch'], w: 0.7, ae: 'focusIn',
   plan: rng => ({ d: rng.range(0.75, 1.0), b: rng.range(8, 12) }),
   get(env, Q) {
     const q = clamp(env.lt / Math.min(Q.d || 0.9, Math.max(0.4, env.cut.dur * 0.6)));
@@ -56,7 +56,7 @@ reg('cam', 'xqFocusHunt', {
 
 reg('cam', 'xqBeatBreath', {
   // a smooth zoom that breathes in on one beat and out on the next (no punch)
-  name: '拍で呼吸', en: 'Beat Breath', tags: ['calm', 'emotional', 'pop'], w: 1, ae: 'beatPunch',
+  name: '박자 호흡', en: 'Beat Breath', tags: ['calm', 'emotional', 'pop'], w: 1, ae: 'beatPunch',
   plan: rng => ({ a: rng.range(0.03, 0.042), per: rng.range(1.5, 1.9) }),
   get(env, Q) {
     const K = KM(env), b = beat2(env, Q.per || 1.7), w = 0.5 - 0.5 * Math.cos(b.ph * TAU);
@@ -65,7 +65,7 @@ reg('cam', 'xqBeatBreath', {
 
 reg('cam', 'xqWalkCam', {
   // carried on the shoulder while walking: a step bob with a soft landing, hips swaying side to side
-  name: '歩き撮り', en: 'Walking Cam', tags: ['emotional', 'pop', 'editorial'], w: 0.9, ae: 'handheld',
+  name: '걸으며 촬영', en: 'Walking Cam', tags: ['emotional', 'pop', 'editorial'], w: 0.9, ae: 'handheld',
   plan: rng => ({ f: rng.range(1.5, 1.9), side: rng.pick([1, -1]) }),
   get(env, Q) {
     const K = KM(env), ph = env.lt * (Q.f || 1.7) * Math.PI, sd = seedOf(env), sg = Q.side || 1;
@@ -75,7 +75,7 @@ reg('cam', 'xqWalkCam', {
 
 reg('cam', 'xqTripodNudge', {
   // locked off on a tripod; the operator corrects the framing in a few small eased nudges, each smaller, ending centred
-  name: '三脚の直し', en: 'Tripod Nudge', tags: ['editorial', 'calm', 'graphic'], w: 0.8, ae: 'snapPan',
+  name: '삼각대 고쳐 잡기', en: 'Tripod Nudge', tags: ['editorial', 'calm', 'graphic'], w: 0.8, ae: 'snapPan',
   plan: rng => ({ per: rng.range(0.85, 1.25), s0: rng.int(0, 99) }),
   get(env, Q) {
     const K = KM(env), per = Q.per || 1, sd = seedOf(env) + (Q.s0 | 0), kz = Math.max(1, Math.floor((env.cut.dur - 0.35) / per));
@@ -87,7 +87,7 @@ reg('cam', 'xqTripodNudge', {
 
 reg('cam', 'xqLongLens', {
   // telephoto on a far subject: tight framing, a fine fast tremor riding on a slow sideways float
-  name: '望遠の震え', en: 'Long Lens', tags: ['emotional', 'editorial', 'glitch'], w: 0.8, ae: 'handheld',
+  name: '망원 떨림', en: 'Long Lens', tags: ['emotional', 'editorial', 'glitch'], w: 0.8, ae: 'handheld',
   plan: rng => ({ f: rng.range(0.9, 1.2) }),
   get(env, Q) {
     const K = KM(env), t = env.lt * (Q.f || 1), sd = seedOf(env) + 21;
@@ -97,7 +97,7 @@ reg('cam', 'xqLongLens', {
 
 reg('cam', 'xqStopMotion', {
   // a push-in shot frame by frame: the zoom advances in small held steps with a slight registration wobble
-  name: 'コマ撮り寄り', en: 'Stop-Motion Push', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'stepZoom',
+  name: '스톱모션 푸시', en: 'Stop-Motion Push', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'stepZoom',
   plan: rng => ({ fps: rng.pick([5, 6, 8]), a: rng.range(0.065, 0.085) }),
   get(env, Q) {
     const K = KM(env), fps = Q.fps || 6, f = Math.floor(env.lt * fps + 1e-6), u = clamp(f / fps / Math.max(0.3, env.cut.dur)), sd = seedOf(env);
@@ -106,7 +106,7 @@ reg('cam', 'xqStopMotion', {
 
 reg('cam', 'xqWhipSpring', {
   // a short diagonal whip that lands on a spring: two quick overshoots, a trace of blur, then dead still
-  name: '小ホイップ', en: 'Spring Whip', tags: ['pop', 'glitch', 'graphic'], w: 0.7, strong: true, ae: 'whipIn',
+  name: '작은 휩', en: 'Spring Whip', tags: ['pop', 'glitch', 'graphic'], w: 0.7, strong: true, ae: 'whipIn',
   plan: rng => ({ ang: rng.pick([0, 180, 25, 155, -25, -155, 90, -90]), f: rng.range(17, 21) }),
   get(env, Q) {
     const K = K1(env), t = env.lt, d = Math.exp(-t * 7);
@@ -117,7 +117,7 @@ reg('cam', 'xqWhipSpring', {
 
 reg('cam', 'xqLevelOut', {
   // the cut opens crooked and is levelled like a spirit level: it swings past true once or twice and comes to rest
-  name: '水平出し', en: 'Level Out', tags: ['editorial', 'emotional', 'graphic'], w: 0.9, ae: 'dutch',
+  name: '수평 맞추기', en: 'Level Out', tags: ['editorial', 'emotional', 'graphic'], w: 0.9, ae: 'dutch',
   plan: rng => ({ dir: rng.pick([1, -1]), a: rng.range(3, 4) }),
   get(env, Q) {
     const K = KM(env), q = env.lt / clamp(env.cut.dur * 0.5, 0.5, 1.4), r = Math.exp(-q * 3.2) * Math.cos(q * 4.4);
@@ -126,7 +126,7 @@ reg('cam', 'xqLevelOut', {
 
 reg('cam', 'xqSquashRelax', {
   // the frame arrives pressed flat (or pulled tall / wide) on one axis and slowly relaxes — no wobble
-  name: 'つぶれ戻り', en: 'Squash Relax', tags: ['pop', 'graphic', 'emotional'], w: 0.8, ae: 'jelly',
+  name: '찌그러졌다 복귀', en: 'Squash Relax', tags: ['pop', 'graphic', 'emotional'], w: 0.8, ae: 'jelly',
   plan: rng => ({ ax: rng.pick(['x', 'y', 'y']), sg: rng.pick([1, -1]), a: rng.range(0.07, 0.095) }),
   get(env, Q) {
     const K = K1(env), r = 1 - E.outCubic(clamp(env.lt / clamp(env.cut.dur * 0.6, 0.5, 1.6))), a = (Q.sg || 1) * (Q.a || 0.08) * K * r;
@@ -135,7 +135,7 @@ reg('cam', 'xqSquashRelax', {
 
 reg('cam', 'xqDriftTurn', {
   // drifts one way, slows, turns round in the middle of the cut and drifts back while it keeps sinking / rising
-  name: '折り返し', en: 'Turnaround Drift', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'driftDiag',
+  name: '되돌아가기', en: 'Turnaround Drift', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'driftDiag',
   plan: rng => ({ dx: rng.pick([1, -1]), dy: rng.pick([1, -1]), a: rng.range(0.024, 0.03) }),
   get(env, Q) {
     const K = KM(env), u = cuOf(env);
@@ -144,7 +144,7 @@ reg('cam', 'xqDriftTurn', {
 
 reg('cam', 'xqCraneUp', {
   // a crane shot: the camera rises and pulls back at once, the foreshortened frame opening up as it levels
-  name: 'クレーン', en: 'Crane Up', tags: ['emotional', 'calm', 'editorial'], w: 0.9, ae: 'tiltDown',
+  name: '크레인 업', en: 'Crane Up', tags: ['emotional', 'calm', 'editorial'], w: 0.9, ae: 'tiltDown',
   plan: rng => ({ dir: rng.pick([1, -1]), up: rng.chance(0.75) }),
   get(env, Q) {
     const K = KM(env), r = 1 - E.outCubic(cuOf(env)), v = Q.up === false ? -1 : 1;
@@ -153,7 +153,7 @@ reg('cam', 'xqCraneUp', {
 
 reg('cam', 'xqTruckAround', {
   // the camera trucks round the lyric: seen from one side, face-on in the middle, from the other side at the end
-  name: '回り込み', en: 'Truck Around', tags: ['graphic', 'emotional', 'editorial'], w: 0.8, ae: 'orbitDrift',
+  name: '돌아 들어가기', en: 'Truck Around', tags: ['graphic', 'emotional', 'editorial'], w: 0.8, ae: 'orbitDrift',
   plan: rng => ({ dir: rng.pick([1, -1]), a: rng.range(0.045, 0.06) }),
   get(env, Q) {
     const K = KM(env), u = cuOf(env), k = (u * 0.5 + E.inOutSine(u) * 0.5) * 2 - 1, d = Q.dir || 1;
@@ -162,7 +162,7 @@ reg('cam', 'xqTruckAround', {
 
 reg('cam', 'xqHeartbeat', {
   // lub-dub: two close swells and a rest, over two beats (or about a second without beats)
-  name: '鼓動', en: 'Heartbeat', tags: ['emotional', 'pop', 'glitch'], w: 0.7, ae: 'beatPunch',
+  name: '고동', en: 'Heartbeat', tags: ['emotional', 'pop', 'glitch'], w: 0.7, ae: 'beatPunch',
   plan: rng => ({ a: rng.range(0.024, 0.032), per: rng.range(1.0, 1.25) }),
   get(env, Q) {
     const K = KM(env), b = beat2(env, Q.per || 1.1), tt = b.ph * b.T, d2 = Math.min(0.3, b.T * 0.27);
@@ -172,7 +172,7 @@ reg('cam', 'xqHeartbeat', {
 
 reg('cam', 'xqLeafFall', {
   // comes down from above like a falling leaf: swinging left and right, tilting with each swing, and lands still
-  name: '舞い降り', en: 'Leaf Fall', tags: ['calm', 'emotional', 'pop'], w: 0.8, ae: 'pendulumSway',
+  name: '내려앉기', en: 'Leaf Fall', tags: ['calm', 'emotional', 'pop'], w: 0.8, ae: 'pendulumSway',
   plan: rng => ({ dir: rng.pick([1, -1]), n: rng.range(1.2, 1.7) }),
   get(env, Q) {
     const K = K1(env), q = clamp(env.lt / clamp(env.cut.dur * 0.65, 0.6, 1.9)), r = 1 - E.outCubic(q), d = Q.dir || 1, ph = q * TAU * (Q.n || 1.5);
@@ -181,7 +181,7 @@ reg('cam', 'xqLeafFall', {
 
 reg('cam', 'xqLoudZoom', {
   // the framing follows the loudness of the song: closer when it is loud, wider when it is quiet
-  name: '音量で寄る', en: 'Loudness Zoom', tags: ['pop', 'emotional', 'glitch'], w: 0.7, ae: 'beatPunch',
+  name: '음량 줌', en: 'Loudness Zoom', tags: ['pop', 'emotional', 'glitch'], w: 0.7, ae: 'beatPunch',
   plan: rng => ({ a: rng.range(0.04, 0.055) }),
   get(env, Q) {
     const K = KM(env), en = env.energy == null ? 0.5 + 0.5 * Math.sin(env.lt * 2.1) * Math.sin(env.lt * 0.7 + 1) : clamp(env.energy);
@@ -190,7 +190,7 @@ reg('cam', 'xqLoudZoom', {
 
 reg('cam', 'xqPushPull', {
   // in and back out again in one breath: closest in the middle of the cut, home at both ends
-  name: '寄って引く', en: 'Push Pull', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'dollyIn',
+  name: '밀고 당기기', en: 'Push Pull', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'dollyIn',
   plan: rng => ({ a: rng.range(0.065, 0.085), at: rng.range(0.42, 0.58) }),
   get(env, Q) {
     const K = KM(env), u = cuOf(env), at = Q.at || 0.5, v = u < at ? u / at * 0.5 : 0.5 + (u - at) / (1 - at) * 0.5, b = 0.5 - 0.5 * Math.cos(TAU * v);
@@ -199,7 +199,7 @@ reg('cam', 'xqPushPull', {
 
 reg('cam', 'xqFindFrame', {
   // starts too tight and off to one corner, as if the operator were still looking, then finds the lyric and frames it
-  name: '構図を探す', en: 'Find Framing', tags: ['editorial', 'pop', 'emotional'], w: 0.9, ae: 'spiralIn',
+  name: '구도 찾기', en: 'Find Framing', tags: ['editorial', 'pop', 'emotional'], w: 0.9, ae: 'spiralIn',
   plan: rng => ({ cx: rng.pick([1, -1]), cy: rng.pick([1, -1, 0]) }),
   get(env, Q) {
     const K = K1(env), T = clamp(env.cut.dur * 0.45, 0.45, 1.1), r = 1 - E.outBack(clamp((env.lt - T * 0.15) / (T * 0.85)), 1.15);
@@ -208,7 +208,7 @@ reg('cam', 'xqFindFrame', {
 
 reg('cam', 'xqTickRoll', {
   // the frame rolls like the second hand of a clock: small ticks, each with a tiny overshoot, from one lean to the other
-  name: '秒針ロール', en: 'Tick Roll', tags: ['graphic', 'pop', 'glitch'], w: 0.7, ae: 'roll',
+  name: '초침 롤', en: 'Tick Roll', tags: ['graphic', 'pop', 'glitch'], w: 0.7, ae: 'roll',
   plan: rng => ({ dir: rng.pick([1, -1]), n: rng.int(4, 6), a: rng.range(2, 2.8) }),
   get(env, Q) {
     const K = KM(env), dur = Math.max(0.3, env.cut.dur), n = Math.max(2, Math.min(Q.n || 5, Math.floor(dur / 0.3))), per = dur / n;
@@ -254,7 +254,7 @@ const trReg = (k, d) => reg('trans', k, Object.assign({}, d, {
   } }));
 
 /* ---- slanted blades: the new cut runs down parallel diagonal lanes, neighbouring lanes in opposite directions ---- */
-trReg('xqBladeRun', { name: '斜め刃走り', en: 'Blade Run', tags: ['graphic', 'pop', 'glitch'], w: 1, dur: 0.42, ae: 'diagonalWipe',
+trReg('xqBladeRun', { name: '사선 칼날', en: 'Blade Run', tags: ['graphic', 'pop', 'glitch'], w: 1, dur: 0.42, ae: 'diagonalWipe',
   plan: rng => ({ n: rng.int(5, 8), ang: rng.pick([-32, -24, 24, 32, 58, -58]), mid: rng.chance(0.5) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, n = Q.n || 6, R = Math.hypot(cw, ch) + 4, hb = R / n, lw = lwOf(I, 0.005), tips = [];
@@ -276,7 +276,7 @@ trReg('xqBladeRun', { name: '斜め刃走り', en: 'Blade Run', tags: ['graphic'
   } });
 
 /* ---- propeller: several wedges open at once round the centre while the whole rotor turns ---- */
-trReg('xqPropeller', { name: 'プロペラ', en: 'Propeller Wipe', tags: ['pop', 'graphic'], w: 0.8, dur: 0.45, ae: 'clockWipe',
+trReg('xqPropeller', { name: '프로펠러 와이프', en: 'Propeller Wipe', tags: ['pop', 'graphic'], w: 0.8, dur: 0.45, ae: 'clockWipe',
   plan: rng => ({ n: rng.int(3, 5), dir: rng.pick([1, -1]), a0: rng.range(0, 360), x: 0.5 + rng.range(-0.08, 0.08), y: 0.5 + rng.range(-0.06, 0.06) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, n = Q.n || 4, d = Q.dir || 1, cx = cw * (Q.x || 0.5), cy = ch * (Q.y || 0.5), e = ioc(p);
@@ -292,7 +292,7 @@ trReg('xqPropeller', { name: 'プロペラ', en: 'Propeller Wipe', tags: ['pop',
   } });
 
 /* ---- polygon iris: a triangle / square / hexagon window turns as it opens ---- */
-trReg('xqPolyIris', { name: '多角アイリス', en: 'Polygon Iris', tags: ['graphic', 'pop', 'editorial'], w: 0.9, dur: 0.42, ae: 'irisOpen',
+trReg('xqPolyIris', { name: '다각 아이리스', en: 'Polygon Iris', tags: ['graphic', 'pop', 'editorial'], w: 0.9, dur: 0.42, ae: 'irisOpen',
   plan: rng => ({ n: rng.pick([3, 4, 4, 6]), spin: rng.range(50, 110) * rng.pick([1, -1]), a0: rng.pick([0, 45, 90, 30]) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, n = Q.n || 4, e = n === 3 ? E.inCubic(p) * 0.5 + ioc(p) * 0.5 : ioc(p), cx = cw / 2, cy = ch / 2;
@@ -307,7 +307,7 @@ trReg('xqPolyIris', { name: '多角アイリス', en: 'Polygon Iris', tags: ['gr
   } });
 
 /* ---- ring ripple: concentric bands, each one widening outwards, the inner ones first ---- */
-trReg('xqRingRipple', { name: '同心リング', en: 'Ring Ripple', tags: ['graphic', 'calm', 'pop'], w: 0.8, dur: 0.45, ae: 'irisOpen',
+trReg('xqRingRipple', { name: '동심 고리', en: 'Ring Ripple', tags: ['graphic', 'calm', 'pop'], w: 0.8, dur: 0.45, ae: 'irisOpen',
   plan: rng => ({ n: rng.int(4, 7), x: rng.pick([0.5, 0.5, 0.2, 0.8]), y: rng.pick([0.5, 0.5, 0.3, 0.75]), inw: rng.chance(0.3) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, n = Q.n || 5, cx = cw * (Q.x ?? 0.5), cy = ch * (Q.y ?? 0.5);
@@ -328,7 +328,7 @@ trReg('xqRingRipple', { name: '同心リング', en: 'Ring Ripple', tags: ['grap
   } });
 
 /* ---- louvers: the old cut is cut into slats that turn edge-on (each squeezes to its own centre line) ---- */
-trReg('xqLouverTurn', { name: 'ルーバー', en: 'Louver Turn', tags: ['graphic', 'editorial', 'calm'], w: 0.9, dur: 0.42, ae: 'blinds',
+trReg('xqLouverTurn', { name: '루버 회전', en: 'Louver Turn', tags: ['graphic', 'editorial', 'calm'], w: 0.9, dur: 0.42, ae: 'blinds',
   plan: rng => ({ n: rng.int(7, 12), vert: rng.chance(0.4), rev: rng.chance(0.5) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, n = Q.n || 9, L = Q.vert ? cw : ch, lw = Math.max(1, lwOf(I, 0.0025));
@@ -349,7 +349,7 @@ trReg('xqLouverTurn', { name: 'ルーバー', en: 'Louver Turn', tags: ['graphic
   } });
 
 /* ---- halftone: a screen of dots swells across the frame until the dots merge into the new cut ---- */
-trReg('xqHalftone', { name: '網点ワイプ', en: 'Halftone Wipe', tags: ['pop', 'graphic', 'editorial'], w: 0.9, dur: 0.48, ae: 'checker',
+trReg('xqHalftone', { name: '망점 와이프', en: 'Halftone Wipe', tags: ['pop', 'graphic', 'editorial'], w: 0.9, dur: 0.48, ae: 'checker',
   plan: rng => ({ n: rng.int(6, 9), dir: rng.pick(['L', 'R', 'U', 'D', 'C', 'X']) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, cell = minD(I) / (Q.n || 7), cols = Math.ceil(cw / cell) + 1, rows = Math.ceil(ch / (cell * 0.866)) + 1, d = Q.dir || 'L';
@@ -370,7 +370,7 @@ trReg('xqHalftone', { name: '網点ワイプ', en: 'Halftone Wipe', tags: ['pop'
   } });
 
 /* ---- chevron push: thin bands push the old cut out one after another, so the seam travels as an arrow head ---- */
-trReg('xqChevronPush', { name: 'くの字押し', en: 'Chevron Push', tags: ['graphic', 'pop', 'glitch'], w: 1, dur: 0.42, ae: 'pushSlide',
+trReg('xqChevronPush', { name: '꺾쇠 밀기', en: 'Chevron Push', tags: ['graphic', 'pop', 'glitch'], w: 1, dur: 0.42, ae: 'pushSlide',
   plan: rng => ({ dir: rng.pick(['L', 'L', 'R', 'R', 'U', 'D']), n: rng.pick([14, 18, 24]), inv: rng.chance(0.35) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, n = Q.n || 18, hor = Q.dir !== 'U' && Q.dir !== 'D', sg = Q.dir === 'R' || Q.dir === 'D' ? 1 : -1;
@@ -390,7 +390,7 @@ trReg('xqChevronPush', { name: 'くの字押し', en: 'Chevron Push', tags: ['gr
   } });
 
 /* ---- diagonal split: the old cut is cut along a slanted line and the two pieces part at right angles to it ---- */
-trReg('xqDiagSplit', { name: '斜め割り', en: 'Diagonal Split', tags: ['graphic', 'pop', 'emotional'], w: 0.9, dur: 0.42, ae: 'doorsOpen',
+trReg('xqDiagSplit', { name: '사선 분할', en: 'Diagonal Split', tags: ['graphic', 'pop', 'emotional'], w: 0.9, dur: 0.42, ae: 'doorsOpen',
   plan: rng => ({ ang: rng.pick([28, 38, 52, -28, -38, -52, 142, 128]) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, a = (Q.ang || 35) * DEG, nx = Math.cos(a), ny = Math.sin(a), e = ioc(p), L = (cw + ch) * 2;
@@ -408,7 +408,7 @@ trReg('xqDiagSplit', { name: '斜め割り', en: 'Diagonal Split', tags: ['graph
   } });
 
 /* ---- accordion: the old cut folds up into pleats against one edge ---- */
-trReg('xqAccordion', { name: '蛇腹たたみ', en: 'Accordion Fold', tags: ['graphic', 'editorial', 'pop'], w: 0.8, dur: 0.45, ae: 'cover',
+trReg('xqAccordion', { name: '아코디언 접기', en: 'Accordion Fold', tags: ['graphic', 'editorial', 'pop'], w: 0.8, dur: 0.45, ae: 'cover',
   plan: rng => ({ n: rng.pick([6, 8, 10]), dir: rng.pick(['L', 'R', 'L', 'R', 'U']) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, n = Q.n || 8, e = ioc(p), k = 1 - e, vert = Q.dir === 'U', toEnd = Q.dir === 'R', L = vert ? ch : cw, sh = clamp(e * 3);
@@ -430,7 +430,7 @@ trReg('xqAccordion', { name: '蛇腹たたみ', en: 'Accordion Fold', tags: ['gr
   } });
 
 /* ---- strip shuffle: tall strips lift, trade places like shuffled cards, and come home carrying the new cut ---- */
-trReg('xqStripShuffle', { name: '短冊シャッフル', en: 'Strip Shuffle', tags: ['pop', 'graphic', 'glitch'], w: 0.7, dur: 0.5, ae: 'sliceShift',
+trReg('xqStripShuffle', { name: '띠 섞기', en: 'Strip Shuffle', tags: ['pop', 'graphic', 'glitch'], w: 0.7, dur: 0.5, ae: 'sliceShift',
   plan: rng => ({ n: rng.int(4, 7), k: rng.int(1, 5) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, n = Q.n || 5, k = 1 + ((Q.k || 1) % (n - 1)), m = 0.5 - 0.5 * Math.cos(TAU * p), xf = J.smooth(0.4, 0.6, p), sh = minD(I) * 0.012;
@@ -446,7 +446,7 @@ trReg('xqStripShuffle', { name: '短冊シャッフル', en: 'Strip Shuffle', ta
   } });
 
 /* ---- window zoom: the new cut arrives as a small framed picture that grows until it fills the screen ---- */
-trReg('xqWindowZoom', { name: '窓ズーム', en: 'Window Zoom', tags: ['editorial', 'pop', 'emotional'], w: 1, dur: 0.42, ae: 'zoomThrough',
+trReg('xqWindowZoom', { name: '창 줌', en: 'Window Zoom', tags: ['editorial', 'pop', 'emotional'], w: 1, dur: 0.42, ae: 'zoomThrough',
   plan: rng => ({ x: rng.pick([0.5, 0.5, 0.3, 0.7]), y: rng.pick([0.5, 0.5, 0.4, 0.62]), r: rng.range(-7, 7) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, e = ioc(p), s = e, cx = lerp(cw * (Q.x ?? 0.5), cw / 2, e), cy = lerp(ch * (Q.y ?? 0.5), ch / 2, e);
@@ -462,7 +462,7 @@ trReg('xqWindowZoom', { name: '窓ズーム', en: 'Window Zoom', tags: ['editori
   } });
 
 /* ---- soft sweep: a dissolve with a direction — a wide feathered edge crosses the frame ---- */
-trReg('xqSoftSweep', { name: '流しディゾルブ', en: 'Soft Sweep', tags: ['calm', 'emotional', 'editorial'], w: 1.2, dur: 0.5, ae: 'wipe',
+trReg('xqSoftSweep', { name: '흐르는 디졸브', en: 'Soft Sweep', tags: ['calm', 'emotional', 'editorial'], w: 1.2, dur: 0.5, ae: 'wipe',
   plan: rng => ({ ang: rng.pick([0, 180, 0, 180, 90, -90, 30, 150, -30, -150]), f: rng.range(0.3, 0.5) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, a = (Q.ang || 0) * DEG, dx = Math.cos(a), dy = Math.sin(a), D = Math.abs(dx) * cw + Math.abs(dy) * ch, f = D * (Q.f || 0.4);
@@ -477,7 +477,7 @@ trReg('xqSoftSweep', { name: '流しディゾルブ', en: 'Soft Sweep', tags: ['
   } });
 
 /* ---- light leak: soft patches of the scheme's accent colours bloom across the frame and carry the dissolve ---- */
-trReg('xqLightLeak', { name: '光漏れ', en: 'Light Leak', tags: ['emotional', 'calm', 'pop'], w: 1, dur: 0.5, ae: 'flashCross',
+trReg('xqLightLeak', { name: '빛 번짐', en: 'Light Leak', tags: ['emotional', 'calm', 'pop'], w: 1, dur: 0.5, ae: 'flashCross',
   plan: rng => ({ dir: rng.pick([1, -1]), y: rng.range(0.2, 0.8), s0: rng.int(0, 99) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, sc = I.sc, x = J.smooth(0.3, 0.7, p), d = Q.dir || 1, s0 = (Q.s0 | 0) + 3, md = minD(I);
@@ -498,7 +498,7 @@ trReg('xqLightLeak', { name: '光漏れ', en: 'Light Leak', tags: ['emotional', 
   } });
 
 /* ---- page peel: the old cut is peeled off from a corner; its pale back side folds over as it goes ---- */
-trReg('xqPagePeel', { name: 'ページめくり', en: 'Page Peel', tags: ['editorial', 'emotional', 'calm'], w: 0.9, dur: 0.55, ae: 'uncover',
+trReg('xqPagePeel', { name: '페이지 넘기기', en: 'Page Peel', tags: ['editorial', 'emotional', 'calm'], w: 0.9, dur: 0.55, ae: 'uncover',
   plan: rng => ({ cx: rng.chance(0.7) ? 1 : 0, cy: rng.chance(0.65) ? 1 : 0, k: rng.range(0.4, 0.8) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, c0x = Q.cx === 0 ? 0 : cw, c0y = Q.cy === 0 ? 0 : ch, k = Q.k || 0.6;
@@ -526,7 +526,7 @@ trReg('xqPagePeel', { name: 'ページめくり', en: 'Page Peel', tags: ['edito
   } });
 
 /* ---- wave wipe: the edge between the cuts is a rolling wave ---- */
-trReg('xqWaveWipe', { name: '波ワイプ', en: 'Wave Wipe', tags: ['pop', 'calm', 'emotional'], w: 0.9, dur: 0.48, ae: 'wipe',
+trReg('xqWaveWipe', { name: '물결 와이프', en: 'Wave Wipe', tags: ['pop', 'calm', 'emotional'], w: 0.9, dur: 0.48, ae: 'wipe',
   plan: rng => ({ dir: rng.pick(['L', 'R', 'U', 'U', 'D']), w: rng.range(1.1, 2.2), sp: rng.pick([1, -1]) * rng.range(0.7, 1.3), ph: rng.range(0, 6.28) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, hor = Q.dir === 'L' || Q.dir === 'R', fromEnd = Q.dir === 'L' || Q.dir === 'U', Lm = hor ? cw : ch, Le = hor ? ch : cw;
@@ -543,7 +543,7 @@ trReg('xqWaveWipe', { name: '波ワイプ', en: 'Wave Wipe', tags: ['pop', 'calm
   } });
 
 /* ---- stretch smear: the new cut's edge is pulled across the frame like wet paint, then the picture follows it ---- */
-trReg('xqStretchSmear', { name: '引き伸ばし', en: 'Stretch Smear', tags: ['glitch', 'graphic', 'pop'], w: 0.9, dur: 0.45, ae: 'whipPan',
+trReg('xqStretchSmear', { name: '늘여 번짐', en: 'Stretch Smear', tags: ['glitch', 'graphic', 'pop'], w: 0.9, dur: 0.45, ae: 'whipPan',
   plan: rng => ({ dir: rng.pick(['R', 'L', 'R', 'L', 'D', 'U']) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, hor = Q.dir !== 'U' && Q.dir !== 'D', fromEnd = Q.dir === 'L' || Q.dir === 'U', L = hor ? cw : ch;
@@ -569,7 +569,7 @@ trReg('xqStretchSmear', { name: '引き伸ばし', en: 'Stretch Smear', tags: ['
   } });
 
 /* ---- flip over: the frame turns over like a card on its middle axis; the new cut is on the back ---- */
-trReg('xqFlipOver', { name: '裏返し', en: 'Flip Over', tags: ['pop', 'graphic', 'editorial'], w: 0.8, dur: 0.46, ae: 'cubeTurn',
+trReg('xqFlipOver', { name: '뒤집기', en: 'Flip Over', tags: ['pop', 'graphic', 'editorial'], w: 0.8, dur: 0.46, ae: 'cubeTurn',
   plan: rng => ({ vert: rng.chance(0.35), dir: rng.pick([1, -1]) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch } = I, ang = ioc(p) * Math.PI, c = Math.cos(ang), sn = Math.sin(ang), f = Math.abs(c), C = c >= 0 ? A : B, d = Q.dir || 1;

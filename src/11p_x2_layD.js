@@ -111,7 +111,7 @@ const copyStyle = (env, kind, size, k = 1) => {
 /* ================================================================== 1 xdHelix — 二重らせん
    the glyphs ride one strand of a slowly turning double helix (near glyphs grow, far ones shrink); the other strand is dots and rungs */
 reg('xdHelix', {
-  name: '二重らせん', en: 'Double Helix', tags: ['graphic', 'calm', 'emotional'], ae: 'wave', w: 0.9, fits: n => n >= 3 && n <= 16,
+  name: '이중 나선', en: 'Double Helix', tags: ['graphic', 'calm', 'emotional'], ae: 'wave', w: 0.9, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), turns: rng.range(0.9, 1.5), speed: rng.range(16, 30) * rng.pick([1, -1]), rungs: rng.chance(0.75), dot: rng.pick(['dot', 'ring']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -142,7 +142,7 @@ reg('xdHelix', {
 /* ================================================================== 2 xdConstellation — 星座つなぎ
    glyphs sit loosely like stars of different magnitude, joined in reading order by thin lines; the whole sky turns very slowly */
 reg('xdConstellation', {
-  name: '星座つなぎ', en: 'Constellation', tags: ['calm', 'emotional', 'graphic'], ae: 'scatter', w: 1, fits: n => n >= 3 && n <= 16,
+  name: '별자리 잇기', en: 'Constellation', tags: ['calm', 'emotional', 'graphic'], ae: 'scatter', w: 1, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display', 'body'])), jit: rng.range(0.18, 0.28), star: rng.pick(['dot', 'cross']), extra: rng.int(6, 11), turn: rng.range(0.5, 1.1) * rng.pick([1, -1]) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, seed, cut, lt } = base(env);
@@ -177,7 +177,7 @@ reg('xdConstellation', {
 /* ================================================================== 3 xdBrick — レンガ積み
    one glyph per brick in running bond: every other course is shifted by half a brick */
 reg('xdBrick', {
-  name: 'レンガ積み', en: 'Brick Bond', tags: ['graphic', 'pop', 'editorial'], ae: 'tile', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '벽돌 쌓기', en: 'Brick Bond', tags: ['graphic', 'pop', 'editorial'], ae: 'tile', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), style: rng.pick(['line', 'line', 'fill']), acc: rng.chance(0.65), off: rng.pick([0, 1]) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, seed } = base(env);
@@ -215,7 +215,7 @@ reg('xdBrick', {
 /* ================================================================== 4 xdMirrorAxis — 鏡合わせ
    the lyric stands against a vertical centre line and a left-right flipped copy unfolds on the other side */
 reg('xdMirrorAxis', {
-  name: '鏡合わせ', en: 'Centre Mirror', tags: ['graphic', 'emotional', 'calm'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 14,
+  name: '거울 맞춤', en: 'Centre Mirror', tags: ['graphic', 'emotional', 'calm'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), side: rng.pick([-1, -1, 1]), copy: rng.pick(['outline', 'dim', 'lines']), ticks: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -241,7 +241,7 @@ reg('xdMirrorAxis', {
 /* ================================================================== 5 xdUpSide — 縦横交互
    every other glyph lies on its side; half-way through the cut the two groups trade places with a quarter turn */
 reg('xdUpSide', {
-  name: '縦横交互', en: 'Upright Sideways', tags: ['graphic', 'pop', 'glitch'], ae: 'mixed', w: 0.6, fits: n => n >= 2 && n <= 16,
+  name: '가로세로 교차', en: 'Upright Sideways', tags: ['graphic', 'pop', 'glitch'], ae: 'mixed', w: 0.6, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), mode: rng.pick(['alt', 'alt', 'pairs']), sgn: rng.pick([1, -1]), marks: rng.chance(0.7), swap: rng.chance(0.55) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, cut, lt } = base(env);
@@ -265,7 +265,7 @@ reg('xdUpSide', {
 /* ================================================================== 6 xdPivotFan — 回転コピー
    outlined copies of the line swing open around a pivot at the end of the solid line, and keep opening slowly */
 reg('xdPivotFan', {
-  name: '回転コピー', en: 'Pivot Fan', tags: ['graphic', 'pop', 'emotional'], ae: 'stack', w: 1, emph: 1.2, fits: n => n >= 1 && n <= 14,
+  name: '회전 복제', en: 'Pivot Fan', tags: ['graphic', 'pop', 'emotional'], ae: 'stack', w: 1, emph: 1.2, fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick(['up', 'down', 'both']), K: rng.int(4, 6), step: rng.range(6.5, 10), pv: rng.pick(['l', 'l', 'r']), style: rng.pick(['outline', 'outline', 'dim']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt } = base(env);
@@ -291,7 +291,7 @@ reg('xdPivotFan', {
 /* ================================================================== 7 xdDrum — 回転ドラム
    the line sits on the face of a slowly rolling drum; flattened copies curve away above and below */
 reg('xdDrum', {
-  name: '回転ドラム', en: 'Rolling Drum', tags: ['graphic', 'calm', 'editorial'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '회전 드럼', en: 'Rolling Drum', tags: ['graphic', 'calm', 'editorial'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, -1]), style: rng.pick(['outline', 'dim', 'outline']), rails: rng.chance(0.75) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt, cut } = base(env);
@@ -323,7 +323,7 @@ reg('xdDrum', {
 /* ================================================================== 8 xdSlowSpread — じわ開き
    the line starts tightly set and its letter-spacing keeps opening for the whole cut (or closes, the other way round) */
 reg('xdSlowSpread', {
-  name: 'じわ開き', en: 'Slow Spread', tags: ['calm', 'emotional', 'editorial'], ae: 'center', w: 1.2, fits: n => n >= 3 && n <= 16,
+  name: '서서히 펼침', en: 'Slow Spread', tags: ['calm', 'emotional', 'editorial'], ae: 'center', w: 1.2, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif', 'serif'])), mode: rng.pick(['open', 'open', 'close']), dots: rng.chance(0.6), arrows: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt, cut } = base(env);
@@ -349,7 +349,7 @@ reg('xdSlowSpread', {
 /* ================================================================== 9 xdBentRoad — 曲がり道
    the glyphs follow a road that runs right, turns down and turns right again (reading never goes backwards) */
 reg('xdBentRoad', {
-  name: '曲がり道', en: 'Bent Road', tags: ['graphic', 'pop', 'editorial'], ae: 'mixed', w: 0.9, treat: 'safe', fits: n => n >= 3 && n <= 16,
+  name: '굽은 길', en: 'Bent Road', tags: ['graphic', 'pop', 'editorial'], ae: 'mixed', w: 0.9, treat: 'safe', fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), road: rng.pick(['dim', 'dim', 'accent']), arrow: rng.chance(0.75) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -379,7 +379,7 @@ reg('xdBentRoad', {
 /* ================================================================== 10 xdStaff — 五線譜
    glyphs are set like notes at different heights on a five-line staff while a playhead crosses it */
 reg('xdStaff', {
-  name: '五線譜', en: 'Music Staff', tags: ['calm', 'emotional', 'pop', 'editorial'], ae: 'wave', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '오선보', en: 'Music Staff', tags: ['calm', 'emotional', 'pop', 'editorial'], ae: 'wave', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), play: rng.chance(0.75), stems: rng.chance(0.65), sig: rng.chance(0.6), ph: rng.range(0, 6) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, seed, lt, cut } = base(env);
@@ -414,7 +414,7 @@ reg('xdStaff', {
 /* ================================================================== 11 xdOverlap — 重なり連鎖
    big glyphs overlap each other like chain links; a background-coloured edge keeps every glyph legible and the spacing breathes */
 reg('xdOverlap', {
-  name: '重なり連鎖', en: 'Overlap Chain', tags: ['graphic', 'pop', 'emotional'], ae: 'condensed', w: 1.1, emph: 1.3, treat: false, fits: n => n >= 2 && n <= 16,
+  name: '겹침 연쇄', en: 'Overlap Chain', tags: ['graphic', 'pop', 'emotional'], ae: 'condensed', w: 1.1, emph: 1.3, treat: false, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), ov: rng.range(0.22, 0.32), cols: rng.pick(['alt', 'alt', 'mono', 'tri']), breathe: rng.chance(0.75), order: rng.pick(['fwd', 'fwd', 'rev']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, lt } = base(env);
@@ -431,7 +431,7 @@ reg('xdOverlap', {
 /* ================================================================== 12 xdCyclic — 巡回ずらし
    the line with its cyclic shifts above and below (ABCD / BCDA / CDAB …); the shifted rows step one glyph further at intervals */
 reg('xdCyclic', {
-  name: '巡回ずらし', en: 'Cyclic Shift', tags: ['graphic', 'glitch', 'editorial'], ae: 'tile', w: 0.9, busy: true, fits: n => n >= 3 && n <= 16,
+  name: '순환 밀기', en: 'Cyclic Shift', tags: ['graphic', 'glitch', 'editorial'], ae: 'tile', w: 0.9, busy: true, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), style: rng.pick(['dim', 'outline', 'dim']), move: rng.chance(0.75), per: rng.range(1.0, 1.6), dir: rng.pick([1, -1]), marks: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt } = base(env);
@@ -472,7 +472,7 @@ reg('xdCyclic', {
 /* ================================================================== 13 xdKaraoke — カラオケ送り
    the line waits as an outline and fills with colour from left to right over the length of the cut, like a karaoke subtitle */
 reg('xdKaraoke', {
-  name: 'カラオケ送り', en: 'Karaoke Fill', tags: ['pop', 'emotional', 'calm', 'editorial'], ae: 'type', w: 1.3, fits: n => n >= 2 && n <= 16,
+  name: '가라오케 채우기', en: 'Karaoke Fill', tags: ['pop', 'emotional', 'calm', 'editorial'], ae: 'type', w: 1.3, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'display', 'serif'])), un: rng.pick(['outline', 'dim', 'outline']), bar: rng.chance(0.6), clock: rng.chance(0.6), col: rng.pick(['accent', 'accent', 'fg']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt, cut } = base(env);
@@ -502,7 +502,7 @@ reg('xdKaraoke', {
 /* ================================================================== 14 xdPassing — すれ違い
    the line is split into rows that slide slowly past each other in opposite directions for the whole cut */
 reg('xdPassing', {
-  name: 'すれ違い', en: 'Passing Rows', tags: ['calm', 'emotional', 'graphic', 'editorial'], ae: 'stack', w: 1.1, fits: n => n >= 2 && n <= 16,
+  name: '엇갈림', en: 'Passing Rows', tags: ['calm', 'emotional', 'graphic', 'editorial'], ae: 'stack', w: 1.1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), travel: rng.range(0.08, 0.12), rails: rng.chance(0.75), dir: rng.pick([1, -1]), acc: rng.chance(0.35) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt, cut } = base(env);
@@ -528,7 +528,7 @@ reg('xdPassing', {
 /* ================================================================== 15 xdChecker — チェッカー
    glyphs take the light squares of a checkerboard; the other squares are solid blocks that pop in and blink */
 reg('xdChecker', {
-  name: 'チェッカー', en: 'Checkerboard', tags: ['graphic', 'pop', 'glitch'], ae: 'tile', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '체커보드', en: 'Checkerboard', tags: ['graphic', 'pop', 'glitch'], ae: 'tile', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), sq: rng.pick(['solid', 'solid', 'outline', 'dot']), col: rng.pick(['fg', 'accent', 'dim']), start: rng.pick([0, 0, 1]), blink: rng.chance(0.65) }; },
   render(env) {
     const { W, H, sc, Pm, M, txt, lw, lt, seed } = base(env);
@@ -561,7 +561,7 @@ reg('xdChecker', {
 /* ================================================================== 16 xdSquareWave — 矩形波
    glyphs sit on the high and low levels of a square-wave signal that keeps travelling, so they step up and down in turn */
 reg('xdSquareWave', {
-  name: '矩形波', en: 'Square Wave', tags: ['glitch', 'graphic', 'pop'], ae: 'wave', w: 1, fits: n => n >= 3 && n <= 16,
+  name: '사각파', en: 'Square Wave', tags: ['glitch', 'graphic', 'pop'], ae: 'wave', w: 1, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'mono', 'body'])), wl: rng.pick([2, 4, 4, 6]), speed: rng.range(0.1, 0.2) * rng.pick([1, -1]), line: rng.chance(0.85), amp: rng.range(0.36, 0.44), bits: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -582,7 +582,7 @@ reg('xdSquareWave', {
 /* ================================================================== 17 xdAxisAlt — 軸振り分け
    glyphs branch off a centre axis alternately to either side (above / below, or left / right in portrait); a marker runs along the axis */
 reg('xdAxisAlt', {
-  name: '軸振り分け', en: 'Axis Branches', tags: ['graphic', 'editorial', 'pop'], ae: 'mixed', w: 1, fits: n => n >= 3 && n <= 16,
+  name: '축 갈래', en: 'Axis Branches', tags: ['graphic', 'editorial', 'pop'], ae: 'mixed', w: 1, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), first: rng.pick([1, -1]), marker: rng.chance(0.75), nums: rng.chance(0.4) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt, cut } = base(env);
@@ -610,7 +610,7 @@ reg('xdAxisAlt', {
 /* ================================================================== 18 xdPointSym — 点対称
    like a playing card: the line upright in one half and a copy turned 180° about the screen centre in the other */
 reg('xdPointSym', {
-  name: '回転コピー対', en: 'Half-Turn Twin', tags: ['graphic', 'editorial', 'pop', 'calm'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '반회전 쌍', en: 'Half-Turn Twin', tags: ['graphic', 'editorial', 'pop', 'calm'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), mode: rng.pick(['tb', 'tb', 'corner']), copy: rng.pick(['outline', 'dim', 'lines']), mark: rng.pick(['diamond', 'dot']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -632,7 +632,7 @@ reg('xdPointSym', {
 /* ================================================================== 19 xdWindSway — なびく字
    every glyph stands on the ground line and leans with a gust that travels along the line, like grass in the wind */
 reg('xdWindSway', {
-  name: 'なびく字', en: 'Wind Sway', tags: ['calm', 'emotional', 'pop'], ae: 'wave', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '나부끼는 글자', en: 'Wind Sway', tags: ['calm', 'emotional', 'pop'], ae: 'wave', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif', 'serif'])), amp: rng.range(11, 18), speed: rng.range(1.2, 1.9), dir: rng.pick([1, -1]), streaks: rng.chance(0.7), ground: rng.chance(0.75) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, seed } = base(env);
@@ -655,7 +655,7 @@ reg('xdWindSway', {
 /* ================================================================== 20 xdSunShadow — 動く影
    the line casts a long shadow on the ground; a small sun crosses the sky during the cut and the shadow swings round with it */
 reg('xdSunShadow', {
-  name: '動く影', en: 'Moving Shadow', tags: ['emotional', 'calm', 'graphic'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '움직이는 그림자', en: 'Moving Shadow', tags: ['emotional', 'calm', 'graphic'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, -1]), sun: rng.chance(0.75), style: rng.pick(['fill', 'fill', 'lines']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt, cut } = base(env);
@@ -681,7 +681,7 @@ reg('xdSunShadow', {
 /* ================================================================== 21 xdSkewSweep — 斜体の残像
    outlined copies lean further and further from the same baseline, like the afterimages of a line falling into italics */
 reg('xdSkewSweep', {
-  name: '斜体の残像', en: 'Skew Sweep', tags: ['graphic', 'glitch', 'pop', 'emotional'], ae: 'stack', w: 0.9, emph: 1.2, fits: n => n >= 1 && n <= 14,
+  name: '기울임 잔상', en: 'Skew Sweep', tags: ['graphic', 'glitch', 'pop', 'emotional'], ae: 'stack', w: 0.9, emph: 1.2, fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, -1]), K: rng.int(4, 6), total: rng.range(36, 50), style: rng.pick(['outline', 'outline', 'dim']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt } = base(env);
@@ -703,7 +703,7 @@ reg('xdSkewSweep', {
 /* ================================================================== 22 xdStretchEcho — 縦伸びエコー
    outlined copies of the line are pulled taller and taller from the same foot (or the same middle) and breathe */
 reg('xdStretchEcho', {
-  name: '縦伸びエコー', en: 'Stretch Echo', tags: ['graphic', 'emotional', 'glitch'], ae: 'condensed', w: 1, emph: 1.3, fits: n => n >= 1 && n <= 16,
+  name: '세로 늘임 에코', en: 'Stretch Echo', tags: ['graphic', 'emotional', 'glitch'], ae: 'condensed', w: 1, emph: 1.3, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), mode: rng.pick(['up', 'up', 'both']), K: rng.int(3, 4), q: rng.range(0.42, 0.58), style: rng.pick(['outline', 'outline', 'dim']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lt } = base(env);
@@ -723,7 +723,7 @@ reg('xdStretchEcho', {
 /* ================================================================== 23 xdColumnEcho — 縦こだま
    every glyph keeps sending small outlined echoes of itself away from the line — odd glyphs one way, even glyphs the other */
 reg('xdColumnEcho', {
-  name: '縦こだま', en: 'Column Echo', tags: ['graphic', 'calm', 'emotional', 'glitch'], ae: 'stack', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '세로 메아리', en: 'Column Echo', tags: ['graphic', 'calm', 'emotional', 'glitch'], ae: 'stack', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), speed: rng.range(0.22, 0.36), style: rng.pick(['outline', 'outline', 'dim']), mode: rng.pick(['alt', 'alt', 'pair']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out } = base(env);
@@ -750,7 +750,7 @@ reg('xdColumnEcho', {
 /* ================================================================== 24 xdSkyline — 伸び縮み
    glyphs stand on a ground line and are stretched to different heights like a skyline that keeps changing */
 reg('xdSkyline', {
-  name: '伸び縮み', en: 'Stretch Skyline', tags: ['pop', 'graphic', 'glitch'], ae: 'condensed', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '늘었다 줄었다', en: 'Stretch Skyline', tags: ['pop', 'graphic', 'glitch'], ae: 'condensed', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), mode: rng.pick(['wave', 'wave', 'rand']), A: rng.range(0.8, 1.25), speed: rng.range(0.8, 1.3), sx: rng.pick([0.82, 0.9, 1]), ground: rng.chance(0.8) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, seed } = base(env);
@@ -771,7 +771,7 @@ reg('xdSkyline', {
 /* ================================================================== 25 xdSpiralEcho — 渦巻きコピー
    copies of the line turn and shrink around a pivot below it, winding into a nautilus-like spiral */
 reg('xdSpiralEcho', {
-  name: '渦巻きコピー', en: 'Nautilus Echo', tags: ['graphic', 'emotional', 'calm'], ae: 'stack', w: 0.9, fits: n => n >= 1 && n <= 12,
+  name: '소용돌이 복제', en: 'Nautilus Echo', tags: ['graphic', 'emotional', 'calm'], ae: 'stack', w: 0.9, fits: n => n >= 1 && n <= 12,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, -1]), K: rng.int(6, 8), th: rng.range(17, 24), q: rng.range(0.8, 0.85), style: rng.pick(['outline', 'outline', 'dim']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt } = base(env);
@@ -793,7 +793,7 @@ reg('xdSpiralEcho', {
 /* ================================================================== 26 xdRipple — 波紋の字
    loosely spaced glyphs, each the centre of thin rings that keep spreading like drops on water */
 reg('xdRipple', {
-  name: '波紋の字', en: 'Ripple Drops', tags: ['calm', 'emotional', 'graphic'], ae: 'scatter', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '잔물결 글자', en: 'Ripple Drops', tags: ['calm', 'emotional', 'graphic'], ae: 'scatter', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display', 'body'])), shape: rng.pick(['ring', 'ring', 'square']), sync: rng.pick(['wave', 'rand']), speed: rng.range(0.32, 0.5), K: rng.pick([2, 3]) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, seed } = base(env);
@@ -815,7 +815,7 @@ reg('xdRipple', {
 /* ================================================================== 27 xdFourUp — 四面刷り
    the line printed four times in a grid — once solid, the others outlined, striped and dotted, and the fills keep swapping */
 reg('xdFourUp', {
-  name: '四面刷り', en: 'Four-Up Print', tags: ['pop', 'graphic', 'editorial'], ae: 'tile', w: 1, busy: true, fits: n => n >= 1 && n <= 16,
+  name: '4면 인쇄', en: 'Four-Up Print', tags: ['pop', 'graphic', 'editorial'], ae: 'tile', w: 1, busy: true, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), main: rng.int(0, 3), cyc: rng.chance(0.65), cross: rng.chance(0.8), rot: rng.int(0, 3), per: rng.range(0.7, 1.1) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt } = base(env);
@@ -843,7 +843,7 @@ reg('xdFourUp', {
 /* ================================================================== 28 xdTrace — なぞり書き
    the solid line on top; below it outlined copies are traced stroke by stroke, glyph after glyph, during the cut */
 reg('xdTrace', {
-  name: 'なぞり書き', en: 'Trace Copies', tags: ['calm', 'editorial', 'emotional', 'pop'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '덧쓰기', en: 'Trace Copies', tags: ['calm', 'editorial', 'emotional', 'pop'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif', 'serif'])), C: rng.pick([2, 2, 3]), guide: rng.chance(0.8), col: rng.pick(['fg', 'accent', 'fg']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt, cut } = base(env);
@@ -872,7 +872,7 @@ reg('xdTrace', {
 /* ================================================================== 29 xdTide — 満ち潮
    a waving water line rises through the line during the cut; the submerged part of the glyphs takes the water colour */
 reg('xdTide', {
-  name: '満ち潮', en: 'Rising Tide', tags: ['emotional', 'calm', 'pop'], ae: 'center', w: 1.1, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '밀물', en: 'Rising Tide', tags: ['emotional', 'calm', 'pop'], ae: 'center', w: 1.1, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'display', 'serif'])), lvl: rng.range(0.5, 0.78), col: rng.pick(['accent', 'accent', 'accent2']), speed: rng.range(1.4, 2.2) * rng.pick([1, -1]), body: rng.chance(0.8) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, lt, cut } = base(env);
@@ -896,7 +896,7 @@ reg('xdTide', {
 /* ================================================================== 30 xdStitch — 縫い目
    a dashed thread weaves over and under the glyphs like a running stitch; the stitches keep crawling along it */
 reg('xdStitch', {
-  name: '縫い目', en: 'Running Stitch', tags: ['pop', 'calm', 'emotional', 'editorial'], ae: 'wave', w: 0.8, fits: n => n >= 2 && n <= 16,
+  name: '바느질 자국', en: 'Running Stitch', tags: ['pop', 'calm', 'emotional', 'editorial'], ae: 'wave', w: 0.8, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), style: rng.pick(['dash', 'dash', 'knot']), speed: rng.range(0.5, 0.9) * rng.pick([1, -1]), first: rng.pick([1, -1]), col: rng.pick(['accent', 'accent', 'sub']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);

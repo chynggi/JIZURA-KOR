@@ -65,7 +65,7 @@ const ahr = (k, a, b) => (k < a ? E.outCubic(k / a) : k > b ? 1 - E.inOutCubic((
 
 /* already there: the line was standing in the dark all along; patches of it brighten at their own pace */
 reg('enter', 'hzAlreadyThere', {
-  name: '闇に居た', en: 'Already There', tags: TAGS.concat(['emotional', 'calm']), w: 1.3, ae: 'blur', minDur: 0.9,
+  name: '어둠 속에 있었다', en: 'Already There', tags: TAGS.concat(['emotional', 'calm']), w: 1.3, ae: 'blur', minDur: 0.9,
   inDur: dur => clamp(dur * 0.5, 0.6, 1.4),
   apply(env, it, p) {
     const cs = cseed(env), idx = indexOf(env, it), c0 = colOf(it), dk = mixC(c0, env.sc.bg, 0.78), on = Math.min(1, p / 0.1);
@@ -82,7 +82,7 @@ reg('enter', 'hzAlreadyThere', {
 
 /* while unwatched: glyphs turn up far apart from each other, never where the eye just was; each one is faint until the next arrives */
 reg('enter', 'hzUnwatched', {
-  name: '目を離した隙', en: 'While Unwatched', tags: TAGS.concat(['editorial']), w: 1, ae: 'type', minDur: 0.9,
+  name: '눈 뗀 사이', en: 'While Unwatched', tags: TAGS.concat(['editorial']), w: 1, ae: 'type', minDur: 0.9,
   inDur: dur => clamp(dur * 0.55, 0.55, 1.5),
   apply(env, it, p) {
     const cs = cseed(env), N = cutN(env), idx = indexOf(env, it), sz = it.size;
@@ -101,7 +101,7 @@ reg('enter', 'hzUnwatched', {
 
 /* unsteady hand: the outlines are traced in fits and starts by a trembling hand, and only then filled */
 reg('enter', 'hzShakyHand', {
-  name: '震える筆跡', en: 'Unsteady Hand', tags: TAGS.concat(['emotional', 'editorial']), w: 0.9, ae: 'wipe', minDur: 1,
+  name: '떨리는 필적', en: 'Unsteady Hand', tags: TAGS.concat(['emotional', 'editorial']), w: 0.9, ae: 'wipe', minDur: 1,
   inDur: dur => clamp(dur * 0.55, 0.7, 1.5),
   apply(env, it, p) {
     const cs = cseed(env), idx = indexOf(env, it), sz = it.size, u = p / 0.8;
@@ -118,7 +118,7 @@ reg('enter', 'hzShakyHand', {
 
 /* seeping up: each glyph soaks up from under the floor at its own rate, stalls halfway, then comes through */
 reg('enter', 'hzFloorSeep', {
-  name: '床下から滲む', en: 'Seeping Up', tags: TAGS.concat(['emotional']), w: 1, ae: 'wipe', minDur: 0.8,
+  name: '마루 밑에서 배어남', en: 'Seeping Up', tags: TAGS.concat(['emotional']), w: 1, ae: 'wipe', minDur: 0.8,
   inDur: dur => clamp(dur * 0.5, 0.55, 1.3),
   apply(env, it, p) {
     const cs = cseed(env), idx = indexOf(env, it), sz = it.size, c0 = colOf(it), dk = mixC(c0, env.sc.bg, 0.6);
@@ -136,7 +136,7 @@ reg('enter', 'hzFloorSeep', {
 
 /* too close: it is suddenly there, a step nearer than it should be, stares, then backs off in three stiff steps */
 reg('enter', 'hzTooClose', {
-  name: '近すぎる', en: 'Too Close', tags: TAGS.concat(['glitch', 'graphic']), w: 0.9, ae: 'zoom', minDur: 0.9,
+  name: '너무 가까움', en: 'Too Close', tags: TAGS.concat(['glitch', 'graphic']), w: 0.9, ae: 'zoom', minDur: 0.9,
   inDur: dur => clamp(dur * 0.45, 0.55, 1.1),
   apply(env, it, p) {
     const lv = [1.12, 1.07, 1.03, 1], at = [0.5, 0.68, 0.86];
@@ -149,7 +149,7 @@ reg('enter', 'hzTooClose', {
 
 /* one upside down: the line fades up with one glyph hanging head-down; it notices late and turns itself right */
 reg('enter', 'hzWrongGlyph', {
-  name: '逆さの一字', en: 'One Upside Down', tags: TAGS.concat(['glitch', 'editorial']), w: 0.9, ae: 'flicker', minDur: 0.9,
+  name: '거꾸로 된 한 글자', en: 'One Upside Down', tags: TAGS.concat(['glitch', 'editorial']), w: 0.9, ae: 'flicker', minDur: 0.9,
   inDur: dur => clamp(dur * 0.5, 0.6, 1.2),
   apply(env, it, p) {
     const cs = cseed(env), N = cutN(env), idx = indexOf(env, it), ord = orderOf(env, it), sz = it.size, st = env.step, acc = env.sc.accent;
@@ -169,7 +169,7 @@ reg('enter', 'hzWrongGlyph', {
 
 /* from scratches: every glyph starts as a thin slanted scratch that is drawn, then swells into the letter */
 reg('enter', 'hzFromScratch', {
-  name: '掻き傷から', en: 'From Scratches', tags: TAGS.concat(['graphic', 'glitch']), w: 1, ae: 'stretch',
+  name: '긁힌 자국에서', en: 'From Scratches', tags: TAGS.concat(['graphic', 'glitch']), w: 1, ae: 'stretch',
   inDur: dur => clamp(dur * 0.42, 0.4, 0.95),
   apply(env, it, p) {
     const cs = cseed(env), idx = indexOf(env, it);
@@ -187,7 +187,7 @@ reg('enter', 'hzFromScratch', {
 
 /* crooked rise: the glyphs creep up dim and out of true, and at the very end they all click into place at once */
 reg('enter', 'hzLateSnap', {
-  name: 'ずれて昇る', en: 'Crooked Rise', tags: TAGS.concat(['emotional', 'graphic']), w: 1.1, ae: 'pop', minDur: 0.8,
+  name: '어긋나며 떠오름', en: 'Crooked Rise', tags: TAGS.concat(['emotional', 'graphic']), w: 1.1, ae: 'pop', minDur: 0.8,
   inDur: dur => clamp(dur * 0.5, 0.55, 1.3),
   apply(env, it, p) {
     const cs = cseed(env), idx = indexOf(env, it), sz = it.size, at = 0.86;
@@ -201,7 +201,7 @@ reg('enter', 'hzLateSnap', {
 
 /* second pass: a beam of light crosses and shows the words for a moment; dark again; when it comes back they stay */
 reg('enter', 'hzLampSweep', {
-  name: '灯りが二度', en: 'Second Pass', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'wipe', minDur: 1.1,
+  name: '불빛이 두 번', en: 'Second Pass', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'wipe', minDur: 1.1,
   inDur: dur => clamp(dur * 0.55, 0.8, 1.6),
   apply(env, it, p) {
     const W = env.W, H = env.H, xa = -0.14 * W, xb = 1.14 * W, bw = W * 0.13, sx = it.sx || 1, sy = it.sy || 1;
@@ -222,7 +222,7 @@ reg('enter', 'hzLampSweep', {
 
 /* out of the light: the line sinks while the edge of the dark comes down over it from above */
 reg('exit', 'hzOutOfLight', {
-  name: '灯りの外へ', en: 'Out Of Light', tags: TAGS.concat(['emotional', 'calm']), w: 1.2, ae: 'wipe',
+  name: '불빛 밖으로', en: 'Out Of Light', tags: TAGS.concat(['emotional', 'calm']), w: 1.2, ae: 'wipe',
   outDur: dur => clamp(dur * 0.45, 0.5, 1.1),
   apply(env, it, p) {
     const bx = J.itemBox(it), sz = it.size, c0 = colOf(it), dk = nightC(env.sc);
@@ -237,7 +237,7 @@ reg('exit', 'hzOutOfLight', {
 
 /* taken: one after another, at uneven moments, a glyph is snatched sideways into the dark; the rest flinch */
 reg('exit', 'hzTaken', {
-  name: '攫われる', en: 'Taken', tags: TAGS.concat(['glitch', 'emotional']), w: 1.1, ae: 'scatter', minDur: 0.9,
+  name: '끌려감', en: 'Taken', tags: TAGS.concat(['glitch', 'emotional']), w: 1.1, ae: 'scatter', minDur: 0.9,
   outDur: dur => clamp(dur * 0.48, 0.5, 1.2),
   apply(env, it, p) {
     const cs = cseed(env), N = cutN(env), idx = indexOf(env, it), sz = it.size, st = env.step, W = env.W;
@@ -257,7 +257,7 @@ reg('exit', 'hzTaken', {
 
 /* thumb smear: three slow rubs back and forth; each one drags the ink sideways and leaves less of it */
 reg('exit', 'hzThumbSmear', {
-  name: '指で擦る', en: 'Thumb Smear', tags: TAGS.concat(['emotional', 'editorial']), w: 1, ae: 'blur', minDur: 0.9,
+  name: '손가락으로 문지름', en: 'Thumb Smear', tags: TAGS.concat(['emotional', 'editorial']), w: 1, ae: 'blur', minDur: 0.9,
   outDur: dur => clamp(dur * 0.5, 0.6, 1.2),
   apply(env, it, p) {
     if (p >= 0.9) { it.alpha = 0; return; }
@@ -271,7 +271,7 @@ reg('exit', 'hzThumbSmear', {
 
 /* retinal burn: the words cut out, but their outline stays on the eye, swelling and paling */
 reg('exit', 'hzRetinal', {
-  name: '目に焼きつく', en: 'Retinal Burn', tags: TAGS.concat(['glitch', 'graphic']), w: 1, ae: 'blur',
+  name: '눈에 새겨짐', en: 'Retinal Burn', tags: TAGS.concat(['glitch', 'graphic']), w: 1, ae: 'blur',
   outDur: dur => clamp(dur * 0.45, 0.5, 1.1),
   apply(env, it, p) {
     if (p < 0.06) return;
@@ -287,7 +287,7 @@ reg('exit', 'hzRetinal', {
 
 /* dragged off: something tugs the whole line towards a corner — a tug, a pause, a harder tug — and then it is gone */
 reg('exit', 'hzDragCorner', {
-  name: '隅へ引きずる', en: 'Dragged Off', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'drift', minDur: 1,
+  name: '구석으로 끌고 감', en: 'Dragged Off', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'drift', minDur: 1,
   outDur: dur => clamp(dur * 0.5, 0.6, 1.2),
   apply(env, it, p) {
     const cs = cseed(env), W = env.W, H = env.H, st = env.step;
@@ -306,7 +306,7 @@ reg('exit', 'hzDragCorner', {
 
 /* flatline: two beats, each weaker; then the line goes flat, holds as a thin trace, and shortens to nothing */
 reg('exit', 'hzFlatline', {
-  name: '心停止', en: 'Flatline', tags: TAGS.concat(['emotional', 'graphic']), w: 0.8, ae: 'shrink', minDur: 1,
+  name: '심정지', en: 'Flatline', tags: TAGS.concat(['emotional', 'graphic']), w: 0.8, ae: 'shrink', minDur: 1,
   outDur: dur => clamp(dur * 0.5, 0.6, 1.2),
   apply(env, it, p) {
     const bump = (c, w) => Math.exp(-Math.pow((p - c) / w, 2));
@@ -325,7 +325,7 @@ reg('exit', 'hzFlatline', {
 
 /* the shadow leaves: the words fade where they stand while their shadow slips out from under them and walks off */
 reg('exit', 'hzShadowOff', {
-  name: '影だけ去る', en: 'Shadow Leaves', tags: TAGS.concat(['emotional']), w: 0.9, ae: 'drift', minDur: 1,
+  name: '그림자만 떠남', en: 'Shadow Leaves', tags: TAGS.concat(['emotional']), w: 0.9, ae: 'drift', minDur: 1,
   outDur: dur => clamp(dur * 0.5, 0.6, 1.3),
   apply(env, it, p) {
     const cs = cseed(env), sz = it.size, a0 = it.alpha ?? 1, c0 = colOf(it);
@@ -342,7 +342,7 @@ reg('exit', 'hzShadowOff', {
 
 /* backing away: it retreats from you one stiff step at a time, smaller and dimmer, and after the last step it is not there */
 reg('exit', 'hzBackAway', {
-  name: '後ずさり', en: 'Backing Away', tags: TAGS.concat(['emotional', 'calm']), w: 1, ae: 'shrink', minDur: 0.9,
+  name: '뒷걸음질', en: 'Backing Away', tags: TAGS.concat(['emotional', 'calm']), w: 1, ae: 'shrink', minDur: 0.9,
   outDur: dur => clamp(dur * 0.5, 0.55, 1.2),
   apply(env, it, p) {
     if (p >= 0.92) { it.alpha = 0; return; }
@@ -361,7 +361,7 @@ reg('exit', 'hzBackAway', {
 
 /* too-slow breath: a very long breath in, held with a faint tremor, and let go all at once */
 reg('hold', 'hzSlowBreath', {
-  name: '遅すぎる呼吸', en: 'Slow Breath', tags: TAGS.concat(['emotional', 'calm']), w: 1, ae: 'breathe',
+  name: '너무 느린 호흡', en: 'Slow Breath', tags: TAGS.concat(['emotional', 'calm']), w: 1, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.02) return;
     const cs = cseed(env), per = 6.2, u = ((env.ltb / per + J.r(cs, 411) * 0.25) % 1 + 1) % 1;
@@ -374,7 +374,7 @@ reg('hold', 'hzSlowBreath', {
 
 /* lone tremor: everything is dead still except one glyph, which shivers in slow swells */
 reg('hold', 'hzLoneTremor', {
-  name: '一字の震え', en: 'Lone Tremor', tags: TAGS.concat(['glitch', 'emotional']), w: 1, ae: 'jitter',
+  name: '한 글자 떨림', en: 'Lone Tremor', tags: TAGS.concat(['glitch', 'emotional']), w: 1, ae: 'jitter',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.02) return;
     const cs = cseed(env), N = cutN(env), idx = indexOf(env, it), sz = it.size, st = env.step, target = J.h(cs, 421) % N;
@@ -388,7 +388,7 @@ reg('hold', 'hzLoneTremor', {
 
 /* something passes: an unseen thing moves along the line; where it is, the glyphs dim and lean out of its way */
 reg('hold', 'hzPassing', {
-  name: '何かが通る', en: 'Something Passes', tags: TAGS.concat(['emotional']), w: 1.1, ae: 'wave',
+  name: '무언가 지나감', en: 'Something Passes', tags: TAGS.concat(['emotional']), w: 1.1, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.02) return;
     const cs = cseed(env), W = env.W, per = 3.6, T = env.ltb / per + J.r(cs, 431) * 0.4, cyc = Math.floor(T), u = (T - cyc) / 0.62;
@@ -406,7 +406,7 @@ reg('hold', 'hzPassing', {
 
 /* fading presence: each glyph is, at its own slow pace, a little less there — and then back */
 reg('hold', 'hzPresence', {
-  name: '薄れる気配', en: 'Fading Presence', tags: TAGS.concat(['calm', 'emotional']), w: 0.9, ae: 'breathe',
+  name: '옅어지는 기척', en: 'Fading Presence', tags: TAGS.concat(['calm', 'emotional']), w: 0.9, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * clamp(motionK(env), 0.5, 1.2); if (k < 0.02) return;
     const cs = cseed(env), idx = indexOf(env, it), sz = it.size, t = env.ltb * 0.42, kk = Math.min(1, k);
@@ -419,7 +419,7 @@ reg('hold', 'hzPresence', {
 
 /* looming shadow: a larger, faint copy slowly rises up behind the words, and drops away the moment it is noticed */
 reg('hold', 'hzLoom', {
-  name: '背後の影', en: 'Looming Shadow', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'drift',
+  name: '등 뒤의 그림자', en: 'Looming Shadow', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.02 || it.fill === false || (it.alpha ?? 1) < 0.5) return;
     const cs = cseed(env), per = 4.8, u = ((env.ltb / per + J.r(cs, 451) * 0.3) % 1 + 1) % 1;
@@ -439,7 +439,7 @@ reg('hold', 'hzLoom', {
 
 /* uneven ink: some glyphs took the ink badly — a few are much fainter than the rest, and sit a hair low */
 reg('treat', 'hzUneven', {
-  name: 'むらのある字', en: 'Uneven Ink', tags: TAGS.concat(['emotional', 'editorial']), w: 1, safe: true, ae: 'fadeChars',
+  name: '얼룩진 글자', en: 'Uneven Ink', tags: TAGS.concat(['emotional', 'editorial']), w: 1, safe: true, ae: 'fadeChars',
   plan: rng => ({ lo: rng.range(0.36, 0.48), rate: rng.range(0.2, 0.34) }),
   apply(env, it, Pm) {
     if (!alive(it)) return;
@@ -455,7 +455,7 @@ reg('treat', 'hzUneven', {
 
 /* hairline scratches: a few long, thin cuts run straight through the words */
 reg('treat', 'hzHairlines', {
-  name: '細い傷', en: 'Hairline Scratches', tags: TAGS.concat(['graphic', 'glitch']), w: 1, ae: 'strike',
+  name: '가는 긁힘', en: 'Hairline Scratches', tags: TAGS.concat(['graphic', 'glitch']), w: 1, ae: 'strike',
   plan: rng => ({ n: rng.int(3, 5), slant: rng.range(-0.22, 0.22) }),
   apply(env, it, Pm) {
     if (!alive(it)) return;
@@ -485,7 +485,7 @@ reg('treat', 'hzHairlines', {
 
 /* cold rim: the letters themselves fall into shade; only a thin cold edge on one side still catches the light */
 reg('treat', 'hzColdRim', {
-  name: '冷たい縁', en: 'Cold Rim', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'hardShadow',
+  name: '차가운 가장자리', en: 'Cold Rim', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'hardShadow',
   plan: rng => ({ side: rng.pick([-1, 1]), d: rng.range(0.022, 0.032) }),
   apply(env, it, Pm) {
     if (!alive(it) || it.shadow || it.extrude || it.gradient || it.pattern) return;
@@ -498,7 +498,7 @@ reg('treat', 'hzColdRim', {
 
 /* husk: only a broken, irregular outline is left, with the faintest stain of the letter inside */
 reg('treat', 'hzHusk', {
-  name: '抜け殻', en: 'Husk', tags: TAGS.concat(['graphic', 'editorial']), w: 0.8, ae: 'dotted',
+  name: '허물', en: 'Husk', tags: TAGS.concat(['graphic', 'editorial']), w: 0.8, ae: 'dotted',
   plan: rng => ({ k: rng.range(0.85, 1.25), fill: rng.range(0.12, 0.2) }),
   apply(env, it, Pm) {
     if (!alive(it) || it.stroke > 0 || it.gradient || it.pattern) return;
@@ -513,7 +513,7 @@ reg('treat', 'hzHusk', {
 
 /* drag marks: every letter has been dragged a little way; a fading trail of it hangs underneath */
 reg('treat', 'hzDragMarks', {
-  name: '引きずり跡', en: 'Drag Marks', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'longShadow',
+  name: '끌린 자국', en: 'Drag Marks', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, ae: 'longShadow',
   plan: rng => ({ len: rng.range(0.26, 0.42), lean: rng.range(-0.06, 0.06) }),
   apply(env, it, Pm) {
     if (!alive(it) || it.extrude || it.shadow) return;
@@ -527,7 +527,7 @@ const KM = env => clamp((env.fx.motion ?? 0.7) * 1.25, 0, 1.25);
 
 /* creep and freeze: a very slow push that stops dead mid-move, as if it heard something, and eases a hair back */
 reg('cam', 'hzCreepFreeze', {
-  name: '寄って固まる', en: 'Creep And Freeze', tags: TAGS.concat(['emotional', 'calm']), w: 1.1, ae: 'push',
+  name: '다가가 굳음', en: 'Creep And Freeze', tags: TAGS.concat(['emotional', 'calm']), w: 1.1, ae: 'push',
   plan: rng => ({ at: rng.range(0.5, 0.68), r: rng.range(-0.6, 0.6) }),
   get(env, Pm) {
     const K = KM(env), d = Math.max(0.4, env.cut.dur), t0 = d * (Pm.at || 0.6), u = Math.min(1, env.lt / t0);
@@ -537,7 +537,7 @@ reg('cam', 'hzCreepFreeze', {
 
 /* glance back: a slow drift one way, a quick look over the shoulder the other way, held, and a reluctant return */
 reg('cam', 'hzGlanceBack', {
-  name: '振り返り', en: 'Glance Back', tags: TAGS.concat(['emotional', 'editorial']), w: 0.9, ae: 'panL',
+  name: '뒤돌아보기', en: 'Glance Back', tags: TAGS.concat(['emotional', 'editorial']), w: 0.9, ae: 'panL',
   plan: rng => ({ at: rng.range(0.32, 0.5), dir: rng.pick([-1, 1]) }),
   get(env, Pm) {
     const K = KM(env), d = Math.max(0.6, env.cut.dur), dir = Pm.dir || 1, t = env.lt, t0 = d * (Pm.at || 0.4);
@@ -549,7 +549,7 @@ reg('cam', 'hzGlanceBack', {
 
 /* held breath: the frame sways with slow breathing, then the breath is held — stock still but for a tremor — and let out */
 reg('cam', 'hzHeldBreath', {
-  name: '息を殺す', en: 'Held Breath', tags: TAGS.concat(['calm', 'emotional']), w: 1, ae: 'floatNoise',
+  name: '숨죽이기', en: 'Held Breath', tags: TAGS.concat(['calm', 'emotional']), w: 1, ae: 'floatNoise',
   plan: rng => ({ at: rng.range(0.3, 0.5), len: rng.range(0.9, 1.5), per: rng.range(2.8, 3.6) }),
   get(env, Pm) {
     const K = KM(env), d = Math.max(0.6, env.cut.dur), t = env.lt, hs = d * (Pm.at || 0.4), len = Math.min(Pm.len || 1.2, d * 0.4);
@@ -562,7 +562,7 @@ reg('cam', 'hzHeldBreath', {
 
 /* cold shiver: perfectly still — then a short, fine shudder runs through the frame and dies away */
 reg('cam', 'hzColdShiver', {
-  name: '悪寒', en: 'Cold Shiver', tags: TAGS.concat(['glitch', 'emotional']), w: 0.9, ae: 'handheld',
+  name: '오한', en: 'Cold Shiver', tags: TAGS.concat(['glitch', 'emotional']), w: 0.9, ae: 'handheld',
   plan: rng => ({ per: rng.range(1.9, 2.6), rate: rng.range(0.6, 0.85) }),
   get(env, Pm) {
     const K = KM(env), t = env.lt, sd = env.cut.seed | 0, per = Pm.per || 2.2;
@@ -584,7 +584,7 @@ const fx = (k, d) => reg('fx', k, Object.assign({}, d, {
 
 /* closing tear: the picture rips open along a ragged vertical line, the halves slip against each other, and it closes */
 fx('hzTear', {
-  name: '縦の裂け目', en: 'Closing Tear', tags: TAGS.concat(['glitch', 'graphic']), w: 0.8, dur: 8, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'slice',
+  name: '세로 틈', en: 'Closing Tear', tags: TAGS.concat(['glitch', 'graphic']), w: 0.8, dur: 8, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), M = Math.min(cw, ch), open = k < 0.18 ? E.outExpo(k / 0.18) : 1 - E.inOutCubic((k - 0.18) / 0.82);
@@ -605,7 +605,7 @@ fx('hzTear', {
 
 /* colour drain: for a moment all colour leaves the picture and the contrast goes flat and pale */
 fx('hzDrain', {
-  name: '色を失う', en: 'Colour Drain', tags: TAGS.concat(['emotional', 'calm']), w: 0.9, dur: 10, pre: 2, amp: 1, mid: true, ae: 'flash',
+  name: '색을 잃음', en: 'Colour Drain', tags: TAGS.concat(['emotional', 'calm']), w: 0.9, dur: 10, pre: 2, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, e = ahr(k, 0.15, 0.55) * clamp(ampOf(ev), 0.6, 1.1); if (e < 0.004) return;
     ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = Math.min(1, e); ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, cw, ch);
@@ -614,7 +614,7 @@ fx('hzDrain', {
 
 /* closing dark: the dark at the edges of the frame swells inwards, nearly reaches the middle, and draws back */
 fx('hzClosingDark', {
-  name: '迫る闇', en: 'Closing Dark', tags: TAGS.concat(['emotional']), w: 1, dur: 13, pre: 4, amp: 1, mid: true, ae: 'flash',
+  name: '다가오는 어둠', en: 'Closing Dark', tags: TAGS.concat(['emotional']), w: 1, dur: 13, pre: 4, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch } = I, s = evS(ev), e = ahr(k, 0.4, 0.5) * clamp(ampOf(ev), 0.7, 1.1); if (e < 0.004) return;
     const R = Math.hypot(cw, ch) / 2, cx = cw * (0.5 + J.rs(s, 1) * 0.05), cy = ch * (0.5 + J.rs(s, 2) * 0.05);
@@ -626,7 +626,7 @@ fx('hzClosingDark', {
 
 /* cold breath: a pale cloud of breath rises from below the frame, spreads and thins out */
 fx('hzColdBreath', {
-  name: '白い息', en: 'Cold Breath', tags: TAGS.concat(['calm', 'emotional']), w: 0.7, dur: 16, pre: 2, amp: 1, mid: true,
+  name: '하얀 입김', en: 'Cold Breath', tags: TAGS.concat(['calm', 'emotional']), w: 0.7, dur: 16, pre: 2, amp: 1, mid: true,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), M = Math.min(cw, ch), dk = isDark(sc.bg), col = J.mix(sc.fg, sc.bg, dk ? 0.25 : 0.72);
     const x0 = cw * J.rr(0.3, 0.7, s, 1), lean = J.rs(s, 2) * cw * 0.16, amp = clamp(ampOf(ev), 0.7, 1.1);
@@ -643,7 +643,7 @@ fx('hzColdBreath', {
 
 /* faint: the picture slips away from you — smaller, dimmer, soft — into a dark surround, and swims back */
 fx('hzFaint', {
-  name: '気が遠のく', en: 'Faint', tags: TAGS.concat(['emotional', 'calm']), w: 0.8, dur: 13, pre: 3, amp: 1, mid: true, scratch: true, ae: 'zoom',
+  name: '정신이 아득해짐', en: 'Faint', tags: TAGS.concat(['emotional', 'calm']), w: 0.8, dur: 13, pre: 3, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), e = ahr(k, 0.38, 0.52) * clamp(ampOf(ev), 0.7, 1.1); if (e < 0.004) return;
@@ -659,7 +659,7 @@ fx('hzFaint', {
 
 /* upside glimpse: for two frames the whole picture hangs upside down, dim and a little too near */
 fx('hzUpside', {
-  name: '逆さの一コマ', en: 'Upside Glimpse', tags: TAGS.concat(['glitch']), w: 0.5, dur: 3, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'invert',
+  name: '거꾸로 된 한 컷', en: 'Upside Glimpse', tags: TAGS.concat(['glitch']), w: 0.5, dur: 3, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'invert',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S || k > 0.7) return;
     const z = 1.06;
@@ -678,7 +678,7 @@ const trReg = (k, d) => reg('trans', k, Object.assign({}, d, {
 
 /* blackout: the light on the old shot sputters and fails; a beat of dark; it comes back on over the new one */
 trReg('hzBlackout', {
-  name: '停電', en: 'Blackout', tags: TAGS.concat(['glitch', 'emotional']), w: 1, dur: 0.55, ae: 'flashCross',
+  name: '정전', en: 'Blackout', tags: TAGS.concat(['glitch', 'emotional']), w: 1, dur: 0.55, ae: 'flashCross',
   plan: rng => ({ gap: rng.range(0.1, 0.18) }),
   draw(ctx, A, B, p, I, Pm) {
     const { cw, ch } = I, st = I.step, sd = I.seed | 0, g = Pm.gap || 0.14, a1 = 0.5 - g / 2, b0 = 0.5 + g / 2;
@@ -693,7 +693,7 @@ trReg('hzBlackout', {
 
 /* sliding down: the old picture loses its grip and slides off downwards in uneven strips, stretching as it goes */
 trReg('hzSlideDown', {
-  name: 'ずり落ちる', en: 'Sliding Down', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, dur: 0.6, ae: 'sliceShift',
+  name: '흘러내림', en: 'Sliding Down', tags: TAGS.concat(['emotional', 'graphic']), w: 0.9, dur: 0.6, ae: 'sliceShift',
   plan: rng => ({ n: rng.pick([18, 28, 40]) }),
   draw(ctx, A, B, p, I, Pm) {
     const { cw, ch } = I, sd = I.seed | 0, n = Pm.n || 28, w = Math.ceil(cw / n);
@@ -710,7 +710,7 @@ trReg('hzSlideDown', {
 
 /* lingering ghost: the new shot is there at once, but the old one stays on as a pale ghost that drifts up and thins */
 trReg('hzLinger', {
-  name: '居残る影', en: 'Lingering Ghost', tags: TAGS.concat(['emotional', 'calm']), w: 1, dur: 0.75, ae: 'zoomThrough',
+  name: '남은 그림자', en: 'Lingering Ghost', tags: TAGS.concat(['emotional', 'calm']), w: 1, dur: 0.75, ae: 'zoomThrough',
   plan: rng => ({ up: rng.pick([-1, -1, 1]) }),
   draw(ctx, A, B, p, I, Pm) {
     const { cw, ch, sc } = I, st = I.step, sd = I.seed | 0, t0 = 0.14;

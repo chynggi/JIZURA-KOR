@@ -108,7 +108,7 @@ const dashLine = (env, a, b, col, lw, alpha, on, off) => {
 
 /* 1 割り書き — the head of the line set large, the rest as a two-line note inside the big line's height (warichu) */
 regL('tzWarichu', {
-  name: '割り書き', en: 'Split-line Note', tags: ['editorial', 'graphic', 'emotional'], ae: 'mixed', w: 1, portrait: 0.5, fits: n => n >= 3 && n <= 16,
+  name: '두 줄 주석', en: 'Split-line Note', tags: ['editorial', 'graphic', 'emotional'], ae: 'mixed', w: 1, portrait: 0.5, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), fs: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), lead: rng.chance(0.3), mark: rng.pick(['paren', 'paren', 'rule', 'none']), acc: rng.chance(0.4), ratio: rng.range(0.38, 0.5) };
   },
@@ -155,7 +155,7 @@ regL('tzWarichu', {
 
 /* 2 鉤組 — the line runs horizontally, turns at one glyph and continues vertically (or the other way round) */
 regL('tzHook', {
-  name: '鉤組', en: 'Hook Setting', tags: ['graphic', 'editorial', 'calm'], ae: 'vcols', w: 1, fits: n => n >= 3 && n <= 13,
+  name: '갈고리 짜임', en: 'Hook Setting', tags: ['graphic', 'editorial', 'calm'], ae: 'vcols', w: 1, fits: n => n >= 3 && n <= 13,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), mode: rng.pick(['kanji', 'mid', 'mid']), flip: rng.chance(0.4), key: rng.pick(['accent', 'accent', 'fg']), ext: rng.chance(0.75) };
   },
@@ -234,7 +234,7 @@ regL('tzHook', {
 
 /* 3 部分拡大 — one key glyph blown up solid and cut by the frame; the line is set small in the space it leaves */
 regL('tzDetail', {
-  name: '部分拡大', en: 'Detail Crop', tags: ['graphic', 'editorial', 'pop'], ae: 'huge', w: 1.1, emph: 1.3, fits: n => n >= 1 && n <= 16,
+  name: '부분 확대', en: 'Detail Crop', tags: ['graphic', 'editorial', 'pop'], ae: 'huge', w: 1.1, emph: 1.3, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), fm: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), side: rng.pick(['a', 'b']), style: rng.pick(['solid', 'solid', 'accent', 'outline']), drift: rng.pick([1, -1]) };
   },
@@ -279,7 +279,7 @@ regL('tzDetail', {
 
 /* 4 揃え見本 — the line set three times between two margin rules: flush left, centred, flush right; one row is filled */
 regL('tzAlignSpec', {
-  name: '揃え見本', en: 'Alignment Specimen', tags: ['editorial', 'graphic', 'calm'], ae: 'stack', w: 0.9, fits: n => n >= 1 && n <= 10,
+  name: '정렬 견본', en: 'Alignment Specimen', tags: ['editorial', 'graphic', 'calm'], ae: 'stack', w: 0.9, fits: n => n >= 1 && n <= 10,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), row: rng.int(0, 2), other: rng.pick(['outline', 'outline', 'dim']), acc: rng.chance(0.4) };
   },
@@ -318,7 +318,7 @@ regL('tzAlignSpec', {
 
 /* 5 詰まる字間 — the glyphs start spread across the frame and the tracking closes (or opens) while a readout counts */
 regL('tzTrackClose', {
-  name: '詰まる字間', en: 'Closing Tracking', tags: ['editorial', 'calm', 'emotional', 'graphic'], ae: 'center', w: 1, fits: n => n >= 2 && n <= 14,
+  name: '좁아지는 자간', en: 'Closing Tracking', tags: ['editorial', 'calm', 'emotional', 'graphic'], ae: 'center', w: 1, fits: n => n >= 2 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif', 'body'])), mode: rng.pick(['close', 'close', 'open']), ticks: rng.chance(0.8), jp: rng.chance(0.5) };
   },
@@ -361,7 +361,7 @@ regL('tzTrackClose', {
 
 /* 6 軸組 — the lines alternate flush right / flush left against one vertical hairline axis */
 regL('tzAxis', {
-  name: '軸組', en: 'Axis Setting', tags: ['editorial', 'graphic', 'calm', 'emotional'], ae: 'mixed', w: 1.1, fits: n => n >= 2 && n <= 16,
+  name: '축 짜임', en: 'Axis Setting', tags: ['editorial', 'graphic', 'calm', 'emotional'], ae: 'mixed', w: 1.1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), first: rng.chance(0.5), axis: rng.pick(['sub', 'sub', 'accent']), idx: rng.chance(0.7), acc: rng.int(0, 5) };
   },
@@ -399,7 +399,7 @@ regL('tzAxis', {
 
 /* 7 斜線区切り — word groups stepping down the frame, parted by long thin slashes */
 regL('tzSlash', {
-  name: '斜線区切り', en: 'Slash Divide', tags: ['graphic', 'editorial', 'pop'], ae: 'diag', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '사선 구분', en: 'Slash Divide', tags: ['graphic', 'editorial', 'pop'], ae: 'diag', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), step: rng.chance(0.7), tall: rng.chance(0.6), acc: rng.int(0, 3), num: rng.chance(0.7) };
   },
@@ -460,7 +460,7 @@ regL('tzSlash', {
 
 /* 8 沈む基線 — the big line is cut by a horizon hairline (sunk below it, or hanging from it); the whole line is repeated small */
 regL('tzHorizon', {
-  name: '沈む基線', en: 'Sunk Baseline', tags: ['emotional', 'calm', 'editorial', 'graphic'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 15,
+  name: '가라앉는 기준선', en: 'Sunk Baseline', tags: ['emotional', 'calm', 'editorial', 'graphic'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 15,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), mode: rng.pick(['sink', 'sink', 'hang']), crop: rng.range(0.16, 0.24), cap: rng.chance(0.85), line: rng.pick(['accent', 'sub', 'fg']) };
   },
@@ -504,7 +504,7 @@ regL('tzHorizon', {
 
 /* 9 逆三角組 — centred lines that shorten (or lengthen) step by step, with two converging hairlines and an end mark */
 regL('tzFunnel', {
-  name: '逆三角組', en: 'Funnel Setting', tags: ['editorial', 'calm', 'graphic', 'emotional'], ae: 'stack', w: 1, fits: n => n >= 3 && n <= 16,
+  name: '역삼각 짜임', en: 'Funnel Setting', tags: ['editorial', 'calm', 'graphic', 'emotional'], ae: 'stack', w: 1, fits: n => n >= 3 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display', 'body'])), dir: rng.pick(['down', 'down', 'up']), sides: rng.chance(0.8), mark: rng.pick(['sq', 'sq', 'none']) };
   },
@@ -544,7 +544,7 @@ regL('tzFunnel', {
 
 /* 10 拡大図 — a small box on one glyph of the line is projected by two hairlines to a large frame holding the glyph enlarged */
 regL('tzZoomBox', {
-  name: '拡大図', en: 'Enlarged Detail', tags: ['editorial', 'graphic', 'calm'], ae: 'gloss', w: 0.9, fits: n => n >= 2 && n <= 16,
+  name: '확대도', en: 'Enlarged Detail', tags: ['editorial', 'graphic', 'calm'], ae: 'gloss', w: 0.9, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), flip: rng.chance(0.4), big: rng.pick(['outline', 'outline', 'fill']), mode: rng.pick(['kanji', 'kanji', 'mid']), cross: rng.chance(0.7) };
   },
@@ -595,7 +595,7 @@ regL('tzZoomBox', {
 
 /* 11 平体一字 — one glyph of the line is stretched sideways until the line fills the measure; a dimension line gives the width */
 regL('tzWideOne', {
-  name: '平体一字', en: 'Stretched Glyph', tags: ['graphic', 'pop', 'emotional', 'editorial'], ae: 'condensed', w: 0.8, fits: n => n >= 2 && n <= 14,
+  name: '납작한 한 글자', en: 'Stretched Glyph', tags: ['graphic', 'pop', 'emotional', 'editorial'], ae: 'condensed', w: 0.8, fits: n => n >= 2 && n <= 14,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), mode: rng.pick(['kanji', 'mid', 'last']), acc: rng.chance(0.5), dim: rng.chance(0.8) };
   },
@@ -643,7 +643,7 @@ regL('tzWideOne', {
 
 /* 12 点対称 — the line and a second setting of it turned 180° face each other across a centre hairline */
 regL('tzPointSym', {
-  name: '点対称', en: 'Point Symmetry', tags: ['graphic', 'editorial', 'emotional'], ae: 'stack', w: 0.9, fits: n => n >= 1 && n <= 16,
+  name: '점대칭', en: 'Point Symmetry', tags: ['graphic', 'editorial', 'emotional'], ae: 'stack', w: 0.9, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), top: rng.chance(0.75), al: rng.pick(['edge', 'edge', 'center']), copy: rng.pick(['outline', 'outline', 'dim']), mark: rng.chance(0.8) };
   },
@@ -678,7 +678,7 @@ regL('tzPointSym', {
 
 /* 13 割り出し — the frame as a page: ninths ticked on the edges, diagonals, and the classic text block they give; the line sits in it */
 regL('tzCanon', {
-  name: '割り出し', en: 'Page Canon', tags: ['editorial', 'calm', 'graphic'], ae: 'gloss', w: 0.9, fits: n => n >= 1 && n <= 18,
+  name: '판면 비례', en: 'Page Canon', tags: ['editorial', 'calm', 'graphic'], ae: 'gloss', w: 0.9, fits: n => n >= 1 && n <= 18,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display', 'body'])), flip: rng.chance(0.5), low: rng.chance(0.35), block: rng.pick(['sub', 'sub', 'accent']), ticks: rng.chance(0.8) };
   },
@@ -719,7 +719,7 @@ regL('tzCanon', {
 
 /* 14 字面線 — each line of type runs through its own metric lines (body top, centre, baseline, body bottom), drawn to the frame edges and named */
 regL('tzMetric', {
-  name: '字面線', en: 'Metric Lines', tags: ['editorial', 'graphic', 'calm'], ae: 'type', w: 0.9, fits: n => n >= 1 && n <= 16,
+  name: '글자면 선', en: 'Metric Lines', tags: ['editorial', 'graphic', 'calm'], ae: 'type', w: 0.9, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['serif', 'display'])), em: rng.chance(0.8), base: rng.pick(['accent', 'accent', 'fg']), right: rng.chance(0.3) };
   },
@@ -761,7 +761,7 @@ regL('tzMetric', {
 
 /* 15 順路 — the glyphs stand loosely apart, numbered, and a hairline walks from one to the next in reading order */
 regL('tzPath', {
-  name: '順路', en: 'Reading Path', tags: ['graphic', 'editorial', 'pop'], ae: 'scatter', w: 0.55, fits: n => n >= 2 && n <= 12,
+  name: '읽는 순로', en: 'Reading Path', tags: ['graphic', 'editorial', 'pop'], ae: 'scatter', w: 0.55, fits: n => n >= 2 && n <= 12,
   plan(rng, cut, st) {
     return { font: rng.pick(fontsOf(st, ['display', 'serif'])), seed: rng.int(1, 1e6), num: rng.chance(0.85), end: rng.chance(0.7), line: rng.pick(['sub', 'sub', 'accent']) };
   },
@@ -853,7 +853,7 @@ const decor = (key, def, fn) => regD(key, Object.assign(def, {
 }));
 
 /* 注記号 — a small reference mark at the lyric's shoulder and the matching footnote line in the margin */
-decor('tzNoteMark', { name: '注記号', en: 'Note Mark', tags: ['editorial', 'calm', 'emotional'], ae: 'leaders', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
+decor('tzNoteMark', { name: '주석 기호', en: 'Note Mark', tags: ['editorial', 'calm', 'emotional'], ae: 'leaders', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, cut = env.cut, m = MG(env), fs = FS(env), lt = env.lt;
   const mk = ['※', '＊', '†'][(Pd.v | 0) % 3], num = String(clamp(Pd.n | 0, 1, 3)), ac = accentOn(sc);
   const ms = fs * 1.9, a = E.outBack(clamp((lt - 0.15) / 0.35), 1.6) * o;
@@ -879,7 +879,7 @@ decor('tzNoteMark', { name: '注記号', en: 'Note Mark', tags: ['editorial', 'c
 });
 
 /* 進行罫 — a hairline as long as the lyric; a heavier rule grows along it with the cut's time, a small numeral riding its head */
-decor('tzProgRule', { name: '進行罫', en: 'Progress Rule', tags: ['editorial', 'calm', 'graphic', 'emotional'], ae: 'bars', w: 1.1, layer: 'front' }, (env, bb, Pd, o, u) => {
+decor('tzProgRule', { name: '진행 괘선', en: 'Progress Rule', tags: ['editorial', 'calm', 'graphic', 'emotional'], ae: 'bars', w: 1.1, layer: 'front' }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, cut = env.cut, m = MG(env), fs = FS(env), lt = env.lt;
   const horiz = bwOf(bb) >= bhOf(bb) * 0.8, gap = 16 * u + (horiz ? bhOf(bb) : bwOf(bb)) * 0.07;
   const e = E.outExpo(clamp(lt / 0.6)), q = clamp(lt / Math.max(0.3, cut.dur - (cut.outDur || 0) * 0.5));
@@ -913,7 +913,7 @@ decor('tzProgRule', { name: '進行罫', en: 'Progress Rule', tags: ['editorial'
 });
 
 /* 字送り記号 — under (or beside) the lyric: a short rule per glyph, a caret in every gap and the spacing values in small numerals */
-decor('tzTrackMarks', { name: '字送り記号', en: 'Tracking Marks', tags: ['editorial', 'graphic', 'calm'], ae: 'brackets', w: 0.9, layer: 'front' }, (env, bb, Pd, o, u) => {
+decor('tzTrackMarks', { name: '자간 표시', en: 'Tracking Marks', tags: ['editorial', 'graphic', 'calm'], ae: 'brackets', w: 0.9, layer: 'front' }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, m = MG(env), fs = FS(env) * 0.88, lt = env.lt;
   let cells = glyphCells(env, bb);
   const vert = !!cells.vert;
@@ -952,7 +952,7 @@ decor('tzTrackMarks', { name: '字送り記号', en: 'Tracking Marks', tags: ['e
 });
 
 /* 縦キャプション — a figure caption in a mono face, turned 90° and typed along the side of the lyric beside a hairline */
-decor('tzSideCaption', { name: '縦キャプション', en: 'Side Caption', tags: ['editorial', 'graphic', 'calm'], ae: 'leaders', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
+decor('tzSideCaption', { name: '세로 캡션', en: 'Side Caption', tags: ['editorial', 'graphic', 'calm'], ae: 'leaders', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, cut = env.cut, m = MG(env), fs = FS(env), lt = env.lt;
   const gap = 18 * u + Math.min(bwOf(bb), bhOf(bb)) * 0.05;
   let side = Pd.right ? 1 : -1, x = 0, ok = false;
@@ -977,7 +977,7 @@ decor('tzSideCaption', { name: '縦キャプション', en: 'Side Caption', tags
 });
 
 /* 行頭記号 — a pilcrow (or section sign) set before the head of the lyric and a small end mark closing it */
-decor('tzHeadEnd', { name: '行頭記号', en: 'Pilcrow & End Mark', tags: ['editorial', 'calm', 'emotional', 'graphic'], ae: 'brackets', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
+decor('tzHeadEnd', { name: '단락 기호', en: 'Pilcrow & End Mark', tags: ['editorial', 'calm', 'emotional', 'graphic'], ae: 'brackets', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, m = MG(env), lt = env.lt;
   const cells = glyphCells(env, bb), g0 = cells[0], g1 = cells[cells.length - 1];
   const hh = g0 ? Math.min(g0.h, g0.w * 1.4) : bhOf(bb);
@@ -998,7 +998,7 @@ decor('tzHeadEnd', { name: '行頭記号', en: 'Pilcrow & End Mark', tags: ['edi
 });
 
 /* 番号列 — a strip of small running numerals in the margin, stepping on by one at every cut; the current one is underlined */
-decor('tzNumStrip', { name: '番号列', en: 'Number Strip', tags: ['editorial', 'graphic', 'calm', 'pop'], ae: 'counter', w: 1, layer: 'front', subtle: true }, (env, bb, Pd, o, u) => {
+decor('tzNumStrip', { name: '번호 줄', en: 'Number Strip', tags: ['editorial', 'graphic', 'calm', 'pop'], ae: 'counter', w: 1, layer: 'front', subtle: true }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, cut = env.cut, m = MG(env), fs = FS(env), lt = env.lt;
   const vert = (Pd.v | 0) % 3 === 2 && W > H;
   const pitch = vert ? fs * 2.3 : fs * 3.5, L = vert ? H : W;
@@ -1028,7 +1028,7 @@ decor('tzNumStrip', { name: '番号列', en: 'Number Strip', tags: ['editorial',
 });
 
 /* リーダー罫 — a dot leader runs from the end of the lyric out to the margin and ends in a small page numeral */
-decor('tzDotLeader', { name: 'リーダー罫', en: 'Dot Leader', tags: ['editorial', 'calm', 'emotional'], ae: 'leaders', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
+decor('tzDotLeader', { name: '점선 리더', en: 'Dot Leader', tags: ['editorial', 'calm', 'emotional'], ae: 'leaders', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, cut = env.cut, m = MG(env), fs = FS(env), lt = env.lt;
   const cells = glyphCells(env, bb), g1 = cells[cells.length - 1], g0 = cells[0];
   const num = (Pd.v | 0) % 2 ? `p.${(cut.index | 0) + 1}` : pad2((cut.line | 0) + 1), ns = fs * 1.25, nw = tw(num, monoF(env), ns, 0.08);
@@ -1049,7 +1049,7 @@ decor('tzDotLeader', { name: 'リーダー罫', en: 'Dot Leader', tags: ['editor
 });
 
 /* 仮想ボディ — the body of every glyph drawn as a hairline box around it, with small ticks at the middle of each side */
-decor('tzEmBox', { name: '仮想ボディ', en: 'Em Squares', tags: ['editorial', 'graphic', 'calm'], ae: 'grid', w: 0.9, layer: 'front' }, (env, bb, Pd, o, u) => {
+decor('tzEmBox', { name: '가상 바디', en: 'Em Squares', tags: ['editorial', 'graphic', 'calm'], ae: 'grid', w: 0.9, layer: 'front' }, (env, bb, Pd, o, u) => {
   const { sc } = env, lt = env.lt, cells = glyphCells(env, bb).slice(0, 34), lw = Math.max(1, u), fs = FS(env) * 0.8;
   const pad = 1.02 + ((Pd.v | 0) % 2) * 0.05;
   cells.forEach((g, i) => {
@@ -1070,7 +1070,7 @@ decor('tzEmBox', { name: '仮想ボディ', en: 'Em Squares', tags: ['editorial'
 });
 
 /* 四隅の数字 — small live numerals in the frame corners (line, running time, glyph count, cut), each on a short hairline */
-decor('tzCornerNums', { name: '四隅の数字', en: 'Corner Numerals', tags: ['editorial', 'graphic', 'calm', 'glitch'], ae: 'counter', w: 1, layer: 'front', subtle: true }, (env, bb, Pd, o, u) => {
+decor('tzCornerNums', { name: '네 귀퉁이 숫자', en: 'Corner Numerals', tags: ['editorial', 'graphic', 'calm', 'glitch'], ae: 'counter', w: 1, layer: 'front', subtle: true }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, cut = env.cut, m = MG(env), fs = FS(env), lt = env.lt;
   const items = [
     [0, 0, `L.${pad2((cut.line | 0) + 1)}`], [1, 0, J.fmtTime(cut.start + Math.min(lt, cut.dur))],
@@ -1091,7 +1091,7 @@ decor('tzCornerNums', { name: '四隅の数字', en: 'Corner Numerals', tags: ['
 });
 
 /* 読み位置 — a small caret steps from glyph to glyph under the lyric as the cut plays, with the position in numerals */
-decor('tzReadCaret', { name: '読み位置', en: 'Reading Caret', tags: ['editorial', 'pop', 'graphic', 'emotional'], ae: 'arrows', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
+decor('tzReadCaret', { name: '읽는 위치', en: 'Reading Caret', tags: ['editorial', 'pop', 'graphic', 'emotional'], ae: 'arrows', w: 1, layer: 'front' }, (env, bb, Pd, o, u) => {
   const { W, H, sc } = env, cut = env.cut, m = MG(env), fs = FS(env) * 0.88, lt = env.lt;
   const cells = glyphCells(env, bb), n = cells.length; if (!n) return;
   const vert = !!cells.vert, ac = accentOn(sc);
@@ -1138,7 +1138,7 @@ const regB = (key, d) => J.register('bg', key, Object.assign({}, d, { draw(env, 
 const bs = rng => rng.int(1, 1e9);
 
 /* 基線グリッド — a faint baseline grid across the frame, every few lines a little stronger and numbered, drifting very slowly */
-regB('tzBgBaseGrid', { name: '基線グリッド', en: 'Baseline Grid', tags: ['editorial', 'calm', 'graphic'], w: 1.1, subtle: true,
+regB('tzBgBaseGrid', { name: '기준선 그리드', en: 'Baseline Grid', tags: ['editorial', 'calm', 'graphic'], w: 1.1, subtle: true,
   plan: rng => ({ seed: bs(rng), rows: rng.int(22, 30), every: rng.pick([4, 4, 5]), drift: rng.range(5, 10) * rng.pick([1, -1]), k: rng.range(0.1, 0.135), nums: rng.chance(0.8), right: rng.chance(0.3) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, M = Math.min(W, H), e = E.outCubic(clamp(bgT(env) / 0.8));
@@ -1159,7 +1159,7 @@ regB('tzBgBaseGrid', { name: '基線グリッド', en: 'Baseline Grid', tags: ['
   } });
 
 /* 数字の野 — a field of small two-digit numerals in a mono face; single cells tick over now and then, one row reads a little clearer */
-regB('tzBgNumField', { name: '数字の野', en: 'Numeral Field', tags: ['editorial', 'graphic', 'glitch', 'calm'], w: 1, subtle: true,
+regB('tzBgNumField', { name: '숫자 들판', en: 'Numeral Field', tags: ['editorial', 'graphic', 'glitch', 'calm'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), fs: rng.range(0.016, 0.021), k: rng.range(0.075, 0.1), rate: rng.range(0.2, 0.5), band: rng.chance(0.7) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, M = Math.min(W, H), s = Q.seed || 1, e = E.outCubic(clamp(bgT(env) / 0.8)), t = env.t;
@@ -1181,7 +1181,7 @@ regB('tzBgNumField', { name: '数字の野', en: 'Numeral Field', tags: ['editor
   } });
 
 /* 段組ガイド — the column guides of a page layout: pale columns and gutters, head and foot lines, small column numbers; one column lights faintly in turn */
-regB('tzBgColumns', { name: '段組ガイド', en: 'Column Guides', tags: ['editorial', 'calm', 'graphic'], w: 1, subtle: true,
+regB('tzBgColumns', { name: '단 가이드', en: 'Column Guides', tags: ['editorial', 'calm', 'graphic'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), cols: rng.pick([4, 6, 6, 8]), k: rng.range(0.035, 0.05), step: rng.range(1.8, 2.8), nums: rng.chance(0.75), fill: rng.chance(0.7) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, M = Math.min(W, H), e = E.outCubic(clamp(bgT(env) / 0.9)), k = Q.k || 0.042;
@@ -1206,7 +1206,7 @@ regB('tzBgColumns', { name: '段組ガイド', en: 'Column Guides', tags: ['edit
   } });
 
 /* 淡い大数字 — the line number (or the running second) as two huge pale digits cut by the frame edge; they roll in when the number changes */
-regB('tzBgBigDigits', { name: '淡い大数字', en: 'Pale Counter', tags: ['editorial', 'graphic', 'calm', 'emotional'], w: 1, subtle: true,
+regB('tzBgBigDigits', { name: '흐린 큰 숫자', en: 'Pale Counter', tags: ['editorial', 'graphic', 'calm', 'emotional'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), side: rng.pick([-1, 1]), font: rng.pick(['display', 'mono', 'serif']), outline: rng.chance(0.6), k: rng.range(0.055, 0.08), what: rng.pick(['line', 'line', 'sec']), low: rng.chance(0.6) }),
   draw(env, Q) {
     const { W, H, sc } = env, cut = env.cut || {}, k = Q.k || 0.065, side = Q.side || 1;
@@ -1221,7 +1221,7 @@ regB('tzBgBigDigits', { name: '淡い大数字', en: 'Pale Counter', tags: ['edi
   } });
 
 /* 字の地紋 — the glyphs of the current lyric line, small and widely spaced, tiled over the whole frame; alternate rows drift opposite ways */
-regB('tzBgGlyphField', { name: '字の地紋', en: 'Glyph Field', tags: ['editorial', 'emotional', 'calm', 'graphic'], w: 1, subtle: true,
+regB('tzBgGlyphField', { name: '글자 바탕 무늬', en: 'Glyph Field', tags: ['editorial', 'emotional', 'calm', 'graphic'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), fs: rng.range(0.03, 0.042), k: rng.range(0.06, 0.085), v: rng.range(8, 16), font: rng.pick(['body', 'serif', 'body']) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, M = Math.min(W, H), cut = env.cut || {}, e = E.outCubic(clamp(bgT(env) / 0.9));
@@ -1239,7 +1239,7 @@ regB('tzBgGlyphField', { name: '字の地紋', en: 'Glyph Field', tags: ['editor
   } });
 
 /* 罫線の呼吸 — a few typographic rules (hairline, double, thick-and-thin, dotted) reach in from the edges and slowly lengthen and shorten */
-regB('tzBgRules', { name: '罫線の呼吸', en: 'Breathing Rules', tags: ['editorial', 'calm', 'emotional', 'graphic'], w: 1, subtle: true,
+regB('tzBgRules', { name: '괘선 호흡', en: 'Breathing Rules', tags: ['editorial', 'calm', 'emotional', 'graphic'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), n: rng.int(6, 9), k: rng.range(0.12, 0.16) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, M = Math.min(W, H), s = Q.seed || 1, n = Q.n || 7, e = E.outExpo(clamp(bgT(env) / 1.1)), k = Q.k || 0.1, u = M / 1080;

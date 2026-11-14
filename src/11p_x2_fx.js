@@ -48,7 +48,7 @@ const fx = (k, d) => J.register('fx', k, Object.assign({}, d, {
 
 /* ================= displacement ================= */
 // the whole frame leans into a parallelogram and springs back
-fx('xrShearSnap', { name: 'シアー戻し', en: 'Shear Snap', tags: ['pop', 'graphic', 'glitch'], w: 1.1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'shake',
+fx('xrShearSnap', { name: '시어 복귀', en: 'Shear Snap', tags: ['pop', 'graphic', 'glitch'], w: 1.1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'shake',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const s = evS(ev), sk = (J.r(s, 1) < 0.5 ? 1 : -1) * 0.24 * amp1(ev) * spring(k, 0.2);
@@ -59,7 +59,7 @@ fx('xrShearSnap', { name: 'シアー戻し', en: 'Shear Snap', tags: ['pop', 'gr
   } });
 
 // columns fall one after another like piano keys and rise back
-fx('xrColumnDrop', { name: '列落ち', en: 'Column Drop', tags: ['pop', 'graphic', 'glitch'], w: 0.9, dur: 8, amp: 1, mid: true, scratch: true, ae: 'slice',
+fx('xrColumnDrop', { name: '열 낙하', en: 'Column Drop', tags: ['pop', 'graphic', 'glitch'], w: 0.9, dur: 8, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const s = evS(ev), n = 10 + (J.h(s, 1) % 8), rev = J.r(s, 2) < 0.5, a = amp1(ev), up = J.r(s, 4) < 0.3 ? -1 : 1;
@@ -74,7 +74,7 @@ fx('xrColumnDrop', { name: '列落ち', en: 'Column Drop', tags: ['pop', 'graphi
   } });
 
 // the four quadrants travel one full lap around the centre, a quarter turn per beat
-fx('xrQuadCycle', { name: '四分割めぐり', en: 'Quadrant Lap', tags: ['pop', 'graphic'], w: 0.6, dur: 8, amp: 1, mid: true, scratch: true, ae: 'block',
+fx('xrQuadCycle', { name: '4분할 순회', en: 'Quadrant Lap', tags: ['pop', 'graphic'], w: 0.6, dur: 8, amp: 1, mid: true, scratch: true, ae: 'block',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S || k >= 1) return;
     const s = evS(ev), cwD = J.r(s, 1) < 0.5 ? 1 : 3, f = k * 4, j = Math.min(3, Math.floor(f)), fr = E.inOutCubic(clamp(f - j));
@@ -88,7 +88,7 @@ fx('xrQuadCycle', { name: '四分割めぐり', en: 'Quadrant Lap', tags: ['pop'
   } });
 
 // split-flap board: tiles turn over to their coloured back and round again in a diagonal wave
-fx('xrFlipTiles', { name: 'パネル返し', en: 'Flip Tiles', tags: ['pop', 'graphic'], w: 0.7, dur: 9, amp: 1, mid: true, scratch: true, ae: 'block',
+fx('xrFlipTiles', { name: '패널 뒤집기', en: 'Flip Tiles', tags: ['pop', 'graphic'], w: 0.7, dur: 9, amp: 1, mid: true, scratch: true, ae: 'block',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), m = Math.min(cw, ch), gx = Math.max(3, Math.round(cw / (m / 3.2))), gy = Math.max(3, Math.round(ch / (m / 3.2)));
@@ -107,7 +107,7 @@ fx('xrFlipTiles', { name: 'パネル返し', en: 'Flip Tiles', tags: ['pop', 'gr
   } });
 
 // rows squeezed towards the centre line: the frame gets a waist (or a belly) and springs back
-fx('xrWaist', { name: 'くびれ', en: 'Waist Pinch', tags: ['pop', 'graphic', 'emotional'], w: 0.9, dur: 6, amp: 1, mid: true, scratch: true, ae: 'zoom',
+fx('xrWaist', { name: '잘록', en: 'Waist Pinch', tags: ['pop', 'graphic', 'emotional'], w: 0.9, dur: 6, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const s = evS(ev), A = (J.r(s, 1) < 0.35 ? -0.2 : 0.3) * amp1(ev) * punch(k, 0.28), N = 54, yc = 0.5 + J.rs(s, 2) * 0.06;
@@ -121,7 +121,7 @@ fx('xrWaist', { name: 'くびれ', en: 'Waist Pinch', tags: ['pop', 'graphic', '
   } });
 
 // horizontal sync flagging: the top (or bottom) of the picture bends sideways and wraps round
-fx('xrSyncBend', { name: '同期曲がり', en: 'Sync Bend', tags: ['glitch', 'emotional'], w: 0.8, dur: 5, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'slice',
+fx('xrSyncBend', { name: '동기 굽힘', en: 'Sync Bend', tags: ['glitch', 'emotional'], w: 0.8, dur: 5, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), st = I.step * 7 + s, top = J.r(s, 1) < 0.7, dir = J.r(s, 2) < 0.5 ? 1 : -1;
@@ -137,7 +137,7 @@ fx('xrSyncBend', { name: '同期曲がり', en: 'Sync Bend', tags: ['glitch', 'e
   } });
 
 // vertical pleats: neighbouring strips are squeezed and stretched in turn, like bellows breathing once
-fx('xrAccordion', { name: '蛇腹', en: 'Bellows', tags: ['pop', 'graphic'], w: 0.8, dur: 8, amp: 1, mid: true, scratch: true, ae: 'slice',
+fx('xrAccordion', { name: '아코디언', en: 'Bellows', tags: ['pop', 'graphic'], w: 0.8, dur: 8, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const s = evS(ev), n = 2 * (4 + (J.h(s, 1) % 3)), w0 = cw / n, q = 0.62 * amp1(ev) * Math.sin(k * TAU) * (1 - 0.35 * k) * (J.r(s, 2) < 0.5 ? 1 : -1);
@@ -152,7 +152,7 @@ fx('xrAccordion', { name: '蛇腹', en: 'Bellows', tags: ['pop', 'graphic'], w: 
   } });
 
 // the frame is tossed up, falls and bounces on the bottom edge
-fx('xrDropBounce', { name: '着地バウンド', en: 'Drop Bounce', tags: ['pop', 'graphic'], w: 1, dur: 9, amp: 1, mid: true, scratch: true, ae: 'shake',
+fx('xrDropBounce', { name: '착지 바운드', en: 'Drop Bounce', tags: ['pop', 'graphic'], w: 1, dur: 9, amp: 1, mid: true, scratch: true, ae: 'shake',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const lift = k < 0.16 ? E.outCubic(k / 0.16) : 1 - bounceOut((k - 0.16) / 0.84);
@@ -163,7 +163,7 @@ fx('xrDropBounce', { name: '着地バウンド', en: 'Drop Bounce', tags: ['pop'
   } });
 
 // three concentric discs of the picture turn against each other and settle
-fx('xrDiscTurn', { name: '円盤まわし', en: 'Disc Turn', tags: ['pop', 'graphic', 'glitch'], w: 0.8, dur: 8, amp: 1, mid: true, scratch: true, ae: 'shake',
+fx('xrDiscTurn', { name: '원판 돌리기', en: 'Disc Turn', tags: ['pop', 'graphic', 'glitch'], w: 0.8, dur: 8, amp: 1, mid: true, scratch: true, ae: 'shake',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), m = Math.min(cw, ch) / 2, cx = cw / 2, cy = ch / 2, e = spring(k, 0.22), dir = J.r(s, 1) < 0.5 ? 1 : -1;
@@ -182,7 +182,7 @@ fx('xrDiscTurn', { name: '円盤まわし', en: 'Disc Turn', tags: ['pop', 'grap
   } });
 
 // a bump of vertical stretch runs across the columns
-fx('xrStretchWave', { name: '伸び波', en: 'Stretch Wave', tags: ['pop', 'emotional', 'graphic'], w: 0.9, dur: 8, amp: 1, mid: true, scratch: true, ae: 'zoom',
+fx('xrStretchWave', { name: '늘임 물결', en: 'Stretch Wave', tags: ['pop', 'emotional', 'graphic'], w: 0.9, dur: 8, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const s = evS(ev), N = 80, dir = J.r(s, 1) < 0.5, x0 = cw * (dir ? lerp(-0.3, 1.3, k) : lerp(1.3, -0.3, k)), sig = cw * 0.1, a = 0.85 * amp1(ev);
@@ -194,7 +194,7 @@ fx('xrStretchWave', { name: '伸び波', en: 'Stretch Wave', tags: ['pop', 'emot
   } });
 
 // the frame is cut along a diagonal; the two halves slide apart along the cut and back
-fx('xrDiagSlice', { name: '斜め裂き', en: 'Diagonal Cut', tags: ['graphic', 'pop', 'glitch'], w: 0.9, dur: 6, amp: 1, mid: true, scratch: true, ae: 'slice',
+fx('xrDiagSlice', { name: '사선 찢기', en: 'Diagonal Cut', tags: ['graphic', 'pop', 'glitch'], w: 0.9, dur: 6, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), e = punch(k, 0.3), th = (J.r(s, 1) < 0.5 ? 1 : -1) * (18 + 20 * J.r(s, 2)) * DEG, D = Math.hypot(cw, ch);
@@ -212,7 +212,7 @@ fx('xrDiagSlice', { name: '斜め裂き', en: 'Diagonal Cut', tags: ['graphic', 
   } });
 
 // horizontal bands each jump to their own magnification (parallax layers) and fall back
-fx('xrBandZoom', { name: '段ズーム', en: 'Band Zoom', tags: ['pop', 'graphic', 'glitch'], w: 0.9, dur: 6, amp: 1, mid: true, scratch: true, ae: 'zoom',
+fx('xrBandZoom', { name: '띠 줌', en: 'Band Zoom', tags: ['pop', 'graphic', 'glitch'], w: 0.9, dur: 6, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const s = evS(ev), nb = 4 + (J.h(s, 1) % 3), e = punch(k, 0.22) * amp1(ev);
@@ -226,7 +226,7 @@ fx('xrBandZoom', { name: '段ズーム', en: 'Band Zoom', tags: ['pop', 'graphic
   } });
 
 // the picture twists like a ribbon: rows turn over (mirrored for a moment) one after another
-fx('xrRibbonTwist', { name: 'ねじれ', en: 'Ribbon Twist', tags: ['pop', 'emotional', 'graphic'], w: 0.7, dur: 10, amp: 1, mid: true, scratch: true, ae: 'slice',
+fx('xrRibbonTwist', { name: '리본 비틀림', en: 'Ribbon Twist', tags: ['pop', 'emotional', 'graphic'], w: 0.7, dur: 10, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), N = 40, down = J.r(s, 1) < 0.5;
@@ -244,7 +244,7 @@ fx('xrRibbonTwist', { name: 'ねじれ', en: 'Ribbon Twist', tags: ['pop', 'emot
   } });
 
 // slot machine: wide reels spin one full turn in alternate directions and stop one by one
-fx('xrSlotReel', { name: 'リール回転', en: 'Slot Reels', tags: ['pop', 'graphic'], w: 0.7, dur: 10, pre: 3, amp: 1, mid: true, scratch: true, ae: 'slice',
+fx('xrSlotReel', { name: '릴 회전', en: 'Slot Reels', tags: ['pop', 'graphic'], w: 0.7, dur: 10, pre: 3, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S || k >= 1) return;
     const s = evS(ev), n = (cw >= ch ? 3 : 2) + (J.h(s, 1) % 2), lag = 0.14, a = amp1(ev);
@@ -265,7 +265,7 @@ fx('xrSlotReel', { name: 'リール回転', en: 'Slot Reels', tags: ['pop', 'gra
   } });
 
 // the quadrants are pushed apart from the centre, leaving a cross-shaped gap
-fx('xrCrossSplit', { name: '十字割り', en: 'Cross Split', tags: ['graphic', 'pop', 'editorial'], w: 1, dur: 6, amp: 1, mid: true, scratch: true, ae: 'block',
+fx('xrCrossSplit', { name: '십자 분할', en: 'Cross Split', tags: ['graphic', 'pop', 'editorial'], w: 1, dur: 6, amp: 1, mid: true, scratch: true, ae: 'block',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), e = punch(k, 0.25), g = Math.min(cw, ch) * 0.04 * amp1(ev) * e;
@@ -280,7 +280,7 @@ fx('xrCrossSplit', { name: '十字割り', en: 'Cross Split', tags: ['graphic', 
 
 /* ================= copies ================= */
 // the ink throws a solid coloured extrusion along a diagonal, then pulls it back in
-fx('xrLongShadow', { name: 'ロングシャドウ', en: 'Long Shadow', tags: ['pop', 'graphic'], w: 1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'chroma',
+fx('xrLongShadow', { name: '롱 섀도', en: 'Long Shadow', tags: ['pop', 'graphic'], w: 1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'chroma',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), dk = isDark(sc.bg), e = ahr(k, 0.3, 0.6, E.outCubic, E.inOutCubic), L = Math.min(cw, ch) * 0.085 * amp1(ev) * e;
@@ -293,7 +293,7 @@ fx('xrLongShadow', { name: 'ロングシャドウ', en: 'Long Shadow', tags: ['p
   } });
 
 // a waterline rises from the bottom edge: below it the picture is reflected, squashed and rippling
-fx('xrWaterMirror', { name: '水鏡', en: 'Water Mirror', tags: ['emotional', 'calm'], w: 0.8, dur: 12, amp: 1, mid: true, scratch: true, ae: 'slice',
+fx('xrWaterMirror', { name: '수면 거울', en: 'Water Mirror', tags: ['emotional', 'calm'], w: 0.8, dur: 12, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const lift = ahr(k, 0.3, 0.68, E.outCubic, E.inCubic), depth = ch * 0.34 * clamp(ampOf(ev), 0.8, 1.1) * lift;
@@ -313,7 +313,7 @@ fx('xrWaterMirror', { name: '水鏡', en: 'Water Mirror', tags: ['emotional', 'c
   } });
 
 // pendulum after-images: copies swing out to both sides around a pivot far below the frame
-fx('xrSwingEcho', { name: '振り子残像', en: 'Swing Echo', tags: ['pop', 'emotional', 'graphic'], w: 0.9, dur: 7, amp: 1, mid: true, scratch: true, ae: 'shake',
+fx('xrSwingEcho', { name: '흔들 추 잔상', en: 'Swing Echo', tags: ['pop', 'emotional', 'graphic'], w: 0.9, dur: 7, amp: 1, mid: true, scratch: true, ae: 'shake',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), e = punch(k, 0.3), th = 3.4 * DEG * amp1(ev) * e, up = J.r(s, 1) < 0.3;
@@ -327,7 +327,7 @@ fx('xrSwingEcho', { name: '振り子残像', en: 'Swing Echo', tags: ['pop', 'em
   } });
 
 // the middle band of the picture is stamped again and again above and below, then folds back
-fx('xrBandRepeat', { name: '帯リピート', en: 'Band Repeat', tags: ['graphic', 'pop', 'editorial'], w: 1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'slice',
+fx('xrBandRepeat', { name: '띠 반복', en: 'Band Repeat', tags: ['graphic', 'pop', 'editorial'], w: 1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const e = punch(k, 0.3), bh = Math.round(ch * 0.26), y0 = Math.round(ch / 2 - bh / 2), sp = bh * 0.92 * clamp(amp1(ev), 0.7, 1.1) * e;
@@ -340,7 +340,7 @@ fx('xrBandRepeat', { name: '帯リピート', en: 'Band Repeat', tags: ['graphic
   } });
 
 // picture in picture in picture: the frame recedes into nested, framed copies of itself
-fx('xrNested', { name: '入れ子', en: 'Nested Frames', tags: ['graphic', 'pop', 'editorial'], w: 0.8, dur: 8, amp: 1, mid: true, scratch: true, ae: 'zoom',
+fx('xrNested', { name: '겹친 틀', en: 'Nested Frames', tags: ['graphic', 'pop', 'editorial'], w: 0.8, dur: 8, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), e = punch(k, 0.3), f = 1 - 0.27 * amp1(ev) * e;
@@ -356,7 +356,7 @@ fx('xrNested', { name: '入れ子', en: 'Nested Frames', tags: ['graphic', 'pop'
   } });
 
 // contact strip: a row of small framed copies of the frame pops up along one edge and drops away
-fx('xrThumbRow', { name: 'サムネ列', en: 'Thumb Row', tags: ['pop', 'editorial', 'graphic'], w: 0.7, dur: 12, amp: 1, mid: true, scratch: true, ae: 'block',
+fx('xrThumbRow', { name: '섬네일 줄', en: 'Thumb Row', tags: ['pop', 'editorial', 'graphic'], w: 0.7, dur: 12, amp: 1, mid: true, scratch: true, ae: 'block',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), n = cw >= ch ? 5 : 4, a = clamp(amp1(ev), 0.8, 1.15), tw = cw * 0.86 / n * 0.86 * a, th = tw * ch / cw, gap = (cw - n * tw) / (n + 1);
@@ -373,7 +373,7 @@ fx('xrThumbRow', { name: 'サムネ列', en: 'Thumb Row', tags: ['pop', 'editori
   } });
 
 // a round magnifier glides across the frame
-fx('xrLoupe', { name: '虫めがね', en: 'Loupe Pass', tags: ['pop', 'editorial', 'calm'], w: 0.8, dur: 12, amp: 1, mid: true, scratch: true, ae: 'zoom',
+fx('xrLoupe', { name: '돋보기', en: 'Loupe Pass', tags: ['pop', 'editorial', 'calm'], w: 0.8, dur: 12, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), m = Math.min(cw, ch), r = m * 0.21 * Math.sqrt(amp1(ev)) * ahr(k, 0.22, 0.75, x => E.outBack(x, 1.4), E.inCubic);
@@ -390,7 +390,7 @@ fx('xrLoupe', { name: '虫めがね', en: 'Loupe Pass', tags: ['pop', 'editorial
 
 /* ================= light ================= */
 // accent bars slam in from two opposite edges with a glow and retract
-fx('xrEdgeBars', { name: '端フラッシュ', en: 'Edge Bars', tags: ['pop', 'graphic', 'editorial'], w: 1.1, dur: 6, amp: 1, mid: true, ae: 'flash',
+fx('xrEdgeBars', { name: '가장자리 플래시', en: 'Edge Bars', tags: ['pop', 'graphic', 'editorial'], w: 1.1, dur: 6, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), vert = J.r(s, 1) < (cw >= ch ? 0.3 : 0.55), L = vert ? cw : ch, M = vert ? ch : cw;
     const e = k < 0.14 ? E.outExpo(k / 0.14) : Math.pow(1 - (k - 0.14) / 0.86, 1.6), th = L * 0.06 * amp1(ev) * e, col = pop(sc);
@@ -407,7 +407,7 @@ fx('xrEdgeBars', { name: '端フラッシュ', en: 'Edge Bars', tags: ['pop', 'g
   } });
 
 // everything goes dim except a round pool of light that travels across the frame
-fx('xrSpotlight', { name: 'スポット', en: 'Spotlight Pass', tags: ['emotional', 'calm', 'editorial'], w: 0.9, dur: 12, amp: 1, mid: true, ae: 'flash',
+fx('xrSpotlight', { name: '스포트라이트 통과', en: 'Spotlight Pass', tags: ['emotional', 'calm', 'editorial'], w: 0.9, dur: 12, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), a = ahr(k, 0.2, 0.72) * clamp(ampOf(ev), 0.6, 1.1);
     if (a < 0.01) return;
@@ -419,7 +419,7 @@ fx('xrSpotlight', { name: 'スポット', en: 'Spotlight Pass', tags: ['emotiona
   } });
 
 // three hard flashes, each in a different scheme colour
-fx('xrColorStrobe', { name: '色ストロボ', en: 'Color Strobe', tags: ['pop', 'glitch', 'graphic'], w: 0.7, dur: 6, amp: 1, mid: true, ae: 'flash',
+fx('xrColorStrobe', { name: '색 스트로보', en: 'Color Strobe', tags: ['pop', 'glitch', 'graphic'], w: 0.7, dur: 6, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), cols = tints(sc), seg = Math.min(2, Math.floor(k * 3)), fr = k * 3 - seg;
     const a = clamp(ampOf(ev), 0.5, 1) * (1 - 0.55 * fr) * (1 - k * k * k), col = cols[(seg + (J.h(s, 1) % cols.length)) % cols.length];
@@ -429,7 +429,7 @@ fx('xrColorStrobe', { name: '色ストロボ', en: 'Color Strobe', tags: ['pop',
   } });
 
 // the exposure sags, then recovers slightly too bright before settling
-fx('xrExposureDip', { name: '露出落ち', en: 'Exposure Dip', tags: ['emotional', 'calm', 'editorial'], w: 1, dur: 9, pre: 3, amp: 1, mid: true, ae: 'flash',
+fx('xrExposureDip', { name: '노출 떨어짐', en: 'Exposure Dip', tags: ['emotional', 'calm', 'editorial'], w: 1, dur: 9, pre: 3, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, a = clamp(ampOf(ev), 0.6, 1.1), dk = isDark(sc.bg);
     const d = k < 0.28 ? E.outCubic(k / 0.28) : 1 - E.inOutCubic(clamp((k - 0.28) / 0.34)), o = k > 0.55 ? bell((k - 0.55) / 0.45) : 0;
@@ -442,7 +442,7 @@ fx('xrExposureDip', { name: '露出落ち', en: 'Exposure Dip', tags: ['emotiona
   } });
 
 // cells of a coarse grid light up one after another in a diagonal run
-fx('xrTileLights', { name: 'タイル点灯', en: 'Tile Lights', tags: ['pop', 'graphic'], w: 0.9, dur: 8, amp: 1, mid: true, ae: 'flash',
+fx('xrTileLights', { name: '타일 점등', en: 'Tile Lights', tags: ['pop', 'graphic'], w: 0.9, dur: 8, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), m = Math.min(cw, ch), gx = Math.max(3, Math.round(cw / (m / 4.5))), gy = Math.max(3, Math.round(ch / (m / 4.5)));
     const dk = isDark(sc.bg), a = clamp(ampOf(ev), 0.6, 1.2), cols = tints(sc), rev = J.r(s, 1) < 0.5, gp = Math.max(1, Math.round(m * 0.004));
@@ -458,7 +458,7 @@ fx('xrTileLights', { name: 'タイル点灯', en: 'Tile Lights', tags: ['pop', '
   } });
 
 // two hairlines sweep in from the edges, lock on a point with a reticle flash and let go
-fx('xrCrosshair', { name: '照準ロック', en: 'Target Lock', tags: ['graphic', 'editorial', 'glitch'], w: 0.8, dur: 10, amp: 1, mid: true, ae: 'flash',
+fx('xrCrosshair', { name: '조준 고정', en: 'Target Lock', tags: ['graphic', 'editorial', 'glitch'], w: 0.8, dur: 10, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), m = Math.min(cw, ch), a = clamp(ampOf(ev), 0.7, 1.3), col = pop(sc);
     const tx = Math.round(cw * (0.5 + J.rs(s, 1) * 0.16)), ty = Math.round(ch * (0.5 + J.rs(s, 2) * 0.12)), lw = Math.max(1, Math.round(m * 0.004 * a));
@@ -476,7 +476,7 @@ fx('xrCrosshair', { name: '照準ロック', en: 'Target Lock', tags: ['graphic'
   } });
 
 // lamp on its way out: irregular dimming steps
-fx('xrLampFlicker', { name: '明滅', en: 'Lamp Flicker', tags: ['emotional', 'glitch', 'calm'], w: 0.8, dur: 8, amp: 1, glitchy: true, mid: true, ae: 'flash',
+fx('xrLampFlicker', { name: '깜빡임', en: 'Lamp Flicker', tags: ['emotional', 'glitch', 'calm'], w: 0.8, dur: 8, amp: 1, glitchy: true, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), v = J.r(I.step, s, 1);
     const lvl = k < 0.12 ? 0.8 : v < 0.3 ? 0.78 : v < 0.55 ? 0.42 : v < 0.75 ? 0.14 : 0;
@@ -486,7 +486,7 @@ fx('xrLampFlicker', { name: '明滅', en: 'Lamp Flicker', tags: ['emotional', 'g
   } });
 
 // exposure warning: moving diagonal stripes cut through the ink only
-fx('xrZebra', { name: 'ゼブラ', en: 'Zebra Stripes', tags: ['graphic', 'editorial', 'glitch'], w: 0.7, dur: 8, amp: 1, mid: true, ae: 'invert',
+fx('xrZebra', { name: '얼룩말 줄무늬', en: 'Zebra Stripes', tags: ['graphic', 'editorial', 'glitch'], w: 0.7, dur: 8, amp: 1, mid: true, ae: 'invert',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), e = ahr(k, 0.22, 0.7), D = Math.hypot(cw, ch) / 2 + 2, p = Math.max(6, Math.min(cw, ch) / 26);
     const duty = 0.5 * e * clamp(ampOf(ev), 0.7, 1.1);
@@ -501,7 +501,7 @@ fx('xrZebra', { name: 'ゼブラ', en: 'Zebra Stripes', tags: ['graphic', 'edito
 
 /* ================= colour ================= */
 // the ink splits into two scheme-tinted copies: one stretched tall, one stretched wide
-fx('xrCrossFringe', { name: '十字色ズレ', en: 'Cross Fringe', tags: ['glitch', 'emotional', 'pop'], w: 1, dur: 5, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'chroma',
+fx('xrCrossFringe', { name: '십자 색어긋남', en: 'Cross Fringe', tags: ['glitch', 'emotional', 'pop'], w: 1, dur: 5, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'chroma',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const dk = isDark(sc.bg), d = 0.1 * amp1(ev) * punch(k, 0.2);
@@ -514,7 +514,7 @@ fx('xrCrossFringe', { name: '十字色ズレ', en: 'Cross Fringe', tags: ['glitc
   } });
 
 // negative squares swell out of a chequered grid, swap phase and shrink away
-fx('xrCheckerInvert', { name: 'チェック反転', en: 'Checker Invert', tags: ['graphic', 'pop', 'glitch'], w: 0.6, dur: 8, amp: 1, mid: true, ae: 'invert',
+fx('xrCheckerInvert', { name: '체크 반전', en: 'Checker Invert', tags: ['graphic', 'pop', 'glitch'], w: 0.6, dur: 8, amp: 1, mid: true, ae: 'invert',
   draw(ctx, ev, k, I) {
     const { cw, ch } = I, s = evS(ev), c = Math.min(cw, ch) / (4 + (J.h(s, 1) % 2)), nx = Math.ceil(cw / c / 2) * 2 + 1, ny = Math.ceil(ch / c / 2) * 2 + 1;
     const e = (k < 0.5 ? ahr(k * 2, 0.5, 0.82) : ahr((k - 0.5) * 2, 0.18, 0.5)) * Math.min(1, ampOf(ev)), ph = k < 0.5 ? 0 : 1, sd = c * e;
@@ -526,7 +526,7 @@ fx('xrCheckerInvert', { name: 'チェック反転', en: 'Checker Invert', tags: 
   } });
 
 // resolution collapses along one axis only: the picture turns into flat bars and resolves again
-fx('xrStripeMosaic', { name: '縞モザイク', en: 'Stripe Mosaic', tags: ['glitch', 'graphic', 'pop'], w: 0.8, dur: 6, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'mosaic',
+fx('xrStripeMosaic', { name: '줄무늬 모자이크', en: 'Stripe Mosaic', tags: ['glitch', 'graphic', 'pop'], w: 0.8, dur: 6, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'mosaic',
   draw(ctx, ev, k, I) {
     const { cw, ch, S } = I; if (!S) return;
     const s = evS(ev), e = punch(k, 0.3), rows = J.r(s, 1) < 0.3, L = rows ? ch : cw;
@@ -539,7 +539,7 @@ fx('xrStripeMosaic', { name: '縞モザイク', en: 'Stripe Mosaic', tags: ['gli
   } });
 
 // four quadrants, four scheme tints, trading places every two frames
-fx('xrFourTints', { name: '四色パネル', en: 'Four Tints', tags: ['pop', 'graphic'], w: 0.8, dur: 8, amp: 1, mid: true, ae: 'chroma',
+fx('xrFourTints', { name: '4색 패널', en: 'Four Tints', tags: ['pop', 'graphic'], w: 0.8, dur: 8, amp: 1, mid: true, ae: 'chroma',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), a = ahr(k, 0.12, 0.7) * Math.min(1, ampOf(ev)), rot = Math.floor(k * 4) + (J.h(s, 1) % 4);
     if (a < 0.01) return;
@@ -553,7 +553,7 @@ fx('xrFourTints', { name: '四色パネル', en: 'Four Tints', tags: ['pop', 'gr
   } });
 
 // a clock hand sweeps round and leaves the picture negative behind it; a second sweep puts it right
-fx('xrClockInvert', { name: '時計反転', en: 'Clock Invert', tags: ['graphic', 'pop', 'editorial'], w: 0.8, dur: 10, pre: 5, amp: 1, mid: true, ae: 'invert',
+fx('xrClockInvert', { name: '시계 반전', en: 'Clock Invert', tags: ['graphic', 'pop', 'editorial'], w: 0.8, dur: 10, pre: 5, amp: 1, mid: true, ae: 'invert',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), cx = cw / 2, cy = ch / 2, R = Math.hypot(cw, ch), a0 = -Math.PI / 2 + (J.h(s, 1) % 4) * Math.PI / 2, ccw = J.r(s, 2) < 0.5;
     const b = k < 0.5 ? 0 : E.inOutCubic((k - 0.5) * 2), f = k < 0.5 ? E.inOutCubic(k * 2) : 1;
@@ -568,7 +568,7 @@ fx('xrClockInvert', { name: '時計反転', en: 'Clock Invert', tags: ['graphic'
 
 /* ================= texture ================= */
 // fine scan lines burst open into thick bars that cut through the picture while scrolling
-fx('xrScanBurst', { name: '走査線バースト', en: 'Scanline Burst', tags: ['glitch', 'graphic', 'emotional'], w: 0.9, dur: 6, amp: 1, glitchy: true, mid: true, ae: 'slice',
+fx('xrScanBurst', { name: '주사선 버스트', en: 'Scanline Burst', tags: ['glitch', 'graphic', 'emotional'], w: 0.9, dur: 6, amp: 1, glitchy: true, mid: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), a = Math.pow(1 - k, 0.9) * Math.min(1, ampOf(ev));
     if (a < 0.01) return;
@@ -583,7 +583,7 @@ fx('xrScanBurst', { name: '走査線バースト', en: 'Scanline Burst', tags: [
   } });
 
 // a ring of printed dots rolls out from one corner across the frame
-fx('xrDotWave', { name: 'ドット波', en: 'Dot Wave', tags: ['pop', 'graphic'], w: 0.9, dur: 9, amp: 1, mid: true, ae: 'mosaic',
+fx('xrDotWave', { name: '도트 물결', en: 'Dot Wave', tags: ['pop', 'graphic'], w: 0.9, dur: 9, amp: 1, mid: true, ae: 'mosaic',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), m = Math.min(cw, ch), p = m / 19, cn = J.h(s, 1) % 4, ox = cn & 1 ? cw : 0, oy = cn & 2 ? ch : 0;
     const D = Math.hypot(cw, ch), band = D * 0.2, R = lerp(-band, D + band, E.outQuad(k)), rm = p * 0.47 * clamp(ampOf(ev), 0.7, 1.05);
@@ -600,7 +600,7 @@ fx('xrDotWave', { name: 'ドット波', en: 'Dot Wave', tags: ['pop', 'graphic']
   } });
 
 // signal dropout: grid-aligned rectangles of the picture go missing, fewer every frame
-fx('xrDropout', { name: '欠落', en: 'Dropout', tags: ['glitch'], w: 0.9, dur: 5, amp: 1, glitchy: true, mid: true, ae: 'block',
+fx('xrDropout', { name: '드롭아웃', en: 'Dropout', tags: ['glitch'], w: 0.9, dur: 5, amp: 1, glitchy: true, mid: true, ae: 'block',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), st = I.step * 29 + s, B = Math.max(4, Math.round(Math.min(cw, ch) / 10));
     const n = Math.round((4 + (J.h(s, 1) % 4)) * amp1(ev) * (1 - k)), nx = Math.ceil(cw / B), ny = Math.ceil(ch / B), lw = Math.max(1, Math.round(B * 0.05));
@@ -615,7 +615,7 @@ fx('xrDropout', { name: '欠落', en: 'Dropout', tags: ['glitch'], w: 0.9, dur: 
   } });
 
 // a crease travels through the tape: a squeezed, side-slipped band with a bright fold line
-fx('xrTapeCrease', { name: 'テープ折れ', en: 'Tape Crease', tags: ['glitch', 'emotional'], w: 0.9, dur: 8, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'slice',
+fx('xrTapeCrease', { name: '테이프 구김', en: 'Tape Crease', tags: ['glitch', 'emotional'], w: 0.9, dur: 8, amp: 1, glitchy: true, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), amt = Math.pow(bell(k), 0.6), a = amp1(ev), up = J.r(s, 1) < 0.5, dir = J.r(s, 2) < 0.5 ? 1 : -1;
@@ -633,7 +633,7 @@ fx('xrTapeCrease', { name: 'テープ折れ', en: 'Tape Crease', tags: ['glitch'
   } });
 
 // two sets of concentric rings drift apart and interfere
-fx('xrMoire', { name: 'モアレ', en: 'Moire Rings', tags: ['graphic', 'emotional', 'calm'], w: 0.7, dur: 10, amp: 1, mid: true,
+fx('xrMoire', { name: '모아레', en: 'Moire Rings', tags: ['graphic', 'emotional', 'calm'], w: 0.7, dur: 10, amp: 1, mid: true,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), m = Math.min(cw, ch), g = m / 24, e = ahr(k, 0.25, 0.6, E.outCubic, E.inOutCubic);
     const al = 0.2 * e * clamp(ampOf(ev), 0.6, 1.1);
@@ -649,7 +649,7 @@ fx('xrMoire', { name: 'モアレ', en: 'Moire Rings', tags: ['graphic', 'emotion
   } });
 
 // stray pixels: small grid-snapped squares in scheme colours pop all over the frame
-fx('xrPixelSparks', { name: '画素はじけ', en: 'Pixel Sparks', tags: ['pop', 'glitch'], w: 0.9, dur: 6, amp: 1, mid: true, ae: 'block',
+fx('xrPixelSparks', { name: '픽셀 튐', en: 'Pixel Sparks', tags: ['pop', 'glitch'], w: 0.9, dur: 6, amp: 1, mid: true, ae: 'block',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), st = I.step * 17 + s, q = Math.max(2, Math.round(Math.min(cw, ch) * 0.016));
     const n = Math.round(54 * amp1(ev) * Math.pow(bell(k), 0.7)), cols = tints(sc).concat([sc.fg]);
@@ -662,7 +662,7 @@ fx('xrPixelSparks', { name: '画素はじけ', en: 'Pixel Sparks', tags: ['pop',
 
 /* ================= framing ================= */
 // cinema bars snap shut to a wide frame with a little overshoot, then open again
-fx('xrLetterSnap', { name: '帯スナップ', en: 'Letterbox Snap', tags: ['editorial', 'emotional', 'graphic'], w: 1.1, dur: 10, pre: 3, amp: 1, mid: true,
+fx('xrLetterSnap', { name: '레터박스 스냅', en: 'Letterbox Snap', tags: ['editorial', 'emotional', 'graphic'], w: 1.1, dur: 10, pre: 3, amp: 1, mid: true,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, e = k < 0.22 ? E.outBack(k / 0.22, 2.2) : k > 0.7 ? 1 - E.inCubic((k - 0.7) / 0.3) : 1;
     const hb = ch * (cw >= ch ? 0.125 : 0.075) * clamp(ampOf(ev), 0.7, 1.2) * e;
@@ -674,7 +674,7 @@ fx('xrLetterSnap', { name: '帯スナップ', en: 'Letterbox Snap', tags: ['edit
   } });
 
 // eyelids: the frame closes to a slit like a blinking eye and opens again
-fx('xrBlink', { name: 'まばたき', en: 'Eye Blink', tags: ['emotional', 'calm', 'editorial'], w: 0.9, dur: 9, pre: 4, amp: 1,
+fx('xrBlink', { name: '눈깜빡임', en: 'Eye Blink', tags: ['emotional', 'calm', 'editorial'], w: 0.9, dur: 9, pre: 4, amp: 1,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, b = 4 / 9, c = k < b ? E.inQuad(k / b) : 1 - E.outQuad((k - b) / (1 - b));
     if (c < 0.003) return;
@@ -687,7 +687,7 @@ fx('xrBlink', { name: 'まばたき', en: 'Eye Blink', tags: ['emotional', 'calm
   } });
 
 // a thick coloured border punches in while the picture steps back inside it
-fx('xrBorderPunch', { name: '枠パンチ', en: 'Border Punch', tags: ['pop', 'graphic', 'editorial'], w: 1.2, dur: 7, amp: 1, mid: true, scratch: true, ae: 'zoom',
+fx('xrBorderPunch', { name: '테두리 펀치', en: 'Border Punch', tags: ['pop', 'graphic', 'editorial'], w: 1.2, dur: 7, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const e = k < 0.2 ? E.outBack(k / 0.2, 2) : 1 - E.inOutCubic((k - 0.2) / 0.8), a = amp1(ev), t = Math.min(cw, ch) * 0.055 * a * e;
@@ -701,7 +701,7 @@ fx('xrBorderPunch', { name: '枠パンチ', en: 'Border Punch', tags: ['pop', 'g
   } });
 
 // one corner of the picture is dog-eared: the flap folds over, shows its back and flattens again
-fx('xrCornerFold', { name: '角折れ', en: 'Corner Fold', tags: ['editorial', 'pop', 'calm'], w: 0.8, dur: 10, amp: 1, mid: true,
+fx('xrCornerFold', { name: '모서리 접힘', en: 'Corner Fold', tags: ['editorial', 'pop', 'calm'], w: 0.8, dur: 10, amp: 1, mid: true,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), cn = J.h(s, 1) % 4, f = Math.min(cw, ch) * 0.4 * amp1(ev) * ahr(k, 0.3, 0.62, E.outCubic, E.inOutCubic);
     if (f < 1) return;

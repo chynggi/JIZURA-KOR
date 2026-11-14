@@ -119,7 +119,7 @@ const lineW = it => Math.max(2, it.size * 0.03);
 
 /* 襖びらき — two sliding paper doors (frame, stile, round pull) stand closed over the line, then slide apart into the sides */
 reg('enter', 'wzFusuma', {
-  name: '襖びらき', en: 'Sliding Doors', tags: ['calm', 'editorial', 'emotional', 'graphic'], w: 1.1, ae: 'wipe',
+  name: '후스마 열기', en: 'Sliding Doors', tags: ['calm', 'editorial', 'emotional', 'graphic'], w: 1.1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.45, 0.25, 0.85),
   apply(env, it, p) {
     const size = it.size, show = oCubic(p / 0.2), e = ioCubic((p - 0.16) / 0.72), fade = 1 - sstep(0.8, 1, p);
@@ -144,7 +144,7 @@ reg('enter', 'wzFusuma', {
 
 /* 掛け軸 — a hanging scroll: the top bar appears, then the weighted rod rolls down and lets the text out line by line */
 reg('enter', 'wzKakejiku', {
-  name: '掛け軸', en: 'Hanging Scroll', tags: ['calm', 'editorial', 'emotional'], w: 1, ae: 'wipe',
+  name: '두루마리 그림', en: 'Hanging Scroll', tags: ['calm', 'editorial', 'emotional'], w: 1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.48, 0.25, 0.9),
   apply(env, it, p) {
     const size = it.size, top = oCubic(p / 0.2), e = ioCubic((p - 0.12) / 0.72), fade = 1 - sstep(0.84, 1, p), m = size * 0.3;
@@ -165,7 +165,7 @@ reg('enter', 'wzKakejiku', {
 
 /* 御簾上げ — the text is first seen through the slats of a bamboo blind, which is then drawn up: the slats bunch at the top */
 reg('enter', 'wzMisu', {
-  name: '御簾上げ', en: 'Blind Lifts', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'wipe',
+  name: '미스 걷어 올리기', en: 'Blind Lifts', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.5, 0.3, 0.9),
   apply(env, it, p) {
     const size = it.size, show = clamp(p / 0.16), e = ioCubic((p - 0.14) / 0.66), fade = 1 - sstep(0.8, 1, p), m = size * 0.22;
@@ -199,7 +199,7 @@ reg('enter', 'wzMisu', {
 
 /* 判子 — pressed like a seal: the line lands white-on-vermilion, then the block lifts off in uneven patches and leaves the text */
 reg('enter', 'wzHanko', {
-  name: '判子', en: 'Seal Press', tags: ['graphic', 'pop', 'editorial'], w: 0.7, ae: 'pop',
+  name: '도장', en: 'Seal Press', tags: ['graphic', 'pop', 'editorial'], w: 0.7, ae: 'pop',
   inDur: dur => clamp(dur * 0.45, 0.25, 0.8),
   apply(env, it, p) {
     const size = it.size, sc = env.sc, main = isMain(it, env), seed = it.seed | 0, tI = 0.26, dir = dirOf(env, 11);
@@ -226,7 +226,7 @@ reg('enter', 'wzHanko', {
 
 /* 提灯ともし — paper lanterns light up one after another along the line; each glyph glows warm inside its lantern, which then fades */
 reg('enter', 'wzChochin', {
-  name: '提灯ともし', en: 'Lanterns Light', tags: ['emotional', 'calm', 'pop'], w: 1, ae: 'flicker',
+  name: '등롱 밝히기', en: 'Lanterns Light', tags: ['emotional', 'calm', 'pop'], w: 1, ae: 'flicker',
   inDur: (dur, n) => clamp(dur * 0.5, 0.3, 1.0),
   apply(env, it, p) {
     const size = it.size, seed = it.seed | 0, own = colOf(it), warm = hotOf(env, it), step = env.step, hex = isHex(it.color);
@@ -261,7 +261,7 @@ reg('enter', 'wzChochin', {
 
 /* 紙吹雪 — paper confetti flutters down and settles where each glyph belongs; the glyph surfaces as its flakes land */
 reg('enter', 'wzKamifubuki', {
-  name: '紙吹雪', en: 'Paper Confetti', tags: ['pop', 'emotional'], w: 0.9, ae: 'drop',
+  name: '색종이 조각', en: 'Paper Confetti', tags: ['pop', 'emotional'], w: 0.9, ae: 'drop',
   inDur: dur => clamp(dur * 0.55, 0.35, 1.0),
   apply(env, it, p) {
     const size = it.size, seed = it.seed | 0, sc = env.sc;
@@ -292,7 +292,7 @@ reg('enter', 'wzKamifubuki', {
 
 /* 打ち上げ花火 — a spark climbs to each glyph's place and bursts into a ring of streaks; the glyph pops out of the burst */
 reg('enter', 'wzHanabi', {
-  name: '打ち上げ花火', en: 'Fireworks', tags: ['pop', 'emotional', 'graphic'], w: 0.8, ae: 'pop', minDur: 0.7,
+  name: '쏘아 올린 불꽃', en: 'Fireworks', tags: ['pop', 'emotional', 'graphic'], w: 0.8, ae: 'pop', minDur: 0.7,
   inDur: dur => clamp(dur * 0.55, 0.4, 1.0),
   apply(env, it, p) {
     const size = it.size, seed = it.seed | 0, sc = env.sc, tB = 0.32;
@@ -327,7 +327,7 @@ reg('enter', 'wzHanabi', {
 
 /* 折り紙 — every glyph sits on a folded paper square: a quarter shows first, the right half swings out, then the lower half folds down */
 reg('enter', 'wzOrigami', {
-  name: '折り紙ひらき', en: 'Origami Unfold', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'slice',
+  name: '종이접기 펼침', en: 'Origami Unfold', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'slice',
   inDur: dur => clamp(dur * 0.5, 0.3, 0.95),
   apply(env, it, p) {
     const size = it.size, sc = env.sc, F = 0.78;
@@ -360,7 +360,7 @@ reg('enter', 'wzOrigami', {
 
 /* 青海波 — the reveal rises from below as rows of overlapping wave scales, each drawn with its double arc */
 reg('enter', 'wzSeigaiha', {
-  name: '青海波', en: 'Wave Scales', tags: ['calm', 'graphic', 'emotional'], w: 1, ae: 'wipe',
+  name: '세이가이하', en: 'Wave Scales', tags: ['calm', 'graphic', 'emotional'], w: 1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.5, 0.3, 0.95),
   apply(env, it, p) {
     const size = it.size;
@@ -392,7 +392,7 @@ reg('enter', 'wzSeigaiha', {
 
 /* 障子の影 — a shoji screen slides across; behind its paper the line lingers as a soft shadow until the light goes out */
 reg('exit', 'wzShojiKage', {
-  name: '障子の影', en: 'Shoji Silhouette', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'wipe', minDur: 0.8,
+  name: '쇼지 그림자', en: 'Shoji Silhouette', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'wipe', minDur: 0.8,
   outDur: dur => clamp(dur * 0.48, 0.45, 1.0),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 21), main = isMain(it, env), e = ioCubic(p / (main ? 0.5 : 0.92)), sil = 1 - sstep(0.42, 0.8, p), pa = 1 - sstep(0.74, 1, p), A0 = it.alpha ?? 1;
@@ -423,7 +423,7 @@ reg('exit', 'wzShojiKage', {
 
 /* 墨にじみ — each glyph bleeds into the paper: it swells into an irregular ink blot that thins out to nothing */
 reg('exit', 'wzSumiNijimi', {
-  name: '墨にじみ', en: 'Ink Bleeds Away', tags: ['calm', 'emotional'], w: 1, ae: 'blur',
+  name: '먹 번짐', en: 'Ink Bleeds Away', tags: ['calm', 'emotional'], w: 1, ae: 'blur',
   outDur: dur => clamp(dur * 0.48, 0.4, 1.0),
   apply(env, it, p) {
     const size = it.size, seed = it.seed | 0, col = colOf(it), idx = seqOf(env, it);
@@ -448,7 +448,7 @@ reg('exit', 'wzSumiNijimi', {
 /* 花びらに散る — the glyphs thin out while petals lift off them and ride the wind away */
 const PETAL = [[0, -1], [0.58, -0.3], [0.4, 0.75], [0, 0.5], [-0.4, 0.75], [-0.58, -0.3]];
 reg('exit', 'wzHanaChiru', {
-  name: '花びらに散る', en: 'Scatter as Petals', tags: ['emotional', 'calm', 'pop'], w: 1, ae: 'drift', minDur: 0.8,
+  name: '꽃잎으로 흩어짐', en: 'Scatter as Petals', tags: ['emotional', 'calm', 'pop'], w: 1, ae: 'drift', minDur: 0.8,
   outDur: dur => clamp(dur * 0.52, 0.45, 1.1),
   apply(env, it, p) {
     const size = it.size, seed = it.seed | 0, sc = env.sc, dir = dirOf(env, 41), idx = seqOf(env, it), N = glyphN(it.text) <= 1 ? cutN(env) : 0;
@@ -479,7 +479,7 @@ reg('exit', 'wzHanaChiru', {
 
 /* 霞に隠れる — bands of mist with rounded heads drift in from alternating sides, row by row, until nothing of the line is left */
 reg('exit', 'wzKasumi', {
-  name: '霞に隠れる', en: 'Veiled by Mist', tags: ['calm', 'emotional', 'editorial'], w: 1.1, ae: 'wipe',
+  name: '아지랑이에 가려짐', en: 'Veiled by Mist', tags: ['calm', 'emotional', 'editorial'], w: 1.1, ae: 'wipe',
   outDur: dur => clamp(dur * 0.5, 0.42, 1.0),
   apply(env, it, p) {
     const size = it.size, seed = env.cut.seed | 0, m = size * 0.3;
@@ -517,7 +517,7 @@ reg('exit', 'wzKasumi', {
 
 /* 風呂敷 — four corners of a wrapping cloth fold in over the line one after another; the tied bundle is lifted away */
 reg('exit', 'wzFuroshiki', {
-  name: '風呂敷包み', en: 'Wrapping Cloth', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'shrink', minDur: 0.8,
+  name: '보자기 싸기', en: 'Wrapping Cloth', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'shrink', minDur: 0.8,
   outDur: dur => clamp(dur * 0.5, 0.45, 1.0),
   apply(env, it, p) {
     const size = it.size, A0 = it.alpha ?? 1, tW = 0.64, dir = dirOf(env, 61);
@@ -559,7 +559,7 @@ function crane(env, cx, cy, S, dir, flap, rot, c1, c2, a) {
   env.poly(T([[-0.2, 0.02], [0.14, 0.02], [0.1, -0.62 * f + 0.06]]), c1, a, false);                      // near wing
 }
 reg('exit', 'wzOrizuru', {
-  name: '折り鶴', en: 'Paper Cranes', tags: ['emotional', 'pop', 'calm'], w: 0.7, ae: 'scatter', minDur: 0.9,
+  name: '종이학', en: 'Paper Cranes', tags: ['emotional', 'pop', 'calm'], w: 0.7, ae: 'scatter', minDur: 0.9,
   outDur: dur => clamp(dur * 0.55, 0.5, 1.2),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 71), idx = seqOf(env, it), N = glyphN(it.text) <= 1 ? cutN(env) : 0;
@@ -584,7 +584,7 @@ reg('exit', 'wzOrizuru', {
 
 /* 煙玉 — ドロン: a puff of round smoke bursts over the line, the text is gone behind it, and the smoke drifts up and thins out */
 reg('exit', 'wzDoron', {
-  name: '煙玉', en: 'Smoke Bomb', tags: ['pop', 'graphic'], w: 0.7, ae: 'explode',
+  name: '연막탄', en: 'Smoke Bomb', tags: ['pop', 'graphic'], w: 0.7, ae: 'explode',
   outDur: dur => clamp(dur * 0.45, 0.4, 0.9),
   apply(env, it, p) {
     const size = it.size, seed = it.seed | 0, A0 = it.alpha ?? 1, tH = 0.2;
@@ -614,7 +614,7 @@ reg('exit', 'wzDoron', {
 
 /* 灯籠流し — the glyphs are set afloat one by one: they glow, bob on short ripples and drift off downstream, growing small */
 reg('exit', 'wzToro', {
-  name: '灯籠流し', en: 'Floating Lanterns', tags: ['emotional', 'calm'], w: 0.9, ae: 'drift', minDur: 0.9,
+  name: '등롱 띄우기', en: 'Floating Lanterns', tags: ['emotional', 'calm'], w: 0.9, ae: 'drift', minDur: 0.9,
   outDur: dur => clamp(dur * 0.55, 0.5, 1.2),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 91), own = colOf(it), warm = hotOf(env, it), hex = isHex(it.color), idx = seqOf(env, it), N = glyphN(it.text) <= 1 ? cutN(env) : 0, W = env.W;
@@ -646,7 +646,7 @@ reg('exit', 'wzToro', {
 
 /* 風鈴 — now and then a breeze passes along the line: each glyph swings from a point above it and rings down at its own pace */
 reg('hold', 'wzFurin', {
-  name: '風鈴', en: 'Wind Chime', tags: ['calm', 'emotional'], w: 0.9, ae: 'wave',
+  name: '풍경', en: 'Wind Chime', tags: ['calm', 'emotional'], w: 0.9, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb, seed = it.seed | 0, T = 2.3, ph = (0.75 + 0.2 * cphase(env)) * T, L = it.size * 0.85, idx = seqOf(env, it);
@@ -659,7 +659,7 @@ reg('hold', 'wzFurin', {
 
 /* 鹿威し — the line slowly tips as if filling with water, drops back with a knock, rocks once and starts again */
 reg('hold', 'wzShishiodoshi', {
-  name: '鹿威し', en: 'Bamboo Tipper', tags: ['calm', 'editorial', 'graphic'], w: 0.7, ae: 'drift',
+  name: '시시오도시', en: 'Bamboo Tipper', tags: ['calm', 'editorial', 'graphic'], w: 0.7, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const T = 3.4, u = frac(env.ltb / T + cphase(env)), dir = dirOf(env, 311);
@@ -672,7 +672,7 @@ reg('hold', 'wzShishiodoshi', {
 
 /* 神輿 — わっしょい: two quick shoulder bounces and a rest, leaning left then right, in time with the beat when there is one */
 reg('hold', 'wzMikoshi', {
-  name: '神輿', en: 'Festival Bounce', tags: ['pop', 'graphic'], w: 0.8, ae: 'jitter',
+  name: '미코시', en: 'Festival Bounce', tags: ['pop', 'graphic'], w: 0.8, ae: 'jitter',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     let u;
@@ -688,7 +688,7 @@ reg('hold', 'wzMikoshi', {
 
 /* 短冊 — paper strips turning in a light breeze: a slow twist travels along the line, each glyph narrowing and opening again */
 reg('hold', 'wzTanzaku', {
-  name: '短冊ゆれ', en: 'Paper Strip Twist', tags: ['calm', 'emotional', 'editorial'], w: 0.9, ae: 'wave',
+  name: '단자쿠 흔들림', en: 'Paper Strip Twist', tags: ['calm', 'emotional', 'editorial'], w: 0.9, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb, ph = cphase(env) * TAU, size = it.size, idx = seqOf(env, it), kk = Math.min(1.2, k);
@@ -702,7 +702,7 @@ reg('hold', 'wzTanzaku', {
 
 /* 墨の濃淡 — a slow wave of ink density: glyph after glyph pales to a thin wash and comes back to full black */
 reg('hold', 'wzNotan', {
-  name: '墨の濃淡', en: 'Ink Wash Wave', tags: ['calm', 'emotional', 'editorial'], w: 0.7, ae: 'breathe',
+  name: '먹의 농담', en: 'Ink Wash Wave', tags: ['calm', 'emotional', 'editorial'], w: 0.7, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb, ph = cphase(env) * TAU, idx = seqOf(env, it), kk = Math.min(1, k);
@@ -767,7 +767,7 @@ const wrap9 = fn => { for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++
 
 /* 落款 — a small vermilion seal set beside the end of the line, as on a finished piece of calligraphy */
 reg('treat', 'wzRakkan', {
-  name: '落款', en: 'Artist Seal', tags: ['editorial', 'calm', 'emotional'], w: 0.8,
+  name: '낙관', en: 'Artist Seal', tags: ['editorial', 'calm', 'emotional'], w: 0.8,
   plan: rng => ({ v: rng.int(0, 2), r: rng.range(-5, 5), k: rng.range(0.36, 0.44) }),
   apply(env, it, Q) {
     if (!alive(it) || !lineLike(env, it)) return;
@@ -794,7 +794,7 @@ reg('treat', 'wzRakkan', {
 
 /* 金箔 — flecks of gold leaf scattered through the body of the glyphs */
 reg('treat', 'wzKinpaku', {
-  name: '金箔ちらし', en: 'Gold Leaf Flecks', tags: ['emotional', 'editorial', 'pop'], w: 0.7,
+  name: '금박 흩뿌리기', en: 'Gold Leaf Flecks', tags: ['emotional', 'editorial', 'pop'], w: 0.7,
   plan: rng => ({ d: rng.range(0.4, 1), s: rng.int(1, 9999) }),
   apply(env, it, Q) {
     if (!alive(it) || it.gradient || it.pattern || !isHex(it.color) || inPieces(env, it)) return;
@@ -818,7 +818,7 @@ reg('treat', 'wzKinpaku', {
 
 /* 墨のかすれ — a dry brush: thin streaks along the stroke direction where the bristles ran out of ink */
 reg('treat', 'wzKasure', {
-  name: '墨のかすれ', en: 'Dry Brush', tags: ['emotional', 'calm', 'editorial'], w: 0.8,
+  name: '먹 갈필', en: 'Dry Brush', tags: ['emotional', 'calm', 'editorial'], w: 0.8,
   plan: rng => ({ d: rng.range(0.55, 1), s: rng.int(1, 9999) }),
   apply(env, it, Q) {
     if (!alive(it) || it.gradient || it.pattern || !isHex(it.color) || inPieces(env, it)) return;
@@ -839,7 +839,7 @@ reg('treat', 'wzKasure', {
 
 /* 和柄の帯 — a narrow band of a traditional repeat (市松 / 鱗 / 青海波 / 菱) laid along the foot of the line */
 reg('treat', 'wzObi', {
-  name: '和柄の帯', en: 'Pattern Sash', tags: ['graphic', 'pop', 'editorial'], w: 0.9,
+  name: '일본 무늬 띠', en: 'Pattern Sash', tags: ['graphic', 'pop', 'editorial'], w: 0.9,
   plan: rng => ({ v: rng.int(0, 3), h: rng.range(0.2, 0.26) }),
   apply(env, it, Q) {
     if (!alive(it) || !lineLike(env, it)) return;
@@ -879,7 +879,7 @@ reg('treat', 'wzObi', {
 
 /* 便箋 — letter paper: a ruled line for every line of text (between the columns of vertical text), one more left empty, and a coloured head rule */
 reg('treat', 'wzBinsen', {
-  name: '便箋の罫', en: 'Letter Paper Rules', tags: ['editorial', 'calm', 'emotional'], w: 0.8,
+  name: '편지지 괘선', en: 'Letter Paper Rules', tags: ['editorial', 'calm', 'emotional'], w: 0.8,
   plan: rng => ({ n: rng.pick([1, 1, 2]), d: rng.chance(0.5) }),
   apply(env, it, Q) {
     if (!alive(it) || !lineLike(env, it)) return;
@@ -911,7 +911,7 @@ const KM = env => clamp((env.fx.motion ?? 0.7) * 1.25, 0, 1.25);
 
 /* 掛け軸を眺める — starts close on the upper part, lets the eye travel down the scroll while stepping back to the whole picture */
 reg('cam', 'wzKakejikuView', {
-  name: '掛け軸を眺める', en: 'Scroll Viewing', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'pullOut',
+  name: '두루마리 그림 감상', en: 'Scroll Viewing', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'pullOut',
   plan: rng => ({ a: rng.range(0.06, 0.085), y: rng.range(0.026, 0.036) }),
   get(env, Q) {
     const K = KM(env), e = E.inOutSine(clamp(env.lt / Math.max(0.6, env.cut.dur * 0.72)));
@@ -920,7 +920,7 @@ reg('cam', 'wzKakejikuView', {
 
 /* 屏風 — the view walks past a folding screen: it pans in three or four steps, and each panel faces a slightly different way */
 reg('cam', 'wzByobuPan', {
-  name: '屏風送り', en: 'Folding Screen Pan', tags: ['editorial', 'graphic', 'calm'], w: 0.8, ae: 'panL',
+  name: '병풍 넘기기', en: 'Folding Screen Pan', tags: ['editorial', 'graphic', 'calm'], w: 0.8, ae: 'panL',
   plan: rng => ({ dir: rng.pick([1, -1]), n: rng.pick([3, 3, 4]), a: rng.range(0.024, 0.032) }),
   get(env, Q) {
     const K = KM(env), n = Q.n || 3, u = clamp(env.lt / Math.max(0.5, env.cut.dur)) * n, i = Math.min(n - 1, Math.floor(u)), f = ioCubic(clamp((u - i) / 0.55));
@@ -931,7 +931,7 @@ reg('cam', 'wzByobuPan', {
 
 /* お辞儀 — the frame makes a small bow at the top of the cut: it dips and shortens, holds for a breath and straightens up */
 reg('cam', 'wzOjigi', {
-  name: 'お辞儀', en: 'Small Bow', tags: ['calm', 'editorial', 'pop'], w: 0.8, ae: 'bounce',
+  name: '고개 숙여 인사', en: 'Small Bow', tags: ['calm', 'editorial', 'pop'], w: 0.8, ae: 'bounce',
   plan: rng => ({ a: rng.range(0.026, 0.036), h: rng.range(0.16, 0.26) }),
   get(env, Q) {
     const K = KM(env), T = clamp(env.cut.dur * 0.6, 0.5, 1.25), u = env.lt / T, h = Q.h || 0.2;
@@ -950,7 +950,7 @@ const fxReg = (k, d) => reg('fx', k, Object.assign({}, d, {
   draw(ctx, ev, k2, I) { ctx.save(); try { d.draw(ctx, ev, clamp(Number.isFinite(k2) ? k2 : 1), I); } finally { ctx.restore(); } } }));
 
 /* 拍子木 — two wooden clappers fly in and strike: a sharp crack of rays at the meeting point, and they spring apart */
-fxReg('wzHyoshigi', { name: '拍子木', en: 'Wooden Clappers', tags: ['pop', 'graphic', 'editorial'], w: 1, dur: 7, amp: 1, mid: true, ae: 'flash',
+fxReg('wzHyoshigi', { name: '효시기', en: 'Wooden Clappers', tags: ['pop', 'graphic', 'editorial'], w: 1, dur: 7, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), mn = Math.min(cw, ch), tS = 0.3, L = mn * 0.5, th = mn * 0.065;
     const cx = cw / 2 + J.rs(s, 1) * cw * 0.14, cy = ch / 2 + J.rs(s, 2) * ch * 0.1, tilt = (J.r(s, 3) < 0.5 ? 1 : -1) * (10 + 14 * J.r(s, 4)) * DEG;
@@ -974,7 +974,7 @@ fxReg('wzHyoshigi', { name: '拍子木', en: 'Wooden Clappers', tags: ['pop', 'g
   } });
 
 /* 障子の影 — the shadow of a shoji lattice slides slantwise across the picture, as if a lamp were carried past outside */
-fxReg('wzShojiPass', { name: '障子の影', en: 'Lattice Shadow', tags: ['calm', 'emotional', 'editorial'], w: 0.9, dur: 14, amp: 1, mid: true,
+fxReg('wzShojiPass', { name: '쇼지 그림자', en: 'Lattice Shadow', tags: ['calm', 'emotional', 'editorial'], w: 0.9, dur: 14, amp: 1, mid: true,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), mn = Math.min(cw, ch), dir = J.r(s, 1) < 0.5 ? 1 : -1, a = 0.3 * ahr(k, 0.25, 0.7) * clamp(ampOf(ev), 0.6, 1.1);
     if (a < 0.01) return;
@@ -990,7 +990,7 @@ fxReg('wzShojiPass', { name: '障子の影', en: 'Lattice Shadow', tags: ['calm'
   } });
 
 /* 墨しぶき — a loaded brush is flicked at the screen: a blot lands near one edge and throws a fan of drops across it */
-fxReg('wzSumiShibuki', { name: '墨しぶき', en: 'Ink Splash', tags: ['graphic', 'emotional', 'pop'], w: 0.9, dur: 8, amp: 1, mid: true, ae: 'flash',
+fxReg('wzSumiShibuki', { name: '먹 튀김', en: 'Ink Splash', tags: ['graphic', 'emotional', 'pop'], w: 0.9, dur: 8, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), mn = Math.min(cw, ch), a0 = amp1(ev), g = E.outExpo(clamp(k / 0.3)), al = 1 - E.inQuad(clamp((k - 0.42) / 0.58));
     if (al <= 0.01) return;
@@ -1006,7 +1006,7 @@ fxReg('wzSumiShibuki', { name: '墨しぶき', en: 'Ink Splash', tags: ['graphic
   } });
 
 /* 紙の折り目 — for a moment the picture is a sheet folded in thirds and across: panels shade alternately and the creases catch the light */
-fxReg('wzOrime', { name: '紙の折り目', en: 'Paper Creases', tags: ['editorial', 'calm', 'graphic'], w: 0.8, dur: 9, amp: 1, mid: true,
+fxReg('wzOrime', { name: '종이 접은 자국', en: 'Paper Creases', tags: ['editorial', 'calm', 'graphic'], w: 0.8, dur: 9, amp: 1, mid: true,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, e = ahr(k, 0.14, 0.55) * clamp(ampOf(ev), 0.6, 1.1); if (e < 0.01) return;
     const mn = Math.min(cw, ch), nx = cw >= ch ? 3 : 2, ny = cw >= ch ? 2 : 3, dk = shadeOf(sc), lt = lightOf(sc), wB = mn * 0.2, lw = Math.max(1, mn * 0.003);
@@ -1026,7 +1026,7 @@ fxReg('wzOrime', { name: '紙の折り目', en: 'Paper Creases', tags: ['editori
   } });
 
 /* 花吹雪 — one gust carries a flurry of petals slantwise across the whole picture */
-fxReg('wzHanafubuki', { name: '花吹雪', en: 'Petal Gust', tags: ['emotional', 'pop', 'calm'], w: 0.9, dur: 14, amp: 1, mid: true,
+fxReg('wzHanafubuki', { name: '꽃보라', en: 'Petal Gust', tags: ['emotional', 'pop', 'calm'], w: 0.9, dur: 14, amp: 1, mid: true,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), mn = Math.min(cw, ch), dir = J.r(s, 1) < 0.5 ? 1 : -1, N = Math.round(34 + 16 * clamp(ampOf(ev), 0.5, 1.3));
     const c1 = popOf(sc), cols = [c1, firstOK([sc.accent2], c => ctr(c, sc.bg) > 1.4, c1), J.mix(c1, lightOf(sc), 0.45)];
@@ -1042,7 +1042,7 @@ fxReg('wzHanafubuki', { name: '花吹雪', en: 'Petal Gust', tags: ['emotional',
   } });
 
 /* 定式幕 — the striped stage curtain is run across the picture and straight off again (closed exactly at the cut) */
-fxReg('wzMaku', { name: '定式幕', en: 'Stage Curtain', tags: ['pop', 'graphic', 'editorial'], w: 0.7, dur: 10, pre: 5, amp: 1,
+fxReg('wzMaku', { name: '조시키마쿠', en: 'Stage Curtain', tags: ['pop', 'graphic', 'editorial'], w: 0.7, dur: 10, pre: 5, amp: 1,
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), b = 0.5, dir = J.r(s, 1) < 0.5 ? 1 : -1, sw = Math.max(8, cw / 13);
     const c1 = inkOf(sc), c2 = popOf(sc), c3 = firstOK([sc.accent2, sc.sub, sc.fg], c => c !== c1 && c !== c2 && ctr(c, sc.bg) > 1.3, J.mix(c1, c2, 0.5)), cols = [c1, c2, c3];
@@ -1073,7 +1073,7 @@ const trReg = (k, d) => reg('trans', k, Object.assign({}, d, {
   } }));
 
 /* 襖渡し — two sliding doors close over the old cut, meet, and open again on the new one */
-trReg('wzFusumaPass', { name: '襖渡し', en: 'Sliding Door Handover', tags: ['calm', 'editorial', 'graphic', 'emotional'], w: 1, dur: 0.55, ae: 'doorsOpen',
+trReg('wzFusumaPass', { name: '후스마 넘김', en: 'Sliding Door Handover', tags: ['calm', 'editorial', 'graphic', 'emotional'], w: 1, dur: 0.55, ae: 'doorsOpen',
   plan: rng => ({ n: rng.pick([1, 2]), k: rng.chance(0.6) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch, sc } = I, mn = Math.min(cw, ch), c = p < 0.44 ? ioCubic(p / 0.44) : p < 0.56 ? 1 : 1 - ioCubic((p - 0.56) / 0.44);
@@ -1101,7 +1101,7 @@ trReg('wzFusumaPass', { name: '襖渡し', en: 'Sliding Door Handover', tags: ['
   } });
 
 /* 巻物送り — a scroll roller travels across the picture, winding the old cut onto itself and leaving the new one flat behind it */
-trReg('wzMakimonoRoll', { name: '巻物送り', en: 'Scroll Roll', tags: ['calm', 'editorial', 'emotional'], w: 0.9, dur: 0.55, ae: 'wipe',
+trReg('wzMakimonoRoll', { name: '두루마리 넘기기', en: 'Scroll Roll', tags: ['calm', 'editorial', 'emotional'], w: 0.9, dur: 0.55, ae: 'wipe',
   plan: rng => ({ dir: rng.pick([1, -1]) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch, sc } = I, mn = Math.min(cw, ch), dir = Q.dir || 1, d = Math.max(12, mn * 0.09), e = ioCubic(p);
@@ -1124,7 +1124,7 @@ trReg('wzMakimonoRoll', { name: '巻物送り', en: 'Scroll Roll', tags: ['calm'
   } });
 
 /* 回り舞台 — the revolving stage: both cuts stand on one great turntable below the frame; the old one swings out as the new one swings in */
-trReg('wzMawariButai', { name: '回り舞台', en: 'Revolving Stage', tags: ['graphic', 'pop', 'editorial'], w: 0.8, dur: 0.6, ae: 'spinOut',
+trReg('wzMawariButai', { name: '회전 무대', en: 'Revolving Stage', tags: ['graphic', 'pop', 'editorial'], w: 0.8, dur: 0.6, ae: 'spinOut',
   plan: rng => ({ dir: rng.pick([1, -1]) }),
   draw(ctx, A, B, p, I, Q) {
     const { cw, ch, sc } = I, dir = Q.dir || 1, e = ioCubic(p), R = Math.max(cw, ch) * 1.9, px = cw / 2, py = ch / 2 + R;

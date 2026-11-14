@@ -165,7 +165,7 @@ function D(key, name, en, tags, w, ae, fn, layer) {
 /* ============================================================ typed / text lines */
 
 /* 入力行 — a shell prompt that types the cut as a command, answers, and leaves a blinking block cursor */
-D('xnPrompt', '入力行', 'Prompt Line', ['glitch', 'graphic', 'editorial'], 1.1, 'leaders', (env, bb, p, t, o, u) => {
+D('xnPrompt', '입력 줄', 'Prompt Line', ['glitch', 'graphic', 'editorial'], 1.1, 'leaders', (env, bb, p, t, o, u) => {
   const fs = FS(env), mf = monoF(env), bf = bodyF(env), pre = ['$ say', '> print', '>>> sing', '# echo'][p.v % 4];
   const body = '"' + clip(cutText(env), 14) + '"', wp = tw(env, pre, fs, mf) + fs * 0.6, wb = tw(env, body, fs, bf);
   const w = wp + wb + fs * 0.9, lh = fs * 1.55, h = lh * 3;
@@ -186,7 +186,7 @@ D('xnPrompt', '入力行', 'Prompt Line', ['glitch', 'graphic', 'editorial'], 1.
 });
 
 /* 小さな段落 — the lyric line repeated as a tiny set paragraph with a pilcrow and a side rule, revealed line by line */
-D('xnMicroPara', '小さな段落', 'Micro Paragraph', ['editorial', 'calm', 'emotional'], 1.1, 'leaders', (env, bb, p, t, o, u) => {
+D('xnMicroPara', '작은 문단', 'Micro Paragraph', ['editorial', 'calm', 'emotional'], 1.1, 'leaders', (env, bb, p, t, o, u) => {
   const src = glyphs(lineText(env)).length ? lineText(env) : 'lyric'; const cj = hasCJK(src);
   const fs = FS(env) * 0.82, f = bodyF(env), per = cj ? 12 : 24, nL = 3 + p.n, lh = fs * 1.6;
   const unit = chars(src + (cj ? '／' : ' / ')); const lines = [];
@@ -204,7 +204,7 @@ D('xnMicroPara', '小さな段落', 'Micro Paragraph', ['editorial', 'calm', 'em
 });
 
 /* 脚注 — a reference mark beside the lyric and its footnote (short rule + note line) at the foot of the screen */
-D('xnFootnote', '脚注', 'Footnote', ['editorial', 'calm', 'emotional'], 1.2, 'leaders', (env, bb, p, t, o, u) => {
+D('xnFootnote', '각주', 'Footnote', ['editorial', 'calm', 'emotional'], 1.2, 'leaders', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = MG(env), fs = FS(env), mk = ['*', '†', '※', '‡'][p.v % 4], f = bodyF(env), ac = ACC(env);
   // the mark: just outside the lyric's top-right corner
   const ms = fs * 1.7, e0 = ein(t, 0.35, 0.1, x => E.outBack(x, 1.8));
@@ -226,7 +226,7 @@ D('xnFootnote', '脚注', 'Footnote', ['editorial', 'calm', 'emotional'], 1.2, '
 });
 
 /* 差分表示 — a two-line diff: the old wording struck out, the new one added on a tinted row */
-D('xnDiff', '差分表示', 'Diff Lines', ['glitch', 'editorial', 'graphic'], 0.9, 'leaders', (env, bb, p, t, o, u) => {
+D('xnDiff', '차이 표시', 'Diff Lines', ['glitch', 'editorial', 'graphic'], 0.9, 'leaders', (env, bb, p, t, o, u) => {
   const fs = FS(env), mf = monoF(env), bf = bodyF(env), lh = fs * 1.7, ac = ACC(env);
   const g = chars(cutText(env)), neu = clip(cutText(env), 14), old = g.length > 2 ? clip(g.slice(0, Math.max(1, g.length - 1 - (p.v % 2))).join(''), 12) + (hasCJK(neu) ? '？' : '?') : '……';
   const ln = (env.cut.line | 0) + 1, gut = noNo(env) ? 0 : fs * 2.1, sg = fs * 1.2;
@@ -263,7 +263,7 @@ function syllables(s) {
   }
   return out;
 }
-D('xnSyllables', '音節分け', 'Syllable Split', ['editorial', 'calm', 'pop'], 1, 'leaders', (env, bb, p, t, o, u) => {
+D('xnSyllables', '음절 나누기', 'Syllable Split', ['editorial', 'calm', 'pop'], 1, 'leaders', (env, bb, p, t, o, u) => {
   const toks = syllables(cutText(env)); if (!toks.length) return;
   const { W } = env, m = MG(env), mf = monoF(env), bf = bodyF(env);
   let fs = FS(env) * 1.05, gap, ws, tot;
@@ -286,7 +286,7 @@ D('xnSyllables', '音節分け', 'Syllable Split', ['editorial', 'calm', 'pop'],
 /* ============================================================ readouts */
 
 /* 字種の内訳 — a stacked proportion bar of the cut's kanji / kana / latin glyphs with counted labels */
-D('xnGlyphStats', '字種の内訳', 'Glyph Breakdown', ['editorial', 'graphic', 'calm'], 1, 'bars', (env, bb, p, t, o, u) => {
+D('xnGlyphStats', '글자 종류 내역', 'Glyph Breakdown', ['editorial', 'graphic', 'calm'], 1, 'bars', (env, bb, p, t, o, u) => {
   const g = glyphs(cutText(env)).filter(c => !(J.isPunct && J.isPunct(c))); if (!g.length) return;
   const cnt = [0, 0, 0, 0];
   for (const c of g) cnt[J.isKanji(c) ? 0 : (J.isHira(c) || J.isKata(c)) ? 1 : (J.isLatin && J.isLatin(c)) ? 2 : 3]++;
@@ -310,7 +310,7 @@ D('xnGlyphStats', '字種の内訳', 'Glyph Breakdown', ['editorial', 'graphic',
 });
 
 /* 隅の座標 — coordinates of the bounding-box corners: small crosses with x / y readouts that roll to their values */
-D('xnBoxCoords', '隅の座標', 'Corner Coordinates', ['graphic', 'glitch', 'editorial'], 1, 'brackets', (env, bb, p, t, o, u) => {
+D('xnBoxCoords', '구석 좌표', 'Corner Coordinates', ['graphic', 'glitch', 'editorial'], 1, 'brackets', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = MG(env) * 0.5, fs = FS(env) * 0.8, pd = 12 * u, c = p.accent ? ACC(env) : env.sc.fg, k = 6 * u;
   const all = [[bb.x0, bb.y0, -1, -1, 'TL'], [bb.x1, bb.y1, 1, 1, 'BR'], [bb.x1, bb.y0, 1, -1, 'TR'], [bb.x0, bb.y1, -1, 1, 'BL']];
   const list = p.big ? all : p.v % 2 ? all.slice(2) : all.slice(0, 2);
@@ -325,7 +325,7 @@ D('xnBoxCoords', '隅の座標', 'Corner Coordinates', ['graphic', 'glitch', 'ed
 });
 
 /* 残り時間 — a countdown of the time left in the cut over a rule that shortens toward zero */
-D('xnRemain', '残り時間', 'Time Remaining', ['glitch', 'graphic', 'emotional'], 0.9, 'counter', (env, bb, p, t, o, u) => {
+D('xnRemain', '남은 시간', 'Time Remaining', ['glitch', 'graphic', 'emotional'], 0.9, 'counter', (env, bb, p, t, o, u) => {
   if (noTime(env)) return;
   const fs = FS(env), dur = Math.max(0.2, env.cut.dur || 1), rem = Math.max(0, dur - env.lt), fr = cl(rem / dur);
   const w = 230 * u, h = fs * 3.6, sp = spot(env, bb, w, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), e = ein(t, 0.45);
@@ -341,7 +341,7 @@ D('xnRemain', '残り時間', 'Time Remaining', ['glitch', 'graphic', 'emotional
 });
 
 /* 文字ゲージ — an ASCII progress gauge [####----] with a spinner glyph and percent, set character by character */
-D('xnAsciiGauge', '文字ゲージ', 'ASCII Gauge', ['glitch', 'graphic', 'pop'], 1, 'bars', (env, bb, p, t, o, u) => {
+D('xnAsciiGauge', '문자 게이지', 'ASCII Gauge', ['glitch', 'graphic', 'pop'], 1, 'bars', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 1.05, N = 12 + 4 * (p.n - 1), cw = fs * 0.66, dur = Math.max(0.3, env.cut.dur || 1);
   const pr = cl((env.lt - 0.2) / Math.max(0.2, dur * 0.88 - 0.2)), k = Math.floor(pr * N + 1e-6);
   const w = cw * (N + 2) + fs * 3.4, h = fs * 2.9, sp = band(env, bb, w, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3);
@@ -359,7 +359,7 @@ D('xnAsciiGauge', '文字ゲージ', 'ASCII Gauge', ['glitch', 'graphic', 'pop']
 });
 
 /* パンくず — a breadcrumb path (song › line › cut › word) whose levels slide in one after another */
-D('xnBreadcrumb', 'パンくず', 'Breadcrumb', ['editorial', 'graphic', 'pop'], 1, 'arrows', (env, bb, p, t, o, u) => {
+D('xnBreadcrumb', '이동 경로', 'Breadcrumb', ['editorial', 'graphic', 'pop'], 1, 'arrows', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.95, mf = monoF(env), bf = bodyF(env), nn = noNo(env);
   const items = [[['song', 'lyrics', 'home', 'track'][p.v % 4], mf], [nn ? 'verse' : 'line ' + pad2((env.cut.line | 0) + 1), mf], [nn ? 'cut' : 'cut ' + pad2((env.cut.index | 0) + 1), mf], [clip(cutText(env), 7), bf]];
   const gap = fs * 1.5, ws = items.map(([s, f]) => tw(env, s, fs, f)), tot = ws.reduce((a, b) => a + b, 0) + gap * (items.length - 1), h = fs * 1.6;
@@ -375,7 +375,7 @@ D('xnBreadcrumb', 'パンくず', 'Breadcrumb', ['editorial', 'graphic', 'pop'],
 });
 
 /* 版数タグ — version / file-name style pills (v1.03, take 02, draft) that pop open in a row */
-D('xnVersionTags', '版数タグ', 'Version Tags', ['pop', 'graphic', 'editorial'], 1, 'shapes', (env, bb, p, t, o, u) => {
+D('xnVersionTags', '버전 태그', 'Version Tags', ['pop', 'graphic', 'editorial'], 1, 'shapes', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.9, nn = noNo(env), ln = (env.cut.line | 0) + 1, ix = (env.cut.index | 0) + 1, ac = ACC(env);
   const word = ['draft', 'final', 'beta', 'wip', 'stable', 'demo'][p.v % 6];
   const tags = nn ? ['lyric.txt', word, 'text'].slice(0, 1 + p.n) : [`v${1 + (ln % 3)}.${pad2(ix)}`, word, `take ${pad2(ln)}`].slice(0, 1 + p.n);
@@ -391,7 +391,7 @@ D('xnVersionTags', '版数タグ', 'Version Tags', ['pop', 'graphic', 'editorial
 });
 
 /* ヒント吹き出し — a small filled tooltip with a pointer aimed at the lyric, naming the font or the reading */
-D('xnTooltip', 'ヒント吹き出し', 'Tooltip', ['pop', 'graphic', 'editorial'], 0.9, 'leaders', (env, bb, p, t, o, u) => {
+D('xnTooltip', '툴팁', 'Tooltip', ['pop', 'graphic', 'editorial'], 0.9, 'leaders', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = MG(env), fs = FS(env) * 0.9, bf = bodyF(env);
   const rj = J.romaji(cutText(env).replace(/[、。！？!?,.・「」]/g, ' ').replace(/\s+/g, ' ').trim()), cj = hasCJK(cutText(env));
   const txt = p.v % 3 === 0 ? String((env.st.fonts.display && env.st.fonts.display[0]) || 'display').replace(/_/g, ' ') : p.v % 3 === 1 ? (cj ? 'クリックして編集' : 'click to edit') : (rj ? clip(rj, 22) : cj ? 'テキストレイヤー' : 'text layer');
@@ -412,7 +412,7 @@ D('xnTooltip', 'ヒント吹き出し', 'Tooltip', ['pop', 'graphic', 'editorial
 /* ============================================================ charts */
 
 /* スパークライン — a tiny trend line that draws on, with its low / high marked and the latest value at the head */
-D('xnSparkline', 'スパークライン', 'Sparkline', ['editorial', 'graphic', 'calm'], 1.1, 'waveform', (env, bb, p, t, o, u) => {
+D('xnSparkline', '스파크라인', 'Sparkline', ['editorial', 'graphic', 'calm'], 1.1, 'waveform', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.85, w = 190 * u + 40 * u * p.n, gh = 46 * u, h = gh + fs * 1.6, n = 18;
   const sp = spot(env, bb, w + fs * 3.2, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), ac = ACC(env);
   const vals = []; let lo = 0, hi = 0;
@@ -432,7 +432,7 @@ D('xnSparkline', 'スパークライン', 'Sparkline', ['editorial', 'graphic', 
 });
 
 /* 母音グラフ — horizontal bars counting the vowels (A I U E O) sung in the lyric line; glyph counts when there are none */
-D('xnVowels', '母音グラフ', 'Vowel Chart', ['editorial', 'graphic', 'pop'], 0.9, 'bars', (env, bb, p, t, o, u) => {
+D('xnVowels', '모음 그래프', 'Vowel Chart', ['editorial', 'graphic', 'pop'], 0.9, 'bars', (env, bb, p, t, o, u) => {
   const g = glyphs(lineText(env).toLowerCase()).filter(c => !(J.isPunct && J.isPunct(c))); if (!g.length) return;
   const cv = { a: 0, i: 0, u: 0, e: 0, o: 0 }; let tot = 0;
   for (const c of g) {
@@ -455,7 +455,7 @@ D('xnVowels', '母音グラフ', 'Vowel Chart', ['editorial', 'graphic', 'pop'],
 });
 
 /* 凡例 — a chart legend: line / dash / dot samples keyed to pieces of the cut */
-D('xnLegend', '凡例', 'Chart Legend', ['editorial', 'graphic', 'calm'], 1, 'leaders', (env, bb, p, t, o, u) => {
+D('xnLegend', '범례', 'Chart Legend', ['editorial', 'graphic', 'calm'], 1, 'leaders', (env, bb, p, t, o, u) => {
   const txt = cutText(env), g = glyphs(txt); if (!g.length) return;
   let labs;
   const wds = txt.split(' ').filter(Boolean);
@@ -476,7 +476,7 @@ D('xnLegend', '凡例', 'Chart Legend', ['editorial', 'graphic', 'calm'], 1, 'le
 });
 
 /* グラフ軸 — x / y chart axes drawn round the lyric: ticks per glyph, arrow heads and axis titles */
-D('xnAxes', 'グラフ軸', 'Chart Axes', ['editorial', 'graphic', 'calm'], 1, 'grid', (env, bb, p, t, o, u) => {
+D('xnAxes', '그래프 축', 'Chart Axes', ['editorial', 'graphic', 'calm'], 1, 'grid', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = MG(env) * 0.5, fs = FS(env) * 0.78, pd = 18 * u + Math.min(bw(bb), bh(bb)) * 0.1, c = p.accent ? ACC(env) : env.sc.fg, lw = Math.max(1, 1.4 * u);
   const ox = Math.max(m, bb.x0 - pd), oy = Math.min(H - m - fs * 1.7, bb.y1 + pd), xe = Math.min(W - m, bb.x1 + pd * 1.7), ye = Math.max(m, bb.y0 - pd * 1.7);
   if (oy < bb.y1 + 4 * u || ox > bb.x0 - 4 * u) return;
@@ -501,7 +501,7 @@ D('xnAxes', 'グラフ軸', 'Chart Axes', ['editorial', 'graphic', 'calm'], 1, '
 /* ============================================================ meters / media */
 
 /* レベルメーター — stereo L / R segment meters with a dB scale and peak-hold ticks, following the audio level */
-D('xnLevelMeter', 'レベルメーター', 'Level Meter', ['graphic', 'glitch', 'pop'], 1, 'waveform', (env, bb, p, t, o, u) => {
+D('xnLevelMeter', '레벨 미터', 'Level Meter', ['graphic', 'glitch', 'pop'], 1, 'waveform', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.8, N = 16, sw = 12 * u, sg = 4 * u, shh = 12 * u, rg = 8 * u, lab = fs * 1.4;
   const w = lab + N * (sw + sg), h = shh * 2 + rg + fs * 1.6, sp = spot(env, bb, w, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3);
   const e = ein(t, 0.45), ac = ACC(env), x0 = sp.x + lab;
@@ -524,7 +524,7 @@ D('xnLevelMeter', 'レベルメーター', 'Level Meter', ['graphic', 'glitch', 
 });
 
 /* タイムライン — an editor's mini timeline: tracks of clips, the current clip lit, a playhead crossing it */
-D('xnTimeline', 'タイムライン', 'Timeline Tracks', ['graphic', 'glitch', 'editorial'], 1, 'bars', (env, bb, p, t, o, u) => {
+D('xnTimeline', '타임라인', 'Timeline Tracks', ['graphic', 'glitch', 'editorial'], 1, 'bars', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.72, nT = 2 + (p.n > 1 ? 1 : 0), th = 15 * u, tg = 6 * u, lab = fs * 2, w = 340 * u, ruler = 13 * u;
   const h = ruler + nT * (th + tg), sp = spot(env, bb, w + lab, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), x0 = sp.x + lab, ac = ACC(env);
   const e = ein(t, 0.5), tk = [];
@@ -548,7 +548,7 @@ D('xnTimeline', 'タイムライン', 'Timeline Tracks', ['graphic', 'glitch', '
 });
 
 /* 曲順リスト — a playlist: skeleton rows, the current row carrying the lyric line and bouncing now-playing bars */
-D('xnTrackList', '曲順リスト', 'Track List', ['pop', 'graphic', 'editorial'], 1, 'leaders', (env, bb, p, t, o, u) => {
+D('xnTrackList', '곡 순서 목록', 'Track List', ['pop', 'graphic', 'editorial'], 1, 'leaders', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.9, bf = bodyF(env), rows = 3 + (p.n > 2 ? 1 : 0), rh = fs * 1.9, w = 290 * u, h = rows * rh, cur = 1;
   const sp = spot(env, bb, w, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), ac = ACC(env), base = (env.cut.line | 0) + 1, nx = fs * 1.9;
   for (let i = 0; i < rows; i++) {
@@ -568,7 +568,7 @@ D('xnTrackList', '曲順リスト', 'Track List', ['pop', 'graphic', 'editorial'
 
 /* 星評価 — a five-star rating whose stars fill one by one (half stars included) with its score */
 const STAR = (() => { const a = []; for (let i = 0; i < 10; i++) { const an = -90 * DEG + i * TAU / 10, r = i % 2 ? 0.42 : 1; a.push([Math.cos(an) * r, Math.sin(an) * r]); } return a; })();
-D('xnStars', '星評価', 'Star Rating', ['pop', 'emotional', 'editorial'], 0.8, 'shapes', (env, bb, p, t, o, u) => {
+D('xnStars', '별점', 'Star Rating', ['pop', 'emotional', 'editorial'], 0.8, 'shapes', (env, bb, p, t, o, u) => {
   const R = 13 * u + 3 * u * p.n, gap = R * 2.35, fs = FS(env), rating = 3.5 + (J.h(p.seed, 3) % 4) * 0.5;
   const nn = noNo(env), w = gap * 4 + R * 2 + (nn ? 0 : fs * 2.4), h = R * 2.1;
   const sp = spot(env, bb, w, h, p, 20 * u), A = o * (sp.ok ? 1 : 0.3), ac = ACC(env), ctx = env.ctx;
@@ -583,7 +583,7 @@ D('xnStars', '星評価', 'Star Rating', ['pop', 'emotional', 'editorial'], 0.8,
 });
 
 /* 電池残量 — phone status icons: signal bars lighting up, a clock, a battery that drains over the cut */
-D('xnBattery', '電池残量', 'Status Icons', ['pop', 'graphic', 'glitch'], 0.7, 'bars', (env, bb, p, t, o, u) => {
+D('xnBattery', '배터리 잔량', 'Status Icons', ['pop', 'graphic', 'glitch'], 0.7, 'bars', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.9, hh = fs * 1.05, nn = noNo(env), nt = noTime(env);
   const sigW = 26 * u, batW = 34 * u, pcW = nn ? 0 : fs * 2.5, tmW = nt ? 0 : fs * 3.2, g = fs * 0.7, w = sigW + g + tmW + (tmW ? g : 0) + pcW + batW + 4 * u;
   const sp = spot(env, bb, w, hh, Object.assign({}, p, { corner: true }), 20 * u), A = o * (sp.ok ? 1 : 0.3), c = env.sc.fg, cy = sp.y + hh / 2;
@@ -603,7 +603,7 @@ D('xnBattery', '電池残量', 'Status Icons', ['pop', 'graphic', 'glitch'], 0.7
 
 /* スライダー — labelled range sliders whose knobs glide to their values, with a readout each */
 const SL_LABS = [['TEMPO', 'PITCH', 'REVERB'], ['GAIN', 'PAN', 'ECHO'], ['WARMTH', 'BLUR', 'GRAIN'], ['想い', '距離', '温度'], ['きもち', 'ことば', 'おと']];
-D('xnSliders', 'スライダー', 'Sliders', ['pop', 'graphic', 'editorial'], 1, 'bars', (env, bb, p, t, o, u) => {
+D('xnSliders', '슬라이더', 'Sliders', ['pop', 'graphic', 'editorial'], 1, 'bars', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.85, bf = bodyF(env), n = Math.min(3, 1 + p.n), labs = SL_LABS[p.v % (hasCJK(cutText(env)) ? 5 : 3)], rh = fs * 2.1, tr = 150 * u, nn = noNo(env);
   const lw0 = Math.max(...labs.slice(0, n).map(s => tw(env, s, fs, bf, 0.1))) + fs * 0.9, w = lw0 + tr + (nn ? 8 * u : fs * 2.2), h = n * rh;
   const sp = spot(env, bb, w, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), ac = ACC(env);
@@ -620,7 +620,7 @@ D('xnSliders', 'スライダー', 'Sliders', ['pop', 'graphic', 'editorial'], 1,
 
 /* プルダウン — a select box that drops open, runs its highlight down the options, picks one and closes */
 const DD_OPTS = [['Verse', 'Chorus', 'Bridge'], ['Soft', 'Normal', 'Loud'], ['Slow', 'Mid', 'Fast'], ['きのう', 'きょう', 'あした'], ['ひとり', 'ふたり', 'みんな']];
-D('xnDropdown', 'プルダウン', 'Dropdown', ['pop', 'graphic'], 0.8, 'shapes', (env, bb, p, t, o, u) => {
+D('xnDropdown', '드롭다운', 'Dropdown', ['pop', 'graphic'], 0.8, 'shapes', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.92, bf = bodyF(env), opts = DD_OPTS[p.v % (hasCJK(cutText(env)) ? 5 : 3)], rh = fs * 1.9, sel = 1 + (J.h(p.seed, 2) % 2);
   const w = Math.max(...opts.map(s => tw(env, s, fs, bf))) + fs * 3.4, h = rh * 4 + 6 * u;
   const sp = spot(env, bb, w, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), ac = ACC(env), c = env.sc.fg, lw = Math.max(1, 1.3 * u);
@@ -642,7 +642,7 @@ D('xnDropdown', 'プルダウン', 'Dropdown', ['pop', 'graphic'], 0.8, 'shapes'
 });
 
 /* ページ送り — pagination: ‹ 1 2 3 4 5 › with the active box sliding onto the current line's page */
-D('xnPager', 'ページ送り', 'Pager', ['pop', 'graphic', 'editorial'], 1, 'dots', (env, bb, p, t, o, u) => {
+D('xnPager', '페이지 넘김', 'Pager', ['pop', 'graphic', 'editorial'], 1, 'dots', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.95, c = fs * 1.9, g = fs * 0.35, n = 5, ln = env.cut.line | 0, base = Math.floor(ln / n) * n, act = ln % n, nn = noNo(env);
   const w = (n + 2) * c + (n + 1) * g, sp = band(env, bb, w, c, p, 24 * u + bh(bb) * 0.05), A = o * (sp.ok ? 1 : 0.3), ac = ACC(env), lw = Math.max(1, 1.3 * u);
   const cx = i => sp.x + (i + 1) * (c + g) + c / 2, cy = sp.y + c / 2, k = fs * 0.3;
@@ -660,7 +660,7 @@ D('xnPager', 'ページ送り', 'Pager', ['pop', 'graphic', 'editorial'], 1, 'do
 });
 
 /* 検索窓 — a search field: magnifier, the cut typed in with a caret, then a hit count below */
-D('xnSearch', '検索窓', 'Search Field', ['pop', 'graphic', 'editorial'], 1, 'shapes', (env, bb, p, t, o, u) => {
+D('xnSearch', '검색창', 'Search Field', ['pop', 'graphic', 'editorial'], 1, 'shapes', (env, bb, p, t, o, u) => {
   const fs = FS(env), bf = bodyF(env), q = clip(cutText(env), 12), cj = hasCJK(q), hgt = fs * 2.3;
   const w = cl(tw(env, q, fs, bf) + fs * 4.2, 230 * u, 420 * u), h = hgt + fs * 1.7;
   const sp = spot(env, bb, w, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), c = env.sc.fg, lw = Math.max(1, 1.4 * u), e = ein(t, 0.4);
@@ -678,7 +678,7 @@ D('xnSearch', '検索窓', 'Search Field', ['pop', 'graphic', 'editorial'], 1, '
 });
 
 /* キーの列 — keycaps spelling the cut's reading, pressed one after another, ending on Enter */
-D('xnKeycaps', 'キーの列', 'Keycaps', ['pop', 'graphic', 'glitch'], 0.9, 'shapes', (env, bb, p, t, o, u) => {
+D('xnKeycaps', '키캡 줄', 'Keycaps', ['pop', 'graphic', 'glitch'], 0.9, 'shapes', (env, bb, p, t, o, u) => {
   const rj = syllables(cutText(env)).filter(q => q[1]).map(q => q[0]).join('');
   let ks = chars(rj.toUpperCase()).filter(c => /[A-Z]/.test(c)).slice(0, 8); if (!ks.length) ks = chars('LYRIC');
   const fs = FS(env) * 0.9, k = fs * 2, g = fs * 0.35, n = ks.length, ew = k * 1.8, w = n * (k + g) + ew, h = k + 5 * u;
@@ -694,7 +694,7 @@ D('xnKeycaps', 'キーの列', 'Keycaps', ['pop', 'graphic', 'glitch'], 0.9, 'sh
 });
 
 /* 入力中 — a chat "typing" bubble: three dots rolling in a wave, with a small status caption */
-D('xnTyping', '入力中', 'Typing Dots', ['pop', 'emotional', 'calm'], 0.8, 'dots', (env, bb, p, t, o, u) => {
+D('xnTyping', '입력 중', 'Typing Dots', ['pop', 'emotional', 'calm'], 0.8, 'dots', (env, bb, p, t, o, u) => {
   const fs = FS(env) * 0.8, bf = bodyF(env), R = 5 * u + 1.5 * u * p.n, bwid = R * 11, bht = R * 5.4, cj = hasCJK(cutText(env));
   const h = bht + fs * 1.7, sp = spot(env, bb, bwid + R, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), rt = !!p.right;
   const e = ein(t, 0.4, 0.05, z => E.outBack(z, 1.5)); if (e <= 0) return;
@@ -714,7 +714,7 @@ D('xnTyping', '入力中', 'Typing Dots', ['pop', 'emotional', 'calm'], 0.8, 'do
 
 /* カレンダー — a mini month grid whose days fill in row by row; the cut's day gets circled */
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-D('xnCalendar', 'カレンダー', 'Mini Calendar', ['pop', 'editorial', 'emotional'], 0.8, 'grid', (env, bb, p, t, o, u) => {
+D('xnCalendar', '달력', 'Mini Calendar', ['pop', 'editorial', 'emotional'], 0.8, 'grid', (env, bb, p, t, o, u) => {
   if (noNo(env)) return;
   const fs = FS(env) * 0.72, cw = fs * 1.75, chh = fs * 1.5, mo = J.h(p.seed, 1) % 12, off = J.h(p.seed, 2) % 7, days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo];
   const rowsN = Math.ceil((off + days) / 7), w = cw * 7, h = fs * 1.9 + chh * (rowsN + 1);
@@ -733,7 +733,7 @@ D('xnCalendar', 'カレンダー', 'Mini Calendar', ['pop', 'editorial', 'emotio
 });
 
 /* 時計 — an analogue clock face: ticks draw on, the hands sweep to a time, the second hand ticks */
-D('xnClock', '時計', 'Clock Face', ['calm', 'emotional', 'editorial'], 0.9, 'rings', (env, bb, p, t, o, u) => {
+D('xnClock', '시계', 'Clock Face', ['calm', 'emotional', 'editorial'], 0.9, 'rings', (env, bb, p, t, o, u) => {
   if (noTime(env)) return;
   const fs = FS(env) * 0.85, R = 38 * u + 9 * u * p.n, w = R * 2.1, h = R * 2.1 + fs * 1.7;
   const sp = spot(env, bb, w, h, p, 22 * u), A = o * (sp.ok ? 1 : 0.3), cx = sp.x + w / 2, cy = sp.y + R * 1.05, c = env.sc.fg, ac = ACC(env), lw = Math.max(1, 1.4 * u);
@@ -757,7 +757,7 @@ D('xnClock', '時計', 'Clock Face', ['calm', 'emotional', 'editorial'], 0.9, 'r
 });
 
 /* ティッカー — a ticker tape along a screen edge: the lyric line scrolling between rules with up / down marks and deltas */
-D('xnTicker', 'ティッカー', 'Ticker Tape', ['graphic', 'glitch', 'pop', 'editorial'], 1.1, 'bars', (env, bb, p, t, o, u) => {
+D('xnTicker', '티커', 'Ticker Tape', ['graphic', 'glitch', 'pop', 'editorial'], 1.1, 'bars', (env, bb, p, t, o, u) => {
   const { W, H } = env, fs = FS(env), bf = bodyF(env), bhh = fs * 2.4, nn = noNo(env), src = clip(lineText(env) || 'lyric', 30);
   let top = !p.low; if ((top ? bb.y0 : H - bb.y1) < bhh + 14 * u) top = !top;
   const A = o * ((top ? bb.y0 : H - bb.y1) < bhh + 4 * u ? 0.3 : 1), e = ein(t, 0.45), y0 = top ? -bhh * (1 - e) : H - bhh * e, cy = y0 + bhh / 2;

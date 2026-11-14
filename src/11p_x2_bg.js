@@ -41,7 +41,7 @@ const dot = (ctx, x, y, r) => { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, TAU); 
 const stadium = (ctx, x, y, w, h) => { const r = h / 2; ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2); ctx.lineTo(x + r, y + h); ctx.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5); ctx.closePath(); };
 
 /* ================= GEOMETRIC FIELDS ================= */
-bg('xpDriftBars', { name: '漂う帯', en: 'Drifting Bars', tags: ['calm', 'graphic', 'editorial'], w: 1.1, subtle: true,
+bg('xpDriftBars', { name: '떠다니는 띠', en: 'Drifting Bars', tags: ['calm', 'graphic', 'editorial'], w: 1.1, subtle: true,
   plan: rng => ({ seed: bs(rng), n: rng.int(5, 7), vert: rng.chance(0.7), k: rng.range(0.045, 0.06) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, t = env.t, vert = Q.vert !== false, L = vert ? W : H, n = Q.n || 6, k = Q.k || 0.04;
@@ -53,7 +53,7 @@ bg('xpDriftBars', { name: '漂う帯', en: 'Drifting Bars', tags: ['calm', 'grap
     }
   } });
 
-bg('xpBigPolygon', { name: '回る多角形', en: 'Turning Polygon', tags: ['graphic', 'calm', 'pop'], w: 1,
+bg('xpBigPolygon', { name: '도는 다각형', en: 'Turning Polygon', tags: ['graphic', 'calm', 'pop'], w: 1,
   plan: rng => ({ seed: bs(rng), sides: rng.pick([3, 5, 6, 8]), cx: rng.pick([0.26, 0.74, 0.5]), cy: rng.pick([0.42, 0.58]), spd: rng.range(1.5, 3.2) * rng.pick([1, -1]), k: rng.range(0.04, 0.055) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), e = fadeIn(env, 0.8), n = Q.sides || 5, k = Q.k || 0.045;
@@ -64,7 +64,7 @@ bg('xpBigPolygon', { name: '回る多角形', en: 'Turning Polygon', tags: ['gra
     ctx.strokeStyle = A(sc.fg, k * 2.2); ctx.lineWidth = LW(env, 0.003); ctx.beginPath(); polyPath(ctx, cx, cy, R * 1.24, n, rot * 0.6); ctx.stroke();
   } });
 
-bg('xpShiftRows', { name: 'ずれる段', en: 'Shifting Rows', tags: ['graphic', 'pop', 'editorial'], w: 0.9,
+bg('xpShiftRows', { name: '어긋나는 단', en: 'Shifting Rows', tags: ['graphic', 'pop', 'editorial'], w: 0.9,
   plan: rng => ({ seed: bs(rng), ar: rng.range(2.2, 3.4), spd: rng.range(0.05, 0.1), k: rng.range(0.035, 0.05) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), rh = U * 0.105, bw = rh * (Q.ar || 2.6), rows = Math.min(24, Math.ceil(H / rh));
@@ -76,7 +76,7 @@ bg('xpShiftRows', { name: 'ずれる段', en: 'Shifting Rows', tags: ['graphic',
     ctx.fill();
   } });
 
-bg('xpNestTri', { name: 'ねじれ三角', en: 'Twisted Triangles', tags: ['graphic', 'calm', 'glitch'], w: 0.8,
+bg('xpNestTri', { name: '비틀린 삼각형', en: 'Twisted Triangles', tags: ['graphic', 'calm', 'glitch'], w: 0.8,
   plan: rng => ({ seed: bs(rng), sides: rng.pick([3, 3, 5]), cy: rng.pick([0.5, 0.56]), k: rng.range(0.085, 0.11) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, e = fadeIn(env, 0.8), n = Q.sides || 3, cx = W / 2, cy = H * (Q.cy || 0.5);
@@ -88,7 +88,7 @@ bg('xpNestTri', { name: 'ねじれ三角', en: 'Twisted Triangles', tags: ['grap
     ctx.stroke();
   } });
 
-bg('xpCornerArcs', { name: '角の扇', en: 'Corner Fans', tags: ['graphic', 'calm', 'pop'], w: 0.9,
+bg('xpCornerArcs', { name: '모서리 부채꼴', en: 'Corner Fans', tags: ['graphic', 'calm', 'pop'], w: 0.9,
   plan: rng => ({ seed: bs(rng), diag: rng.chance(0.5), k: rng.range(0.045, 0.06) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, e = fadeIn(env, 0.8), k = Q.k || 0.05;
@@ -101,7 +101,7 @@ bg('xpCornerArcs', { name: '角の扇', en: 'Corner Fans', tags: ['graphic', 'ca
     }
   } });
 
-bg('xpPanels', { name: '動く仕切り', en: 'Sliding Panels', tags: ['editorial', 'graphic', 'calm'], w: 1, subtle: true,
+bg('xpPanels', { name: '움직이는 칸막이', en: 'Sliding Panels', tags: ['editorial', 'graphic', 'calm'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), flip: rng.chance(0.5), flipY: rng.chance(0.5), k: rng.range(0.03, 0.042) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, s = (Q.seed || 1) % 9, k = Q.k || 0.035;
@@ -116,7 +116,7 @@ bg('xpPanels', { name: '動く仕切り', en: 'Sliding Panels', tags: ['editoria
     ctx.fillRect(x1 - lw / 2, 0, lw, H); ctx.fillRect(x1, y1 - lw / 2, W - x1, lw); ctx.fillRect(x2 - lw / 2, y1, lw, H - y1);
   } });
 
-bg('xpPlusField', { name: '回る十字', en: 'Turning Crosses', tags: ['graphic', 'pop', 'editorial'], w: 0.9, subtle: true,
+bg('xpPlusField', { name: '도는 십자', en: 'Turning Crosses', tags: ['graphic', 'pop', 'editorial'], w: 0.9, subtle: true,
   plan: rng => ({ seed: bs(rng), sp: rng.range(0.11, 0.14), k: rng.range(0.1, 0.13) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, sp = U * (Q.sp || 0.12), arm = sp * 0.17;
@@ -129,7 +129,7 @@ bg('xpPlusField', { name: '回る十字', en: 'Turning Crosses', tags: ['graphic
     ctx.stroke();
   } });
 
-bg('xpFoldPlanes', { name: '折り重なる面', en: 'Folded Planes', tags: ['calm', 'emotional', 'editorial'], w: 1.1, subtle: true,
+bg('xpFoldPlanes', { name: '겹겹이 접힌 면', en: 'Folded Planes', tags: ['calm', 'emotional', 'editorial'], w: 1.1, subtle: true,
   plan: rng => ({ seed: bs(rng), k: rng.range(0.035, 0.05) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, t = env.t, k = Q.k || 0.04;
@@ -148,7 +148,7 @@ bg('xpFoldPlanes', { name: '折り重なる面', en: 'Folded Planes', tags: ['ca
   } });
 
 /* ================= LINE FIELDS ================= */
-bg('xpFlowLines', { name: '流れる線', en: 'Flow Lines', tags: ['calm', 'emotional', 'editorial'], w: 1.2, subtle: true,
+bg('xpFlowLines', { name: '흐르는 선', en: 'Flow Lines', tags: ['calm', 'emotional', 'editorial'], w: 1.2, subtle: true,
   plan: rng => ({ seed: bs(rng), n: rng.int(16, 24), horiz: rng.chance(0.35), k: rng.range(0.13, 0.16) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, t = env.t, hz = !!Q.horiz, L = hz ? W : H, X = hz ? H : W, n = Q.n || 20, amp = X * 0.075, ST = 26;
@@ -163,7 +163,7 @@ bg('xpFlowLines', { name: '流れる線', en: 'Flow Lines', tags: ['calm', 'emot
     ctx.stroke();
   } });
 
-bg('xpHorizonLines', { name: '遠近の横線', en: 'Depth Rules', tags: ['calm', 'graphic', 'emotional'], w: 0.9,
+bg('xpHorizonLines', { name: '원근 가로선', en: 'Depth Rules', tags: ['calm', 'graphic', 'emotional'], w: 0.9,
   plan: rng => ({ seed: bs(rng), cy: rng.pick([0.5, 0.42, 0.6]), spd: rng.range(0.035, 0.06), k: rng.range(0.085, 0.11) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, e = fadeIn(env), n = 9, k = Q.k || 0.09;
@@ -177,7 +177,7 @@ bg('xpHorizonLines', { name: '遠近の横線', en: 'Depth Rules', tags: ['calm'
     ctx.fillStyle = A(sc.accent, 0.22); ctx.fillRect(W * 0.5 * (1 - e), y0 - 1, W * e, 2);
   } });
 
-bg('xpDialTicks', { name: '目盛りの輪', en: 'Dial Ticks', tags: ['editorial', 'graphic', 'glitch'], w: 0.9, subtle: true,
+bg('xpDialTicks', { name: '눈금 고리', en: 'Dial Ticks', tags: ['editorial', 'graphic', 'glitch'], w: 0.9, subtle: true,
   plan: rng => ({ seed: bs(rng), cx: rng.pick([0.5, 0.5, 0.18, 0.82]), cy: rng.pick([0.5, 0.5, 0.62]), spd: rng.range(1.5, 3) * rng.pick([1, -1]), k: rng.range(0.17, 0.21) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), e = fadeIn(env, 0.8), cx = W * (Q.cx || 0.5), cy = H * (Q.cy || 0.5), NS = [48, 72, 120, 180], RS = [0.3, 0.47, 0.7, 1.02], SP = [1, -0.6, 0.35, -0.2];
@@ -192,7 +192,7 @@ bg('xpDialTicks', { name: '目盛りの輪', en: 'Dial Ticks', tags: ['editorial
     ctx.stroke();
   } });
 
-bg('xpSineWeave', { name: '編む波線', en: 'Woven Waves', tags: ['calm', 'pop', 'emotional'], w: 0.9,
+bg('xpSineWeave', { name: '엮이는 물결선', en: 'Woven Waves', tags: ['calm', 'pop', 'emotional'], w: 0.9,
   plan: rng => ({ seed: bs(rng), k: rng.range(0.12, 0.15), spd: rng.range(0.25, 0.45) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, t = env.t, nb = H > W ? 5 : 3, amp = H / nb * 0.3, ST = 44;
@@ -207,7 +207,7 @@ bg('xpSineWeave', { name: '編む波線', en: 'Woven Waves', tags: ['calm', 'pop
     ctx.stroke();
   } });
 
-bg('xpLissajous', { name: 'リサージュ', en: 'Lissajous Curve', tags: ['calm', 'graphic', 'editorial'], w: 0.9, subtle: true,
+bg('xpLissajous', { name: '리사주 곡선', en: 'Lissajous Curve', tags: ['calm', 'graphic', 'editorial'], w: 0.9, subtle: true,
   plan: rng => ({ seed: bs(rng), ab: rng.pick([[3, 2], [5, 4], [3, 4], [5, 3], [2, 1]]), spd: rng.range(0.08, 0.14), k: rng.range(0.14, 0.17) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, e = fadeIn(env, 1), ab = Q.ab || [3, 2], N = 260, k = Q.k || 0.12, cx = W / 2, cy = H / 2, rx = W * 0.46, ry = H * 0.44;
@@ -220,7 +220,7 @@ bg('xpLissajous', { name: 'リサージュ', en: 'Lissajous Curve', tags: ['calm
     }
   } });
 
-bg('xpPendulums', { name: '振り子の糸', en: 'Pendulum Strings', tags: ['calm', 'emotional', 'editorial'], w: 0.8,
+bg('xpPendulums', { name: '흔들 추 실', en: 'Pendulum Strings', tags: ['calm', 'emotional', 'editorial'], w: 0.8,
   plan: rng => ({ seed: bs(rng), k: rng.range(0.15, 0.19), amp: rng.range(5, 9) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), t = env.t, e = fadeIn(env, 0.9), n = Math.min(18, Math.round(W / (U * 0.14))), k = Q.k || 0.11, pts = [];
@@ -234,7 +234,7 @@ bg('xpPendulums', { name: '振り子の糸', en: 'Pendulum Strings', tags: ['cal
     ctx.fillStyle = A(sc.fg, k * 1.3); ctx.beginPath(); for (let i = 0; i < pts.length; i += 3) dot(ctx, pts[i], pts[i + 1], pts[i + 2]); ctx.fill();
   } });
 
-bg('xpOrbits', { name: '軌道', en: 'Orbits', tags: ['calm', 'emotional', 'graphic'], w: 1, subtle: true,
+bg('xpOrbits', { name: '궤도', en: 'Orbits', tags: ['calm', 'emotional', 'graphic'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), tilt: rng.range(-28, 28), cx: rng.pick([0.5, 0.36, 0.64]), spd: rng.range(0.25, 0.4), k: rng.range(0.15, 0.19) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), e = fadeIn(env, 0.9), k = Q.k || 0.11, big = Math.max(W, H);
@@ -251,7 +251,7 @@ bg('xpOrbits', { name: '軌道', en: 'Orbits', tags: ['calm', 'emotional', 'grap
     ctx.fillStyle = A(sc.accent, 0.45); ctx.beginPath(); for (let i = 0; i < pl.length; i += 3) dot(ctx, pl[i], pl[i + 1], pl[i + 2]); ctx.fill();
   } });
 
-bg('xpMarchDash', { name: '流れる破線', en: 'Marching Dashes', tags: ['graphic', 'pop', 'glitch'], w: 0.9,
+bg('xpMarchDash', { name: '흐르는 파선', en: 'Marching Dashes', tags: ['graphic', 'pop', 'glitch'], w: 0.9,
   plan: rng => ({ seed: bs(rng), n: rng.int(9, 13), spd: rng.range(0.03, 0.06), k: rng.range(0.1, 0.13) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), n = Q.n || 11, k = Q.k || 0.08;
@@ -264,7 +264,7 @@ bg('xpMarchDash', { name: '流れる破線', en: 'Marching Dashes', tags: ['grap
     }
   } });
 
-bg('xpDepthGrid', { name: '迫る方眼', en: 'Zooming Grid', tags: ['glitch', 'graphic', 'editorial'], w: 0.8,
+bg('xpDepthGrid', { name: '다가오는 모눈', en: 'Zooming Grid', tags: ['glitch', 'graphic', 'editorial'], w: 0.8,
   plan: rng => ({ seed: bs(rng), spd: rng.range(0.035, 0.06), k: rng.range(0.1, 0.13) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), base = U * 0.1, cx = W / 2, cy = H / 2, e = fadeIn(env);
@@ -277,7 +277,7 @@ bg('xpDepthGrid', { name: '迫る方眼', en: 'Zooming Grid', tags: ['glitch', '
     }
   } });
 
-bg('xpStringArt', { name: '糸の曲線', en: 'String Curves', tags: ['calm', 'graphic', 'editorial'], w: 0.9, subtle: true,
+bg('xpStringArt', { name: '실 곡선', en: 'String Curves', tags: ['calm', 'graphic', 'editorial'], w: 0.9, subtle: true,
   plan: rng => ({ seed: bs(rng), diag: rng.chance(0.5), spd: rng.range(0.04, 0.07), k: rng.range(0.1, 0.13) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, e = fadeIn(env, 0.9), N = 22, fr = wrap(env.t * (Q.spd || 0.05), 1);
@@ -291,7 +291,7 @@ bg('xpStringArt', { name: '糸の曲線', en: 'String Curves', tags: ['calm', 'g
   } });
 
 /* ================= DOT / PARTICLE FIELDS ================= */
-bg('xpDotSheet', { name: '波打つ点の面', en: 'Waving Dot Sheet', tags: ['calm', 'emotional', 'graphic'], w: 1.1,
+bg('xpDotSheet', { name: '물결치는 점 면', en: 'Waving Dot Sheet', tags: ['calm', 'emotional', 'graphic'], w: 1.1,
   plan: rng => ({ seed: bs(rng), top: rng.chance(0.3), k: rng.range(0.16, 0.2) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, cols = 26, rows = 12;
@@ -307,7 +307,7 @@ bg('xpDotSheet', { name: '波打つ点の面', en: 'Waving Dot Sheet', tags: ['c
     ctx.fill();
   } });
 
-bg('xpWindStreaks', { name: '風の筋', en: 'Wind Streaks', tags: ['emotional', 'calm', 'pop'], w: 1, subtle: true,
+bg('xpWindStreaks', { name: '바람 줄기', en: 'Wind Streaks', tags: ['emotional', 'calm', 'pop'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), ang: rng.range(-10, 10), dir: rng.pick([1, -1]), spd: rng.range(0.05, 0.09), k: rng.range(0.17, 0.21) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), t = env.t, D = Math.hypot(W, H), k = Q.k || 0.11;
@@ -324,7 +324,7 @@ bg('xpWindStreaks', { name: '風の筋', en: 'Wind Streaks', tags: ['emotional',
     }
   } });
 
-bg('xpPlexus', { name: '点と線の網', en: 'Node Network', tags: ['glitch', 'editorial', 'calm'], w: 0.9,
+bg('xpPlexus', { name: '점과 선의 그물', en: 'Node Network', tags: ['glitch', 'editorial', 'calm'], w: 0.9,
   plan: rng => ({ seed: bs(rng), n: rng.int(20, 26), k: rng.range(0.2, 0.25) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), t = env.t, n = Math.min(28, Q.n || 24), D = Math.max(W, H) * 0.24, k = Q.k || 0.13, xs = [], ys = [];
@@ -344,7 +344,7 @@ bg('xpPlexus', { name: '点と線の網', en: 'Node Network', tags: ['glitch', '
     ctx.fillStyle = A(sc.fg, k * 1.5); ctx.beginPath(); for (let i = 0; i < n; i++) dot(ctx, xs[i], ys[i], U * 0.005); ctx.fill();
   } });
 
-bg('xpPhyllo', { name: '螺旋の点', en: 'Seed Spiral', tags: ['calm', 'pop', 'graphic'], w: 0.9,
+bg('xpPhyllo', { name: '나선 점', en: 'Seed Spiral', tags: ['calm', 'pop', 'graphic'], w: 0.9,
   plan: rng => ({ seed: bs(rng), cx: rng.pick([0.5, 0.5, 0.2, 0.8]), cy: rng.pick([0.5, 0.5, 0.7]), spd: rng.range(1.2, 2.4) * rng.pick([1, -1]), k: rng.range(0.13, 0.16) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, e = fadeIn(env, 0.9), N = 380, cx = W * (Q.cx || 0.5), cy = H * (Q.cy || 0.5);
@@ -358,7 +358,7 @@ bg('xpPhyllo', { name: '螺旋の点', en: 'Seed Spiral', tags: ['calm', 'pop', 
     ctx.fill();
   } });
 
-bg('xpBlinkCells', { name: '明滅タイル', en: 'Blinking Cells', tags: ['glitch', 'graphic', 'pop'], w: 0.9,
+bg('xpBlinkCells', { name: '깜빡이는 타일', en: 'Blinking Cells', tags: ['glitch', 'graphic', 'pop'], w: 0.9,
   plan: rng => ({ seed: bs(rng), cell: rng.range(0.085, 0.11), k: rng.range(0.08, 0.1) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), t = env.t, cell = U * (Q.cell || 0.095), gap = cell * 0.06, k = Q.k || 0.09;
@@ -376,7 +376,7 @@ bg('xpBlinkCells', { name: '明滅タイル', en: 'Blinking Cells', tags: ['glit
     }
   } });
 
-bg('xpDriftMarks', { name: '漂う記号', en: 'Drifting Marks', tags: ['pop', 'graphic', 'editorial'], w: 1, subtle: true,
+bg('xpDriftMarks', { name: '떠다니는 기호', en: 'Drifting Marks', tags: ['pop', 'graphic', 'editorial'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), n: rng.int(14, 20), k: rng.range(0.16, 0.2) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), t = env.t, n = Math.min(24, Q.n || 16), M = U * 0.1;
@@ -391,7 +391,7 @@ bg('xpDriftMarks', { name: '漂う記号', en: 'Drifting Marks', tags: ['pop', '
     ctx.stroke();
   } });
 
-bg('xpRingDots', { name: '巡る点の輪', en: 'Circling Dots', tags: ['calm', 'graphic', 'pop'], w: 0.9, subtle: true,
+bg('xpRingDots', { name: '도는 점 고리', en: 'Circling Dots', tags: ['calm', 'graphic', 'pop'], w: 0.9, subtle: true,
   plan: rng => ({ seed: bs(rng), spd: rng.range(5, 9) * rng.pick([1, -1]), cy: rng.pick([0.5, 0.5, 0.6]), k: rng.range(0.14, 0.17) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), e = fadeIn(env, 0.9), cx = W / 2, cy = H * (Q.cy || 0.5), rings = Math.min(9, Math.ceil(Math.hypot(W, H) / 2 / (U * 0.135)));
@@ -404,7 +404,7 @@ bg('xpRingDots', { name: '巡る点の輪', en: 'Circling Dots', tags: ['calm', 
   } });
 
 /* ================= BIG SOFT SHAPES ================= */
-bg('xpTwinDiscs', { name: '重なる円', en: 'Overlapping Discs', tags: ['calm', 'emotional', 'pop'], w: 1.2, subtle: true,
+bg('xpTwinDiscs', { name: '겹치는 원', en: 'Overlapping Discs', tags: ['calm', 'emotional', 'pop'], w: 1.2, subtle: true,
   plan: rng => ({ seed: bs(rng), k: rng.range(0.04, 0.055), ph: rng.range(0, 6) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, e = fadeIn(env, 0.9), k = Q.k || 0.045, ph = Q.ph || 0, R = U * 0.56 * (0.8 + 0.2 * e), v = H > W;
@@ -414,7 +414,7 @@ bg('xpTwinDiscs', { name: '重なる円', en: 'Overlapping Discs', tags: ['calm'
     ctx.fillStyle = A(sc.accent, k * 1.3); ctx.beginPath(); dot(ctx, W * (0.5 + (v ? b : a)), H * (0.5 + (v ? a : b)), R * 0.9); ctx.fill();
   } });
 
-bg('xpLeanVignette', { name: '傾く周辺の影', en: 'Leaning Vignette', tags: ['emotional', 'calm', 'editorial'], w: 1.1, subtle: true,
+bg('xpLeanVignette', { name: '기우는 비네트', en: 'Leaning Vignette', tags: ['emotional', 'calm', 'editorial'], w: 1.1, subtle: true,
   plan: rng => ({ seed: bs(rng), spd: rng.range(0.18, 0.3) * rng.pick([1, -1]), k: rng.range(0.8, 1.1) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), e = fadeIn(env, 0.9), a = env.t * (Q.spd || 0.22) + ((Q.seed || 1) % 6), dk = isDark(sc.bg);
@@ -427,7 +427,7 @@ bg('xpLeanVignette', { name: '傾く周辺の影', en: 'Leaning Vignette', tags:
     ctx.fillStyle = g2; ctx.fillRect(cx - U * 0.6, cy - U * 0.6, U * 1.2, U * 1.2);
   } });
 
-bg('xpCapsules', { name: '滑るカプセル', en: 'Sliding Capsules', tags: ['pop', 'graphic', 'calm'], w: 1,
+bg('xpCapsules', { name: '미끄러지는 캡슐', en: 'Sliding Capsules', tags: ['pop', 'graphic', 'calm'], w: 1,
   plan: rng => ({ seed: bs(rng), ang: rng.pick([-32, -20, 20, 32]), spd: rng.range(0.02, 0.035), k: rng.range(0.04, 0.055) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), k = Q.k || 0.045, D = Math.hypot(W, H), hh = U * 0.17, gapY = U * 0.27, Lp = U * 1.7, nl = Math.min(6, Math.ceil(D / 2 / gapY));
@@ -440,7 +440,7 @@ bg('xpCapsules', { name: '滑るカプセル', en: 'Sliding Capsules', tags: ['p
     }
   } });
 
-bg('xpSlitLight', { name: 'ブラインドの光', en: 'Blind Light', tags: ['emotional', 'calm', 'editorial'], w: 1.1, subtle: true,
+bg('xpSlitLight', { name: '블라인드 빛', en: 'Blind Light', tags: ['emotional', 'calm', 'editorial'], w: 1.1, subtle: true,
   plan: rng => ({ seed: bs(rng), sk: rng.pick([-0.5, -0.35, 0.35, 0.5]), n: rng.int(5, 7), k: rng.range(0.07, 0.095) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, ph = (Q.seed || 1) % 7, e = fadeIn(env, 1), n = Q.n || 6, lc = lightOf(sc), k = (Q.k || 0.08) * e;
@@ -453,7 +453,7 @@ bg('xpSlitLight', { name: 'ブラインドの光', en: 'Blind Light', tags: ['em
     ctx.fill();
   } });
 
-bg('xpPosterGrad', { name: '階段グラデ', en: 'Stepped Gradient', tags: ['calm', 'graphic', 'pop'], w: 1.1, subtle: true,
+bg('xpPosterGrad', { name: '계단 그라데이션', en: 'Stepped Gradient', tags: ['calm', 'graphic', 'pop'], w: 1.1, subtle: true,
   plan: rng => ({ seed: bs(rng), ang: rng.pick([0, 30, 60, 90, 120, 150, 180, 210, 270, 330]), acc: rng.chance(0.5), n: rng.int(5, 7), k: rng.range(0.018, 0.025) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, L = Math.hypot(W, H), n = Q.n || 6, ph = (Q.seed || 1) % 5;
@@ -462,7 +462,7 @@ bg('xpPosterGrad', { name: '階段グラデ', en: 'Stepped Gradient', tags: ['ca
     for (let i = 1; i <= n; i++) { const x = -L / 2 + L * (i / (n + 1) + 0.035 * Math.sin(t * 0.3 + i * 1.1 + ph)); ctx.fillRect(x, -L / 2, L / 2 - x + 2, L); }
   } });
 
-bg('xpBigRing', { name: '大きな輪', en: 'Great Ring', tags: ['calm', 'graphic', 'emotional'], w: 1,
+bg('xpBigRing', { name: '큰 고리', en: 'Great Ring', tags: ['calm', 'graphic', 'emotional'], w: 1,
   plan: rng => ({ seed: bs(rng), cx: rng.pick([0.3, 0.7, 0.5]), cy: rng.pick([0.4, 0.6, 0.5]), k: rng.range(0.05, 0.065) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, ph = (Q.seed || 1) % 7, e = fadeIn(env, 1), k = Q.k || 0.055;
@@ -475,7 +475,7 @@ bg('xpBigRing', { name: '大きな輪', en: 'Great Ring', tags: ['calm', 'graphi
     ctx.fillStyle = A(sc.accent, 0.4); ctx.beginPath(); dot(ctx, cx + Math.cos(a) * R2, cy + Math.sin(a) * R2, U * 0.012); ctx.fill();
   } });
 
-bg('xpCurtain', { name: 'カーテンのひだ', en: 'Curtain Folds', tags: ['emotional', 'calm', 'editorial'], w: 1, subtle: true,
+bg('xpCurtain', { name: '커튼 주름', en: 'Curtain Folds', tags: ['emotional', 'calm', 'editorial'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), n: rng.int(7, 11), k: rng.range(0.07, 0.09) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, n = Q.n || 9, ph = (Q.seed || 1) % 9, k = (Q.k || 0.08) * fadeIn(env), g = ctx.createLinearGradient(0, 0, W, 0);
@@ -491,7 +491,7 @@ bg('xpCurtain', { name: 'カーテンのひだ', en: 'Curtain Folds', tags: ['em
   } });
 
 /* ================= RULES & TYPE-LIKE TEXTURE ================= */
-bg('xpRuler', { name: '定規の目盛り', en: 'Ruler Scales', tags: ['editorial', 'graphic', 'calm'], w: 1, subtle: true,
+bg('xpRuler', { name: '자 눈금', en: 'Ruler Scales', tags: ['editorial', 'graphic', 'calm'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), top: rng.chance(0.4), right: rng.chance(0.5), k: rng.range(0.24, 0.3) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, e = fadeIn(env), sp = U * 0.016, per = sp * 10, off = wrap(t * U * 0.02, per);
@@ -506,7 +506,7 @@ bg('xpRuler', { name: '定規の目盛り', en: 'Ruler Scales', tags: ['editoria
     ctx.fillStyle = A(sc.accent, 0.5); ctx.beginPath(); ctx.moveTo(px, y0 - dy * ps * 0.3); ctx.lineTo(px - ps, y0 - dy * ps * 1.9); ctx.lineTo(px + ps, y0 - dy * ps * 1.9); ctx.closePath(); ctx.fill();
   } });
 
-bg('xpGreekText', { name: 'ダミー組版', en: 'Greeked Text', tags: ['editorial', 'calm', 'graphic'], w: 0.9, subtle: true,
+bg('xpGreekText', { name: '더미 조판', en: 'Greeked Text', tags: ['editorial', 'calm', 'graphic'], w: 0.9, subtle: true,
   plan: rng => ({ seed: bs(rng), spd: rng.range(0.01, 0.018), k: rng.range(0.055, 0.07) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), lh = U * 0.037, bh = U * 0.012, cols = W > H ? 3 : 2, gut = W * 0.04, cw = (W * 0.86 - gut * (cols - 1)) / cols;
@@ -528,7 +528,7 @@ const segPath = (ctx, x, y, w, h, i) => {
   const L = x + q, R = x + w - q, T = y + q, M = y + h / 2, B = y + h - q;
   if (i === 0) hz(L, T); else if (i === 1) vt(R, T); else if (i === 2) vt(R, M); else if (i === 3) hz(L, B); else if (i === 4) vt(L, M); else if (i === 5) vt(L, T); else hz(L, M);
 };
-bg('xpSevenSeg', { name: '巨大7セグ', en: 'Giant Segments', tags: ['glitch', 'graphic', 'editorial'], w: 0.7,
+bg('xpSevenSeg', { name: '거대 7세그먼트', en: 'Giant Segments', tags: ['glitch', 'graphic', 'editorial'], w: 0.7,
   plan: rng => ({ seed: bs(rng), rate: rng.range(0.6, 1.1), k: rng.range(0.07, 0.09) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, tt = env.t * (Q.rate || 0.8), n0 = Math.floor(tt), m = J.smooth(0, 0.22, tt - n0), nd = W > H * 1.2 ? 3 : 2, k = Q.k || 0.08;
@@ -551,7 +551,7 @@ bg('xpSevenSeg', { name: '巨大7セグ', en: 'Giant Segments', tags: ['glitch',
     }
   } });
 
-bg('xpCropMarks', { name: '見当マーク', en: 'Register Marks', tags: ['editorial', 'graphic', 'pop'], w: 0.9, subtle: true,
+bg('xpCropMarks', { name: '정합 마크', en: 'Register Marks', tags: ['editorial', 'graphic', 'pop'], w: 0.9, subtle: true,
   plan: rng => ({ seed: bs(rng), sp: rng.range(0.32, 0.4), k: rng.range(0.19, 0.23) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), t = env.t, e = fadeIn(env), sp = U * (Q.sp || 0.36), r = U * 0.02, arm = U * 0.038 * e;
@@ -567,7 +567,7 @@ bg('xpCropMarks', { name: '見当マーク', en: 'Register Marks', tags: ['edito
   } });
 
 /* ================= SCREEN-LIKE FIELDS ================= */
-bg('xpScanner', { name: 'スキャナーの光', en: 'Scanner Beam', tags: ['glitch', 'editorial', 'calm'], w: 1, subtle: true,
+bg('xpScanner', { name: '스캐너 빛', en: 'Scanner Beam', tags: ['glitch', 'editorial', 'calm'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), spd: rng.range(0.35, 0.55), k: rng.range(0.1, 0.13) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), e = fadeIn(env), hz = H > W, L = hz ? H : W, X = hz ? W : H, lc = lightOf(sc), k = (Q.k || 0.11) * e;
@@ -580,7 +580,7 @@ bg('xpScanner', { name: 'スキャナーの光', en: 'Scanner Beam', tags: ['gli
     ctx.fillStyle = A(lc, k * 2.2); ctx.fillRect(x - LW(env, 0.0015) / 2, 0, LW(env, 0.0015), X);
   } });
 
-bg('xpStepBlocks', { name: '階段ブロック', en: 'Stair Blocks', tags: ['pop', 'graphic', 'glitch'], w: 0.9,
+bg('xpStepBlocks', { name: '계단 블록', en: 'Stair Blocks', tags: ['pop', 'graphic', 'glitch'], w: 0.9,
   plan: rng => ({ seed: bs(rng), per: rng.int(5, 8), spd: rng.range(0.45, 0.7), k: rng.range(0.04, 0.055) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, U = Umin(env), cell = U * 0.11, per = Q.per || 6, k = Q.k || 0.045, e = fadeIn(env, 0.8);
@@ -594,7 +594,7 @@ bg('xpStepBlocks', { name: '階段ブロック', en: 'Stair Blocks', tags: ['pop
     ctx.fill();
   } });
 
-bg('xpRadar', { name: 'レーダー', en: 'Radar Sweep', tags: ['glitch', 'graphic', 'editorial'], w: 0.8,
+bg('xpRadar', { name: '레이더', en: 'Radar Sweep', tags: ['glitch', 'graphic', 'editorial'], w: 0.8,
   plan: rng => ({ seed: bs(rng), cx: rng.pick([0.5, 0.5, 0.25, 0.75]), cy: rng.pick([0.5, 0.56]), spd: rng.range(0.45, 0.7) * rng.pick([1, -1]), k: rng.range(0.09, 0.11) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), e = fadeIn(env, 0.8), cx = W * (Q.cx || 0.5), cy = H * (Q.cy || 0.5), R = Math.hypot(W, H), k = Q.k || 0.08;
@@ -613,7 +613,7 @@ bg('xpRadar', { name: 'レーダー', en: 'Radar Sweep', tags: ['glitch', 'graph
     }
   } });
 
-bg('xpLoadBars', { name: '進む横棒', en: 'Progress Bars', tags: ['glitch', 'pop', 'editorial'], w: 0.8,
+bg('xpLoadBars', { name: '나아가는 가로 막대', en: 'Progress Bars', tags: ['glitch', 'pop', 'editorial'], w: 0.8,
   plan: rng => ({ seed: bs(rng), n: rng.int(6, 8), k: rng.range(0.07, 0.09) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, s = Q.seed || 1, U = Umin(env), n = Q.n || 7, k = Q.k || 0.08, bh = U * 0.02, e = fadeIn(env);

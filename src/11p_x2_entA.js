@@ -65,7 +65,7 @@ function lineInfo(it) {
 
 /* 中央から配る — every glyph starts stacked on the middle of its line and is dealt outwards like cards, middle first */
 reg('xeCenterDeal', {
-  name: '中央から配る', en: 'Centre Deal', tags: ['pop', 'graphic', 'editorial'], w: 1.2, ae: 'assemble',
+  name: '가운데서 나눠 주기', en: 'Centre Deal', tags: ['pop', 'graphic', 'editorial'], w: 1.2, ae: 'assemble',
   inDur: dur => clamp(dur * 0.42, 0.18, 0.75),
   apply(env, it, p) {
     const L = lineInfo(it);
@@ -80,7 +80,7 @@ reg('xeCenterDeal', {
 
 /* 両端から — the outermost pair slides in first, then pair after pair closes in; the middle glyph punches in last */
 reg('xeEndsInward', {
-  name: '両端から', en: 'Ends Inward', tags: ['graphic', 'editorial', 'pop'], w: 1.1, ae: 'slice',
+  name: '양 끝에서', en: 'Ends Inward', tags: ['graphic', 'editorial', 'pop'], w: 1.1, ae: 'slice',
   inDur: dur => clamp(dur * 0.42, 0.18, 0.75),
   apply(env, it, p) {
     const size = it.size;
@@ -100,7 +100,7 @@ reg('xeEndsInward', {
 
 /* 隙間埋め — every other glyph fades in first, leaving gaps; the missing ones then fall into the gaps and jolt their neighbours */
 reg('xeFillGaps', {
-  name: '隙間埋め', en: 'Fill The Gaps', tags: ['pop', 'graphic'], w: 1, ae: 'drop', minDur: 0.5,
+  name: '틈 메우기', en: 'Fill The Gaps', tags: ['pop', 'graphic'], w: 1, ae: 'drop', minDur: 0.5,
   inDur: dur => clamp(dur * 0.46, 0.22, 0.85),
   apply(env, it, p) {
     const size = it.size, isy = it.sy || 1, lay = layOf(it), N = lay.N;
@@ -128,7 +128,7 @@ reg('xeFillGaps', {
 
 /* 漢字が先 — kanji (or word heads) drop in heavy and big; the kana then float up softly around them */
 reg('xeKanjiFirst', {
-  name: '漢字が先', en: 'Kanji First', tags: ['editorial', 'emotional', 'graphic', 'calm'], w: 1.2, ae: 'drop',
+  name: '한자 먼저', en: 'Kanji First', tags: ['editorial', 'emotional', 'graphic', 'calm'], w: 1.2, ae: 'drop',
   inDur: dur => clamp(dur * 0.45, 0.2, 0.85),
   apply(env, it, p) {
     const size = it.size, lay = layOf(it), chs = lay.map(g => g.ch);
@@ -153,7 +153,7 @@ reg('xeKanjiFirst', {
 /* 三拍子 — the glyphs are dealt into three groups that snap on, on three hard beats */
 const PERM3 = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
 reg('xeTripleBeat', {
-  name: '三拍子', en: 'Three Beats', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'flicker', minDur: 0.45,
+  name: '3박자', en: 'Three Beats', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'flicker', minDur: 0.45,
   inDur: dur => clamp(dur * 0.45, 0.24, 0.8),
   apply(env, it, p) {
     const seed = it.seed | 0, hot = hotOf(env, it);
@@ -170,7 +170,7 @@ reg('xeTripleBeat', {
 
 /* 行進 — the line walks in from the side in a few steps, every glyph waddling from foot to foot */
 reg('xeMarch', {
-  name: '行進', en: 'March In', tags: ['pop'], w: 0.7, ae: 'drop', minDur: 0.6,
+  name: '행진', en: 'March In', tags: ['pop'], w: 0.7, ae: 'drop', minDur: 0.6,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.95),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(it, 11), STEPS = 5;
@@ -191,7 +191,7 @@ reg('xeMarch', {
 
 /* 落ちゲー — glyphs come down like falling blocks: grid steps, one sideways shift and one quarter turn on the way */
 reg('xeBlockDrop', {
-  name: '落ちゲー', en: 'Block Drop', tags: ['pop', 'glitch', 'graphic'], w: 0.7, ae: 'drop', minDur: 0.6,
+  name: '블록 낙하', en: 'Block Drop', tags: ['pop', 'glitch', 'graphic'], w: 0.7, ae: 'drop', minDur: 0.6,
   inDur: dur => clamp(dur * 0.52, 0.3, 1.0),
   apply(env, it, p) {
     const seed = it.seed | 0, step = it.size * 0.44, T = 6;
@@ -211,7 +211,7 @@ reg('xeBlockDrop', {
 
 /* 放り投げ — all glyphs are thrown from one point below the line and land in their slots along parabolas */
 reg('xeArcToss', {
-  name: '放り投げ', en: 'Arc Toss', tags: ['pop', 'emotional'], w: 1, ae: 'drop', minDur: 0.5,
+  name: '던져 넣기', en: 'Arc Toss', tags: ['pop', 'emotional'], w: 1, ae: 'drop', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.24, 0.9),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(it, 13), b = J.itemBox(it);
@@ -227,7 +227,7 @@ reg('xeArcToss', {
 
 /* 小回り — each glyph, upright, circles its own slot on a shrinking orbit; neighbours turn opposite ways */
 reg('xeOrbitIn', {
-  name: '小回り', en: 'Small Orbit', tags: ['pop', 'calm', 'emotional'], w: 0.9, ae: 'spin', minDur: 0.5,
+  name: '작은 궤도', en: 'Small Orbit', tags: ['pop', 'calm', 'emotional'], w: 0.9, ae: 'spin', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.24, 0.9),
   apply(env, it, p) {
     const size = it.size;
@@ -242,7 +242,7 @@ reg('xeOrbitIn', {
 
 /* 跳ね返り — each glyph shoots in from the side zigzagging between two invisible walls, the corridor narrowing to its slot */
 reg('xeRicochet', {
-  name: '跳ね返り', en: 'Ricochet', tags: ['pop', 'glitch', 'graphic'], w: 0.9, ae: 'drop', minDur: 0.5,
+  name: '튕겨 나오기', en: 'Ricochet', tags: ['pop', 'glitch', 'graphic'], w: 0.9, ae: 'drop', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.24, 0.9),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(it, 17);
@@ -259,7 +259,7 @@ reg('xeRicochet', {
 
 /* 馬跳び — each glyph starts on its predecessor's slot and hops over into its own, the line laying itself out by leaps */
 reg('xeLeapfrog', {
-  name: '馬跳び', en: 'Leapfrog', tags: ['pop'], w: 0.9, ae: 'drop', minDur: 0.55, maxChars: 14,
+  name: '말뚝박기', en: 'Leapfrog', tags: ['pop'], w: 0.9, ae: 'drop', minDur: 0.55, maxChars: 14,
   inDur: (dur, n) => clamp(0.25 + n * 0.05, 0.3, Math.max(0.3, Math.min(1.0, dur * 0.55))),
   apply(env, it, p) {
     const size = it.size, lay = layOf(it), isy = it.sy || 1;
@@ -279,7 +279,7 @@ reg('xeLeapfrog', {
 
 /* 天井から — the glyphs first hang upside down from a ceiling above the line, then let go one by one, turning over as they fall */
 reg('xeCeilingFall', {
-  name: '天井から', en: 'Off The Ceiling', tags: ['pop', 'glitch', 'emotional'], w: 0.8, ae: 'drop', minDur: 0.6,
+  name: '천장에서', en: 'Off The Ceiling', tags: ['pop', 'glitch', 'emotional'], w: 0.8, ae: 'drop', minDur: 0.6,
   inDur: dur => clamp(dur * 0.52, 0.3, 1.0),
   apply(env, it, p) {
     const size = it.size, isy = it.sy || 1, up = size * 1.2 * isy;
@@ -296,7 +296,7 @@ reg('xeCeilingFall', {
 
 /* 玉突き — the first glyph slides in and hits the row; the knock runs down the line, each glyph appearing as it is struck */
 reg('xeChainBump', {
-  name: '玉突き', en: 'Chain Bump', tags: ['pop', 'graphic'], w: 0.9, ae: 'pop', minDur: 0.5,
+  name: '연쇄 충돌', en: 'Chain Bump', tags: ['pop', 'graphic'], w: 0.9, ae: 'pop', minDur: 0.5,
   inDur: dur => clamp(dur * 0.46, 0.24, 0.85),
   apply(env, it, p) {
     const size = it.size, HIT = 0.26;
@@ -320,7 +320,7 @@ reg('xeChainBump', {
 
 /* 消失点から — glyphs fly out of one far point high above the line, growing along perspective lines, in random order */
 reg('xeVanishPoint', {
-  name: '消失点から', en: 'Vanishing Point', tags: ['graphic', 'emotional', 'pop'], w: 1, ae: 'zoom', minDur: 0.5,
+  name: '소실점에서', en: 'Vanishing Point', tags: ['graphic', 'emotional', 'pop'], w: 1, ae: 'zoom', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.24, 0.9),
   apply(env, it, p) {
     const seed = it.seed | 0, b = J.itemBox(it);
@@ -336,7 +336,7 @@ reg('xeVanishPoint', {
 
 /* 尺取り — each glyph stretches from the previous slot across to its own, then pulls its tail in, inching the line forward */
 reg('xeInchworm', {
-  name: '尺取り', en: 'Inchworm', tags: ['pop', 'graphic'], w: 0.6, ae: 'stretch', minDur: 0.5,
+  name: '자벌레', en: 'Inchworm', tags: ['pop', 'graphic'], w: 0.6, ae: 'stretch', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.24, 0.9),
   apply(env, it, p) {
     const lay = layOf(it);
@@ -364,7 +364,7 @@ reg('xeInchworm', {
 
 /* ドア開き — every glyph swings shut like a door on its own edge hinge (alternating sides), rattling a little as it closes */
 reg('xeSwingDoor', {
-  name: 'ドア開き', en: 'Swing Doors', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'spin',
+  name: '문 열림', en: 'Swing Doors', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'spin',
   inDur: dur => clamp(dur * 0.45, 0.2, 0.85),
   apply(env, it, p) {
     const isx = it.sx || 1, isy = it.sy || 1;
@@ -381,7 +381,7 @@ reg('xeSwingDoor', {
 
 /* はためき — glyphs arrive sheared hard to one side and flap back and forth like small flags until they stand straight */
 reg('xeSkewFlap', {
-  name: 'はためき', en: 'Flutter', tags: ['pop', 'emotional', 'glitch'], w: 1, ae: 'stretch',
+  name: '펄럭임', en: 'Flutter', tags: ['pop', 'emotional', 'glitch'], w: 1, ae: 'stretch',
   inDur: dur => clamp(dur * 0.46, 0.2, 0.85),
   apply(env, it, p) {
     glyphs(it, (i, g, n) => {
@@ -395,7 +395,7 @@ reg('xeSkewFlap', {
 
 /* 字ごと開帳 — each glyph has its own pair of curtains: it is uncovered from its centre line outwards while easing narrower */
 reg('xeGlyphCurtain', {
-  name: '字ごと開帳', en: 'Glyph Curtains', tags: ['editorial', 'calm', 'graphic', 'emotional'], w: 1.2, ae: 'wipe',
+  name: '글자별 휘장', en: 'Glyph Curtains', tags: ['editorial', 'calm', 'graphic', 'emotional'], w: 1.2, ae: 'wipe',
   inDur: dur => clamp(dur * 0.44, 0.18, 0.8),
   apply(env, it, p) {
     const seed = it.seed | 0;
@@ -410,7 +410,7 @@ reg('xeGlyphCurtain', {
 
 /* 互い違い窓 — every glyph sits behind its own window; odd ones slide up into it from below, even ones down from above */
 reg('xeCellSlide', {
-  name: '互い違い窓', en: 'Alternating Windows', tags: ['editorial', 'graphic', 'calm'], w: 1.2, ae: 'wipe',
+  name: '엇갈린 창', en: 'Alternating Windows', tags: ['editorial', 'graphic', 'calm'], w: 1.2, ae: 'wipe',
   inDur: dur => clamp(dur * 0.44, 0.18, 0.8),
   apply(env, it, p) {
     const isx = it.sx || 1, isy = it.sy || 1;
@@ -426,7 +426,7 @@ reg('xeCellSlide', {
 
 /* 歯車 — the whole row turns like meshed gears: neighbours rotate opposite ways, advancing in clockwork ticks */
 reg('xeGearTick', {
-  name: '歯車', en: 'Gear Tick', tags: ['graphic', 'glitch', 'pop'], w: 0.8, ae: 'spin', minDur: 0.5,
+  name: '톱니바퀴', en: 'Gear Tick', tags: ['graphic', 'glitch', 'pop'], w: 0.8, ae: 'spin', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.28, 0.9),
   apply(env, it, p) {
     const T = 5;
@@ -441,7 +441,7 @@ reg('xeGearTick', {
 
 /* コイントス — each glyph is flipped up off the line like a coin, turning over end to end, and lands face up */
 reg('xeCoinToss', {
-  name: 'コイントス', en: 'Coin Toss', tags: ['pop'], w: 0.8, ae: 'spin', minDur: 0.5,
+  name: '동전 던지기', en: 'Coin Toss', tags: ['pop'], w: 0.8, ae: 'spin', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.26, 0.9),
   apply(env, it, p) {
     const size = it.size;
@@ -456,7 +456,7 @@ reg('xeCoinToss', {
 
 /* 蛇腹のばし — the line starts pressed together at its head as a zigzag of thin slanted glyphs and is pulled out like bellows */
 reg('xeBellows', {
-  name: '蛇腹のばし', en: 'Bellows', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'stretch',
+  name: '아코디언 펼침', en: 'Bellows', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'stretch',
   inDur: dur => clamp(dur * 0.45, 0.2, 0.85),
   apply(env, it, p) {
     const L = lineInfo(it), a = clamp(p * 6);
@@ -473,7 +473,7 @@ reg('xeBellows', {
 
 /* 背くらべ — the glyphs fade in at wildly different sizes standing on one baseline, then spring to equal size one by one */
 reg('xeUnevenScale', {
-  name: '背くらべ', en: 'Size Sort', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'pop', minDur: 0.5,
+  name: '키 재기', en: 'Size Sort', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'pop', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.24, 0.9),
   apply(env, it, p) {
     const seed = it.seed | 0, isy = it.sy || 1, a = clamp(p * 5);
@@ -493,7 +493,7 @@ reg('xeUnevenScale', {
 
 /* 伏せ字めくり — the line first appears censored as solid blocks; the blocks then turn over, in random order, into the real glyphs */
 reg('xeRedact', {
-  name: '伏せ字めくり', en: 'Redacted', tags: ['glitch', 'editorial', 'graphic'], w: 1, ae: 'scramble', minDur: 0.55,
+  name: '가림 글자 넘기기', en: 'Redacted', tags: ['glitch', 'editorial', 'graphic'], w: 1, ae: 'scramble', minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.28, 0.95),
   apply(env, it, p) {
     const seed = it.seed | 0;
@@ -515,7 +515,7 @@ reg('xeRedact', {
 
 /* 空欄埋め — empty answer boxes mark every slot; the glyphs are then filled in one after another, each box becoming its glyph */
 reg('xeBlanks', {
-  name: '空欄埋め', en: 'Fill Blanks', tags: ['editorial', 'pop', 'graphic'], w: 1, ae: 'type', minDur: 0.55,
+  name: '빈칸 채우기', en: 'Fill Blanks', tags: ['editorial', 'pop', 'graphic'], w: 1, ae: 'type', minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.28, 0.95),
   apply(env, it, p) {
     const sub = pick(env.sc.sub, env.sc.fg);
@@ -532,7 +532,7 @@ reg('xeBlanks', {
 
 /* 分身から — the first glyph copies itself along the whole line; the copies then turn, one by one, into the glyphs that belong there */
 reg('xeCloneMorph', {
-  name: '分身から', en: 'Clones', tags: ['glitch', 'pop', 'graphic'], w: 0.8, ae: 'scramble', minDur: 0.55,
+  name: '분신에서', en: 'Clones', tags: ['glitch', 'pop', 'graphic'], w: 0.8, ae: 'scramble', minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.28, 0.95),
   apply(env, it, p) {
     const lay = layOf(it), first = lay.find(g => !isBlank(g.ch));
@@ -568,7 +568,7 @@ const softIn = (it, p, spread, fn) => glyphs(it, (i, g, n) => {
 
 /* 画の雨 — the strokes of each glyph rain straight down, the lowest strokes landing first so the glyph stacks up from its foot */
 reg('xePieceRain', {
-  name: '画の雨', en: 'Stroke Rain', tags: ['emotional', 'calm', 'graphic'], w: 1, ae: 'assemble', pieces: true, minDur: 0.55,
+  name: '획의 비', en: 'Stroke Rain', tags: ['emotional', 'calm', 'graphic'], w: 1, ae: 'assemble', pieces: true, minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.28, 0.95),
   apply(env, it, p) {
     if (p >= 1) return;
@@ -586,7 +586,7 @@ reg('xePieceRain', {
 
 /* 渦巻き組み — each glyph's strokes swirl around the glyph's centre on a wide vortex and wind in to their places */
 reg('xePieceVortex', {
-  name: '渦巻き組み', en: 'Stroke Vortex', tags: ['pop', 'emotional', 'glitch'], w: 0.9, ae: 'assemble', pieces: true, minDur: 0.55,
+  name: '소용돌이 짜임', en: 'Stroke Vortex', tags: ['pop', 'emotional', 'glitch'], w: 0.9, ae: 'assemble', pieces: true, minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.28, 0.95),
   apply(env, it, p) {
     if (p >= 1) return;
@@ -607,7 +607,7 @@ reg('xePieceVortex', {
 
 /* 段すべり — each glyph is built in horizontal layers: its strokes slide in row by row, alternately from the left and the right */
 reg('xePieceStrata', {
-  name: '段すべり', en: 'Sliding Strata', tags: ['graphic', 'editorial', 'glitch'], w: 1, ae: 'slice', pieces: true, minDur: 0.5,
+  name: '단 미끄러짐', en: 'Sliding Strata', tags: ['graphic', 'editorial', 'glitch'], w: 1, ae: 'slice', pieces: true, minDur: 0.5,
   inDur: dur => clamp(dur * 0.46, 0.24, 0.85),
   apply(env, it, p) {
     if (p >= 1) return;
@@ -625,7 +625,7 @@ reg('xePieceStrata', {
 
 /* 積み木起こし — the strokes lie in a small heap at the foot of every glyph; they hop up out of the heap and lock into the glyph */
 reg('xePiecePile', {
-  name: '積み木起こし', en: 'From The Pile', tags: ['pop', 'graphic'], w: 0.8, ae: 'assemble', pieces: true, minDur: 0.6,
+  name: '쌓기 블록 세우기', en: 'From The Pile', tags: ['pop', 'graphic'], w: 0.8, ae: 'assemble', pieces: true, minDur: 0.6,
   inDur: dur => clamp(dur * 0.52, 0.3, 1.0),
   apply(env, it, p) {
     if (p >= 1) return;

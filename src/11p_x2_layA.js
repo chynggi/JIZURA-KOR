@@ -123,7 +123,7 @@ const base = env => { const cut = env.cut; return { W: env.W, H: env.H, sc: env.
 /* ================================================================== 1 xaPullQuote — 抜き書き
    the lyric as a pull quote between rules; greeked body columns wrap around it */
 reg('xaPullQuote', {
-  name: '抜き書き', en: 'Pull Quote', tags: ['editorial', 'calm', 'emotional'], ae: 'gloss', w: 1.2, fits: n => n >= 1 && n <= 20,
+  name: '발췌 인용', en: 'Pull Quote', tags: ['editorial', 'calm', 'emotional'], ae: 'gloss', w: 1.2, fits: n => n >= 1 && n <= 20,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display'])), side: rng.pick(['c', 'c', 'l', 'r']), rule: rng.pick(['thick', 'double', 'thinthick']), cols: rng.pick([3, 4]), acc: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls, no } = base(env);
@@ -164,7 +164,7 @@ reg('xaPullQuote', {
 /* ================================================================== 2 xaReceipt — レシート
    a printed till roll: mono rows, dashed dividers, total line, zigzag tear */
 reg('xaReceipt', {
-  name: 'レシート', en: 'Receipt', tags: ['pop', 'editorial', 'graphic'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '영수증', en: 'Receipt', tags: ['pop', 'editorial', 'graphic'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display', 'mono'])), tilt: rng.pick([0, 0, -2, 2.5]), bar: rng.chance(0.7), rows: rng.int(2, 3) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -200,7 +200,7 @@ reg('xaReceipt', {
 /* ================================================================== 3 xaCatalogCard — 図書カード
    a library catalogue card: red head rule, typed call number, punched hole */
 reg('xaCatalogCard', {
-  name: '図書カード', en: 'Catalogue Card', tags: ['editorial', 'calm', 'emotional'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '도서 카드', en: 'Catalogue Card', tags: ['editorial', 'calm', 'emotional'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'body'])), tilt: rng.pick([-2, 0, 1.5]), back: rng.chance(0.6), cls: rng.int(100, 899) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -229,7 +229,7 @@ reg('xaCatalogCard', {
 /* ================================================================== 4 xaTimetable — 時刻表
    a printed timetable: header band, time column, the lyric lines as the highlighted rows */
 reg('xaTimetable', {
-  name: '時刻表', en: 'Timetable', tags: ['graphic', 'editorial', 'pop'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '시간표', en: 'Timetable', tags: ['graphic', 'editorial', 'pop'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), hl: rng.pick(['bar', 'tri', 'band']), pre: rng.int(1, 2), post: rng.int(1, 2), h0: rng.int(5, 22), m0: rng.int(0, 20) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -270,7 +270,7 @@ reg('xaTimetable', {
 /* ================================================================== 5 xaThumbIndex — 爪見出し
    thumb-index tabs down the page edge; the active tab carries the lyric's initial */
 reg('xaThumbIndex', {
-  name: '爪見出し', en: 'Thumb Index', tags: ['editorial', 'graphic', 'pop'], ae: 'gloss', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '색인 탭', en: 'Thumb Index', tags: ['editorial', 'graphic', 'pop'], ae: 'gloss', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), side: rng.pick(['r', 'r', 'l']), nT: rng.pick([6, 7, 8]), act: rng.int(0, 7), col: rng.pick(['accent', 'accent', 'ink']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -305,7 +305,7 @@ reg('xaThumbIndex', {
 /* ================================================================== 6 xaColumns — 段組
    the lyric runs down narrow newspaper-like columns with gutters, column rules and greeked continuation */
 reg('xaColumns', {
-  name: '段組', en: 'Column Setting', tags: ['editorial', 'calm', 'graphic'], ae: 'vcols', w: 1, fits: n => n >= 4 && n <= 18,
+  name: '단 나누기', en: 'Column Setting', tags: ['editorial', 'calm', 'graphic'], ae: 'vcols', w: 1, fits: n => n >= 4 && n <= 18,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), rule: rng.chance(0.8), foot: rng.chance(0.35), num: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -341,7 +341,7 @@ reg('xaColumns', {
 /* ================================================================== 7 xaInitialPlate — 白抜き頭文字
    the initial glyph knocked out of a solid plate, the rest set beside / under it */
 reg('xaInitialPlate', {
-  name: '白抜き頭文字', en: 'Reversed Initial', tags: ['editorial', 'graphic', 'pop'], ae: 'mixed', w: 1.2, treat: 'safe', fits: n => n >= 2 && n <= 16,
+  name: '반전 머리글자', en: 'Reversed Initial', tags: ['editorial', 'graphic', 'pop'], ae: 'mixed', w: 1.2, treat: 'safe', fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), fs: rng.pick(fontsOf(st, ['serif', 'display', 'body'])), col: rng.pick(['accent', 'ink', 'fg']), shape: rng.pick(['sq', 'sq', 'circle', 'tall']), al: rng.pick(['top', 'base', 'mid']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -381,7 +381,7 @@ reg('xaInitialPlate', {
 /* ================================================================== 8 xaSplitBaseline — 段違い基線
    two halves on two baselines; one continuous rule runs in from the left edge, steps, and runs out right */
 reg('xaSplitBaseline', {
-  name: '段違い基線', en: 'Split Baseline', tags: ['graphic', 'editorial', 'emotional'], ae: 'mixed', w: 1.1, fits: n => n >= 2 && n <= 16,
+  name: '엇갈린 기준선', en: 'Split Baseline', tags: ['graphic', 'editorial', 'emotional'], ae: 'mixed', w: 1.1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, 1, -1]), acc: rng.chance(0.5), tick: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -413,7 +413,7 @@ reg('xaSplitBaseline', {
 /* ================================================================== 9 xaHalfKnock — 版またぎ
    the lyric straddles the edge of a solid plate: positive off the plate, reversed on it */
 reg('xaHalfKnock', {
-  name: '版またぎ', en: 'Plate Straddle', tags: ['graphic', 'pop', 'editorial'], ae: 'center', w: 1.2, treat: 'safe', emph: 1.3, fits: n => n >= 1 && n <= 20,
+  name: '판 걸치기', en: 'Plate Straddle', tags: ['graphic', 'pop', 'editorial'], ae: 'center', w: 1.2, treat: 'safe', emph: 1.3, fits: n => n >= 1 && n <= 20,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), edge: rng.pick(['h', 'h', 'v']), side: rng.pick([0, 1]), col: rng.pick(['fg', 'accent', 'ink']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env), ctx = env.ctx;
@@ -441,7 +441,7 @@ reg('xaHalfKnock', {
 /* ================================================================== 10 xaFormCombs — 記入欄
    an application form: one comb cell per glyph, field labels, a ticked box */
 reg('xaFormCombs', {
-  name: '記入欄', en: 'Form Field', tags: ['editorial', 'graphic', 'calm'], ae: 'type', w: 0.9, fits: n => n >= 2 && n <= 16,
+  name: '기입란', en: 'Form Field', tags: ['editorial', 'graphic', 'calm'], ae: 'type', w: 0.9, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'serif', 'display'])), hd: rng.pick(['ink', 'accent']), full: rng.chance(0.5), chk: rng.chance(0.8) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -479,7 +479,7 @@ reg('xaFormCombs', {
 /* ================================================================== 11 xaWaybill — 送り状
    a shipping label: heavy frame, FROM / TO cells, routing code plate, barcode */
 reg('xaWaybill', {
-  name: '送り状', en: 'Shipping Label', tags: ['graphic', 'pop', 'editorial'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '송장', en: 'Shipping Label', tags: ['graphic', 'pop', 'editorial'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), code: rng.pick(['KX', 'JZ', 'TY', 'OS', 'NR', 'HK']), num: rng.int(1, 99), tilt: rng.pick([0, 0, -1.5, 1.5]), flip: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -512,7 +512,7 @@ reg('xaWaybill', {
 /* ================================================================== 12 xaErrata — 正誤表
    an errata slip: the struck-out "wrong" line above, the lyric as the correction below */
 reg('xaErrata', {
-  name: '正誤表', en: 'Errata Slip', tags: ['editorial', 'emotional', 'calm'], ae: 'gloss', w: 0.9, fits: n => n >= 1 && n <= 20,
+  name: '정오표', en: 'Errata Slip', tags: ['editorial', 'emotional', 'calm'], ae: 'gloss', w: 0.9, fits: n => n >= 1 && n <= 20,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display'])), strike: rng.pick(['line', 'double', 'wave']), pg: rng.int(3, 240), ln: rng.int(1, 24) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -548,7 +548,7 @@ reg('xaErrata', {
 /* ================================================================== 13 xaTabStops — タブ揃え
    a word-processor ruler with tab stops; each line hangs from the next stop */
 reg('xaTabStops', {
-  name: 'タブ揃え', en: 'Tab Stops', tags: ['editorial', 'graphic', 'calm'], ae: 'stack', w: 0.8, fits: n => n >= 2 && n <= 16,
+  name: '탭 정렬', en: 'Tab Stops', tags: ['editorial', 'graphic', 'calm'], ae: 'stack', w: 0.8, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif', 'body'])), dir: rng.pick([1, 1, -1]), guide: rng.chance(0.85), arrow: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -578,7 +578,7 @@ reg('xaTabStops', {
 /* ================================================================== 14 xaTriBand — 三段表紙
    a paperback cover in three bands: colour / title panel / colour, with cartouche and colophon mark */
 reg('xaTriBand', {
-  name: '三段表紙', en: 'Banded Cover', tags: ['editorial', 'pop', 'graphic'], ae: 'labels', w: 1, treat: 'safe', portrait: 1.2, fits: n => n >= 1 && n <= 16,
+  name: '3단 표지', en: 'Banded Cover', tags: ['editorial', 'pop', 'graphic'], ae: 'labels', w: 1, treat: 'safe', portrait: 1.2, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display'])), col: rng.pick(['accent', 'accent', 'ink']), k: rng.pick([0.26, 0.3, 0.33]), mark: rng.pick(['circle', 'sq', 'dia']), tilt: rng.pick([0, 0, -1.5, 1.5]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -616,7 +616,7 @@ reg('xaTriBand', {
 /* ================================================================== 15 xaAirmail — エアメール
    an airmail envelope: striped border, perforated stamp, postmark waves */
 reg('xaAirmail', {
-  name: 'エアメール', en: 'Airmail', tags: ['emotional', 'pop', 'calm'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 20,
+  name: '항공 우편', en: 'Airmail', tags: ['emotional', 'pop', 'calm'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 20,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), stamp: rng.chance(0.85), tilt: rng.pick([-2, 0, 2]), tag: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env), ctx = env.ctx;
@@ -661,7 +661,7 @@ reg('xaAirmail', {
 /* ================================================================== 16 xaFigure — 図版
    an empty picture box (FPO placeholder) with the lyric set as its caption */
 reg('xaFigure', {
-  name: '図版', en: 'Figure Caption', tags: ['editorial', 'calm', 'graphic'], ae: 'gloss', w: 1, fits: n => n >= 1 && n <= 20,
+  name: '도판 캡션', en: 'Figure Caption', tags: ['editorial', 'calm', 'graphic'], ae: 'gloss', w: 1, fits: n => n >= 1 && n <= 20,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display', 'body'])), side: rng.pick(['l', 'r']), pic: rng.pick(['x', 'scene', 'target']), top: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -698,7 +698,7 @@ reg('xaFigure', {
 /* ================================================================== 17 xaLineNumbers — 行番号
    a numbered listing: line-number gutter, vertical rule, greeked neighbours, the lyric on the live lines */
 reg('xaLineNumbers', {
-  name: '行番号', en: 'Line Numbers', tags: ['editorial', 'calm', 'glitch'], ae: 'type', w: 1, fits: n => n >= 1 && n <= 22,
+  name: '줄 번호', en: 'Line Numbers', tags: ['editorial', 'calm', 'glitch'], ae: 'type', w: 1, fits: n => n >= 1 && n <= 22,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), hl: rng.chance(0.65), start: rng.int(1, 90), every: rng.pick([1, 1, 5]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -722,7 +722,7 @@ reg('xaLineNumbers', {
 /* ================================================================== 18 xaPunchCard — パンチカード
    a punched card: clipped corner, digit field, holes punched column by column, lyric printed along the top */
 reg('xaPunchCard', {
-  name: 'パンチカード', en: 'Punch Card', tags: ['graphic', 'glitch', 'pop'], ae: 'labels', w: 0.7, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '펀치 카드', en: 'Punch Card', tags: ['graphic', 'glitch', 'pop'], ae: 'labels', w: 0.7, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display', 'mono'])), cols: rng.pick([28, 32, 36]), tilt: rng.pick([0, -1.5, 1.5]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -754,7 +754,7 @@ reg('xaPunchCard', {
 /* ================================================================== 19 xaSpacers — 込め物
    letterspaced type with the spacing material made visible: quads between the glyphs, widths noted */
 reg('xaSpacers', {
-  name: '込め物', en: 'Spacing Quads', tags: ['editorial', 'graphic', 'calm'], ae: 'type', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '공목', en: 'Spacing Quads', tags: ['editorial', 'graphic', 'calm'], ae: 'type', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), lab: rng.chance(0.75), style: rng.pick(['x', 'fill', 'hatch']), tr: rng.pick([0.5, 0.62, 0.75]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -789,7 +789,7 @@ reg('xaSpacers', {
 /* ================================================================== 20 xaCutLine — 切り取り線
    a dashed cut line across the sheet with scissors travelling along it; lyric above, stub below */
 reg('xaCutLine', {
-  name: '切り取り線', en: 'Cut Line', tags: ['pop', 'graphic', 'editorial'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 20,
+  name: '절취선', en: 'Cut Line', tags: ['pop', 'graphic', 'editorial'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 20,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif', 'body'])), pos: rng.pick(['low', 'low', 'high']), stub: rng.pick(['bar', 'form']), dir: rng.pick([1, 1, -1]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -821,7 +821,7 @@ reg('xaCutLine', {
 /* ================================================================== 21 xaChecklist — チェック欄
    a checklist: boxes down the left, the lyric lines get ticked one after another */
 reg('xaChecklist', {
-  name: 'チェック欄', en: 'Checklist', tags: ['pop', 'editorial', 'calm'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '체크란', en: 'Checklist', tags: ['pop', 'editorial', 'calm'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display', 'serif'])), box: rng.pick(['sq', 'sq', 'circle']), pre: rng.int(0, 1), post: rng.int(1, 2) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -852,7 +852,7 @@ reg('xaChecklist', {
 /* ================================================================== 22 xaBlockquote — 引用線
    block-quotation setting: a heavy vertical bar, ragged lines, a small citation */
 reg('xaBlockquote', {
-  name: '引用線', en: 'Block Quote Bar', tags: ['editorial', 'emotional', 'calm'], ae: 'center', w: 1.3, fits: n => n >= 1 && n <= 22,
+  name: '인용선', en: 'Block Quote Bar', tags: ['editorial', 'emotional', 'calm'], ae: 'center', w: 1.3, fits: n => n >= 1 && n <= 22,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display'])), side: rng.pick(['l', 'l', 'r']), bar: rng.pick(['solid', 'solid', 'double', 'dots']), cite: rng.chance(0.7), col: rng.pick(['accent', 'accent', 'fg']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -877,7 +877,7 @@ reg('xaBlockquote', {
 /* ================================================================== 23 xaScreenplay — 台本
    screenplay page: slug line, character cue, the lyric as centred dialogue, transition */
 reg('xaScreenplay', {
-  name: '台本', en: 'Screenplay', tags: ['editorial', 'emotional', 'calm'], ae: 'type', w: 0.9, fits: n => n >= 1 && n <= 22,
+  name: '대본', en: 'Screenplay', tags: ['editorial', 'emotional', 'calm'], ae: 'type', w: 0.9, fits: n => n >= 1 && n <= 22,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'body'])), scn: rng.int(1, 99), io: rng.pick(['INT.', 'EXT.']), time: rng.pick(['NIGHT', 'DAY', 'DAWN', 'DUSK']), vo: rng.pick([' (V.O.)', ' (O.S.)', '']), trans: rng.pick(['CUT TO:', 'FADE OUT.', 'DISSOLVE TO:']), guides: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -899,7 +899,7 @@ reg('xaScreenplay', {
 /* ================================================================== 24 xaTearTabs — ちぎり札
    a pinned notice with tear-off tabs along the bottom; some are already gone, the rest sway */
 reg('xaTearTabs', {
-  name: 'ちぎり札', en: 'Tear-off Flyer', tags: ['pop', 'emotional', 'graphic'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '뜯는 전단', en: 'Tear-off Flyer', tags: ['pop', 'emotional', 'graphic'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), nT: rng.pick([7, 8, 9]), g1: rng.int(0, 8), g2: rng.int(0, 8), tilt: rng.pick([-1.5, 0, 1.5]), pin: rng.chance(0.8) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env), ctx = env.ctx;
@@ -939,7 +939,7 @@ const bracePts = (x, y0, y1, d, r) => {
   return top.concat(bot);
 };
 reg('xaBrace', {
-  name: '括弧まとめ', en: 'Gathering Brace', tags: ['editorial', 'graphic', 'pop'], ae: 'gloss', w: 1, fits: n => n >= 2 && n <= 16,
+  name: '중괄호 묶음', en: 'Gathering Brace', tags: ['editorial', 'graphic', 'pop'], ae: 'gloss', w: 1, fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), pos: rng.pick(['r', 'l', 'under', 'r']), col: rng.pick(['accent', 'accent', 'fg']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -970,7 +970,7 @@ reg('xaBrace', {
 /* ================================================================== 26 xaNutrition — 成分表示
    a facts panel: heavy box, the lyric as the heading, bars of different weights, rows with the line's real figures */
 reg('xaNutrition', {
-  name: '成分表示', en: 'Facts Label', tags: ['graphic', 'pop', 'editorial'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '성분 표시', en: 'Facts Label', tags: ['graphic', 'pop', 'editorial'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), tilt: rng.pick([0, 0, -1.5, 1.5]), inv: rng.chance(0.4) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -1004,7 +1004,7 @@ reg('xaNutrition', {
 /* ================================================================== 27 xaDogEar — 折れ角
    a book page with a dog-eared corner folding over, running head and folio */
 reg('xaDogEar', {
-  name: '折れ角', en: 'Dog-eared Page', tags: ['emotional', 'calm', 'editorial'], ae: 'labels', w: 1, treat: 'safe', fits: n => n >= 1 && n <= 22,
+  name: '접힌 모서리', en: 'Dog-eared Page', tags: ['emotional', 'calm', 'editorial'], ae: 'labels', w: 1, treat: 'safe', fits: n => n >= 1 && n <= 22,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display'])), corner: rng.pick(['tr', 'tr', 'tl', 'br']), tilt: rng.pick([-1.5, 0, 0, 1.5]), stack: rng.chance(0.6), k: rng.range(0.11, 0.17) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -1032,7 +1032,7 @@ reg('xaDogEar', {
    a printer's rule specimen: every line of the lyric sits between rules of a different kind, each named */
 const RULES = [['thick', '4 PT'], ['double', 'DOUBLE'], ['dotted', 'DOTTED'], ['wave', 'WAVE'], ['scotch', 'SCOTCH'], ['dashed', 'DASHED']];
 reg('xaRuleSpecimen', {
-  name: '罫線見本', en: 'Rule Specimen', tags: ['editorial', 'graphic', 'calm'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '괘선 견본', en: 'Rule Specimen', tags: ['editorial', 'graphic', 'calm'], ae: 'stack', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), o: rng.int(0, 5), lab: rng.chance(0.85), acc: rng.int(0, 5), al: rng.pick(['left', 'left', 'center']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env), ctx = env.ctx;
@@ -1064,7 +1064,7 @@ reg('xaRuleSpecimen', {
 /* ================================================================== 29 xaLetterhead — レターヘッド
    business stationery: mark and greeked address, date line, the lyric as the letter, a signature drawn at the foot */
 reg('xaLetterhead', {
-  name: 'レターヘッド', en: 'Letterhead', tags: ['editorial', 'calm', 'emotional'], ae: 'gloss', w: 1, fits: n => n >= 1 && n <= 22,
+  name: '레터헤드', en: 'Letterhead', tags: ['editorial', 'calm', 'emotional'], ae: 'gloss', w: 1, fits: n => n >= 1 && n <= 22,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), mark: rng.pick(['circle', 'sq', 'tri']), sign: rng.chance(0.85), s1: rng.int(1, 999) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -1101,7 +1101,7 @@ reg('xaLetterhead', {
 /* ================================================================== 30 xaSwatchFan — 色見本帳
    a colour-guide fan deck: chips swing out round a rivet, the lyric knocked out of the top chip's colour field */
 reg('xaSwatchFan', {
-  name: '色見本帳', en: 'Swatch Fan', tags: ['pop', 'graphic', 'editorial'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '색상 견본첩', en: 'Swatch Fan', tags: ['pop', 'graphic', 'editorial'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), nb: rng.pick([2, 3, 3]), dir: rng.pick([1, -1]), code: rng.int(100, 999), ang: rng.range(9, 13) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);

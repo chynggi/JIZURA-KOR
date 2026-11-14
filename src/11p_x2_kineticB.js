@@ -115,7 +115,7 @@ const WIN = dur => clamp(dur * 0.45, 0.34, 1.0);
 const WIN2 = dur => clamp(dur * 0.5, 0.45, 1.15);
 
 /* 左右から語 — words shoot in from the left and the right in turn and overshoot; each arrival shoves the ones already down */
-EN('kzSideVolley', { name: '左右から語', en: 'Side Volley', tags: ['pop', 'graphic', 'glitch'], w: 1.2, ae: 'slice', minDur: 0.5, inDur: WIN,
+EN('kzSideVolley', { name: '좌우에서 단어', en: 'Side Volley', tags: ['pop', 'graphic', 'glitch'], w: 1.2, ae: 'slice', minDur: 0.5, inDur: WIN,
   apply(env, it, p, ctx) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert, sp = n > 1 ? 0.6 : 0, secs = ctx.inDur * (1 - sp);
     const d0 = sideOf(env, it, 811), D = (vert ? env.H : env.W) * 0.62, fade = clamp((1 - p) * 10);
@@ -133,7 +133,7 @@ EN('kzSideVolley', { name: '左右から語', en: 'Side Volley', tags: ['pop', '
   } });
 
 /* 語の車輪 — each word rolls in along the line as one rigid wheel, a full turn, rolls a touch too far and rocks back */
-EN('kzWordWheel', { name: '語の車輪', en: 'Word Wheel', tags: ['pop', 'graphic'], w: 0.8, ae: 'spin', minDur: 0.55, inDur: WIN2,
+EN('kzWordWheel', { name: '단어 바퀴', en: 'Word Wheel', tags: ['pop', 'graphic'], w: 0.8, ae: 'spin', minDur: 0.55, inDur: WIN2,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert, sp = n > 1 ? 0.5 : 0;
     glyphs(it, (i, g) => {
@@ -147,7 +147,7 @@ EN('kzWordWheel', { name: '語の車輪', en: 'Word Wheel', tags: ['pop', 'graph
   } });
 
 /* 突き抜け戻り — each word swells straight through its size as a hollow outline, then snaps back solid and rings */
-EN('kzPunchThrough', { name: '突き抜け戻り', en: 'Punch Through', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'zoom', minDur: 0.5, inDur: WIN,
+EN('kzPunchThrough', { name: '뚫고 돌아옴', en: 'Punch Through', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'zoom', minDur: 0.5, inDur: WIN,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.55 : 0, acc = env.sc.accent, T = 0.46;
     glyphs(it, (i, g) => {
@@ -160,7 +160,7 @@ EN('kzPunchThrough', { name: '突き抜け戻り', en: 'Punch Through', tags: ['
   } });
 
 /* 塔からほどく — the words pile up as a tower in the middle, one per tick, then swing out of it into the line */
-EN('kzTowerUnstack', { name: '塔からほどく', en: 'Tower Unstack', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'assemble', minDur: 0.75, inDur: dur => clamp(dur * 0.52, 0.5, 1.25),
+EN('kzTowerUnstack', { name: '탑에서 풀기', en: 'Tower Unstack', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'assemble', minDur: 0.75, inDur: dur => clamp(dur * 0.52, 0.5, 1.25),
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert, B = G.box;
     if (n < 2) {
@@ -182,7 +182,7 @@ EN('kzTowerUnstack', { name: '塔からほどく', en: 'Tower Unstack', tags: ['
   } });
 
 /* 水切り — each word skips in from the side like a flat stone: three hops, each lower, flattening where it touches */
-EN('kzSkipStone', { name: '水切り', en: 'Skipping Stone', tags: ['pop', 'emotional'], w: 0.9, ae: 'drop', minDur: 0.55, inDur: WIN2,
+EN('kzSkipStone', { name: '물수제비', en: 'Skipping Stone', tags: ['pop', 'emotional'], w: 0.9, ae: 'drop', minDur: 0.55, inDur: WIN2,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.5 : 0, sg = sideOf(env, it, 815);
     const D = Math.min(env.W * 0.5, it.size * 5.5), H0 = it.size * 1.05;
@@ -197,7 +197,7 @@ EN('kzSkipStone', { name: '水切り', en: 'Skipping Stone', tags: ['pop', 'emot
   } });
 
 /* シーソー着地 — the line is a see-saw: every word that drops onto it tips the whole line towards its side before it levels out */
-EN('kzSeesaw', { name: 'シーソー着地', en: 'Seesaw Landing', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'drop', minDur: 0.65, inDur: WIN2,
+EN('kzSeesaw', { name: '시소 착지', en: 'Seesaw Landing', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'drop', minDur: 0.65, inDur: WIN2,
   apply(env, it, p, ctx) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert, B = G.box, sp = n > 1 ? 0.45 : 0, fd = (1 - sp) * 0.34, secs = ctx.inDur;
     const half = axis(G)[1] / 2, st = [];
@@ -217,7 +217,7 @@ EN('kzSeesaw', { name: 'シーソー着地', en: 'Seesaw Landing', tags: ['pop',
   } });
 
 /* トランポリン — the line is a springy sheet: each word is tossed up from below and lands on it; the landing dips it, and the dent runs outward under the other letters */
-EN('kzTrampoline', { name: 'トランポリン', en: 'Trampoline', tags: ['pop', 'emotional'], w: 1, ae: 'drop', minDur: 0.6, inDur: WIN2,
+EN('kzTrampoline', { name: '트램펄린', en: 'Trampoline', tags: ['pop', 'emotional'], w: 1, ae: 'drop', minDur: 0.6, inDur: WIN2,
   apply(env, it, p, ctx) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert, sp = n > 1 ? 0.5 : 0, fd = (1 - sp) * 0.4, secs = ctx.inDur;
     const A = it.size * 0.3 * clamp((1 - p) * 9), st = [], pos = [];
@@ -239,7 +239,7 @@ EN('kzTrampoline', { name: 'トランポリン', en: 'Trampoline', tags: ['pop',
   } });
 
 /* 行き過ぎ戻り — every word runs in leaning forward, cannot stop, skids past its place leaning back and backs up into it */
-EN('kzOverrun', { name: '行き過ぎ戻り', en: 'Overrun', tags: ['pop', 'graphic'], w: 1.1, ae: 'stretch', minDur: 0.55, inDur: WIN2,
+EN('kzOverrun', { name: '지나쳤다 돌아옴', en: 'Overrun', tags: ['pop', 'graphic'], w: 1.1, ae: 'stretch', minDur: 0.55, inDur: WIN2,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert, sp = n > 1 ? 0.48 : 0;
     const D = (vert ? env.H : env.W) * 0.55, O = it.size * 0.95, T = 0.55;
@@ -255,7 +255,7 @@ EN('kzOverrun', { name: '行き過ぎ戻り', en: 'Overrun', tags: ['pop', 'grap
   } });
 
 /* 弓なり戻り — the line appears drawn like a bow and is let go: it whips through straight a few times and comes to rest */
-EN('kzBowSnap', { name: '弓なり戻り', en: 'Bow Release', tags: ['pop', 'emotional', 'graphic'], w: 1, ae: 'stretch', minDur: 0.5, inDur: WIN,
+EN('kzBowSnap', { name: '활시위 놓기', en: 'Bow Release', tags: ['pop', 'emotional', 'graphic'], w: 1, ae: 'stretch', minDur: 0.5, inDur: WIN,
   apply(env, it, p) {
     const G = wgeo(env, it), vert = G.vert, B = G.box, half = axis(G)[1] / 2, sg = sideOf(env, it, 823);
     const A = Math.min(it.size * 1.5, (vert ? env.W : env.H) * 0.2) * sg * spring1((p - 0.14) / 0.86, 2.1, 3.2);
@@ -273,7 +273,7 @@ const OUT = dur => clamp(dur * 0.32, 0.3, 0.75);
 const OUT2 = dur => clamp(dur * 0.38, 0.36, 0.9);
 
 /* 打ち飛ばし — the line takes a hit on one end: a flash of squash, then it sails off as one piece, tumbling end over end */
-EX('kzBatAway', { name: '打ち飛ばし', en: 'Batted Away', tags: ['pop', 'graphic', 'glitch'], w: 1.1, ae: 'scatter', outDur: OUT,
+EX('kzBatAway', { name: '쳐 날리기', en: 'Batted Away', tags: ['pop', 'graphic', 'glitch'], w: 1.1, ae: 'scatter', outDur: OUT,
   apply(env, it, p) {
     const G = wgeo(env, it), B = G.box, sg = sideOf(env, it, 831), T = 0.16, acc = env.sc.accent;
     let o;
@@ -287,7 +287,7 @@ EX('kzBatAway', { name: '打ち飛ばし', en: 'Batted Away', tags: ['pop', 'gra
   } });
 
 /* 引っこ抜き — the words are grabbed by one end, stretched, and snatched off sideways one by one, the last word first */
-EX('kzYankOut', { name: '引っこ抜き', en: 'Yanked Out', tags: ['pop', 'graphic', 'glitch'], w: 1.1, ae: 'stretch', outDur: OUT2,
+EX('kzYankOut', { name: '쑥 뽑기', en: 'Yanked Out', tags: ['pop', 'graphic', 'glitch'], w: 1.1, ae: 'stretch', outDur: OUT2,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, vert = G.vert, sp = n > 1 ? 0.55 : 0, d0 = sideOf(env, it, 833), D = (vert ? env.H : env.W) * 1.1;
     glyphs(it, (i, g) => {
@@ -304,7 +304,7 @@ EX('kzYankOut', { name: '引っこ抜き', en: 'Yanked Out', tags: ['pop', 'grap
   } });
 
 /* 振って放る — the line starts to swing from a point above it, further each time, and is let go at full speed */
-EX('kzSwingFling', { name: '振って放る', en: 'Swing And Fling', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'drift', minDur: 0.9, outDur: dur => clamp(dur * 0.42, 0.45, 0.95),
+EX('kzSwingFling', { name: '휘둘러 던지기', en: 'Swing And Fling', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'drift', minDur: 0.9, outDur: dur => clamp(dur * 0.42, 0.45, 0.95),
   apply(env, it, p) {
     const G = wgeo(env, it), B = G.box, sg = sideOf(env, it, 835), L = 3.2, T = 0.66;
     let o;
@@ -319,7 +319,7 @@ EX('kzSwingFling', { name: '振って放る', en: 'Swing And Fling', tags: ['pop
   } });
 
 /* 屈んで飛び込む — word after word crouches flat, springs up a little and dives straight down out of the frame */
-EX('kzCrouchDive', { name: '屈んで飛び込む', en: 'Crouch Dive', tags: ['pop', 'emotional'], w: 1, ae: 'fall', outDur: OUT2,
+EX('kzCrouchDive', { name: '웅크렸다 뛰어듦', en: 'Crouch Dive', tags: ['pop', 'emotional'], w: 1, ae: 'fall', outDur: OUT2,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.4 : 0;
     glyphs(it, (i, g) => {
@@ -336,7 +336,7 @@ EX('kzCrouchDive', { name: '屈んで飛び込む', en: 'Crouch Dive', tags: ['p
   } });
 
 /* 引き絞り発射 — the middle of the line is drawn back like a catapult band, trembles, and the whole line is shot away */
-EX('kzSlingAway', { name: '引き絞り発射', en: 'Sling Away', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'stretch', outDur: OUT2,
+EX('kzSlingAway', { name: '당겼다 발사', en: 'Sling Away', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'stretch', outDur: OUT2,
   apply(env, it, p) {
     const G = wgeo(env, it), vert = G.vert, B = G.box, half = axis(G)[1] / 2, sg = sideOf(env, it, 837), T = 0.58;
     let A, shoot = 0, st = 1, al = 1;
@@ -357,7 +357,7 @@ EX('kzSlingAway', { name: '引き絞り発射', en: 'Sling Away', tags: ['pop', 
   } });
 
 /* 打ち込み — the words are hammered into the floor like nails: three blows each, a third deeper every time, the others jumping */
-EX('kzHammerDown', { name: '打ち込み', en: 'Hammered In', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'fall', minDur: 0.8, outDur: dur => clamp(dur * 0.42, 0.42, 0.95),
+EX('kzHammerDown', { name: '박아 넣기', en: 'Hammered In', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'fall', minDur: 0.8, outDur: dur => clamp(dur * 0.42, 0.42, 0.95),
   apply(env, it, p, ctx) {
     const G = wgeo(env, it), n = G.nW, sp = n > 1 ? 0.4 : 0, gap = (1 - sp) / 3.4, secs = ctx.outDur;
     const hit = (j, m) => (n > 1 ? j / (n - 1) : 0) * sp + m * gap + 0.02;
@@ -382,7 +382,7 @@ EX('kzHammerDown', { name: '打ち込み', en: 'Hammered In', tags: ['pop', 'gra
   } });
 
 /* 激突して散る — the words rush together, crash in the middle with a flash, and ricochet off in all directions, spinning */
-EX('kzCrashApart', { name: '激突して散る', en: 'Crash Apart', tags: ['pop', 'glitch', 'graphic'], w: 1, ae: 'scatter', outDur: OUT2,
+EX('kzCrashApart', { name: '충돌해 흩어짐', en: 'Crash Apart', tags: ['pop', 'glitch', 'graphic'], w: 1, ae: 'scatter', outDur: OUT2,
   apply(env, it, p) {
     const G = wgeo(env, it), n = G.nW, B = G.box, T = 0.36, acc = env.sc.accent, sd = env.cut.seed | 0, far = Math.max(env.W, env.H) * 0.8;
     const gone = p >= 0.999;
@@ -399,7 +399,7 @@ EX('kzCrashApart', { name: '激突して散る', en: 'Crash Apart', tags: ['pop'
   } });
 
 /* 細めて発射 — the line swells a little, is pinched into one thin tall sliver, and the sliver shoots out of the frame */
-EX('kzPinchShoot', { name: '細めて発射', en: 'Pinch Shoot', tags: ['graphic', 'pop', 'glitch'], w: 1, ae: 'shrink', outDur: OUT,
+EX('kzPinchShoot', { name: '조였다 발사', en: 'Pinch Shoot', tags: ['graphic', 'pop', 'glitch'], w: 1, ae: 'shrink', outDur: OUT,
   apply(env, it, p) {
     const G = wgeo(env, it), vert = G.vert, B = G.box, sg = sideOf(env, it, 841), T = 0.44;
     let c, shoot = 0, lng, al = 1;
@@ -417,7 +417,7 @@ EX('kzPinchShoot', { name: '細めて発射', en: 'Pinch Shoot', tags: ['graphic
 /* ================================================================================================ HOLDS */
 
 /* つぶれ波 — a bump runs along the line under the letters: the one above it is pressed flat, its neighbours stand tall */
-HO('kzSquashWave', { name: 'つぶれ波', en: 'Squash Wave', tags: ['pop', 'calm', 'graphic'], w: 1, ae: 'wave',
+HO('kzSquashWave', { name: '찌그러짐 물결', en: 'Squash Wave', tags: ['pop', 'calm', 'graphic'], w: 1, ae: 'wave',
   apply(env, it, amt) {
     const G = wgeo(env, it), vert = G.vert, M = amt * (0.4 + mot(env));
     if (M < 0.01) return;
@@ -433,7 +433,7 @@ HO('kzSquashWave', { name: 'つぶれ波', en: 'Squash Wave', tags: ['pop', 'cal
   } });
 
 /* 慣性ゆれ — the line shuttles to and fro; the words follow one after another like wagons and lean back against the pull */
-HO('kzInertiaSway', { name: '慣性ゆれ', en: 'Inertia Sway', tags: ['calm', 'pop', 'emotional'], w: 1, ae: 'drift',
+HO('kzInertiaSway', { name: '관성 흔들림', en: 'Inertia Sway', tags: ['calm', 'pop', 'emotional'], w: 1, ae: 'drift',
   apply(env, it, amt) {
     const G = wgeo(env, it), vert = G.vert, M = amt * (0.4 + mot(env));
     if (M < 0.01) return;
@@ -446,7 +446,7 @@ HO('kzInertiaSway', { name: '慣性ゆれ', en: 'Inertia Sway', tags: ['calm', '
   } });
 
 /* 飛び込み板 — the line is a springboard fixed at one end: every beat it is flicked and the free end whips up and down */
-HO('kzDivingBoard', { name: '飛び込み板', en: 'Diving Board', tags: ['pop', 'graphic', 'emotional'], w: 0.9, ae: 'wave',
+HO('kzDivingBoard', { name: '다이빙대', en: 'Diving Board', tags: ['pop', 'graphic', 'emotional'], w: 0.9, ae: 'wave',
   apply(env, it, amt) {
     const G = wgeo(env, it), vert = G.vert, M = amt * (0.4 + mot(env)), s0 = beatSince(env, 1.15);
     const A = it.size * 0.45 * M * Math.exp(-s0 * 2.5) * Math.sin(s0 * 12.5);
@@ -462,7 +462,7 @@ HO('kzDivingBoard', { name: '飛び込み板', en: 'Diving Board', tags: ['pop',
   } });
 
 /* 疎密パルス — a push travels down the line like along a slinky: the letters bunch up where it is and spread again behind it */
-HO('kzSlinky', { name: '疎密パルス', en: 'Slinky Pulse', tags: ['pop', 'graphic', 'calm'], w: 0.9, ae: 'wave',
+HO('kzSlinky', { name: '소밀 펄스', en: 'Slinky Pulse', tags: ['pop', 'graphic', 'calm'], w: 0.9, ae: 'wave',
   apply(env, it, amt) {
     const G = wgeo(env, it), vert = G.vert, M = amt * (0.4 + mot(env)), s0 = beatSince(env, 0.95), fr = s0 / 0.5;
     if (M < 0.01 || fr > 1.5) return;
@@ -477,7 +477,7 @@ HO('kzSlinky', { name: '疎密パルス', en: 'Slinky Pulse', tags: ['pop', 'gra
   } });
 
 /* 拍で屈伸 — on every beat the words bend their knees, one a moment after the other: flat on their feet, then up tall, then still */
-HO('kzBeatSquat', { name: '拍で屈伸', en: 'Beat Squat', tags: ['pop', 'graphic'], w: 1, ae: 'breathe',
+HO('kzBeatSquat', { name: '박자 굴신', en: 'Beat Squat', tags: ['pop', 'graphic'], w: 1, ae: 'breathe',
   apply(env, it, amt) {
     const G = wgeo(env, it), M = amt * (0.4 + mot(env)), s0 = beatSince(env, 0.6);
     if (M < 0.01) return;
@@ -510,7 +510,7 @@ const bare = (i, extra) => Object.assign({}, i, { pre: null, post: null, echo: n
 const masked = i => !!(i.clip || i.clipY || i.clipFn || i.bands || i.vbands);
 
 /* 流線影 — the glyphs drag a shadow of thin speed lines behind them: their own shapes smeared backwards, seen through a comb */
-TREAT('kzSpeedShadow', { name: '流線影', en: 'Speed Shadow', tags: ['pop', 'graphic', 'glitch'], w: 1,
+TREAT('kzSpeedShadow', { name: '유선 그림자', en: 'Speed Shadow', tags: ['pop', 'graphic', 'glitch'], w: 1,
   plan: rng => ({ d: rng.range(0.36, 0.52), n: rng.int(3, 4), gap: rng.range(0.17, 0.21) }),
   apply(env, it, P) {
     if (!alive(it)) return;
@@ -538,7 +538,7 @@ TREAT('kzSpeedShadow', { name: '流線影', en: 'Speed Shadow', tags: ['pop', 'g
   } });
 
 /* 前コマ残し — two outline drawings of the line stay behind it, tipped back about its foot like the previous frames of a swing */
-TREAT('kzOnionSkin', { name: '前コマ残し', en: 'Onion Skin', tags: ['pop', 'graphic', 'editorial'], w: 0.9,
+TREAT('kzOnionSkin', { name: '앞 프레임 잔상', en: 'Onion Skin', tags: ['pop', 'graphic', 'editorial'], w: 0.9,
   plan: rng => ({ r: rng.range(2.6, 3.8) * rng.pick([1, -1]), n: rng.pick([2, 2, 3]) }),
   apply(env, it, P) {
     if (!alive(it) || inPieces(env, it)) return;
@@ -555,7 +555,7 @@ TREAT('kzOnionSkin', { name: '前コマ残し', en: 'Onion Skin', tags: ['pop', 
 
 /* 加速組み — the glyphs grow steadily along the line on a common baseline, as if the phrase were gathering speed */
 const crCache = new Map();
-TREAT('kzCrescendo', { name: '加速組み', en: 'Crescendo', tags: ['pop', 'graphic', 'emotional'], w: 0.9, safe: true,
+TREAT('kzCrescendo', { name: '가속 짜임', en: 'Crescendo', tags: ['pop', 'graphic', 'emotional'], w: 0.9, safe: true,
   plan: rng => ({ k: rng.range(0.34, 0.46), rev: rng.chance(0.22) }),
   apply(env, it, P) {
     if (!alive(it, 0.5)) return;
@@ -598,7 +598,7 @@ TREAT('kzCrescendo', { name: '加速組み', en: 'Crescendo', tags: ['pop', 'gra
   } });
 
 /* 跳ね組み — every word is set along the arc of a hop: its letters rise, tip over the top and come down again */
-TREAT('kzHopArc', { name: '跳ね組み', en: 'Hop Arcs', tags: ['pop', 'emotional'], w: 0.8, safe: true,
+TREAT('kzHopArc', { name: '튀는 짜임', en: 'Hop Arcs', tags: ['pop', 'emotional'], w: 0.8, safe: true,
   plan: rng => ({ h: rng.range(0.17, 0.25), tilt: rng.range(9, 14) }),
   apply(env, it, P) {
     if (!alive(it, 0.5)) return;
@@ -613,7 +613,7 @@ TREAT('kzHopArc', { name: '跳ね組み', en: 'Hop Arcs', tags: ['pop', 'emotion
   } });
 
 /* 段々斜体 — the line is cut into level strips and each strip is pushed a step further forward: an italic made of stairs */
-TREAT('kzStepShear', { name: '段々斜体', en: 'Stepped Lean', tags: ['graphic', 'glitch', 'pop'], w: 0.8, safe: true,
+TREAT('kzStepShear', { name: '단계 기울임', en: 'Stepped Lean', tags: ['graphic', 'glitch', 'pop'], w: 0.8, safe: true,
   plan: rng => ({ n: rng.pick([3, 4, 4, 5]), d: rng.range(0.05, 0.075), dir: rng.pick([1, 1, -1]) }),
   apply(env, it, P) {
     if (!alive(it, 0.5) || inPieces(env, it)) return;
@@ -664,7 +664,7 @@ function wordTimes(env, nMax = 6) {
 
 /* 被弾の反動 — the cut opens as if the frame had just been struck: knocked off along one line, twisted, ringing back to rest;
    later words land lighter blows from the other side */
-CAM('kzRecoil', { name: '被弾の反動', en: 'Hit Recoil', tags: ['pop', 'glitch', 'graphic'], w: 0.8, strong: true,
+CAM('kzRecoil', { name: '피격 반동', en: 'Hit Recoil', tags: ['pop', 'glitch', 'graphic'], w: 0.8, strong: true,
   plan: rng => ({ a: rng.range(0, TAU), r: rng.range(2.4, 3.5) * rng.pick([1, -1]) }),
   get(env, P) {
     const K = Math.min(1, KM(env)), lt = env.lt, ts = wordTimes(env), ca = Math.cos(P.a || 0), sa = Math.sin(P.a || 0);
@@ -679,7 +679,7 @@ CAM('kzRecoil', { name: '被弾の反動', en: 'Hit Recoil', tags: ['pop', 'glit
   } });
 
 /* ノックバック — the frame is punched away from the viewer on the first frames, springs forward past its place and settles */
-CAM('kzKnockback', { name: 'ノックバック', en: 'Knockback', tags: ['pop', 'graphic', 'emotional'], w: 0.8, strong: true,
+CAM('kzKnockback', { name: '넉백', en: 'Knockback', tags: ['pop', 'graphic', 'emotional'], w: 0.8, strong: true,
   plan: rng => ({ r: rng.range(-1.6, 1.6), z: rng.range(0.06, 0.075) }),
   get(env, P) {
     const K = Math.min(1, KM(env)), lt = env.lt, a = 0.07;
@@ -690,7 +690,7 @@ CAM('kzKnockback', { name: 'ノックバック', en: 'Knockback', tags: ['pop', 
   } });
 
 /* 語でうなずく — the camera nods once for every word: a quick dip with a slight squeeze, and up again */
-CAM('kzWordNod', { name: '語でうなずく', en: 'Word Nod', tags: ['pop', 'calm', 'editorial'], w: 0.9,
+CAM('kzWordNod', { name: '단어마다 끄덕임', en: 'Word Nod', tags: ['pop', 'calm', 'editorial'], w: 0.9,
   plan: rng => ({ a: rng.range(0.018, 0.026), up: rng.chance(0.25) }),
   get(env, P) {
     const K = Math.min(1, KM(env)), lt = env.lt, ts = wordTimes(env);
@@ -703,7 +703,7 @@ CAM('kzWordNod', { name: '語でうなずく', en: 'Word Nod', tags: ['pop', 'ca
   } });
 
 /* 横滑り停止 — the frame slides in sideways, sheared by its own speed, brakes hard and rocks back upright */
-CAM('kzSkidStop', { name: '横滑り停止', en: 'Skid Stop', tags: ['pop', 'graphic', 'glitch'], w: 0.8,
+CAM('kzSkidStop', { name: '옆으로 미끄러져 정지', en: 'Skid Stop', tags: ['pop', 'graphic', 'glitch'], w: 0.8,
   plan: rng => ({ dir: rng.pick([1, -1]), a: rng.range(0.04, 0.05) }),
   get(env, P) {
     const K = Math.min(1, KM(env)), lt = env.lt, T = 0.46, dir = P.dir || 1, rem = 1 - E.outCubic(clamp(lt / T));
@@ -724,7 +724,7 @@ const FX = (key, d) => J.register('fx', key, Object.assign({}, d, {
 }), P);
 
 /* 端からの一撃 — something hits the frame from one edge: spikes burst inward from the point of impact and the picture recoils */
-FX('kzEdgeHit', { name: '端からの一撃', en: 'Edge Hit', tags: ['pop', 'graphic', 'glitch'], w: 1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'shake',
+FX('kzEdgeHit', { name: '가장자리 일격', en: 'Edge Hit', tags: ['pop', 'graphic', 'glitch'], w: 1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'shake',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), M = Math.min(cw, ch), a = amp1(ev), side = J.h(s, 1) % 4, u = 0.3 + 0.4 * J.r(s, 2);
@@ -746,7 +746,7 @@ FX('kzEdgeHit', { name: '端からの一撃', en: 'Edge Hit', tags: ['pop', 'gra
   } });
 
 /* 小突きスミア — the picture is knocked sideways and springs back; for those frames it drags a smear of itself behind */
-FX('kzKnockSmear', { name: '小突きスミア', en: 'Knock Smear', tags: ['pop', 'glitch', 'graphic'], w: 1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'shake',
+FX('kzKnockSmear', { name: '톡 스미어', en: 'Knock Smear', tags: ['pop', 'glitch', 'graphic'], w: 1, dur: 7, amp: 1, mid: true, scratch: true, ae: 'shake',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), vert = cw < ch ? J.r(s, 1) < 0.5 : J.r(s, 1) < 0.2, dir = J.r(s, 2) < 0.5 ? 1 : -1, L = vert ? ch : cw;
@@ -763,7 +763,7 @@ FX('kzKnockSmear', { name: '小突きスミア', en: 'Knock Smear', tags: ['pop'
   } });
 
 /* 浮かせて叩く — the picture is lifted off the page as a card with a solid shadow, hangs for a moment, and is slapped back down */
-FX('kzCardSlam', { name: '浮かせて叩く', en: 'Card Slam', tags: ['pop', 'graphic', 'editorial'], w: 0.9, dur: 10, amp: 1, mid: true, scratch: true, ae: 'zoom',
+FX('kzCardSlam', { name: '띄웠다 내려치기', en: 'Card Slam', tags: ['pop', 'graphic', 'editorial'], w: 0.9, dur: 10, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), M = Math.min(cw, ch), a = amp1(ev);
@@ -785,7 +785,7 @@ FX('kzCardSlam', { name: '浮かせて叩く', en: 'Card Slam', tags: ['pop', 'g
   } });
 
 /* 衝撃の弧 — a shock leaves the middle of the frame as pairs of arcs, like (( )) , thinning as they travel, while the picture bulges */
-FX('kzShockArcs', { name: '衝撃の弧', en: 'Shock Arcs', tags: ['pop', 'graphic', 'emotional'], w: 1, dur: 8, amp: 1, mid: true, scratch: true, ae: 'zoom',
+FX('kzShockArcs', { name: '충격 호', en: 'Shock Arcs', tags: ['pop', 'graphic', 'emotional'], w: 1, dur: 8, amp: 1, mid: true, scratch: true, ae: 'zoom',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I, M = Math.min(cw, ch), a = amp1(ev), vert = cw < ch * 0.9, cx = cw / 2, cy = ch / 2, L = vert ? ch : cw;
     const pu = k < 0.15 ? E.outExpo(k / 0.15) : 1 - E.inOutCubic((k - 0.15) / 0.85), st = 1 + 0.035 * a * pu;
@@ -801,7 +801,7 @@ FX('kzShockArcs', { name: '衝撃の弧', en: 'Shock Arcs', tags: ['pop', 'graph
   } });
 
 /* 着地の土煙 — the picture lands with a thud: it drops a little, bounces, and dust rolls away along the bottom edge on both sides */
-FX('kzDustLanding', { name: '着地の土煙', en: 'Dust Landing', tags: ['pop', 'emotional', 'graphic'], w: 0.9, dur: 9, amp: 1, mid: true, scratch: true, ae: 'shake',
+FX('kzDustLanding', { name: '착지 흙먼지', en: 'Dust Landing', tags: ['pop', 'emotional', 'graphic'], w: 0.9, dur: 9, amp: 1, mid: true, scratch: true, ae: 'shake',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), M = Math.min(cw, ch), a = amp1(ev);
@@ -820,7 +820,7 @@ FX('kzDustLanding', { name: '着地の土煙', en: 'Dust Landing', tags: ['pop',
   } });
 
 /* 押しのけバー — a bar ploughs across the frame: ahead of it the picture is squeezed up against the far edge, behind it it stands again */
-FX('kzBulldoze', { name: '押しのけバー', en: 'Bulldoze', tags: ['graphic', 'pop', 'glitch'], w: 0.6, dur: 7, amp: 1, mid: true, scratch: true, ae: 'slice',
+FX('kzBulldoze', { name: '밀어내는 막대', en: 'Bulldoze', tags: ['graphic', 'pop', 'glitch'], w: 0.6, dur: 7, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S || k <= 0 || k >= 1) return;
     const s = evS(ev), M = Math.min(cw, ch), vert = cw < ch ? J.r(s, 1) < 0.6 : J.r(s, 1) < 0.15, rev = J.r(s, 2) < 0.5, L = vert ? ch : cw;
@@ -852,7 +852,7 @@ const TR = (k, d) => J.register('trans', k, Object.assign({}, d, {
   } }), P);
 
 /* 突き飛ばし — the new frame slams in from the side and overshoots; the old one is knocked clean away, tumbling as it goes */
-TR('kzShoveOff', { name: '突き飛ばし', en: 'Shove Off', tags: ['pop', 'graphic', 'glitch'], w: 1, dur: 0.42,
+TR('kzShoveOff', { name: '밀쳐 내기', en: 'Shove Off', tags: ['pop', 'graphic', 'glitch'], w: 1, dur: 0.42,
   plan: rng => ({ dir: rng.pick([1, -1]), vert: rng.chance(0.25) }),
   draw(ctx, A, B, p, I, P) {
     const { cw, ch } = I, dir = P.dir || 1, vert = !!P.vert, L = vert ? ch : cw;
@@ -871,7 +871,7 @@ TR('kzShoveOff', { name: '突き飛ばし', en: 'Shove Off', tags: ['pop', 'grap
   } });
 
 /* 押し潰し — the new frame comes down like a press: the old one is squeezed flat against the far edge, pushes back once, and is gone */
-TR('kzCrushDown', { name: '押し潰し', en: 'Crush Down', tags: ['pop', 'graphic'], w: 0.9, dur: 0.45,
+TR('kzCrushDown', { name: '짓눌러 찌그러뜨림', en: 'Crush Down', tags: ['pop', 'graphic'], w: 0.9, dur: 0.45,
   plan: rng => ({ from: rng.pick(['top', 'top', 'left', 'right', 'bottom']) }),
   draw(ctx, A, B, p, I, P) {
     const { cw, ch } = I, from = P.from || 'top', hor = from === 'left' || from === 'right', L = hor ? cw : ch, tl = 0.62;
@@ -890,7 +890,7 @@ TR('kzCrushDown', { name: '押し潰し', en: 'Crush Down', tags: ['pop', 'graph
 
 /* 大回し — both frames ride on one huge wheel whose hub is far outside the picture: a turn carries the old one off and the new one in,
    a little too far, and back */
-TR('kzCarousel', { name: '大回し', en: 'Carousel', tags: ['pop', 'graphic', 'emotional'], w: 0.9, dur: 0.5,
+TR('kzCarousel', { name: '회전목마', en: 'Carousel', tags: ['pop', 'graphic', 'emotional'], w: 0.9, dur: 0.5,
   plan: rng => ({ dir: rng.pick([1, -1]), top: rng.chance(0.3) }),
   draw(ctx, A, B, p, I, P) {
     const { cw, ch } = I, dir = P.dir || 1, R = Math.max(cw, ch) * 1.3, px = cw / 2, py = P.top ? ch / 2 - R : ch / 2 + R;

@@ -171,7 +171,7 @@ function D(key, name, en, tags, w, ae, fn) {
 /* ============================================================ frames */
 
 /* 途切れ枠 — a frame drawn on by one pen stroke, broken by 2–4 gaps that keep travelling round it */
-D('xlGapFrame', '途切れ枠', 'Gapped Frame', ['graphic', 'editorial', 'calm'], 1.3, 'brackets', (env, bb, p, t, o, u) => {
+D('xlGapFrame', '끊긴 틀', 'Gapped Frame', ['graphic', 'editorial', 'calm'], 1.3, 'brackets', (env, bb, p, t, o, u) => {
   const f = frame(env, bb, PAD(bb, u, 1.15)), c = COL(env, p);
   let pts = [[f.x0, f.y0], [f.x1, f.y0], [f.x1, f.y1], [f.x0, f.y1]];
   pts = pts.slice(p.v % 4).concat(pts.slice(0, p.v % 4));
@@ -187,7 +187,7 @@ D('xlGapFrame', '途切れ枠', 'Gapped Frame', ['graphic', 'editorial', 'calm']
 });
 
 /* 巡る角 — one or two corner marks that hop from corner to corner along the frame, bending round each corner */
-D('xlHopCorners', '巡る角', 'Hopping Corners', ['graphic', 'pop', 'glitch'], 1, 'brackets', (env, bb, p, t, o, u) => {
+D('xlHopCorners', '도는 모서리', 'Hopping Corners', ['graphic', 'pop', 'glitch'], 1, 'brackets', (env, bb, p, t, o, u) => {
   const f = frame(env, bb, PAD(bb, u)), c = COL(env, p);
   const pa = mk([[f.x0, f.y0], [f.x1, f.y0], [f.x1, f.y1], [f.x0, f.y1]], true), S = pa.cum;
   const T = 0.85, k = Math.floor(t / T), fr = E.inOutCubic(cl((t - k * T) / 0.4)) * (env.fx.motion > 0.05 ? 1 : 0), dir = p.right ? 1 : -1;
@@ -202,7 +202,7 @@ D('xlHopCorners', '巡る角', 'Hopping Corners', ['graphic', 'pop', 'glitch'], 
 });
 
 /* 下描き枠 — a pencil-sketched box: four overshooting strokes gone over twice, lightly boiling */
-D('xlSketchBox', '下描き枠', 'Sketch Box', ['pop', 'emotional', 'editorial'], 1, 'brackets', (env, bb, p, t, o, u) => {
+D('xlSketchBox', '밑그림 틀', 'Sketch Box', ['pop', 'emotional', 'editorial'], 1, 'brackets', (env, bb, p, t, o, u) => {
   const f = frame(env, bb, PAD(bb, u, 1.1)), c = COL(env, p), boil = Math.floor(t * 4), sd = p.seed;
   const ed = [[f.x0, f.y0, f.x1, f.y0], [f.x1, f.y0, f.x1, f.y1], [f.x1, f.y1, f.x0, f.y1], [f.x0, f.y1, f.x0, f.y0]];
   for (let ps = 0; ps < 2; ps++) for (let k = 0; k < 4; k++) {
@@ -220,7 +220,7 @@ D('xlSketchBox', '下描き枠', 'Sketch Box', ['pop', 'emotional', 'editorial']
 });
 
 /* 破線トラック — a dashed racetrack (stadium) round the lyric with a start line and a runner lapping it */
-D('xlDashTrack', '破線トラック', 'Dashed Track', ['pop', 'graphic'], 0.9, 'dots', (env, bb, p, t, o, u) => {
+D('xlDashTrack', '파선 트랙', 'Dashed Track', ['pop', 'graphic'], 0.9, 'dots', (env, bb, p, t, o, u) => {
   const f = frame(env, bb, PAD(bb, u, 1.7)), dir = p.right ? 1 : -1;
   const pa = mk(rrectPts(f.x0, f.y0, f.x1, f.y1, Math.min(f.w, f.h) / 2, 10), true), e = ein(t, 0.6, 0, E.inOutCubic);
   stroke(env, e >= 1 ? pa.pts : span(pa, 0, pa.L * e), env.sc.fg, 2.2 * u, 0.9 * o, { dash: [11 * u, 8 * u], cap: 'butt' });
@@ -234,7 +234,7 @@ D('xlDashTrack', '破線トラック', 'Dashed Track', ['pop', 'graphic'], 0.9, 
 });
 
 /* 吹き出し線 — the lyric inside a hand-lettered speech balloon outline with a tail (or thought bubbles) */
-D('xlBubbleLine', '吹き出し線', 'Speech Outline', ['pop', 'emotional'], 0.8, 'brackets', (env, bb, p, t, o, u) => {
+D('xlBubbleLine', '말풍선 선', 'Speech Outline', ['pop', 'emotional'], 0.8, 'brackets', (env, bb, p, t, o, u) => {
   const pop = lerp(0.9, 1, E.outBack(cl(t / 0.4), 2)), f0 = frame(env, bb, PAD(bb, u, 1.5)), c = COL(env, p), m = MG(env) * 0.35;
   const f = { x0: f0.cx - f0.w / 2 * pop, x1: f0.cx + f0.w / 2 * pop, y0: f0.cy - f0.h / 2 * pop, y1: f0.cy + f0.h / 2 * pop };
   const r = Math.min(f0.h * 0.38, 44 * u, f0.w / 2), rb = env.H - m - f0.y1, rt = f0.y0 - m;
@@ -256,7 +256,7 @@ D('xlBubbleLine', '吹き出し線', 'Speech Outline', ['pop', 'emotional'], 0.8
 });
 
 /* 変形ハンドル — a design-tool transform box dragged open from one corner: marching ants, eight handles, a rotate stalk and a size readout */
-D('xlTransformBox', '変形ハンドル', 'Transform Box', ['graphic', 'editorial', 'glitch'], 0.9, 'brackets', (env, bb, p, t, o, u) => {
+D('xlTransformBox', '변형 핸들', 'Transform Box', ['graphic', 'editorial', 'glitch'], 0.9, 'brackets', (env, bb, p, t, o, u) => {
   const f = frame(env, bb, PAD(bb, u)), e = ein(t, 0.5), sc = env.sc, m = MG(env) * 0.35;
   const x0 = f.x0, y0 = f.y0, x1 = lerp(f.x0 + 24 * u, f.x1, e), y1 = lerp(f.y0 + 24 * u, f.y1, e), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
   stroke(env, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], sc.fg, 1.6 * u, 0.9 * o, { dash: [7 * u, 5 * u], off: -env.ltb * 18 * u, close: true, cap: 'butt', join: 'miter' });
@@ -276,7 +276,7 @@ D('xlTransformBox', '変形ハンドル', 'Transform Box', ['graphic', 'editoria
 });
 
 /* ピント枠 — autofocus corners with rounded bends that hunt in and out, then lock with a confirm dot */
-D('xlFocusHunt', 'ピント枠', 'Focus Hunt', ['graphic', 'calm', 'emotional'], 1, 'brackets', (env, bb, p, t, o, u) => {
+D('xlFocusHunt', '초점 틀', 'Focus Hunt', ['graphic', 'calm', 'emotional'], 1, 'brackets', (env, bb, p, t, o, u) => {
   const f = frame(env, bb, PAD(bb, u, 1.35)), a = ein(t, 0.25, 0, E.outCubic) * o;
   const hunt = 1 + (0.2 * Math.exp(-t * 4.5) * Math.cos(t * 15) + 0.3 * (1 - ein(t, 0.3))) * (0.35 + 0.65 * env.fx.motion);
   const hw = f.w / 2 * hunt, hh = f.h / 2 * hunt, rr = cl(Math.min(f.w, f.h) * 0.24, 12 * u, 48 * u), lock = t > 0.78;
@@ -296,7 +296,7 @@ D('xlFocusHunt', 'ピント枠', 'Focus Hunt', ['graphic', 'calm', 'emotional'],
 /* ============================================================ brackets */
 
 /* 波括弧 — large curly braces that unfurl from their cusps at both ends of the lyric */
-D('xlCurlyBrace', '波括弧', 'Curly Braces', ['editorial', 'pop', 'graphic'], 1.1, 'brackets', (env, bb, p, t, o, u) => {
+D('xlCurlyBrace', '중괄호', 'Curly Braces', ['editorial', 'pop', 'graphic'], 1.1, 'brackets', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), c = COL(env, p), m = MG(env) * 0.3;
   const c0 = ax.C0 - 8 * u, c1 = ax.C1 + 8 * u, sp = c1 - c0, mid = (c0 + c1) / 2, g = 22 * u;
   const e = ein(t, 0.55), ea = Math.min(e, o);
@@ -311,7 +311,7 @@ D('xlCurlyBrace', '波括弧', 'Curly Braces', ['editorial', 'pop', 'graphic'], 
 });
 
 /* 重ね括弧 — three nested square brackets on each side, fanning outward, a pulse running through them */
-D('xlNestBracket', '重ね括弧', 'Nested Brackets', ['graphic', 'glitch', 'pop'], 1, 'brackets', (env, bb, p, t, o, u) => {
+D('xlNestBracket', '겹괄호', 'Nested Brackets', ['graphic', 'glitch', 'pop'], 1, 'brackets', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), c = COL(env, p), mid = (ax.C0 + ax.C1) / 2, sp = ax.C1 - ax.C0, m = MG(env) * 0.3;
   for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) {
     const e = ein(t, 0.4, k * 0.07); if (e <= 0) continue;
@@ -323,7 +323,7 @@ D('xlNestBracket', '重ね括弧', 'Nested Brackets', ['graphic', 'glitch', 'pop
 });
 
 /* 反復記号 — musical repeat signs: thick + thin bar lines and two dots enclosing the lyric */
-D('xlRepeatBars', '反復記号', 'Repeat Bars', ['pop', 'editorial', 'emotional'], 1, 'brackets', (env, bb, p, t, o, u) => {
+D('xlRepeatBars', '도돌이표', 'Repeat Bars', ['pop', 'editorial', 'emotional'], 1, 'brackets', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), c = COL(env, p), mid = (ax.C0 + ax.C1) / 2, sp = ax.C1 - ax.C0, hh = sp / 2 + 8 * u, m = MG(env) * 0.3;
   const bt = env.beat ? Math.exp(-env.beat.since * 8) : Math.pow(Math.max(0, Math.sin(t * 5)), 6) * 0.6;
   for (const sd of [-1, 1]) {
@@ -338,7 +338,7 @@ D('xlRepeatBars', '反復記号', 'Repeat Bars', ['pop', 'editorial', 'emotional
 /* ============================================================ rules, underlines, overlines */
 
 /* 太細罫 — thick-and-thin "Oxford" rules above and below: the thick ones open from the centre, the thin ones run in from opposite ends */
-D('xlDoubleRule', '太細罫', 'Oxford Rules', ['editorial', 'calm', 'emotional'], 1.3, 'bars', (env, bb, p, t, o, u) => {
+D('xlDoubleRule', '굵고 가는 괘선', 'Oxford Rules', ['editorial', 'calm', 'emotional'], 1.3, 'bars', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), c = COL(env, p), m = MG(env) * 0.4;
   const ext = 26 * u + (p.big ? (ax.L1 - ax.L0) * 0.1 : 0), a0 = Math.max(m, ax.L0 - ext), a1 = Math.min(ax.AM - m, ax.L1 + ext), am = (a0 + a1) / 2;
   const g = 16 * u + (ax.C1 - ax.C0) * 0.1, sep = 10 * u, v = p.v % 3;
@@ -354,7 +354,7 @@ D('xlDoubleRule', '太細罫', 'Oxford Rules', ['editorial', 'calm', 'emotional'
 });
 
 /* 往復矢印 — an arrow shoots along under the lyric, a second one answers above in the opposite direction */
-D('xlArrowRules', '往復矢印', 'Return Arrows', ['graphic', 'pop', 'editorial'], 1, 'arrows', (env, bb, p, t, o, u) => {
+D('xlArrowRules', '왕복 화살표', 'Return Arrows', ['graphic', 'pop', 'editorial'], 1, 'arrows', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), c = COL(env, p), m = MG(env) * 0.5, g = 22 * u + (ax.C1 - ax.C0) * 0.08;
   const a0 = Math.max(m, ax.L0 - 30 * u), a1 = Math.min(ax.AM - m, ax.L1 + 30 * u), fl = p.right ? 1 : -1, one = p.v % 3 === 2;
   const rows = [[Math.min(ax.CM - m, ax.C1 + g), fl, 0], [Math.max(m, ax.C0 - g), -fl, 0.2]];
@@ -371,7 +371,7 @@ D('xlArrowRules', '往復矢印', 'Return Arrows', ['graphic', 'pop', 'editorial
 });
 
 /* クレッシェンド — a musical hairpin opening (or closing) along the lyric, with p / f at its ends */
-D('xlHairpin', 'クレッシェンド', 'Hairpin', ['emotional', 'calm', 'editorial'], 0.9, 'arrows', (env, bb, p, t, o, u) => {
+D('xlHairpin', '크레셴도', 'Hairpin', ['emotional', 'calm', 'editorial'], 0.9, 'arrows', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), c = COL(env, p), len = ax.L1 - ax.L0, m = MG(env) * 0.5;
   const hp = cl(len * 0.07, 30 * u, 84 * u), b = sideBand(env, ax, hp + 8 * u, !ax.vert || !!p.low, 18 * u + (ax.C1 - ax.C0) * 0.06);
   const dec = p.v % 2 === 1, e = ein(t, 0.65, 0, E.outCubic), open = Math.max(4 * u, Math.min(hp, b.h - 6 * u)) / 2 * (0.88 + 0.12 * Math.sin(t * 2.2) * env.fx.motion);
@@ -384,7 +384,7 @@ D('xlHairpin', 'クレッシェンド', 'Hairpin', ['emotional', 'calm', 'editor
 });
 
 /* スラー — a tapered slur arc swept over the lyric from its first glyph to its last */
-D('xlSlur', 'スラー', 'Slur Arc', ['emotional', 'calm', 'pop'], 1, 'waveform', (env, bb, p, t, o, u) => {
+D('xlSlur', '이음줄', 'Slur Arc', ['emotional', 'calm', 'pop'], 1, 'waveform', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), c = COL(env, p), len = ax.L1 - ax.L0, hs = cl(len * 0.07, 16 * u, 56 * u), dash = p.v % 2 === 1;
   const sides = p.big ? [false, true] : [!!p.low];
   sides.forEach((plus, si) => {
@@ -399,7 +399,7 @@ D('xlSlur', 'スラー', 'Slur Arc', ['emotional', 'calm', 'pop'], 1, 'waveform'
 });
 
 /* はしご罫 — a ladder rule: two rails with rungs laid one by one, one lit rung climbing along it */
-D('xlLadder', 'はしご罫', 'Ladder Rule', ['graphic', 'glitch', 'editorial'], 0.8, 'grid', (env, bb, p, t, o, u) => {
+D('xlLadder', '사다리 괘선', 'Ladder Rule', ['graphic', 'glitch', 'editorial'], 0.8, 'grid', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), b = sideBand(env, ax, 26 * u, !!p.low, 16 * u + (ax.C1 - ax.C0) * 0.08), m = MG(env) * 0.5;
   const a0 = Math.max(m, ax.L0 - 10 * u), a1 = Math.min(ax.AM - m, ax.L1 + 10 * u), hw = Math.min(12 * u, b.h / 2), e = ein(t, 0.6, 0, E.outCubic);
   const step = Math.max(26 * u, (a1 - a0) / 110), n = Math.max(1, Math.floor((a1 - a0) / step)), st = (a1 - a0) / n, dir = p.right ? -1 : 1;
@@ -413,7 +413,7 @@ D('xlLadder', 'はしご罫', 'Ladder Rule', ['graphic', 'glitch', 'editorial'],
 });
 
 /* 翼の線 — feathered stacks of parallel lines shooting out from both ends of the lyric like wings */
-D('xlWingLines', '翼の線', 'Wing Lines', ['pop', 'emotional', 'graphic'], 1, 'slash', (env, bb, p, t, o, u) => {
+D('xlWingLines', '날개 선', 'Wing Lines', ['pop', 'emotional', 'graphic'], 1, 'slash', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), c = COL(env, p), m = MG(env) * 0.5, mid = (ax.C0 + ax.C1) / 2, sp = ax.C1 - ax.C0, len = ax.L1 - ax.L0;
   const K = 5, gc = cl(sp / 6, 9 * u, 22 * u), sym = p.v % 2 === 1;
   for (const sd of [-1, 1]) {
@@ -433,7 +433,7 @@ D('xlWingLines', '翼の線', 'Wing Lines', ['pop', 'emotional', 'graphic'], 1, 
 /* ============================================================ measuring & drafting */
 
 /* ノギス — a vernier caliper: a graduated beam, a fixed jaw and a sliding jaw that closes on the lyric's width */
-D('xlCaliper', 'ノギス', 'Caliper', ['graphic', 'editorial'], 0.8, 'leaders', (env, bb, p, t, o, u) => {
+D('xlCaliper', '버니어 캘리퍼스', 'Caliper', ['graphic', 'editorial'], 0.8, 'leaders', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), m = MG(env) * 0.45, hB = 22 * u, c = env.sc.fg, len = ax.L1 - ax.L0, sp = ax.C1 - ax.C0, M = ax.M;
   const b = sideBand(env, ax, hB + 36 * u, !!p.low, 18 * u + sp * 0.06), s = b.s, ci = b.edge, co = b.edge + s * hB;
   const jl = 18 * u + sp * 0.06 + Math.min(sp * 0.45, 80 * u), a = ein(t, 0.3, 0, E.outCubic) * o, sw = 44 * u;
@@ -455,7 +455,7 @@ D('xlCaliper', 'ノギス', 'Caliper', ['graphic', 'editorial'], 0.8, 'leaders',
 });
 
 /* 分度器 — a half-disc protractor standing on the lyric: the scale sweeps on and a needle swings to an angle */
-D('xlProtractor', '分度器', 'Protractor', ['graphic', 'editorial', 'calm'], 0.8, 'rings', (env, bb, p, t, o, u) => {
+D('xlProtractor', '각도기', 'Protractor', ['graphic', 'editorial', 'calm'], 0.8, 'rings', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), sp = ax.C1 - ax.C0, len = ax.L1 - ax.L0, b = sideBand(env, ax, 180 * u, !!p.low, 18 * u + sp * 0.05);
   if (b.room < 44 * u) return;
   const R = cl(Math.min(len * 0.45, b.room - 28 * u), 34 * u, 260 * u), ca = cl((ax.L0 + ax.L1) / 2, R + 10 * u, ax.AM - R - 10 * u), c = env.sc.fg;
@@ -476,7 +476,7 @@ D('xlProtractor', '分度器', 'Protractor', ['graphic', 'editorial', 'calm'], 0
 });
 
 /* 角度記号 — a geometry angle mark at a corner of the lyric: a dashed base ray, a ray that swings open, the arc and its degrees */
-D('xlAngleMark', '角度記号', 'Angle Mark', ['graphic', 'editorial'], 0.8, 'rings', (env, bb, p, t, o, u) => {
+D('xlAngleMark', '각도 표시', 'Angle Mark', ['graphic', 'editorial'], 0.8, 'rings', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = MG(env) * 0.6, c = COL(env, p);
   let sx = p.right ? 1 : -1, sy = p.low ? 1 : -1;
   const vx = s => (s > 0 ? bb.x1 + 10 * u : bb.x0 - 10 * u), rm = s => (s > 0 ? W - m - vx(s) : vx(s) - m);
@@ -500,7 +500,7 @@ D('xlAngleMark', '角度記号', 'Angle Mark', ['graphic', 'editorial'], 0.8, 'r
 });
 
 /* 水準器 — a spirit level beside the lyric: the bubble sloshes and settles between its two lines */
-D('xlLevel', '水準器', 'Spirit Level', ['calm', 'graphic', 'editorial'], 0.8, 'bars', (env, bb, p, t, o, u) => {
+D('xlLevel', '수평계', 'Spirit Level', ['calm', 'graphic', 'editorial'], 0.8, 'bars', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb, true), b = sideBand(env, ax, 40 * u, !!p.low, 16 * u + bh(bb) * 0.07), c = env.sc.fg, m = MG(env) * 0.5;
   const cx = (bb.x0 + bb.x1) / 2, e = ein(t, 0.45), w = cl(bw(bb) * 0.4, 150 * u, 290 * u) * e, h = Math.min(34 * u, b.h), y = b.c, a = Math.min(1, o * 1.5);
   stroke(env, rrectPts(cx - w / 2, y - h / 2, cx + w / 2, y + h / 2, h / 2, 6), c, 2.4 * u, a, { close: true });
@@ -514,7 +514,7 @@ D('xlLevel', '水準器', 'Spirit Level', ['calm', 'graphic', 'editorial'], 0.8,
 });
 
 /* 下げ振り — a plumb line dropped from the top edge: the bob swings like a pendulum and comes to rest */
-D('xlPlumb', '下げ振り', 'Plumb Line', ['calm', 'emotional', 'graphic'], 0.8, 'leaders', (env, bb, p, t, o, u) => {
+D('xlPlumb', '다림추', 'Plumb Line', ['calm', 'emotional', 'graphic'], 0.8, 'leaders', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = MG(env), c = env.sc.fg, wr = W - bb.x1, wl = bb.x0, bob = 46 * u;
   let x, L, lim;
   const side = (p.right ? wr >= 90 * u : wl < 90 * u) ? 1 : -1;
@@ -532,7 +532,7 @@ D('xlPlumb', '下げ振り', 'Plumb Line', ['calm', 'emotional', 'graphic'], 0.8
 });
 
 /* コンパス — a drafting compass in free space: the needle leg stays put while the pencil leg draws a full circle */
-D('xlCompass', 'コンパス', 'Compass Arc', ['graphic', 'editorial', 'calm'], 0.7, 'rings', (env, bb, p, t, o, u) => {
+D('xlCompass', '컴퍼스', 'Compass Arc', ['graphic', 'editorial', 'calm'], 0.7, 'rings', (env, bb, p, t, o, u) => {
   const mn = Math.min(env.W, env.H), R = cl(mn * 0.095, 50 * u, 112 * u), hg = R * 2.1, w = R * 2 + 12 * u, h = hg + R + 28 * u;
   const sp = spot(env, bb, w, h, p, 22 * u), px = sp.x + w / 2, py = sp.y + h - R - 6 * u, dir = p.right ? 1 : -1, a = ein(t, 0.3, 0, E.outCubic) * o;
   const ph0 = (-90 + p.r * 360) * DEG, sw = (TAU * E.inOutCubic(cl((t - 0.25) / 1.2)) + Math.max(0, t - 1.45) * 0.25 * env.fx.motion) * dir, ph = ph0 + sw;
@@ -547,7 +547,7 @@ D('xlCompass', 'コンパス', 'Compass Arc', ['graphic', 'editorial', 'calm'], 
 });
 
 /* ベジェ曲線 — a vector-tool curve beside the lyric: anchor points, control handles that slowly swing, the curve following them */
-D('xlBezier', 'ベジェ曲線', 'Bezier Handles', ['graphic', 'editorial', 'calm'], 1, 'waveform', (env, bb, p, t, o, u) => {
+D('xlBezier', '베지어 곡선', 'Bezier Handles', ['graphic', 'editorial', 'calm'], 1, 'waveform', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), len = ax.L1 - ax.L0, hh0 = cl(len * 0.14, 54 * u, 130 * u), m = MG(env) * 0.5;
   const b = sideBand(env, ax, hh0 + 8 * u, !!p.low, 18 * u + (ax.C1 - ax.C0) * 0.06), hh = Math.max(6 * u, b.h - 8 * u), s = b.s, mo = 0.3 + 0.7 * env.fx.motion;
   const a0 = Math.max(m, ax.L0 - 10 * u), a1 = Math.min(ax.AM - m, ax.L1 + 10 * u), e1 = ein(t, 0.3, 0.1), ph = p.r * 6;
@@ -566,7 +566,7 @@ D('xlBezier', 'ベジェ曲線', 'Bezier Handles', ['graphic', 'editorial', 'cal
 /* ============================================================ connectors, pointers, marks */
 
 /* 張り糸 — strings stretched taut from the lyric's frame to the screen edges, twanging like plucked strings */
-D('xlEdgeTether', '張り糸', 'Edge Tethers', ['graphic', 'emotional', 'glitch'], 1, 'leaders', (env, bb, p, t, o, u) => {
+D('xlEdgeTether', '팽팽한 실', 'Edge Tethers', ['graphic', 'emotional', 'glitch'], 1, 'leaders', (env, bb, p, t, o, u) => {
   const { W, H } = env, f = frame(env, bb, PAD(bb, u, 0.8)), c = env.sc.fg;
   const dirs = [[1, 0], [-1, 0], [0, -1], [0, 1]], n = p.n + 1;
   for (let k = 0; k < n; k++) {
@@ -584,7 +584,7 @@ D('xlEdgeTether', '張り糸', 'Edge Tethers', ['graphic', 'emotional', 'glitch'
 });
 
 /* 手描き矢印 — a hand-drawn arrow swooping in from the free space, its head flicked on at the end */
-D('xlHandArrow', '手描き矢印', 'Sketch Arrow', ['pop', 'emotional', 'editorial'], 1.2, 'arrows', (env, bb, p, t, o, u) => {
+D('xlHandArrow', '손그림 화살표', 'Sketch Arrow', ['pop', 'emotional', 'editorial'], 1.2, 'arrows', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = MG(env) * 0.8, c = COL(env, p), sx = p.right ? 1 : -1, sy = p.low ? 1 : -1;
   const rooms = { r: W - m - bb.x1, l: bb.x0 - m, t: bb.y0 - m, b: H - m - bb.y1 };
   const hs = sx > 0 ? ['r', 'l'] : ['l', 'r'], vs = sy > 0 ? ['b', 't'] : ['t', 'b'];
@@ -608,7 +608,7 @@ D('xlHandArrow', '手描き矢印', 'Sketch Arrow', ['pop', 'emotional', 'editor
 });
 
 /* ちょん線 — three short strokes that flick outward from the lyric's corners, and flick again now and then */
-D('xlAccentTicks', 'ちょん線', 'Accent Ticks', ['pop', 'emotional'], 1.2, 'sparks', (env, bb, p, t, o, u) => {
+D('xlAccentTicks', '콕 표시', 'Accent Ticks', ['pop', 'emotional'], 1.2, 'sparks', (env, bb, p, t, o, u) => {
   const sx = p.right ? 1 : -1, c = COL(env, p), k0 = cl(bh(bb) / (170 * u), 0.8, 1.7);
   const cs = [[sx, -1], [-sx, 1], [-sx, -1]].slice(0, p.n);
   cs.forEach(([cxs, cys], ci) => {
@@ -624,7 +624,7 @@ D('xlAccentTicks', 'ちょん線', 'Accent Ticks', ['pop', 'emotional'], 1.2, 's
 });
 
 /* 旗ピン — a pin planted at a corner of the lyric: the pole rises and a pennant unfurls and flutters */
-D('xlPennant', '旗ピン', 'Pennant Pin', ['pop', 'graphic'], 0.9, 'shapes', (env, bb, p, t, o, u) => {
+D('xlPennant', '깃발 핀', 'Pennant Pin', ['pop', 'graphic'], 0.9, 'shapes', (env, bb, p, t, o, u) => {
   const { W, H } = env, m = MG(env) * 0.5, rt = bb.y0 - m, rb = H - m - bb.y1, sy = rt >= 60 * u || rt >= rb ? -1 : 1, room = sy < 0 ? rt : rb;
   const hgt = cl(room * 0.8, 24 * u, 120 * u), xs = p.big ? [p.right ? 1 : -1, p.right ? -1 : 1] : [p.right ? 1 : -1], c = COL(env, { accent: !p.accent });
   xs.forEach((sx, k) => {
@@ -641,7 +641,7 @@ D('xlPennant', '旗ピン', 'Pennant Pin', ['pop', 'graphic'], 0.9, 'shapes', (e
 });
 
 /* チェック欄 — a drawn check box (or circle) beside the lyric, ticked by hand with an overshooting stroke */
-D('xlCheckBox', 'チェック欄', 'Check Box', ['pop', 'editorial'], 0.8, 'shapes', (env, bb, p, t, o, u) => {
+D('xlCheckBox', '체크란', 'Check Box', ['pop', 'editorial'], 0.8, 'shapes', (env, bb, p, t, o, u) => {
   const s = cl(Math.min(bw(bb), bh(bb)) * 0.5, 46 * u, 92 * u), sp = spot(env, bb, s * 1.25, s * 1.25, Object.assign({}, p, { corner: false }), 18 * u), x = sp.x + s * 0.05, y = sp.y + s * 0.2, sd = p.seed;
   const j = k => J.rs(sd, k) * s * 0.035, a = Math.min(1, o * 1.6), k = s / (44 * u);
   let pts;
@@ -654,7 +654,7 @@ D('xlCheckBox', 'チェック欄', 'Check Box', ['pop', 'editorial'], 0.8, 'shap
 });
 
 /* 切り取り線 — a dashed cut line across the screen, opened by a pair of scissors that keeps snipping */
-D('xlCutLine', '切り取り線', 'Cut Line', ['pop', 'editorial', 'graphic'], 0.9, 'slash', (env, bb, p, t, o, u) => {
+D('xlCutLine', '절취선', 'Cut Line', ['pop', 'editorial', 'graphic'], 0.9, 'slash', (env, bb, p, t, o, u) => {
   const ax = axes(env, bb), b = sideBand(env, ax, 56 * u, !!p.low, 16 * u + (ax.C1 - ax.C0) * 0.08), c = env.sc.fg, rev = !!p.right, ctx = env.ctx;
   const mv = E.inOutCubic(cl(t / 0.85)), s = ax.AM * lerp(0.03, 0.88, mv) + Math.max(0, t - 0.85) * 5 * u * env.fx.motion, X = a => (rev ? ax.AM - a : a);
   const A = ax.M(X(ax.AM * (1 - o) * 0.9), b.c), B = ax.M(X(Math.max(0, s - 28 * u)), b.c), a = Math.min(1, o * 1.6);
@@ -673,7 +673,7 @@ D('xlCutLine', '切り取り線', 'Cut Line', ['pop', 'editorial', 'graphic'], 0
 });
 
 /* 縫い目 — a seam stitched round the screen margin (running, zig-zag or cross stitch) by a travelling needle */
-D('xlSeam', '縫い目', 'Stitched Seam', ['pop', 'emotional', 'calm'], 0.8, 'leaders', (env, bb, p, t, o, u) => {
+D('xlSeam', '바느질 자국', 'Stitched Seam', ['pop', 'emotional', 'calm'], 0.8, 'leaders', (env, bb, p, t, o, u) => {
   const { W, H } = env, ins = MG(env) * 0.55, c = COL(env, p), v = p.v % 3;
   const pa = mk(rrectPts(ins, ins, W - ins, H - ins, 20 * u, 5), true), L = pa.L, a = 0.85 * Math.min(1, o * 1.5);
   const st0 = pa.L * ((p.right ? 0.25 : 0) + (p.low ? 0.5 : 0)), spans = [];

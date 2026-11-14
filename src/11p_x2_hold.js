@@ -142,7 +142,7 @@ const H = {};
 
 /* depth rock: the line turns about its vertical axis like a card — one end comes forward (bigger, wider), the other recedes */
 H.xkDepthRock = {
-  name: '奥行きゆれ', en: 'Depth Rock', tags: ['calm', 'editorial', 'emotional'], w: 1.2, ae: 'breathe',
+  name: '깊이 흔들림', en: 'Depth Rock', tags: ['calm', 'editorial', 'emotional'], w: 1.2, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const a = Math.sin(env.ltb * TAU / 5.2 + cphase(env)) * Math.min(k, 1.4);
@@ -161,7 +161,7 @@ H.xkDepthRock = {
 
 /* parallax: every glyph sits on one of three depth planes; the planes slide against each other as if the camera trucked sideways */
 H.xkParallax = {
-  name: '視差ゆれ', en: 'Parallax Sway', tags: ['calm', 'graphic', 'emotional'], w: 1, ae: 'drift',
+  name: '시차 흔들림', en: 'Parallax Sway', tags: ['calm', 'graphic', 'emotional'], w: 1, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const cs = cseed(env), sz = it.size, kk = Math.min(1, k), mi = Math.round(+it.mi || 0), single = isSingle(env, it);
@@ -176,7 +176,7 @@ H.xkParallax = {
 
 /* tall breath: the letters grow taller from the baseline and sink back — a slow inhale, a quicker exhale; the width never changes */
 H.xkTallBreath = {
-  name: '縦の呼吸', en: 'Tall Breath', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'breathe',
+  name: '세로 호흡', en: 'Tall Breath', tags: ['calm', 'emotional', 'editorial'], w: 1, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const u = frac(env.ltb / 3.8), b = u < 0.62 ? E.inOutSine(u / 0.62) : 1 - E.inOutSine((u - 0.62) / 0.38);
@@ -188,7 +188,7 @@ H.xkTallBreath = {
 
 /* beat bump: on every beat something nudges the line from a new side; it gives way and springs back to rest */
 H.xkBeatBump = {
-  name: '拍で小突く', en: 'Beat Bump', tags: ['pop', 'graphic'], w: 1, ae: 'jitter',
+  name: '박자 톡', en: 'Beat Bump', tags: ['pop', 'graphic'], w: 1, ae: 'jitter',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const cs = cseed(env), s = beatSince(env, 0.6), idx = beatIdx(env, 0.6), sz = it.size;
@@ -202,7 +202,7 @@ H.xkBeatBump = {
 
 /* metronome: an inverted pendulum pivoting below the text — it swings over on the beat and waits at each end */
 H.xkMetronome = {
-  name: 'メトロノーム', en: 'Metronome', tags: ['pop', 'graphic', 'editorial'], w: 0.6, ae: 'wave',
+  name: '메트로놈', en: 'Metronome', tags: ['pop', 'graphic', 'editorial'], w: 0.6, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const len = beatLen(env, 0.62), s = beatSince(env, 0.62), idx = beatIdx(env, 0.62);
@@ -214,7 +214,7 @@ H.xkMetronome = {
 
 /* buoy: the whole line rides a slow swell as one rigid body — it rises, and tips as each wave passes under it */
 H.xkBuoy = {
-  name: '波に浮かぶ', en: 'Buoy', tags: ['calm', 'emotional'], w: 1.2, ae: 'drift',
+  name: '물결에 뜬 부표', en: 'Buoy', tags: ['calm', 'emotional'], w: 1.2, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb, ph = cphase(env), w = TAU / 3.4, sz = it.size, B = lBox(it);
@@ -227,7 +227,7 @@ H.xkBuoy = {
 
 /* creep & snap: the line slowly slips out of true, then is knocked straight again with a small overshoot */
 H.xkTiltSnap = {
-  name: 'ずれて直る', en: 'Creep & Snap', tags: ['pop', 'editorial', 'glitch'], w: 0.7, ae: 'drift',
+  name: '어긋났다 바로잡힘', en: 'Creep & Snap', tags: ['pop', 'editorial', 'glitch'], w: 0.7, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     let cyc, u;
@@ -243,7 +243,7 @@ H.xkTiltSnap = {
 
 /* stop motion: a slow sway and bob, but shot on threes — the line holds each pose for three frames like a puppet film */
 H.xkStopMotion = {
-  name: 'コマ撮りゆれ', en: 'Stop Motion', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'jitter',
+  name: '스톱모션 흔들림', en: 'Stop Motion', tags: ['pop', 'graphic', 'glitch'], w: 0.8, ae: 'jitter',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const q = Math.floor(env.step / 3), cs = cseed(env), seed = it.seed | 0, sz = it.size, B = lBox(it);
@@ -255,7 +255,7 @@ H.xkStopMotion = {
 
 /* slide & bunch: the floor tilts; the glyphs slide downhill and crowd at the low end, then the floor tips the other way */
 H.xkSlideBunch = {
-  name: '片寄り', en: 'Slide & Bunch', tags: ['pop', 'calm'], w: 0.8, ae: 'wave',
+  name: '한쪽 쏠림', en: 'Slide & Bunch', tags: ['pop', 'calm'], w: 0.8, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const t = env.ltb * TAU / 4.4 + cphase(env), tiltV = Math.sin(t), slide = Math.sin(t - 0.9);
@@ -268,7 +268,7 @@ H.xkSlideBunch = {
 
 /* wall bounce: the line glides sideways at a steady pace and rebounds off invisible walls, flattening a little on each hit */
 H.xkWallBounce = {
-  name: '壁で弾む', en: 'Wall Bounce', tags: ['pop', 'graphic'], w: 0.6, ae: 'drift',
+  name: '벽에 튕김', en: 'Wall Bounce', tags: ['pop', 'graphic'], w: 0.6, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const T = 1.5, p = env.ltb / T, tri = Math.asin(Math.sin(Math.PI * p)) * 2 / Math.PI, vert = !!it.vertical;
@@ -287,7 +287,7 @@ H.xkWallBounce = {
 
 /* focus breath: now and then the lens drifts — the text swells a touch and goes soft, then pulls sharp again */
 H.xkFocusBreath = {
-  name: 'ピントの呼吸', en: 'Focus Breath', tags: ['calm', 'emotional'], w: 0.7, ae: 'breathe',
+  name: '초점 호흡', en: 'Focus Breath', tags: ['calm', 'emotional'], w: 0.7, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const per = 2.9, T = env.ltb - 0.55; if (T < 0) return;
@@ -302,7 +302,7 @@ H.xkFocusBreath = {
 
 /* double vision: two faint images of the line slide out from behind it and merge back, like eyes losing and finding focus */
 H.xkDoubleVision = {
-  name: '二重像', en: 'Double Vision', tags: ['emotional', 'glitch', 'calm'], w: 0.8, ae: 'drift',
+  name: '이중상', en: 'Double Vision', tags: ['emotional', 'glitch', 'calm'], w: 0.8, ae: 'drift',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01 || !primary(it)) return;
     const t = env.ltb, ph = cphase(env), kk = Math.min(1, k);
@@ -319,7 +319,7 @@ H.xkDoubleVision = {
 
 /* floor reflection: the bottom line stands on a glossy floor — a faint mirrored image below it that ripples like water */
 H.xkReflection = {
-  name: '床の映り込み', en: 'Floor Reflection', tags: ['calm', 'emotional', 'editorial'], w: 0.7, ae: 'still',
+  name: '바닥 반사', en: 'Floor Reflection', tags: ['calm', 'emotional', 'editorial'], w: 0.7, ae: 'still',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01 || !primary(it)) return;
     const lay = layOf(it), vert = !!it.vertical, t = env.ltb, sz = it.size, sy0 = it.sy || 1, kk = Math.min(1, k);
@@ -347,7 +347,7 @@ H.xkReflection = {
 
 /* marching edge: a dashed contour in the second colour runs round every glyph like the "marching ants" of a selection */
 H.xkMarchEdge = {
-  name: '走る破線', en: 'Marching Edge', tags: ['graphic', 'pop', 'glitch'], w: 0.6, ae: 'still',
+  name: '달리는 파선', en: 'Marching Edge', tags: ['graphic', 'pop', 'glitch'], w: 0.6, ae: 'still',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01 || (it.alpha ?? 1) < 0.5) return;
     const sz = it.size, kk = Math.min(1, k), t = env.ltb;
@@ -368,7 +368,7 @@ H.xkMarchEdge = {
 
 /* heat haze: the line shimmers as if seen through rising hot air — thin horizontal slices waver in a travelling ripple */
 H.xkHeatHaze = {
-  name: '陽炎', en: 'Heat Haze', tags: ['emotional', 'calm', 'glitch'], w: 0.7, ae: 'wave',
+  name: '아지랑이', en: 'Heat Haze', tags: ['emotional', 'calm', 'glitch'], w: 0.7, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01 || it.bands || it.vbands) return;
     const sz = it.size, t = env.ltb, seed = it.seed | 0, bb = dBox(it, sz * 0.12), n = 9;
@@ -382,7 +382,7 @@ H.xkHeatHaze = {
 
 /* split shear: the upper and lower halves of the line glide past each other and lock back together */
 H.xkSplitShear = {
-  name: '上下すれ違い', en: 'Split Shear', tags: ['graphic', 'glitch', 'pop'], w: 0.6, ae: 'glitchtick',
+  name: '상하 엇갈림', en: 'Split Shear', tags: ['graphic', 'glitch', 'pop'], w: 0.6, ae: 'glitchtick',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01 || it.bands || it.vbands) return;
     const per = 2.4, T = env.ltb - 0.4; if (T < 0) return;
@@ -400,7 +400,7 @@ H.xkSplitShear = {
 
 /* level fill: the glyphs are vessels — the second colour stands in them like a liquid and its level follows the loudness */
 H.xkLevelFill = {
-  name: '音量の水位', en: 'Level Fill', tags: ['pop', 'graphic'], w: 0.7, ae: 'breathe',
+  name: '음량 수위', en: 'Level Fill', tags: ['pop', 'graphic'], w: 0.7, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const seed = cseed(env), lv = loud(env, seed, 1.3), kk = Math.min(1, k);
@@ -413,7 +413,7 @@ H.xkLevelFill = {
 
 /* loud weight: the strokes put on weight with the loudness — the type goes from its own weight to extra bold and back */
 H.xkLoudWeight = {
-  name: '音圧で太る', en: 'Loud Weight', tags: ['pop', 'graphic', 'emotional'], w: 0.8, ae: 'breathe',
+  name: '음압으로 굵어짐', en: 'Loud Weight', tags: ['pop', 'graphic', 'emotional'], w: 0.8, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const lv = loud(env, cseed(env), 2.1), sz = it.size;
@@ -426,7 +426,7 @@ H.xkLoudWeight = {
 
 /* loud arch: the baseline bows upward with the loudness — a flat line when quiet, a proud arch when loud */
 H.xkLoudArch = {
-  name: '音圧アーチ', en: 'Loud Arch', tags: ['pop', 'emotional'], w: 0.7, ae: 'wave',
+  name: '음압 아치', en: 'Loud Arch', tags: ['pop', 'emotional'], w: 0.7, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const lv = loud(env, cseed(env), 1.7), sz = it.size, S = seqOf(env, it);
@@ -449,7 +449,7 @@ H.xkLoudArch = {
 
 /* magnifier: an invisible lens travels to and fro along the line; glyphs under it swell and push their neighbours aside */
 H.xkMagnifier = {
-  name: '虫めがね', en: 'Magnifier', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'wave',
+  name: '돋보기', en: 'Magnifier', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const S = seqOf(env, it), kk = Math.min(k, 1.2), sz = it.size, sy0 = it.sy || 1, vert = !!it.vertical;
@@ -465,7 +465,7 @@ H.xkMagnifier = {
 
 /* nodding: one glyph after another bows forward from its foot and straightens up, a beat apart */
 H.xkNod = {
-  name: '順にうなずく', en: 'Nodding', tags: ['pop', 'calm'], w: 0.8, ae: 'wave',
+  name: '차례로 끄덕임', en: 'Nodding', tags: ['pop', 'calm'], w: 0.8, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const len = beatLen(env, 0.5), u = beatSince(env, 0.5) / Math.min(len * 0.95, 0.6); if (u >= 1) return;
@@ -486,7 +486,7 @@ H.xkNod = {
 
 /* karaoke fill: the second colour wipes through the line from its first glyph to its last, stays a moment, and drains the same way */
 H.xkKaraoke = {
-  name: 'カラオケ塗り', en: 'Karaoke Fill', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'still',
+  name: '가라오케 칠', en: 'Karaoke Fill', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'still',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01 || (it.alpha ?? 1) < 0.5) return;
     const S = seqOf(env, it), N = cutN(env), per = J.clamp(1.5 + N * 0.16, 2.2, 4), T = env.ltb - 0.25; if (T < 0) return;
@@ -510,7 +510,7 @@ H.xkKaraoke = {
 
 /* pair up: neighbours lean together two by two; then everyone lets go and pairs up with the neighbour on the other side */
 H.xkPairUp = {
-  name: '寄り添う', en: 'Pair Up', tags: ['emotional', 'pop', 'calm'], w: 0.8, ae: 'wave',
+  name: '나란히 붙기', en: 'Pair Up', tags: ['emotional', 'pop', 'calm'], w: 0.8, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const per = env.beat && env.beat.len ? env.beat.len * 2 : 1.5, T = env.ltb / per, cyc = Math.floor(T), e = E.inOutCubic(J.clamp((T - cyc) / 0.4));
@@ -527,7 +527,7 @@ H.xkPairUp = {
 
 /* ripple out: a drop lands on one glyph; a ring travels outward along the line both ways, lifting each glyph as it passes */
 H.xkRippleOut = {
-  name: '波紋', en: 'Ripple Out', tags: ['calm', 'emotional', 'pop'], w: 1, ae: 'wave',
+  name: '잔물결', en: 'Ripple Out', tags: ['calm', 'emotional', 'pop'], w: 1, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     let cyc, since;
@@ -547,7 +547,7 @@ H.xkRippleOut = {
 
 /* zigzag flip: odd glyphs sit a little high, even ones a little low — and on every beat they trade places with a snap */
 H.xkZigzagFlip = {
-  name: '互い違い拍', en: 'Zigzag Flip', tags: ['pop', 'graphic'], w: 0.7, ae: 'jitter',
+  name: '엇갈린 박자', en: 'Zigzag Flip', tags: ['pop', 'graphic'], w: 0.7, ae: 'jitter',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const s = beatSince(env, 0.55), idx = beatIdx(env, 0.55), to = idx % 2 ? 1 : -1;
@@ -559,7 +559,7 @@ H.xkZigzagFlip = {
 
 /* spin one: every so often a single glyph turns one full turn on the spot, like a coin spun on a table, and settles */
 H.xkSpinOne = {
-  name: '一字くるり', en: 'Spin One', tags: ['pop', 'graphic'], w: 0.6, ae: 'glitchtick',
+  name: '한 글자 빙글', en: 'Spin One', tags: ['pop', 'graphic'], w: 0.6, ae: 'glitchtick',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const per = 1.5, T = env.ltb - 0.35; if (T < 0) return;
@@ -577,7 +577,7 @@ H.xkSpinOne = {
 
 /* blink: the whole line blinks like an eye — the glyphs shut to a slit in a quick ripple and open again, sometimes twice */
 H.xkBlink = {
-  name: 'まばたき', en: 'Blink', tags: ['pop', 'emotional', 'glitch'], w: 0.6, ae: 'glitchtick',
+  name: '눈깜빡임', en: 'Blink', tags: ['pop', 'emotional', 'glitch'], w: 0.6, ae: 'glitchtick',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const per = 2.5, T = env.ltb - 0.7; if (T < 0) return;
@@ -596,7 +596,7 @@ H.xkBlink = {
 
 /* stair step: the glyphs stand on a three-step staircase that moves along the line one glyph per tick, in hard steps */
 H.xkStairStep = {
-  name: '階段送り', en: 'Stair Step', tags: ['graphic', 'pop', 'glitch'], w: 0.7, ae: 'jitter',
+  name: '계단 넘김', en: 'Stair Step', tags: ['graphic', 'pop', 'glitch'], w: 0.7, ae: 'jitter',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     let b, e;
@@ -610,7 +610,7 @@ H.xkStairStep = {
 
 /* big small swap: every other glyph grows while its neighbours shrink, all standing on the baseline; then they trade sizes */
 H.xkBigSmall = {
-  name: '大小交代', en: 'Big Small Swap', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'breathe',
+  name: '크고 작음 교대', en: 'Big Small Swap', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'breathe',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const v = J.clamp(Math.sin(env.ltb * TAU / 3.2 + cphase(env)) * 1.7, -1, 1) * 0.1 * Math.min(k, 1.3);
@@ -624,7 +624,7 @@ H.xkBigSmall = {
 
 /* cradle: like Newton's cradle — the last glyph swings out and falls back, the knock runs through, and the first one swings out */
 H.xkCradle = {
-  name: '振り子玉', en: "Newton's Cradle", tags: ['pop', 'graphic', 'calm'], w: 0.6, ae: 'wave',
+  name: '뉴턴의 요람', en: "Newton's Cradle", tags: ['pop', 'graphic', 'calm'], w: 0.6, ae: 'wave',
   apply(env, it, amt) {
     const k = amt * motionK(env); if (k < 0.01) return;
     const half = env.beat && env.beat.len ? Math.max(0.35, env.beat.len) : 0.62, T = env.ltb / half, hc = Math.floor(T), u = T - hc;

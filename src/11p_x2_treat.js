@@ -121,7 +121,7 @@ const uv = (V, u, v) => (V ? [v, u] : [u, v]);
    ================================================================ */
 
 /* 横流し色 — the colour runs from the text colour to an accent glyph by glyph along the line (or peaks in the middle) */
-reg('xoRampAcross', { name: '横流し色', en: 'Colour Ramp', tags: ['pop', 'emotional', 'graphic'], w: 1, ae: 'gradientV',
+reg('xoRampAcross', { name: '가로 흐름 색', en: 'Colour Ramp', tags: ['pop', 'emotional', 'graphic'], w: 1, ae: 'gradientV',
   plan: rng => ({ v: rng.pick(['ramp', 'ramp', 'mid']), rev: rng.chance(0.4) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -140,7 +140,7 @@ reg('xoRampAcross', { name: '横流し色', en: 'Colour Ramp', tags: ['pop', 'em
   } });
 
 /* 中帯色 — a belt of accent colour runs through the waist of every glyph, set off by two hairline gaps */
-reg('xoBeltBand', { name: '中帯色', en: 'Belt Band', tags: ['pop', 'graphic'], w: 0.9, ae: 'splitColor',
+reg('xoBeltBand', { name: '가운데 띠 색', en: 'Belt Band', tags: ['pop', 'graphic'], w: 0.9, ae: 'splitColor',
   plan: rng => ({ at: rng.range(0.36, 0.43), h: rng.range(0.2, 0.26) }),
   apply(env, it, Pt) {
     if (!alive(it) || inPieces(env, it)) return;
@@ -149,7 +149,7 @@ reg('xoBeltBand', { name: '中帯色', en: 'Belt Band', tags: ['pop', 'graphic']
   } });
 
 /* 折り目 — every glyph is split down the middle: one half in a shaded tone (like folded paper) or an accent */
-reg('xoFoldHalf', { name: '折り目', en: 'Folded Halves', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'splitColor',
+reg('xoFoldHalf', { name: '접은 자국', en: 'Folded Halves', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'splitColor',
   plan: rng => ({ v: rng.pick(['tone', 'tone', 'acc']), at: rng.range(-0.04, 0.04) }),
   apply(env, it, Pt) {
     if (!alive(it) || inPieces(env, it)) return;
@@ -166,7 +166,7 @@ reg('xoFoldHalf', { name: '折り目', en: 'Folded Halves', tags: ['graphic', 'p
   } });
 
 /* 斜め二色 — one slanted edge crosses the whole lyric; everything past it is printed in the second colour */
-reg('xoDiagSplit', { name: '斜め二色', en: 'Diagonal Split', tags: ['graphic', 'pop', 'glitch'], w: 1, ae: 'splitColor',
+reg('xoDiagSplit', { name: '사선 두 색', en: 'Diagonal Split', tags: ['graphic', 'pop', 'glitch'], w: 1, ae: 'splitColor',
   plan: rng => ({ ang: rng.pick([24, 32, 40, 148, 156]), at: rng.range(-0.12, 0.12) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -192,7 +192,7 @@ reg('xoDiagSplit', { name: '斜め二色', en: 'Diagonal Split', tags: ['graphic
   } });
 
 /* 方眼塗り — graph-paper fill: a fine grid in the text colour over a pale tone, held by a keyline */
-reg('xoGraphFill', { name: '方眼塗り', en: 'Graph Fill', tags: ['graphic', 'editorial', 'pop'], w: 0.6, ae: 'hatch',
+reg('xoGraphFill', { name: '모눈 채우기', en: 'Graph Fill', tags: ['graphic', 'editorial', 'pop'], w: 0.6, ae: 'hatch',
   plan: rng => ({ v: rng.pick(['tone', 'tone', 'duo']) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -204,7 +204,7 @@ reg('xoGraphFill', { name: '方眼塗り', en: 'Graph Fill', tags: ['graphic', '
   } });
 
 /* 裾ぼかし — the glyphs dissolve toward their feet (or their heads) into nothing */
-reg('xoFadeHem', { name: '裾ぼかし', en: 'Faded Hem', tags: ['emotional', 'calm', 'editorial'], w: 0.8, safe: true, ae: 'gradientV',
+reg('xoFadeHem', { name: '밑단 흐림', en: 'Faded Hem', tags: ['emotional', 'calm', 'editorial'], w: 0.8, safe: true, ae: 'gradientV',
   plan: rng => ({ up: rng.chance(0.3), k: rng.range(0.34, 0.46), lo: rng.range(0.06, 0.14) }),
   apply(env, it, Pt) {
     if (!alive(it) || inPieces(env, it)) return;
@@ -215,7 +215,7 @@ reg('xoFadeHem', { name: '裾ぼかし', en: 'Faded Hem', tags: ['emotional', 'c
   } });
 
 /* 半分網点 — the top of every glyph is solid ink, the lower part is screened into dots */
-reg('xoHalfScreen', { name: '半分網点', en: 'Half Screen', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'halftone',
+reg('xoHalfScreen', { name: '반 망점', en: 'Half Screen', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'halftone',
   plan: rng => ({ at: rng.range(-0.02, 0.09), pat: rng.pick(['dots', 'dots', 'lines']) }),
   apply(env, it, Pt) {
     if (!alive(it) || inPieces(env, it)) return;
@@ -230,7 +230,7 @@ reg('xoHalfScreen', { name: '半分網点', en: 'Half Screen', tags: ['pop', 'gr
   } });
 
 /* ボーダー柄 — broad horizontal bands of two colours, like a striped shirt */
-reg('xoBorderBands', { name: 'ボーダー柄', en: 'Border Stripes', tags: ['pop', 'graphic'], w: 0.7, ae: 'stripes',
+reg('xoBorderBands', { name: '보더 줄무늬', en: 'Border Stripes', tags: ['pop', 'graphic'], w: 0.7, ae: 'stripes',
   plan: rng => ({ n: rng.pick([5, 5, 6, 7]), first: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it) || inPieces(env, it)) return;
@@ -244,7 +244,7 @@ reg('xoBorderBands', { name: 'ボーダー柄', en: 'Border Stripes', tags: ['po
    ================================================================ */
 
 /* 等高線 — hollow glyphs drawn as three concentric contour lines */
-reg('xoContour', { name: '等高線', en: 'Contour Lines', tags: ['graphic', 'editorial', 'calm', 'glitch'], w: 0.7, ae: 'doubleOutline',
+reg('xoContour', { name: '등고선', en: 'Contour Lines', tags: ['graphic', 'editorial', 'calm', 'glitch'], w: 0.7, ae: 'doubleOutline',
   plan: rng => ({ u: rng.range(0.016, 0.02), c: rng.chance(0.4) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.5) || inPieces(env, it)) return;
@@ -261,7 +261,7 @@ reg('xoContour', { name: '等高線', en: 'Contour Lines', tags: ['graphic', 'ed
   } });
 
 /* 切り取り線 — solid glyphs with a dashed coupon line running around them at a distance */
-reg('xoCutLine', { name: '切り取り線', en: 'Cut Line', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'dotted',
+reg('xoCutLine', { name: '절취선', en: 'Cut Line', tags: ['pop', 'graphic', 'editorial'], w: 0.8, ae: 'dotted',
   plan: rng => ({ d: rng.range(0.15, 0.19), c: rng.int(0, 1) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -281,7 +281,7 @@ reg('xoCutLine', { name: '切り取り線', en: 'Cut Line', tags: ['pop', 'graph
   } });
 
 /* 交互袋 — solid and hollow glyphs take turns (or: kana hollow, kanji solid) */
-reg('xoAltHollow', { name: '交互袋', en: 'Alternating Hollow', tags: ['graphic', 'pop', 'editorial'], w: 1, safe: true, ae: 'outline',
+reg('xoAltHollow', { name: '교차 속빈 글자', en: 'Alternating Hollow', tags: ['graphic', 'pop', 'editorial'], w: 1, safe: true, ae: 'outline',
   plan: rng => ({ v: rng.pick(['alt', 'alt', 'kana']), first: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.5) || inPieces(env, it)) return;
@@ -294,7 +294,7 @@ reg('xoAltHollow', { name: '交互袋', en: 'Alternating Hollow', tags: ['graphi
   } });
 
 /* 二重線字 — no fill at all: two hairline outlines in two colours, knocked apart */
-reg('xoTwinOutline', { name: '二重線字', en: 'Twin Outline', tags: ['graphic', 'glitch', 'editorial'], w: 0.7, ae: 'outline',
+reg('xoTwinOutline', { name: '이중선 글자', en: 'Twin Outline', tags: ['graphic', 'glitch', 'editorial'], w: 0.7, ae: 'outline',
   plan: rng => ({ d: rng.range(0.045, 0.065), dir: rng.pick([[1, 1], [1, 1], [-1, 1], [1, 0], [0.5, -1]]), k: rng.range(0.024, 0.03) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.5) || inPieces(env, it)) return;
@@ -309,7 +309,7 @@ reg('xoTwinOutline', { name: '二重線字', en: 'Twin Outline', tags: ['graphic
   } });
 
 /* 塊抜き — a fat rounded rim fuses the line into one blob of text colour; the glyphs are knocked out of it */
-reg('xoBlobKnock', { name: '塊抜き', en: 'Blob Knockout', tags: ['pop', 'graphic'], w: 0.8, ae: 'sticker',
+reg('xoBlobKnock', { name: '덩어리 뚫기', en: 'Blob Knockout', tags: ['pop', 'graphic'], w: 0.8, ae: 'sticker',
   plan: rng => ({ k: rng.range(0.26, 0.34) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || inPieces(env, it)) return;
@@ -331,7 +331,7 @@ reg('xoBlobKnock', { name: '塊抜き', en: 'Blob Knockout', tags: ['pop', 'grap
    ================================================================ */
 
 /* 浮き彫り — a light edge on one side and a dark edge on the other make the glyphs stand out like a relief */
-reg('xoEmboss', { name: '浮き彫り', en: 'Emboss', tags: ['calm', 'editorial', 'graphic', 'emotional'], w: 0.8, ae: 'hardShadow',
+reg('xoEmboss', { name: '양각', en: 'Emboss', tags: ['calm', 'editorial', 'graphic', 'emotional'], w: 0.8, ae: 'hardShadow',
   plan: rng => ({ d: rng.range(0.028, 0.038), flip: rng.chance(0.25) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -352,7 +352,7 @@ reg('xoEmboss', { name: '浮き彫り', en: 'Emboss', tags: ['calm', 'editorial'
   } });
 
 /* 縞立体 — the extruded side is built from three bands of alternating colour */
-reg('xoBandExtrude', { name: '縞立体', en: 'Banded Extrude', tags: ['pop', 'graphic'], w: 0.8, ae: 'extrude',
+reg('xoBandExtrude', { name: '줄무늬 입체', en: 'Banded Extrude', tags: ['pop', 'graphic'], w: 0.8, ae: 'extrude',
   plan: rng => ({ d: rng.range(0.15, 0.2), dir: rng.pick([[1, 1], [1, 1], [-1, 1], [1, 0.5]]) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -374,7 +374,7 @@ reg('xoBandExtrude', { name: '縞立体', en: 'Banded Extrude', tags: ['pop', 'g
   } });
 
 /* 床影 — the glyphs stand on a floor and throw a slanted, fading shadow toward the viewer */
-reg('xoFloorShadow', { name: '床影', en: 'Floor Shadow', tags: ['emotional', 'calm', 'editorial', 'graphic'], w: 0.7, ae: 'longShadow',
+reg('xoFloorShadow', { name: '바닥 그림자', en: 'Floor Shadow', tags: ['emotional', 'calm', 'editorial', 'graphic'], w: 0.7, ae: 'longShadow',
   plan: rng => ({ k: rng.range(0.42, 0.56), sk: rng.range(0.55, 0.9) * (rng.chance(0.5) ? 1 : -1), a: rng.range(0.7, 0.9) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9)) return;
@@ -399,7 +399,7 @@ reg('xoFloorShadow', { name: '床影', en: 'Floor Shadow', tags: ['emotional', '
   } });
 
 /* 接地影 — a small oval contact shadow under every glyph; it shrinks when the glyph leaves the ground */
-reg('xoGroundDots', { name: '接地影', en: 'Ground Shadows', tags: ['pop', 'calm', 'emotional'], w: 0.8, ae: 'softShadow',
+reg('xoGroundDots', { name: '접지 그림자', en: 'Ground Shadows', tags: ['pop', 'calm', 'emotional'], w: 0.8, ae: 'softShadow',
   plan: rng => ({ w: rng.range(0.4, 0.48), h: rng.range(0.05, 0.065) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9)) return;
@@ -426,7 +426,7 @@ reg('xoGroundDots', { name: '接地影', en: 'Ground Shadows', tags: ['pop', 'ca
   } });
 
 /* 白抜き立体 — sign-painter block: the face is left in the paper colour with a keyline, the solid side carries the colour */
-reg('xoHollowBlock', { name: '白抜き立体', en: 'Hollow Block', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'extrude',
+reg('xoHollowBlock', { name: '속빈 입체', en: 'Hollow Block', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'extrude',
   plan: rng => ({ d: rng.range(0.09, 0.13), dir: rng.pick([[1, 1], [1, 1], [-1, 1], [1, 0.5]]), k: rng.range(0.026, 0.034) }),
   apply(env, it, Pt) {
     if (!alive(it) || inPieces(env, it)) return;
@@ -441,7 +441,7 @@ reg('xoHollowBlock', { name: '白抜き立体', en: 'Hollow Block', tags: ['pop'
   } });
 
 /* 拡大写し — a pale blown-up copy of the lyric swells out behind it */
-reg('xoBlowUp', { name: '拡大写し', en: 'Blow-Up Ghost', tags: ['emotional', 'graphic', 'glitch'], w: 0.5, safe: true, ae: 'echoOutline',
+reg('xoBlowUp', { name: '확대 잔상', en: 'Blow-Up Ghost', tags: ['emotional', 'graphic', 'glitch'], w: 0.5, safe: true, ae: 'echoOutline',
   plan: rng => ({ k: rng.range(1.24, 1.4), a: rng.range(0.1, 0.15) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9)) return;
@@ -460,7 +460,7 @@ reg('xoBlowUp', { name: '拡大写し', en: 'Blow-Up Ghost', tags: ['emotional',
    ================================================================ */
 
 /* 頭バー — a heading marker in front of the lyric: a solid bar, a pointer triangle or a small square */
-reg('xoLeadBar', { name: '頭バー', en: 'Lead Bar', tags: ['editorial', 'graphic', 'pop'], w: 1, ae: 'underline',
+reg('xoLeadBar', { name: '머리 막대', en: 'Lead Bar', tags: ['editorial', 'graphic', 'pop'], w: 1, ae: 'underline',
   plan: rng => ({ v: rng.pick(['bar', 'bar', 'tri', 'sq']), k: rng.range(0.1, 0.15) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || !lineLike(env, it)) return;
@@ -480,7 +480,7 @@ reg('xoLeadBar', { name: '頭バー', en: 'Lead Bar', tags: ['editorial', 'graph
   } });
 
 /* 寸法線 — a thin dimension line under each line, closed by ticks, dots or arrow heads; it opens from the middle */
-reg('xoDimLine', { name: '寸法線', en: 'Dimension Line', tags: ['editorial', 'graphic', 'calm'], w: 0.9, ae: 'underline',
+reg('xoDimLine', { name: '치수선', en: 'Dimension Line', tags: ['editorial', 'graphic', 'calm'], w: 0.9, ae: 'underline',
   plan: rng => ({ v: rng.pick(['tick', 'tick', 'dot', 'arrow']) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || glyphN(it.text) < 2) return;
@@ -509,7 +509,7 @@ reg('xoDimLine', { name: '寸法線', en: 'Dimension Line', tags: ['editorial', 
   } });
 
 /* トンボ — printer's crop marks sit off the four corners of the lyric block */
-reg('xoCropMarks', { name: 'トンボ', en: 'Crop Marks', tags: ['editorial', 'graphic', 'glitch'], w: 0.6, ae: 'bracketsQuote',
+reg('xoCropMarks', { name: '정합 표시', en: 'Crop Marks', tags: ['editorial', 'graphic', 'glitch'], w: 0.6, ae: 'bracketsQuote',
   plan: rng => ({ len: rng.range(0.24, 0.32), reg: rng.chance(0.6) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || !lineLike(env, it)) return;
@@ -535,7 +535,7 @@ reg('xoCropMarks', { name: 'トンボ', en: 'Crop Marks', tags: ['editorial', 'g
   } });
 
 /* 区切り点 — the glyphs are spaced out and a small mark sits in every gap: a dot, a slash or a hairline rule */
-reg('xoSeparators', { name: '区切り点', en: 'Separators', tags: ['editorial', 'calm', 'graphic', 'emotional'], w: 0.7, ae: 'kerningWide',
+reg('xoSeparators', { name: '구분점', en: 'Separators', tags: ['editorial', 'calm', 'graphic', 'emotional'], w: 0.7, ae: 'kerningWide',
   plan: rng => ({ v: rng.pick(['dot', 'dot', 'slash', 'rule']), t: rng.range(0.26, 0.34) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || glyphN(it.text) < 2) return;
@@ -563,7 +563,7 @@ reg('xoSeparators', { name: '区切り点', en: 'Separators', tags: ['editorial'
   } });
 
 /* 字ごと下線 — every glyph gets its own short underscore, like the blanks of a form */
-reg('xoGlyphUnders', { name: '字ごと下線', en: 'Glyph Underscores', tags: ['editorial', 'pop', 'graphic', 'calm'], w: 0.8, ae: 'underline',
+reg('xoGlyphUnders', { name: '글자별 밑줄', en: 'Glyph Underscores', tags: ['editorial', 'pop', 'graphic', 'calm'], w: 0.8, ae: 'underline',
   plan: rng => ({ k: rng.range(0.045, 0.06), w: rng.range(0.74, 0.84) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9)) return;
@@ -588,7 +588,7 @@ reg('xoGlyphUnders', { name: '字ごと下線', en: 'Glyph Underscores', tags: [
   } });
 
 /* ずらし枠 — a hairline frame draws itself around the lyric; a flat tint plate sits behind it, knocked off-register */
-reg('xoOffsetFrame', { name: 'ずらし枠', en: 'Offset Frame', tags: ['graphic', 'editorial', 'pop'], w: 0.9, ae: 'boxed',
+reg('xoOffsetFrame', { name: '어긋난 틀', en: 'Offset Frame', tags: ['graphic', 'editorial', 'pop'], w: 0.9, ae: 'boxed',
   plan: rng => ({ d: rng.range(0.1, 0.15), dir: rng.pick([[1, 1], [1, 1], [-1, 1], [1, -1]]), c: rng.int(0, 1) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || !lineLike(env, it)) return;
@@ -614,7 +614,7 @@ reg('xoOffsetFrame', { name: 'ずらし枠', en: 'Offset Frame', tags: ['graphic
   } });
 
 /* 字の角印 — viewfinder ticks hug two opposite corners of every glyph */
-reg('xoGlyphCorners', { name: '字の角印', en: 'Glyph Corners', tags: ['graphic', 'editorial', 'glitch'], w: 0.6, ae: 'boxed',
+reg('xoGlyphCorners', { name: '글자 모서리 표시', en: 'Glyph Corners', tags: ['graphic', 'editorial', 'glitch'], w: 0.6, ae: 'boxed',
   plan: rng => ({ t: rng.range(0.15, 0.2), flip: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9)) return;
@@ -639,7 +639,7 @@ reg('xoGlyphCorners', { name: '字の角印', en: 'Glyph Corners', tags: ['graph
   } });
 
 /* 目盛り — a ruler lies under each line: a hairline with short ticks, every fifth one longer */
-reg('xoRuler', { name: '目盛り', en: 'Ruler Ticks', tags: ['editorial', 'graphic', 'glitch', 'calm'], w: 0.7, ae: 'underline',
+reg('xoRuler', { name: '눈금', en: 'Ruler Ticks', tags: ['editorial', 'graphic', 'glitch', 'calm'], w: 0.7, ae: 'underline',
   plan: rng => ({ p: rng.range(0.09, 0.12), up: rng.chance(0.3) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || glyphN(it.text) < 2) return;
@@ -672,7 +672,7 @@ reg('xoRuler', { name: '目盛り', en: 'Ruler Ticks', tags: ['editorial', 'grap
   } });
 
 /* 貫き線 — a thin line threads through the line of text and runs on past both ends; the glyphs sit in front of it */
-reg('xoThread', { name: '貫き線', en: 'Thread Line', tags: ['editorial', 'calm', 'emotional', 'graphic'], w: 0.7, ae: 'strike',
+reg('xoThread', { name: '관통선', en: 'Thread Line', tags: ['editorial', 'calm', 'emotional', 'graphic'], w: 0.7, ae: 'strike',
   plan: rng => ({ ext: rng.range(0.4, 0.7), k: rng.range(0.022, 0.03), dots: rng.chance(0.6) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || !lineLike(env, it)) return;
@@ -698,7 +698,7 @@ reg('xoThread', { name: '貫き線', en: 'Thread Line', tags: ['editorial', 'cal
   } });
 
 /* 払い下線 — a tapered brush-pen swoosh under each line: fat where it lands, a fine tail where it lifts */
-reg('xoSwoosh', { name: '払い下線', en: 'Swoosh Underline', tags: ['pop', 'emotional', 'editorial'], w: 0.9, ae: 'underline',
+reg('xoSwoosh', { name: '붓질 밑줄', en: 'Swoosh Underline', tags: ['pop', 'emotional', 'editorial'], w: 0.9, ae: 'underline',
   plan: rng => ({ k: rng.range(0.11, 0.15), bow: rng.range(0.05, 0.1), rev: rng.chance(0.25) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || glyphN(it.text) < 2) return;
@@ -725,7 +725,7 @@ reg('xoSwoosh', { name: '払い下線', en: 'Swoosh Underline', tags: ['pop', 'e
   } });
 
 /* 貼り紙 — the lyric sits on a slip of paper held by two strips of tape */
-reg('xoTapedNote', { name: '貼り紙', en: 'Taped Note', tags: ['pop', 'editorial', 'emotional'], w: 0.7, ae: 'boxed',
+reg('xoTapedNote', { name: '붙인 쪽지', en: 'Taped Note', tags: ['pop', 'editorial', 'emotional'], w: 0.7, ae: 'boxed',
   plan: rng => ({ tilt: rng.range(1, 2.4) * (rng.chance(0.5) ? 1 : -1), c: rng.int(0, 1), one: rng.chance(0.3) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || !lineLike(env, it)) return;
@@ -753,7 +753,7 @@ reg('xoTapedNote', { name: '貼り紙', en: 'Taped Note', tags: ['pop', 'editori
   } });
 
 /* 蛍光ペン — two overlapping round-ended passes of a translucent highlighter, pulled by hand at slightly different angles */
-reg('xoHiliter', { name: '蛍光ペン', en: 'Highlighter', tags: ['pop', 'editorial', 'emotional'], w: 0.8, ae: 'marker',
+reg('xoHiliter', { name: '형광펜', en: 'Highlighter', tags: ['pop', 'editorial', 'emotional'], w: 0.8, ae: 'marker',
   plan: rng => ({ c: rng.int(0, 1), tilt: rng.range(-0.035, 0.035), k: rng.range(0.46, 0.56) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || !lineLike(env, it)) return;
@@ -783,7 +783,7 @@ reg('xoHiliter', { name: '蛍光ペン', en: 'Highlighter', tags: ['pop', 'edito
   } });
 
 /* 強調線 — three short ticks burst from the top corner of the lyric, like a comic "!" accent */
-reg('xoAccentTicks', { name: '強調線', en: 'Accent Ticks', tags: ['pop', 'emotional', 'graphic'], w: 0.8, ae: 'emphasisDots',
+reg('xoAccentTicks', { name: '강조 표시', en: 'Accent Ticks', tags: ['pop', 'emotional', 'graphic'], w: 0.8, ae: 'emphasisDots',
   plan: rng => ({ left: rng.chance(0.35), n: rng.pick([3, 3, 2]), k: rng.range(0.42, 0.56) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9) || !lineLike(env, it)) return;
@@ -811,7 +811,7 @@ reg('xoAccentTicks', { name: '強調線', en: 'Accent Ticks', tags: ['pop', 'emo
    ================================================================ */
 
 /* 太細交互 — heavy and light glyphs take turns: every other one is fattened, the rest are pared down */
-reg('xoAltWeight', { name: '太細交互', en: 'Alternating Weight', tags: ['graphic', 'editorial', 'pop'], w: 0.8, ae: 'fauxBold',
+reg('xoAltWeight', { name: '굵기 교차', en: 'Alternating Weight', tags: ['graphic', 'editorial', 'pop'], w: 0.8, ae: 'fauxBold',
   plan: rng => ({ k: rng.range(0.9, 1.15), first: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -833,7 +833,7 @@ reg('xoAltWeight', { name: '太細交互', en: 'Alternating Weight', tags: ['gra
   } });
 
 /* 長平交互 — condensed-tall and flat-wide glyphs alternate */
-reg('xoTallWide', { name: '長平交互', en: 'Tall & Wide', tags: ['pop', 'graphic', 'editorial'], w: 0.8, safe: true, ae: 'sizeWave',
+reg('xoTallWide', { name: '장체 평체 교차', en: 'Tall & Wide', tags: ['pop', 'graphic', 'editorial'], w: 0.8, safe: true, ae: 'sizeWave',
   plan: rng => ({ k: rng.range(0.76, 0.82), first: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.5)) return;
@@ -846,7 +846,7 @@ reg('xoTallWide', { name: '長平交互', en: 'Tall & Wide', tags: ['pop', 'grap
   } });
 
 /* 柄違い — the glyphs cycle through three fills: solid ink, screened dots and ruled lines */
-reg('xoMixedFills', { name: '柄違い', en: 'Mixed Fills', tags: ['pop', 'graphic'], w: 0.7, ae: 'halftone',
+reg('xoMixedFills', { name: '무늬 섞기', en: 'Mixed Fills', tags: ['pop', 'graphic'], w: 0.7, ae: 'halftone',
   plan: rng => ({ a: rng.pick(['dots', 'dots', 'grid']), b: rng.pick(['lines', 'stripes', 'hatch']), o: rng.int(0, 2) }),
   apply(env, it, Pt) {
     if (!alive(it)) return;
@@ -864,7 +864,7 @@ reg('xoMixedFills', { name: '柄違い', en: 'Mixed Fills', tags: ['pop', 'graph
   } });
 
 /* 字間漸増 — the gaps between glyphs grow step by step along the line (the line keeps its length) */
-reg('xoTrackRamp', { name: '字間漸増', en: 'Tracking Ramp', tags: ['editorial', 'emotional', 'calm', 'graphic'], w: 0.7, safe: true, ae: 'kerningWide',
+reg('xoTrackRamp', { name: '자간 점증', en: 'Tracking Ramp', tags: ['editorial', 'emotional', 'calm', 'graphic'], w: 0.7, safe: true, ae: 'kerningWide',
   plan: rng => ({ t: rng.range(0.3, 0.44), rev: rng.chance(0.35) }),
   apply(env, it, Pt) {
     if (!it.text || it.size <= 1) return;
@@ -900,7 +900,7 @@ reg('xoTrackRamp', { name: '字間漸増', en: 'Tracking Ramp', tags: ['editoria
    ================================================================ */
 
 /* 二度刷り — the sheet went through the press twice: a faint second impression sits slightly off and askew */
-reg('xoDoublePrint', { name: '二度刷り', en: 'Double Print', tags: ['glitch', 'editorial', 'emotional', 'graphic'], w: 0.7, safe: true, ae: 'glitchSplit',
+reg('xoDoublePrint', { name: '두 번 인쇄', en: 'Double Print', tags: ['glitch', 'editorial', 'emotional', 'graphic'], w: 0.7, safe: true, ae: 'glitchSplit',
   plan: rng => ({ d: rng.range(0.05, 0.075), r: rng.range(0.7, 1.5) * (rng.chance(0.5) ? 1 : -1), a: rng.range(0.34, 0.44), up: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9)) return;
@@ -914,7 +914,7 @@ reg('xoDoublePrint', { name: '二度刷り', en: 'Double Print', tags: ['glitch'
   } });
 
 /* 半抜き — a solid bar of the text colour covers the lower half of each line; where the glyphs cross it they flip to the paper colour */
-reg('xoHalfKnock', { name: '半抜き', en: 'Half Knockout', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'marker',
+reg('xoHalfKnock', { name: '반 뚫기', en: 'Half Knockout', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'marker',
   plan: rng => ({ at: rng.range(-0.04, 0.1), top: rng.chance(0.25) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.9)) return;
@@ -951,7 +951,7 @@ reg('xoHalfKnock', { name: '半抜き', en: 'Half Knockout', tags: ['graphic', '
   } });
 
 /* 頭切り — the tops of the glyphs are trimmed off along a hairline, as if the sheet had been cut there */
-reg('xoTopCrop', { name: '頭切り', en: 'Cropped Top', tags: ['graphic', 'editorial', 'glitch'], w: 0.6, ae: 'cutShift',
+reg('xoTopCrop', { name: '윗부분 잘림', en: 'Cropped Top', tags: ['graphic', 'editorial', 'glitch'], w: 0.6, ae: 'cutShift',
   plan: rng => ({ k: rng.range(0.19, 0.24), foot: rng.chance(0.3) }),
   apply(env, it, Pt) {
     if (!alive(it) || inPieces(env, it)) return;
@@ -976,7 +976,7 @@ reg('xoTopCrop', { name: '頭切り', en: 'Cropped Top', tags: ['graphic', 'edit
   } });
 
 /* 重ね詰め — poster kerning: the glyphs are set so tight that each one overlaps the last, cut apart by a paper-coloured edge */
-reg('xoOverlapKern', { name: '重ね詰め', en: 'Overlap Kerning', tags: ['graphic', 'pop', 'editorial'], w: 0.8, ae: 'outlineFill',
+reg('xoOverlapKern', { name: '겹쳐 좁히기', en: 'Overlap Kerning', tags: ['graphic', 'pop', 'editorial'], w: 0.8, ae: 'outlineFill',
   plan: rng => ({ t: rng.range(0.13, 0.17), k: rng.range(0.05, 0.065) }),
   apply(env, it, Pt) {
     if (!alive(it) || glyphN(it.text) < 2) return;

@@ -126,7 +126,7 @@ const chunkRows = (t, maxPer) => {
 /* ================================================================== 1 xcBrowser — ブラウザ窓
    a browser window: tab strip, address bar being typed, page loading bar; the lyric is the page headline */
 reg('xcBrowser', {
-  name: 'ブラウザ窓', en: 'Browser Window', tags: ['pop', 'graphic', 'editorial'], ae: 'labels', w: 1.1, treat: 'safe', fits: FIT,
+  name: '브라우저 창', en: 'Browser Window', tags: ['pop', 'graphic', 'editorial'], ae: 'labels', w: 1.1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), tabs: rng.int(2, 3), page: rng.pick(['hero', 'article', 'hero']), ctl: rng.pick(['mac', 'win']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls, no } = base(env);
@@ -178,7 +178,7 @@ reg('xcBrowser', {
 /* ================================================================== 2 xcPlayer — 再生画面
    a music player: cover art, the lyric as the track title, a progress bar that really runs, transport buttons */
 reg('xcPlayer', {
-  name: '再生画面', en: 'Music Player', tags: ['pop', 'calm', 'emotional'], ae: 'gloss', w: 1.2, treat: 'safe', fits: FIT,
+  name: '재생 화면', en: 'Music Player', tags: ['pop', 'calm', 'emotional'], ae: 'gloss', w: 1.2, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body', 'serif'])), art: rng.pick(['disc', 'sun', 'bars']), card: rng.chance(0.6), flip: rng.chance(0.3), at: rng.range(0.15, 0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, txt, out, lw, ls } = base(env), port = W < H * 1.2;
@@ -220,7 +220,7 @@ reg('xcPlayer', {
 /* ================================================================== 3 xcLoading — 読み込み中
    a system dialog: title bar, the lyric as the message, a progress bar that fills during the cut, a button */
 reg('xcLoading', {
-  name: '読み込み中', en: 'Loading Dialog', tags: ['pop', 'glitch', 'graphic'], ae: 'labels', w: 1, treat: 'safe', fits: FIT,
+  name: '불러오는 중', en: 'Loading Dialog', tags: ['pop', 'glitch', 'graphic'], ae: 'labels', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display'])), bar: rng.pick(['bar', 'blocks', 'ring']), bw: rng.pick([0, 1]), end: rng.pick([0.87, 0.99, 1, 1]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -251,7 +251,7 @@ reg('xcLoading', {
 /* ================================================================== 4 xcMapPin — 地図ピン
    a street map draws itself, a pin drops, and the lyric opens in the pin's callout */
 reg('xcMapPin', {
-  name: '地図ピン', en: 'Map Pin', tags: ['pop', 'graphic', 'calm'], ae: 'labels', w: 1, treat: 'safe', fits: FIT,
+  name: '지도 핀', en: 'Map Pin', tags: ['pop', 'graphic', 'calm'], ae: 'labels', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), px: rng.pick([0.26, 0.5, 0.74]), tone: rng.pick(['paper', 'accent', 'paper']), la: rng.int(10, 59), lo: rng.int(100, 159) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -288,7 +288,7 @@ reg('xcMapPin', {
 /* ================================================================== 5 xcSignpost — 道しるべ
    a signpost: every line of the lyric on its own arrow board, pointing left and right in turn */
 reg('xcSignpost', {
-  name: '道しるべ', en: 'Signpost', tags: ['pop', 'graphic', 'emotional'], ae: 'stack', w: 1.1, treat: 'safe', fits: FIT,
+  name: '이정표', en: 'Signpost', tags: ['pop', 'graphic', 'emotional'], ae: 'stack', w: 1.1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), first: rng.int(0, 1), c: rng.int(0, 2), tilt: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -325,7 +325,7 @@ reg('xcSignpost', {
 /* ================================================================== 6 xcVending — 自販機
    a vending machine: the lyric in the lit display window, a row of priced buttons lighting in turn, coin slot and tray */
 reg('xcVending', {
-  name: '自販機', en: 'Vending Machine', tags: ['pop', 'graphic'], ae: 'labels', w: 0.8, fits: FIT,
+  name: '자판기', en: 'Vending Machine', tags: ['pop', 'graphic'], ae: 'labels', w: 0.8, fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), c: rng.pick(['paper', 'accent', 'ink']), nb: rng.int(5, 8), round: rng.chance(0.5), price: rng.pick([100, 120, 150]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -359,7 +359,7 @@ reg('xcVending', {
 /* ================================================================== 7 xcFolder — フォルダ
    a file folder with a tab; sheets slide up out of it and the lyric is written on the front */
 reg('xcFolder', {
-  name: 'フォルダ', en: 'File Folder', tags: ['pop', 'graphic', 'editorial'], ae: 'labels', w: 1, treat: 'safe', fits: FIT,
+  name: '폴더', en: 'File Folder', tags: ['pop', 'graphic', 'editorial'], ae: 'labels', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), c: rng.pick(['accent', 'ink', 'paper']), right: rng.chance(0.4), sheets: rng.int(1, 3), tilt: rng.pick([0, -2, 2]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls, no } = base(env);
@@ -389,7 +389,7 @@ reg('xcFolder', {
 /* ================================================================== 8 xcScoreboard — 得点板
    a stadium scoreboard: two scores counting up either side of the lyric, an innings row filling in */
 reg('xcScoreboard', {
-  name: '得点板', en: 'Scoreboard', tags: ['pop', 'graphic'], ae: 'labels', w: 0.8, treat: 'safe', fits: FIT,
+  name: '점수판', en: 'Scoreboard', tags: ['pop', 'graphic'], ae: 'labels', w: 0.8, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), c: rng.pick(['ink', 'ink', 'paper']), s1: rng.int(0, 9), s2: rng.int(0, 9), legs: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -432,7 +432,7 @@ const skyIcon = (env, g, type, x, y, u, c1, c2, back) => {
   if (type === 'rain') for (let i = 0; i < 4; i++) { const k = ((env.ltb * 1.3 + i * 0.27) % 1 + 1) % 1, rx = x - u * 0.45 + i * u * 0.3, ry = y + u * (0.6 + k * 0.45); g.l(rx, ry, rx - u * 0.08, ry + u * 0.2, c1, u * 0.07, 1 - k); }
 };
 reg('xcWeather', {
-  name: '天気予報', en: 'Weather Widget', tags: ['calm', 'pop', 'emotional'], ae: 'gloss', w: 1, treat: 'safe', fits: FIT,
+  name: '일기 예보', en: 'Weather Widget', tags: ['calm', 'pop', 'emotional'], ae: 'gloss', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display', 'serif'])), sky: rng.pick(['sun', 'moon', 'rain', 'cloudsun']), t: rng.int(-3, 34), c: rng.pick(['paper', 'paper', 'ink']), flip: rng.chance(0.3) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, txt, out, lw, ls } = base(env), port = W < H * 1.2;
@@ -472,7 +472,7 @@ reg('xcWeather', {
 /* ================================================================== 10 xcBattery — 電池残量
    a big battery outline charging cell by cell behind the lyric (upright in portrait) */
 reg('xcBattery', {
-  name: '電池残量', en: 'Battery Level', tags: ['pop', 'graphic', 'glitch'], ae: 'pill', w: 1, fits: FIT,
+  name: '배터리 잔량', en: 'Battery Level', tags: ['pop', 'graphic', 'glitch'], ae: 'pill', w: 1, fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), cells: rng.pick([4, 5, 1, 8]), level: rng.pick([0.25, 0.5, 0.75, 1, 1]), bolt: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -500,7 +500,7 @@ reg('xcBattery', {
 /* ================================================================== 11 xcPopups — 重なる窓
    error pop-ups cascade across the screen one after another; the last one on top carries the lyric */
 reg('xcPopups', {
-  name: '重なる窓', en: 'Popup Cascade', tags: ['glitch', 'pop', 'graphic'], ae: 'stack', w: 1, treat: 'safe', fits: FIT,
+  name: '겹치는 창', en: 'Popup Cascade', tags: ['glitch', 'pop', 'graphic'], ae: 'stack', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display'])), k: rng.int(3, 6), dir: rng.pick([[1, 1], [-1, 1], [1, -1], [-1, -1]]), icon: rng.pick(['warn', 'info', 'stop']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -534,7 +534,7 @@ reg('xcPopups', {
 /* ================================================================== 12 xcIncoming — 着信画面
    an incoming call: ringing avatar with ripples, the lyric as the caller's name, decline / accept buttons */
 reg('xcIncoming', {
-  name: '着信画面', en: 'Incoming Call', tags: ['emotional', 'pop', 'calm'], ae: 'gloss', w: 1.1, fits: FIT,
+  name: '착신 화면', en: 'Incoming Call', tags: ['emotional', 'pop', 'calm'], ae: 'gloss', w: 1.1, fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body', 'serif'])), flip: rng.chance(0.35), ring: rng.pick([2, 3]), who: rng.pick(['person', 'heart', 'q']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -570,7 +570,7 @@ reg('xcIncoming', {
 /* ================================================================== 13 xcGauge — 速度計
    a ring gauge winds up around the lyric: ticks, red zone, a marker riding the arc, digital read-out in the gap */
 reg('xcGauge', {
-  name: '速度計', en: 'Speed Gauge', tags: ['graphic', 'pop', 'glitch'], ae: 'circle', w: 1, emph: 1.3, fits: n => n >= 1 && n <= 14,
+  name: '속도계', en: 'Speed Gauge', tags: ['graphic', 'pop', 'glitch'], ae: 'circle', w: 1, emph: 1.3, fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), v: rng.range(0.55, 0.98), unit: rng.pick(['km/h', 'rpm', 'bpm']), max: rng.pick([180, 240, 320]), seg: rng.chance(0.4) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -600,7 +600,7 @@ reg('xcGauge', {
 /* ================================================================== 14 xcSheet — 表計算
    a spreadsheet fills the screen; the lyric sits in the selected (merged) cell, echoed in the formula bar */
 reg('xcSheet', {
-  name: '表計算', en: 'Spreadsheet Cell', tags: ['graphic', 'editorial', 'glitch'], ae: 'type', w: 0.9, busy: true, fits: FIT,
+  name: '스프레드시트', en: 'Spreadsheet Cell', tags: ['graphic', 'editorial', 'glitch'], ae: 'type', w: 0.9, busy: true, fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display'])), sh: rng.int(0, 1), sv: rng.int(0, 1), fill: rng.chance(0.4), data: rng.range(0.2, 0.45) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -636,7 +636,7 @@ reg('xcSheet', {
 /* ================================================================== 15 xcChipCard — ICカード
    a plastic chip card flips in: gold chip, contactless waves, dotted number; the lyric where the name is embossed */
 reg('xcChipCard', {
-  name: 'ICカード', en: 'Chip Card', tags: ['pop', 'graphic', 'calm'], ae: 'pill', w: 0.9, treat: 'safe', fits: FIT,
+  name: 'IC 카드', en: 'Chip Card', tags: ['pop', 'graphic', 'calm'], ae: 'pill', w: 0.9, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), c: rng.pick(['accent', 'ink', 'paper']), tilt: rng.pick([-4, 0, 3, 0]), band: rng.chance(0.5), last: rng.int(1000, 9999) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -666,7 +666,7 @@ reg('xcChipCard', {
 /* ================================================================== 16 xcPaperCup — 紙コップ
    a take-away cup with lid and rising steam; the lyric is written on the sleeve */
 reg('xcPaperCup', {
-  name: '紙コップ', en: 'Paper Cup', tags: ['calm', 'pop', 'emotional'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 14,
+  name: '종이컵', en: 'Paper Cup', tags: ['calm', 'pop', 'emotional'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display', 'serif'])), c: rng.pick(['accent', 'ink']), steam: rng.int(2, 3), ring: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -695,7 +695,7 @@ reg('xcPaperCup', {
 /* ================================================================== 17 xcTshirt — Tシャツ
    a T-shirt drops in swinging; the lyric is the chest print */
 reg('xcTshirt', {
-  name: 'Tシャツ', en: 'T-Shirt Print', tags: ['pop', 'graphic'], ae: 'labels', w: 0.8, treat: 'safe', fits: FIT,
+  name: '티셔츠', en: 'T-Shirt Print', tags: ['pop', 'graphic'], ae: 'labels', w: 0.8, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), c: rng.pick(['paper', 'ink', 'accent']), neck: rng.pick(['round', 'v']), stripe: rng.chance(0.5), hang: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -718,7 +718,7 @@ reg('xcTshirt', {
 /* ================================================================== 18 xcHandheld — 携帯ゲーム機
    a handheld console (sideways in landscape, upright in portrait): the lyric on its screen, pad and buttons being pressed */
 reg('xcHandheld', {
-  name: '携帯ゲーム機', en: 'Handheld Console', tags: ['pop', 'glitch', 'graphic'], ae: 'labels', w: 0.8, fits: FIT,
+  name: '휴대용 게임기', en: 'Handheld Console', tags: ['pop', 'glitch', 'graphic'], ae: 'labels', w: 0.8, fits: FIT,
   plan(rng, cut, st) { return { font: rng.chance(0.5) ? 'dot' : rng.pick(fontsOf(st, ['display', 'body'])), c: rng.pick(['paper', 'accent', 'ink']), lines: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -751,7 +751,7 @@ reg('xcHandheld', {
 /* ================================================================== 19 xcBlackboard — 黒板
    a classroom board with frame, chalk tray, chalks and eraser; a chalk underline is drawn under the lyric */
 reg('xcBlackboard', {
-  name: '黒板', en: 'Chalkboard', tags: ['emotional', 'calm', 'pop'], ae: 'center', w: 1, treat: 'safe', fits: FIT,
+  name: '칠판', en: 'Chalkboard', tags: ['emotional', 'calm', 'pop'], ae: 'center', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'body', 'display'])), ul: rng.pick(['wave', 'double', 'circle']), doodle: rng.pick(['star', 'arrow', 'none']), tilt: rng.pick([0, 0, -1.5]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls, no } = base(env);
@@ -783,7 +783,7 @@ reg('xcBlackboard', {
 /* ================================================================== 20 xcTruck — トラック
    a delivery truck drives in with the lyric painted on its cargo box; wheels keep turning, the road slides by */
 reg('xcTruck', {
-  name: 'トラック', en: 'Delivery Truck', tags: ['pop', 'graphic'], ae: 'marquee', w: 0.8, treat: 'safe', fits: FIT,
+  name: '트럭', en: 'Delivery Truck', tags: ['pop', 'graphic'], ae: 'marquee', w: 0.8, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), dir: rng.pick([1, 1, -1]), band: rng.chance(0.6), c: rng.pick(['paper', 'paper', 'ink']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -816,7 +816,7 @@ reg('xcTruck', {
 /* ================================================================== 21 xcPlate — ナンバー
    a vehicle number plate swings down on one bolt and settles: EU band, US slogan or two-row style */
 reg('xcPlate', {
-  name: 'ナンバー', en: 'Number Plate', tags: ['graphic', 'pop'], ae: 'pill', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 14,
+  name: '번호판', en: 'Number Plate', tags: ['graphic', 'pop'], ae: 'pill', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), style: rng.pick(['eu', 'us', 'two']), c: rng.pick(['paper', 'paper', 'accent', 'ink']), side: rng.pick([-1, 1]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls, no } = base(env);
@@ -854,7 +854,7 @@ reg('xcPlate', {
 /* ================================================================== 22 xcDropdown — プルダウン
    a select box drops its menu open; the highlight slides down to the row that holds the lyric and a pointer clicks it */
 reg('xcDropdown', {
-  name: 'プルダウン', en: 'Dropdown Menu', tags: ['pop', 'graphic', 'editorial'], ae: 'stack', w: 1, treat: 'safe', fits: FIT,
+  name: '드롭다운', en: 'Dropdown Menu', tags: ['pop', 'graphic', 'editorial'], ae: 'stack', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display'])), rows: rng.int(3, 4), hi: rng.int(0, 3), check: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -892,7 +892,7 @@ reg('xcDropdown', {
 /* ================================================================== 23 xcSelect — 範囲選択
    the lyric gets selected like text on a phone: the highlight sweeps line by line between two handles, a copy / share bar pops up */
 reg('xcSelect', {
-  name: '範囲選択', en: 'Text Selection', tags: ['calm', 'emotional', 'editorial', 'pop'], ae: 'center', w: 1.3, fits: n => n >= 1 && n <= 18,
+  name: '범위 선택', en: 'Text Selection', tags: ['calm', 'emotional', 'editorial', 'pop'], ae: 'center', w: 1.3, fits: n => n >= 1 && n <= 18,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'serif', 'display'])), ui: rng.pick(['mobile', 'mobile', 'desktop']), align: rng.pick(['center', 'center', 'left']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -936,7 +936,7 @@ reg('xcSelect', {
 /* ================================================================== 24 xcRadio — ラジオ
    a transistor radio: the tuner needle slides along the dial and settles, knobs turn, the lyric shows in the window */
 reg('xcRadio', {
-  name: 'ラジオ', en: 'Transistor Radio', tags: ['calm', 'emotional', 'pop'], ae: 'labels', w: 0.9, fits: FIT,
+  name: '라디오', en: 'Transistor Radio', tags: ['calm', 'emotional', 'pop'], ae: 'labels', w: 0.9, fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'serif', 'display'])), c: rng.pick(['paper', 'accent', 'ink']), f: rng.range(0.2, 0.85), ant: rng.pick([-1, 1]), flip: rng.chance(0.4) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -974,7 +974,7 @@ reg('xcRadio', {
 /* ================================================================== 25 xcFloppy — フロッピー
    a 3.5-inch floppy disk slides in, its metal shutter snaps across, and the lyric is on the paper label */
 reg('xcFloppy', {
-  name: 'フロッピー', en: 'Floppy Disk', tags: ['pop', 'graphic', 'glitch'], ae: 'labels', w: 0.8, treat: 'safe', fits: FIT,
+  name: '플로피', en: 'Floppy Disk', tags: ['pop', 'graphic', 'glitch'], ae: 'labels', w: 0.8, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display'])), c: rng.pick(['ink', 'accent', 'ink']), tilt: rng.pick([0, -3, 3, 0]), from: rng.pick([-1, 1]), ruled: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls, no } = base(env);
@@ -999,7 +999,7 @@ reg('xcFloppy', {
 /* ================================================================== 26 xcMegaphone — 拡声器
    a megaphone in the corner shouts the lyric: sound arcs pulse out of it towards the big text */
 reg('xcMegaphone', {
-  name: '拡声器', en: 'Megaphone', tags: ['pop', 'graphic', 'emotional'], ae: 'center', w: 1.2, emph: 1.5, fits: FIT,
+  name: '확성기', en: 'Megaphone', tags: ['pop', 'graphic', 'emotional'], ae: 'center', w: 1.2, emph: 1.5, fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'display', 'body'])), side: rng.pick([-1, 1]), rot: rng.pick([0, -3, -5]), arcs: rng.int(3, 4), marks: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -1023,7 +1023,7 @@ reg('xcMegaphone', {
 /* ================================================================== 27 xcBunting — ガーランド
    party bunting: every glyph on its own pennant, hung along sagging strings and swaying */
 reg('xcBunting', {
-  name: 'ガーランド', en: 'Party Bunting', tags: ['pop', 'emotional', 'graphic'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 2 && n <= 16,
+  name: '가랜드', en: 'Party Bunting', tags: ['pop', 'emotional', 'graphic'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), shape: rng.pick(['tri', 'tri', 'tail', 'sq']), c: rng.int(0, 2), mono: rng.chance(0.25) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -1059,7 +1059,7 @@ reg('xcBunting', {
 /* ================================================================== 28 xcDrawers — 引き出し
    a filing cabinet: drawers slide shut one by one, each line of the lyric in a drawer's label holder */
 reg('xcDrawers', {
-  name: '引き出し', en: 'Filing Drawers', tags: ['editorial', 'calm', 'graphic'], ae: 'stack', w: 0.9, treat: 'safe', fits: FIT,
+  name: '서랍', en: 'Filing Drawers', tags: ['editorial', 'calm', 'graphic'], ae: 'stack', w: 0.9, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'serif', 'display'])), c: rng.pick(['ink', 'accent', 'paper']), handle: rng.pick(['bar', 'cup']), pull: rng.int(0, 2) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls, no } = base(env);
@@ -1093,7 +1093,7 @@ reg('xcDrawers', {
 /* ================================================================== 29 xcPoll — アンケート
    a poll card: the lyric is the question, the option bars fill and their percentages count up, the winner lights */
 reg('xcPoll', {
-  name: 'アンケート', en: 'Poll Card', tags: ['pop', 'editorial', 'graphic'], ae: 'gloss', w: 1, treat: 'safe', fits: FIT,
+  name: '설문 카드', en: 'Poll Card', tags: ['pop', 'editorial', 'graphic'], ae: 'gloss', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display'])), n: rng.int(2, 3), card: rng.chance(0.65), p: [rng.range(0.2, 1), rng.range(0.2, 1), rng.range(0.2, 1)], votes: rng.int(120, 9800) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);
@@ -1121,7 +1121,7 @@ reg('xcPoll', {
 /* ================================================================== 30 xcAwning — 店先テント
    a shop front: the striped awning rolls out and the lyric is lettered on the window underneath */
 reg('xcAwning', {
-  name: '店先テント', en: 'Shop Awning', tags: ['pop', 'calm', 'emotional'], ae: 'center', w: 1, fits: FIT,
+  name: '가게 차양', en: 'Shop Awning', tags: ['pop', 'calm', 'emotional'], ae: 'center', w: 1, fits: FIT,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif', 'body'])), ns: rng.pick([7, 9, 11]), sign: rng.pick(['OPEN', 'OPEN', 'CLOSED']), glass: rng.chance(0.6), c: rng.int(0, 1) }; },
   render(env) {
     const { W, H, sc, cut, Pm, lt, M, port, txt, out, lw, ls } = base(env);

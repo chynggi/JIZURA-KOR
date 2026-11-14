@@ -97,7 +97,7 @@ const stg = (env, i, step = 0.05, d = 0.4) => E.outExpo(J.clamp((env.lt - i * st
 /* ================================================================== 1 xbHalfDisc — 半円またぎ
    a huge disc rises over one screen edge; the lyric crosses its curved rim and reverses on it */
 reg('xbHalfDisc', {
-  name: '半円またぎ', en: 'Half Disc', tags: ['graphic', 'pop', 'emotional'], ae: 'center', w: 1.2, treat: 'safe', emph: 1.2, fits: n => n >= 1 && n <= 16,
+  name: '반원 걸치기', en: 'Half Disc', tags: ['graphic', 'pop', 'emotional'], ae: 'center', w: 1.2, treat: 'safe', emph: 1.2, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), side: rng.pick(['b', 'b', 't', 'l', 'r']), col: rng.pick(['accent', 'ink', 'fg']), off: rng.range(-0.1, 0.1), ring: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, Pm, M, txt, out, lw } = base(env);
@@ -117,7 +117,7 @@ reg('xbHalfDisc', {
 /* ================================================================== 2 xbDiagSplit — 斜め二色
    the screen is cut diagonally into two colour fields; the lyric runs across the cut and swaps colour */
 reg('xbDiagSplit', {
-  name: '斜め二色', en: 'Diagonal Split', tags: ['graphic', 'pop', 'glitch'], ae: 'center', w: 1.2, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '사선 두 색', en: 'Diagonal Split', tags: ['graphic', 'pop', 'glitch'], ae: 'center', w: 1.2, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'display', 'serif'])), ang: rng.pick([-34, -22, 22, 34, 58, -58]), side: rng.pick([1, -1]), col: rng.pick(['ink', 'accent', 'fg']), line: rng.chance(0.65) }; },
   render(env) {
     const { W, H, sc, Pm, M, txt, out, lw } = base(env);
@@ -138,7 +138,7 @@ reg('xbDiagSplit', {
 /* ================================================================== 3 xbChevronChain — 矢印つなぎ
    the lyric in interlocking chevron plates, like the steps of a process arrow */
 reg('xbChevronChain', {
-  name: '矢印つなぎ', en: 'Chevron Chain', tags: ['graphic', 'pop'], ae: 'labels', w: 1, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '화살표 잇기', en: 'Chevron Chain', tags: ['graphic', 'pop'], ae: 'labels', w: 1, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), swap: rng.chance(0.5), second: rng.pick(['accent', 'fg', 'accent2']), tail: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -184,7 +184,7 @@ reg('xbChevronChain', {
 /* ================================================================== 4 xbTwistFrames — ねじれ枠
    nested frames, each turned a little further than the one inside it; the lyric sits level in the innermost */
 reg('xbTwistFrames', {
-  name: 'ねじれ枠', en: 'Twisted Frames', tags: ['graphic', 'calm', 'emotional'], ae: 'center', w: 1.1, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '비틀린 틀', en: 'Twisted Frames', tags: ['graphic', 'calm', 'emotional'], ae: 'center', w: 1.1, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), th: rng.range(5, 10) * rng.pick([1, -1]), n: rng.pick([5, 6, 7]), plate: rng.chance(0.35), acc: rng.int(1, 3), sq: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -207,7 +207,7 @@ reg('xbTwistFrames', {
 /* ================================================================== 5 xbDonut — ドーナツ図
    a thick segmented chart ring (or a gauge) turns around the lyric */
 reg('xbDonut', {
-  name: 'ドーナツ図', en: 'Donut Chart', tags: ['graphic', 'pop', 'calm'], ae: 'circle', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '도넛 차트', en: 'Donut Chart', tags: ['graphic', 'pop', 'calm'], ae: 'circle', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), mode: rng.pick(['seg', 'gauge', 'seg']), n: rng.int(3, 5), a0: rng.range(0, 360), val: rng.range(0.55, 0.92), dir: rng.pick([1, -1]) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, txt, out, lw, ls } = base(env);
@@ -243,7 +243,7 @@ reg('xbDonut', {
 /* ================================================================== 6 xbIsoStack — アイソメ積層
    each line is lettered on the front face of an extruded slab; the slabs stack in parallel projection */
 reg('xbIsoStack', {
-  name: 'アイソメ積層', en: 'Isometric Stack', tags: ['graphic', 'pop'], ae: 'labels', w: 1, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '등각 적층', en: 'Isometric Stack', tags: ['graphic', 'pop'], ae: 'labels', w: 1, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), ang: rng.pick([13, 17, 21]), shift: rng.range(0.4, 1) * rng.pick([1, -1]), second: rng.pick(['accent', 'ink', 'fg']), deep: rng.range(0.55, 0.9) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out } = base(env);
@@ -279,7 +279,7 @@ reg('xbIsoStack', {
 /* ================================================================== 7 xbPolyTrack — 多角形周回
    a big triangle / diamond / hexagon whose outline is a track of small running text; the lyric sits inside */
 reg('xbPolyTrack', {
-  name: '多角形周回', en: 'Polygon Track', tags: ['graphic', 'pop', 'glitch'], ae: 'ring', w: 0.9, fits: n => n >= 1 && n <= 16,
+  name: '다각형 순회', en: 'Polygon Track', tags: ['graphic', 'pop', 'glitch'], ae: 'ring', w: 0.9, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), fontS: rng.pick(fontsOf(st, ['body', 'mono'])), sides: rng.pick([3, 4, 6, 6]), speed: rng.range(0.012, 0.03) * rng.pick([1, -1]), flip: rng.chance(0.5), inner: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, Pm, M, txt, out, lw } = base(env);
@@ -314,7 +314,7 @@ reg('xbPolyTrack', {
 /* ================================================================== 8 xbShapeRow — 図形並べ
    every glyph sits in its own primitive: circle, square, triangle, diamond in turn */
 reg('xbShapeRow', {
-  name: '図形並べ', en: 'Shape Parade', tags: ['pop', 'graphic'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '도형 나열', en: 'Shape Parade', tags: ['pop', 'graphic'], ae: 'labels', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), order: rng.int(0, 3), rot: rng.range(0, 9), fill: rng.pick(['mix', 'mix', 'solid']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw } = base(env);
@@ -349,7 +349,7 @@ reg('xbShapeRow', {
 /* ================================================================== 9 xbCompGrid — 分割構成
    the screen is ruled into a few unequal cells with heavy lines; some cells are flat colour, the largest holds the lyric */
 reg('xbCompGrid', {
-  name: '分割構成', en: 'Composition Grid', tags: ['graphic', 'pop', 'editorial'], ae: 'center', w: 1, busy: true, fits: n => n >= 1 && n <= 16,
+  name: '분할 구성', en: 'Composition Grid', tags: ['graphic', 'pop', 'editorial'], ae: 'center', w: 1, busy: true, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), vx: rng.pick([0, 1]), hy: rng.pick([0, 1]), fills: rng.int(0, 4), fr: rng.range(0.24, 0.3), ya: rng.range(0.42, 0.66), xa: rng.range(0.5, 0.72) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out } = base(env);
@@ -378,7 +378,7 @@ reg('xbCompGrid', {
 /* ================================================================== 10 xbPrimitives — 三原形
    circle, triangle and square thrown together on one side; the lyric set flush on the other */
 reg('xbPrimitives', {
-  name: '三原形', en: 'Three Primitives', tags: ['graphic', 'pop', 'calm'], ae: 'center', w: 1.1, fits: n => n >= 1 && n <= 16,
+  name: '세 기본 도형', en: 'Three Primitives', tags: ['graphic', 'pop', 'calm'], ae: 'center', w: 1.1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), flip: rng.chance(0.4), mir: rng.chance(0.5), rot: rng.range(-24, 24), bar: rng.chance(0.7), v: rng.int(0, 2) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -411,7 +411,7 @@ reg('xbPrimitives', {
 /* ================================================================== 11 xbArcPoster — 同心弧
    concentric arcs whose weight doubles ring by ring fill one corner; the lyric is set small and flush in the opposite one */
 reg('xbArcPoster', {
-  name: '同心弧', en: 'Concentric Arcs', tags: ['graphic', 'editorial', 'calm'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '동심호', en: 'Concentric Arcs', tags: ['graphic', 'editorial', 'calm'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['body', 'display', 'serif'])), corner: rng.int(0, 3), n: rng.pick([5, 6]), a0: rng.range(0, 360), col: rng.pick(['fg', 'fg', 'ink', 'accent']), acc: rng.int(0, 7), rule: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -443,7 +443,7 @@ reg('xbArcPoster', {
 /* ================================================================== 12 xbZiggurat — 段ピラミッド
    a stepped pyramid of solid blocks; every step carries one line */
 reg('xbZiggurat', {
-  name: '段ピラミッド', en: 'Step Pyramid', tags: ['graphic', 'pop'], ae: 'stack', w: 1, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '계단 피라미드', en: 'Step Pyramid', tags: ['graphic', 'pop'], ae: 'stack', w: 1, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), inv: rng.chance(0.35), alt: rng.chance(0.6), col: rng.pick(['ink', 'fg', 'accent']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out } = base(env);
@@ -475,7 +475,7 @@ reg('xbZiggurat', {
 /* ================================================================== 13 xbHoneycomb — ハニカム
    glyphs in the cells of a honeycomb: offset rows of hexagons, with empty cells around */
 reg('xbHoneycomb', {
-  name: 'ハニカム', en: 'Honeycomb', tags: ['graphic', 'pop', 'glitch'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 2 && n <= 15,
+  name: '벌집', en: 'Honeycomb', tags: ['graphic', 'pop', 'glitch'], ae: 'labels', w: 0.8, treat: 'safe', fits: n => n >= 2 && n <= 15,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), acc: rng.int(0, 30), extra: rng.chance(0.85), col: rng.pick(['ink', 'fg']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw } = base(env);
@@ -506,7 +506,7 @@ reg('xbHoneycomb', {
 /* ================================================================== 14 xbShear — 平行四辺形
    each line on its own slanted slab; slabs stack flush, pushed alternately left and right */
 reg('xbShear', {
-  name: '平行四辺形', en: 'Slanted Slabs', tags: ['graphic', 'pop', 'glitch'], ae: 'labels', w: 1.1, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '평행사변형', en: 'Slanted Slabs', tags: ['graphic', 'pop', 'glitch'], ae: 'labels', w: 1.1, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), k: rng.pick([0.26, 0.36, -0.26, -0.36]), cols: rng.int(0, 2), stag: rng.range(0.025, 0.06) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out } = base(env);
@@ -532,7 +532,7 @@ reg('xbShear', {
 /* ================================================================== 15 xbPatternPanel — 図形タイル
    a panel of modular tiles (quarter discs, half discs, triangles) that keep turning; the lyric sits beside it */
 reg('xbPatternPanel', {
-  name: '図形タイル', en: 'Tile Panel', tags: ['graphic', 'pop', 'calm'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '도형 타일', en: 'Tile Panel', tags: ['graphic', 'pop', 'calm'], ae: 'center', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), kind: rng.pick(['quarter', 'half', 'tri', 'mix']), side: rng.pick([0, 1]), align: rng.pick(['c', 'c', 'e']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out } = base(env);
@@ -583,7 +583,7 @@ const shapeRows = (txt, table, rev) => {
 /* ================================================================== 16 xbDiamond — 菱形組
    the glyphs are set in rows that swell and shrink, drawing a diamond; a diamond plate holds them */
 reg('xbDiamond', {
-  name: '菱形組', en: 'Diamond Setting', tags: ['graphic', 'editorial', 'calm'], ae: 'center', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '마름모 짜임', en: 'Diamond Setting', tags: ['graphic', 'editorial', 'calm'], ae: 'center', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), style: rng.pick(['plate', 'plate', 'outline']), col: rng.pick(['ink', 'accent', 'fg']), spin: rng.pick([1, -1]) }; },
   render(env) {
     const { W, H, sc, Pm, M, txt, out, lw } = base(env);
@@ -608,7 +608,7 @@ reg('xbDiamond', {
 /* ================================================================== 17 xbShapeLens — 図形レンズ
    the lyric is only an outline; three drifting primitives act as lenses that show it solid on their colour */
 reg('xbShapeLens', {
-  name: '図形レンズ', en: 'Shape Lenses', tags: ['graphic', 'pop', 'glitch'], ae: 'huge', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 14,
+  name: '도형 렌즈', en: 'Shape Lenses', tags: ['graphic', 'pop', 'glitch'], ae: 'huge', w: 0.9, treat: 'safe', fits: n => n >= 1 && n <= 14,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), ord: rng.int(0, 5), drift: rng.range(0.5, 1), sz: rng.range(0.95, 1.2), rot: rng.range(-20, 20) }; },
   render(env) {
     const { W, H, sc, Pm, M, txt, out } = base(env);
@@ -634,7 +634,7 @@ reg('xbShapeLens', {
 /* ================================================================== 18 xbConstruct — 斜め構成
    everything hangs on one strong angle: a bleeding bar under the first line, a crossing bar, a long wedge, a ring */
 reg('xbConstruct', {
-  name: '斜め構成', en: 'Slant Construction', tags: ['graphic', 'pop', 'editorial'], ae: 'diag', w: 1.1, treat: 'safe', emph: 1.2, fits: n => n >= 1 && n <= 16,
+  name: '사선 구성', en: 'Slant Construction', tags: ['graphic', 'pop', 'editorial'], ae: 'diag', w: 1.1, treat: 'safe', emph: 1.2, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), ang: rng.pick([-16, -12, 12, 16]), col: rng.pick(['ink', 'fg', 'accent']), wedge: rng.chance(0.8), circ: rng.chance(0.65), key: rng.int(0, 2) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -662,7 +662,7 @@ reg('xbConstruct', {
 /* ================================================================== 19 xbGolden — 黄金分割
    golden-ratio squares spiral away from the lyric, which fills the largest square */
 reg('xbGolden', {
-  name: '黄金分割', en: 'Golden Section', tags: ['graphic', 'calm', 'editorial', 'emotional'], ae: 'center', w: 0.9, fits: n => n >= 1 && n <= 16,
+  name: '황금 분할', en: 'Golden Section', tags: ['graphic', 'calm', 'editorial', 'emotional'], ae: 'center', w: 0.9, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['serif', 'display'])), fh: rng.chance(0.5), fv: rng.chance(0.5), fill: rng.pick([1, 2, 3]), spiral: rng.chance(0.85) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -701,7 +701,7 @@ reg('xbGolden', {
 /* ================================================================== 20 xbVenn — ベン図
    two overlapping discs, one half of the lyric in each; the overlap takes a third colour */
 reg('xbVenn', {
-  name: 'ベン図', en: 'Venn Diagram', tags: ['graphic', 'pop', 'calm'], ae: 'circle', w: 0.9, treat: 'safe', fits: n => n >= 2 && n <= 16,
+  name: '벤 다이어그램', en: 'Venn Diagram', tags: ['graphic', 'pop', 'calm'], ae: 'circle', w: 0.9, treat: 'safe', fits: n => n >= 2 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), swap: rng.chance(0.5), second: rng.pick(['accent', 'accent', 'fg']), ol: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -738,7 +738,7 @@ reg('xbVenn', {
 /* ================================================================== 21 xbSlitDisc — 割れ円
    a disc is cut in two and the halves slide apart sideways; the lyric runs through the slit */
 reg('xbSlitDisc', {
-  name: '割れ円', en: 'Split Disc', tags: ['graphic', 'pop', 'emotional'], ae: 'circle', w: 1.1, fits: n => n >= 1 && n <= 16,
+  name: '갈라진 원', en: 'Split Disc', tags: ['graphic', 'pop', 'emotional'], ae: 'circle', w: 1.1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, -1]), cols: rng.int(0, 2), shift: rng.range(0.22, 0.5), rule: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw } = base(env);
@@ -757,7 +757,7 @@ reg('xbSlitDisc', {
 /* ================================================================== 22 xbDial — 文字盤
    the glyphs are the numerals of a dial; a hand sweeps from the first to the last and lights each in turn */
 reg('xbDial', {
-  name: '文字盤', en: 'Dial Face', tags: ['graphic', 'calm', 'pop'], ae: 'ring', w: 0.6, fits: n => n >= 3 && n <= 12,
+  name: '문자판', en: 'Dial Face', tags: ['graphic', 'calm', 'pop'], ae: 'ring', w: 0.6, fits: n => n >= 3 && n <= 12,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), ticks: rng.pick([60, 48, 72]), hub: rng.chance(0.6), inner: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, txt, out, lw } = base(env);
@@ -790,7 +790,7 @@ reg('xbDial', {
 /* ================================================================== 23 xbCrosshair — 照準
    two full-bleed hairlines cross off-centre with rings and ticks; the lyric takes the largest quadrant */
 reg('xbCrosshair', {
-  name: '照準', en: 'Crosshair', tags: ['graphic', 'glitch', 'calm'], ae: 'gloss', w: 0.9, fits: n => n >= 1 && n <= 16,
+  name: '조준선', en: 'Crosshair', tags: ['graphic', 'glitch', 'calm'], ae: 'gloss', w: 0.9, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif', 'body'])), qx: rng.pick([0, 1]), qy: rng.pick([0, 1]), fr: rng.range(0.22, 0.3), pulse: rng.chance(0.75), marks: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, ls } = base(env);
@@ -824,7 +824,7 @@ reg('xbCrosshair', {
 /* ================================================================== 24 xbStripeDisc — 縞の円
    a disc sliced into bands that thin out as they drift down; the lyric fills the widest gap and runs past the rim */
 reg('xbStripeDisc', {
-  name: '縞の円', en: 'Striped Disc', tags: ['graphic', 'pop', 'emotional', 'calm'], ae: 'circle', w: 1.1, fits: n => n >= 1 && n <= 16,
+  name: '줄무늬 원', en: 'Striped Disc', tags: ['graphic', 'pop', 'emotional', 'calm'], ae: 'circle', w: 1.1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), col: rng.pick(['accent', 'accent', 'ink', 'fg']), pos: rng.pick([0.08, 0.18, 0.28]), off: rng.range(-0.06, 0.06), n: rng.pick([5, 6, 7]), up: rng.chance(0.25) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out } = base(env);
@@ -852,7 +852,7 @@ reg('xbStripeDisc', {
 /* ================================================================== 25 xbWedge — くさび
    a long thin wedge opens from one side; the lines ride its two edges, tilting apart */
 reg('xbWedge', {
-  name: 'くさび', en: 'Wedge', tags: ['graphic', 'pop', 'emotional'], ae: 'diag', w: 1, fits: n => n >= 1 && n <= 16,
+  name: '쐐기', en: 'Wedge', tags: ['graphic', 'pop', 'emotional'], ae: 'diag', w: 1, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), dir: rng.pick([1, -1]), th: rng.pick([4.5, 6, 7.5]), col: rng.pick(['accent', 'accent', 'ink']), dot: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, ls, no } = base(env);
@@ -876,7 +876,7 @@ reg('xbWedge', {
 /* ================================================================== 26 xbGradBars — 漸増ストライプ
    full-bleed bars whose weight grows step by step down the screen; the lyric takes the place of one bar */
 reg('xbGradBars', {
-  name: '漸増ストライプ', en: 'Growing Bars', tags: ['graphic', 'editorial', 'calm'], ae: 'center', w: 1, busy: true, fits: n => n >= 1 && n <= 16,
+  name: '점증 줄무늬', en: 'Growing Bars', tags: ['graphic', 'editorial', 'calm'], ae: 'center', w: 1, busy: true, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body', 'serif'])), flip: rng.chance(0.5), col: rng.pick(['fg', 'ink', 'accent']), acc: rng.int(0, 4), align: rng.pick(['left', 'left', 'center', 'right']) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out } = base(env);
@@ -908,7 +908,7 @@ reg('xbGradBars', {
 /* ================================================================== 27 xbGraph — 折れ線グラフ
    a line chart: each glyph is a data point's label, standing over its dot on a rising or falling polyline */
 reg('xbGraph', {
-  name: '折れ線グラフ', en: 'Line Chart', tags: ['graphic', 'pop', 'editorial'], ae: 'wave', w: 0.8, fits: n => n >= 2 && n <= 14,
+  name: '꺾은선 그래프', en: 'Line Chart', tags: ['graphic', 'pop', 'editorial'], ae: 'wave', w: 0.8, fits: n => n >= 2 && n <= 14,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body'])), trend: rng.pick([1, 1, -1, 0]), amp: rng.range(0.5, 1), area: rng.chance(0.5), drop: rng.chance(0.7) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, ls } = base(env);
@@ -944,7 +944,7 @@ reg('xbGraph', {
 /* ================================================================== 28 xbPie — 円グラフ
    a pie chart whose slices are the lines of the lyric; leaders run from each slice to its line */
 reg('xbPie', {
-  name: '円グラフ', en: 'Pie Chart', tags: ['graphic', 'pop', 'editorial'], ae: 'gloss', w: 0.9, fits: n => n >= 1 && n <= 16,
+  name: '원 그래프', en: 'Pie Chart', tags: ['graphic', 'pop', 'editorial'], ae: 'gloss', w: 0.9, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'body', 'serif'])), a0: rng.range(-150, -60), side: rng.pick([0, 1]), rest: rng.range(0.14, 0.3), ex: rng.int(0, 3), hole: rng.chance(0.3) }; },
   render(env) {
     const { W, H, sc, Pm, M, port, txt, out, lw, ls } = base(env);
@@ -981,7 +981,7 @@ reg('xbPie', {
 /* ================================================================== 29 xbCircleFit — 円形組
    every line is sized to the chord it sits on, so the block of type itself becomes a disc */
 reg('xbCircleFit', {
-  name: '円形組', en: 'Disc Setting', tags: ['graphic', 'pop', 'editorial'], ae: 'circle', w: 0.9, treat: 'safe', emph: 1.2, fits: n => n >= 1 && n <= 16,
+  name: '원형 짜임', en: 'Disc Setting', tags: ['graphic', 'pop', 'editorial'], ae: 'circle', w: 0.9, treat: 'safe', emph: 1.2, fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display'])), style: rng.pick(['plate', 'plate', 'ring']), col: rng.pick(['ink', 'accent', 'fg']), orb: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, Pm, M, txt, out, lw } = base(env);
@@ -1008,7 +1008,7 @@ reg('xbCircleFit', {
 /* ================================================================== 30 xbTriangleSet — 三角組
    rows of one, two, three… glyphs build a triangle of type on a triangular plate */
 reg('xbTriangleSet', {
-  name: '三角組', en: 'Triangle Setting', tags: ['graphic', 'pop', 'editorial'], ae: 'stack', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 16,
+  name: '삼각 짜임', en: 'Triangle Setting', tags: ['graphic', 'pop', 'editorial'], ae: 'stack', w: 0.8, treat: 'safe', fits: n => n >= 1 && n <= 16,
   plan(rng, cut, st) { return { font: rng.pick(fontsOf(st, ['display', 'serif'])), inv: rng.chance(0.4), style: rng.pick(['plate', 'plate', 'outline']), col: rng.pick(['ink', 'accent', 'fg']) }; },
   render(env) {
     const { W, H, sc, Pm, M, txt, out, lw } = base(env);

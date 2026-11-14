@@ -103,7 +103,7 @@ function inItem(env, it, fn) {
 
 /* 四辺が詰まる — the crop closes one edge at a time: left, top, right, bottom, round after round, each move a clean step marked by a tick on the moving edge */
 X.xiCropTurns = {
-  name: '四辺が詰まる', en: 'Crop In Turns', tags: ['graphic', 'editorial', 'glitch'], w: 1, ae: 'wipe',
+  name: '네 변이 좁혀짐', en: 'Crop In Turns', tags: ['graphic', 'editorial', 'glitch'], w: 1, ae: 'wipe',
   outDur: dur => clamp(dur * 0.42, 0.32, 0.8),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.3), S = 11, u = p * S, n = [0, 0, 0, 0];
@@ -123,7 +123,7 @@ X.xiCropTurns = {
 
 /* 覗き窓が去る — the view narrows to a small framed finder at the head of the line, the finder pans along the text, runs off its end and shuts */
 X.xiFinder = {
-  name: '覗き窓が去る', en: 'Viewfinder Pan', tags: ['editorial', 'graphic', 'calm'], w: 1.1, ae: 'wipe', minDur: 0.6,
+  name: '들여다보는 창이 떠남', en: 'Viewfinder Pan', tags: ['editorial', 'graphic', 'calm'], w: 1.1, ae: 'wipe', minDur: 0.6,
   outDur: dur => clamp(dur * 0.45, 0.36, 0.9),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.3), len = F.len, hb = F.cr / 2;
@@ -146,7 +146,7 @@ X.xiFinder = {
 
 /* すれ違いワイプ — the upper half is wiped from the head, the lower half from the tail: two short bars pass each other in the middle */
 X.xiCounterWipe = {
-  name: 'すれ違いワイプ', en: 'Counter Wipe', tags: ['graphic', 'editorial', 'pop'], w: 1.2, ae: 'wipe',
+  name: '엇갈림 와이프', en: 'Counter Wipe', tags: ['graphic', 'editorial', 'pop'], w: 1.2, ae: 'wipe',
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.3), th = barW(it), v = F.v;
     const e1 = ioC(seg(p, 0, 0.84)), e2 = ioC(seg(p, 0.16, 1));
@@ -162,7 +162,7 @@ X.xiCounterWipe = {
 
 /* 二度拭き — a bar crosses the text and takes every other hairline stripe with it; it turns at the end and on the way back takes the rest */
 X.xiTwoPass = {
-  name: '二度拭き', en: 'Two-Pass Wipe', tags: ['graphic', 'editorial', 'glitch'], w: 1.1, ae: 'wipe', minDur: 0.55,
+  name: '두 번 닦기', en: 'Two-Pass Wipe', tags: ['graphic', 'editorial', 'glitch'], w: 1.1, ae: 'wipe', minDur: 0.55,
   outDur: dur => clamp(dur * 0.45, 0.36, 0.85),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.3), v = F.v;
@@ -182,7 +182,7 @@ X.xiTwoPass = {
 
 /* 中央から拭う — a double bar appears in the middle of the line and parts: the text is wiped from its centre out to both ends */
 X.xiCentreOut = {
-  name: '中央から拭う', en: 'Centre Parting', tags: ['graphic', 'editorial', 'calm'], w: 1.1, ae: 'wipe',
+  name: '가운데서 닦기', en: 'Centre Parting', tags: ['graphic', 'editorial', 'calm'], w: 1.1, ae: 'wipe',
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.3), v = F.v, th = barW(it);
     const g = (F.len / 2) * ioC(seg(p, 0.08, 1));
@@ -202,7 +202,7 @@ X.xiCentreOut = {
 
 /* 斜めに挟む — two parallel slanted edges come in from opposite corners and pinch the text into a thin diagonal sliver */
 X.xiDiagPinch = {
-  name: '斜めに挟む', en: 'Diagonal Pinch', tags: ['graphic', 'pop', 'editorial'], w: 1.1, ae: 'wipe',
+  name: '사선으로 조이기', en: 'Diagonal Pinch', tags: ['graphic', 'pop', 'editorial'], w: 1.1, ae: 'wipe',
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.25), bb = F.bb;
     const ang = ((F.v ? 90 : 0) + (cutBit(env, 11) ? 34 : -34)) * DEG, d = [Math.cos(ang), Math.sin(ang)], t = [-d[1], d[0]];
@@ -229,7 +229,7 @@ X.xiDiagPinch = {
 
 /* 虫食い穴 — round holes open here and there in the text, small at first, then they spread into each other until nothing is left */
 X.xiMothHoles = {
-  name: '虫食い穴', en: 'Moth Holes', tags: ['emotional', 'graphic', 'calm'], w: 1, ae: 'wipe', minDur: 0.6,
+  name: '벌레 먹은 구멍', en: 'Moth Holes', tags: ['emotional', 'graphic', 'calm'], w: 1, ae: 'wipe', minDur: 0.6,
   outDur: dur => clamp(dur * 0.45, 0.36, 0.9),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.15), seed = it.seed | 0, v = F.v;
@@ -258,7 +258,7 @@ X.xiMothHoles = {
 
 /* 噛みちぎる — two rows of interlocking saw teeth close on the text from both sides: a first bite, a breath, then the jaws lock and the seam pulls shut */
 X.xiSawBite = {
-  name: '噛みちぎる', en: 'Saw Bite', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'wipe', minDur: 0.55,
+  name: '물어뜯기', en: 'Saw Bite', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'wipe', minDur: 0.55,
   outDur: dur => clamp(dur * 0.42, 0.34, 0.8),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.25), v = F.v;
@@ -287,7 +287,7 @@ X.xiSawBite = {
 
 /* 放射ブラインド — the text is seen through a turning fan of wedges around its centre; the wedges narrow one after another until the fan is shut */
 X.xiRadialBlinds = {
-  name: '放射ブラインド', en: 'Radial Blinds', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'wipe',
+  name: '방사형 블라인드', en: 'Radial Blinds', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'wipe',
   apply(env, it, p) {
     const sz = it.size, bb = dBox(it, sz * 0.25), n = 12, R = Math.hypot(bb.w, bb.h) / 2 + sz * 0.2;
     const turn = (cutBit(env, 21) ? 1 : -1) * 42 * DEG * ioC(p), wd = [];
@@ -302,7 +302,7 @@ X.xiRadialBlinds = {
 
 /* 丸窓 — the text shrinks back into a row of portholes, each ringed for a moment; the portholes then close from the ends towards the middle */
 X.xiPortholes = {
-  name: '丸窓', en: 'Portholes', tags: ['pop', 'graphic', 'calm'], w: 0.9, ae: 'shrink', minDur: 0.55,
+  name: '둥근 창', en: 'Portholes', tags: ['pop', 'graphic', 'calm'], w: 0.9, ae: 'shrink', minDur: 0.55,
   outDur: dur => clamp(dur * 0.42, 0.34, 0.8),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.2), v = F.v;
@@ -324,7 +324,7 @@ X.xiPortholes = {
 
 /* 網目に痩せる — the text thins to a diagonal lattice: only two sets of crossing slanted lines of it remain, and they grow finer until they are gone */
 X.xiLattice = {
-  name: '網目に痩せる', en: 'Lattice Thin', tags: ['graphic', 'editorial', 'calm'], w: 1, ae: 'wipe', minDur: 0.5,
+  name: '그물눈으로 야윔', en: 'Lattice Thin', tags: ['graphic', 'editorial', 'calm'], w: 1, ae: 'wipe', minDur: 0.5,
   outDur: dur => clamp(dur * 0.42, 0.34, 0.8),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.2), bb = F.bb;
@@ -354,7 +354,7 @@ X.xiLattice = {
 
 /* 波紋抜き — the text is cut into concentric rings around its centre; ring after ring thins to a hairline and goes out */
 X.xiRings = {
-  name: '波紋抜き', en: 'Ring Shutters', tags: ['graphic', 'calm', 'emotional'], w: 1, ae: 'wipe',
+  name: '잔물결 빠짐', en: 'Ring Shutters', tags: ['graphic', 'calm', 'emotional'], w: 1, ae: 'wipe',
   outDur: dur => clamp(dur * 0.4, 0.3, 0.8),
   apply(env, it, p) {
     const sz = it.size, bb = dBox(it, sz * 0.2), Rm = Math.hypot(bb.w, bb.h) / 2;
@@ -392,7 +392,7 @@ function spiralOrder(nx, ny) {
   SPIRAL.set(key, o); return o;
 }
 X.xiSpiralTiles = {
-  name: '渦巻きタイル', en: 'Spiral Tiles', tags: ['graphic', 'glitch', 'pop'], w: 0.8, ae: 'wipe', minDur: 0.55,
+  name: '소용돌이 타일', en: 'Spiral Tiles', tags: ['graphic', 'glitch', 'pop'], w: 0.8, ae: 'wipe', minDur: 0.55,
   outDur: dur => clamp(dur * 0.45, 0.36, 0.9),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.15), v = F.v;
@@ -413,7 +413,7 @@ X.xiSpiralTiles = {
 
 /* まぶたを閉じる — two curved lids close over the text like an eye: they droop, lift once more, then shut, and the lash line draws in to nothing */
 X.xiEyelid = {
-  name: 'まぶたを閉じる', en: 'Eyelid', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'wipe', minDur: 0.6,
+  name: '눈꺼풀 닫기', en: 'Eyelid', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'wipe', minDur: 0.6,
   outDur: dur => clamp(dur * 0.45, 0.38, 0.95),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.25), v = F.v;
@@ -444,7 +444,7 @@ X.xiEyelid = {
 
 /* 格子が通る — a picket of slits slides across the text while its slats widen: the text flickers through ever narrower gaps and is shut out */
 X.xiPicket = {
-  name: '格子が通る', en: 'Picket Pass', tags: ['graphic', 'glitch', 'editorial'], w: 1, ae: 'wipe',
+  name: '격자 통과', en: 'Picket Pass', tags: ['graphic', 'glitch', 'editorial'], w: 1, ae: 'wipe',
   outDur: dur => clamp(dur * 0.4, 0.3, 0.8),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.3), v = F.v;
@@ -463,7 +463,7 @@ X.xiPicket = {
 
 /* インターレース — the text splits into its two scan-line fields: one slips out of register, then the other the opposite way, and the two fields run off in opposite directions */
 X.xiFields = {
-  name: 'インターレース', en: 'Field Split', tags: ['glitch', 'graphic', 'editorial'], w: 1.1, ae: 'slice',
+  name: '인터레이스', en: 'Field Split', tags: ['glitch', 'graphic', 'editorial'], w: 1.1, ae: 'slice',
   outDur: dur => clamp(dur * 0.4, 0.3, 0.75),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.3), v = F.v;
@@ -483,7 +483,7 @@ X.xiFields = {
 
 /* 引き出し — the text is a chest of drawers: slice after slice is tugged out a notch, waits, and is then pulled right out, alternately to either side */
 X.xiDrawers = {
-  name: '引き出し', en: 'Drawers', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'slice', minDur: 0.5,
+  name: '서랍', en: 'Drawers', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'slice', minDur: 0.5,
   outDur: dur => clamp(dur * 0.42, 0.34, 0.8),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.2), n = clamp(Math.round(F.cr / (sz * 0.28)), 4, 9), h = F.cr / n;
@@ -498,7 +498,7 @@ X.xiDrawers = {
 
 /* 行違い送り — the text scrolls out of its own fixed window in strips, neighbouring strips in opposite directions, between two end rails */
 X.xiCounterScroll = {
-  name: '行違い送り', en: 'Counter Scroll', tags: ['graphic', 'editorial', 'pop'], w: 1.2, ae: 'slice',
+  name: '엇갈림 스크롤', en: 'Counter Scroll', tags: ['graphic', 'editorial', 'pop'], w: 1.2, ae: 'slice',
   outDur: dur => clamp(dur * 0.4, 0.3, 0.75),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.25), v = F.v, n = clamp(Math.round(F.cr / (sz * 0.55)), 2, 8), h = F.cr / n;
@@ -513,7 +513,7 @@ X.xiCounterScroll = {
 
 /* ピストン抜け — between two rails the text is cut into upright slices that work like pistons: one after another they dip, then plunge out behind the rails, alternately up and down */
 X.xiPistons = {
-  name: 'ピストン抜け', en: 'Pistons', tags: ['graphic', 'pop', 'glitch'], w: 1, ae: 'slice', minDur: 0.5,
+  name: '피스톤 빠짐', en: 'Pistons', tags: ['graphic', 'pop', 'glitch'], w: 1, ae: 'slice', minDur: 0.5,
   outDur: dur => clamp(dur * 0.42, 0.34, 0.8),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.25), v = F.v, n = clamp(Math.round(F.len / (sz * 0.5)), 3, 14), w = F.len / n;
@@ -531,7 +531,7 @@ X.xiPistons = {
 
 /* スライスの波 — a ripple runs through the upright slices of the text, each hopping as it passes; on the second pass every slice it reaches shoots away */
 X.xiSliceWave = {
-  name: 'スライスの波', en: 'Slice Wave', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'slice', minDur: 0.55,
+  name: '조각 물결', en: 'Slice Wave', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'slice', minDur: 0.55,
   outDur: dur => clamp(dur * 0.42, 0.34, 0.8),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.3), n = clamp(Math.round(F.len / (sz * 0.4)), 4, 12), w = F.len / n;
@@ -551,7 +551,7 @@ X.xiSliceWave = {
 
 /* 板で持ち去る — a plate is laid over the text from above; after a beat the plate tips, backs up a little and slides off sideways, and the place is empty */
 X.xiPlateCarry = {
-  name: '板で持ち去る', en: 'Plate Carry', tags: ['pop', 'graphic', 'editorial'], w: 1.1, ae: 'wipe', minDur: 0.55,
+  name: '판으로 들고 감', en: 'Plate Carry', tags: ['pop', 'graphic', 'editorial'], w: 1.1, ae: 'wipe', minDur: 0.55,
   outDur: dur => clamp(dur * 0.45, 0.38, 0.9),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.16), v = F.v, col = plateCol(env, it), a = al(it);
@@ -569,7 +569,7 @@ X.xiPlateCarry = {
 
 /* 二枚板で閉じる — two plates slide in from the ends and meet over the text; each then folds away to its own edge, and the two edge lines draw back */
 X.xiTwinPlates = {
-  name: '二枚板で閉じる', en: 'Twin Plates', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'wipe', minDur: 0.55,
+  name: '두 장 판으로 닫기', en: 'Twin Plates', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'wipe', minDur: 0.55,
   outDur: dur => clamp(dur * 0.45, 0.38, 0.9),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.16), v = F.v, col = hot(env, it), a = al(it), th = barW(it);
@@ -585,7 +585,7 @@ X.xiTwinPlates = {
 
 /* シャッター — a slatted shutter rolls down over the text; when it is down, the slats thin out one after another and behind them there is nothing */
 X.xiRollShutter = {
-  name: 'シャッター', en: 'Roll Shutter', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'wipe', minDur: 0.55,
+  name: '셔터', en: 'Roll Shutter', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'wipe', minDur: 0.55,
   outDur: dur => clamp(dur * 0.45, 0.38, 0.9),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.16), v = F.v, col = hot(env, it), a = al(it);
@@ -604,7 +604,7 @@ X.xiRollShutter = {
 
 /* 黒塗り — the text is redacted: solid bars in the text's own colour slam down over it piece by piece, then each bar flattens to a rule and the rule is drawn back */
 X.xiRedact = {
-  name: '黒塗り', en: 'Redacted', tags: ['editorial', 'graphic', 'glitch'], w: 0.9, ae: 'wipe', minDur: 0.6,
+  name: '먹칠', en: 'Redacted', tags: ['editorial', 'graphic', 'glitch'], w: 0.9, ae: 'wipe', minDur: 0.6,
   outDur: dur => clamp(dur * 0.45, 0.38, 0.9),
   apply(env, it, p) {
     const lay = layOf(it), sz = it.size, sx = it.sx || 1, sy = it.sy || 1, v = !!it.vertical, seed = it.seed | 0;
@@ -643,7 +643,7 @@ X.xiRedact = {
 
 /* 反転帯 — a band in the text's colour opens behind the line so the text flips to the background colour; the band then closes in from both ends and takes the text with it */
 X.xiInverseBand = {
-  name: '反転帯', en: 'Inverse Band', tags: ['graphic', 'editorial', 'pop'], w: 1.1, ae: 'wipe', minDur: 0.5,
+  name: '반전 띠', en: 'Inverse Band', tags: ['graphic', 'editorial', 'pop'], w: 1.1, ae: 'wipe', minDur: 0.5,
   outDur: dur => clamp(dur * 0.42, 0.34, 0.85),
   apply(env, it, p) {
     const sz = it.size, F = frame(it, sz * 0.14), v = F.v, col = inkOf(env, it), inv = env.sc.bg, a = al(it);
@@ -662,7 +662,7 @@ X.xiInverseBand = {
 
 /* 塗りが落ちる — the solid fill lets go of its outline and drops out through a slot under the line; the empty outline is then un-drawn */
 X.xiFillDrop = {
-  name: '塗りが落ちる', en: 'Fill Drops Out', tags: ['graphic', 'emotional', 'editorial'], w: 1, ae: 'fall', minDur: 0.55,
+  name: '채움이 빠짐', en: 'Fill Drops Out', tags: ['graphic', 'emotional', 'editorial'], w: 1, ae: 'fall', minDur: 0.55,
   outDur: dur => clamp(dur * 0.45, 0.38, 0.9),
   apply(env, it, p) {
     const sz = it.size, a = al(it), ud = seg(p, 0.38, 0.97);
@@ -682,7 +682,7 @@ X.xiFillDrop = {
 
 /* 点線にほどける — the fill is wiped off, leaving the bare outline; the outline breaks into dashes, the dashes shorten to dots, and the dots go out */
 X.xiDotted = {
-  name: '点線にほどける', en: 'Into Dashes', tags: ['calm', 'editorial', 'emotional'], w: 1, ae: 'wipe', minDur: 0.55,
+  name: '점선으로 풀림', en: 'Into Dashes', tags: ['calm', 'editorial', 'emotional'], w: 1, ae: 'wipe', minDur: 0.55,
   outDur: dur => clamp(dur * 0.45, 0.38, 0.9),
   apply(env, it, p) {
     const sz = it.size, a = al(it), F = frame(it, sz * 0.3), v = F.v, had = it.fill !== false;

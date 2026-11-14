@@ -101,7 +101,7 @@ const OS = dur => clamp(dur * 0.34, 0.24, 0.62);       // short moves
 
 /* 開き戸 — the whole line is a door hinged on one end: it opens a hair the wrong way, then swings round edge-on and is gone */
 X.xjGateSwing = {
-  name: '開き戸', en: 'Swing Gate', tags: ['graphic', 'editorial', 'pop'], w: 1.2, ae: 'stretch', outDur: OS,
+  name: '여닫이문', en: 'Swing Gate', tags: ['graphic', 'editorial', 'pop'], w: 1.2, ae: 'stretch', outDur: OS,
   apply(env, it, p) {
     const end = cutBit(env, 1) ? 1 : 0, v = !!it.vertical, c0 = inkOf(env, it), a = al(it), sz = it.size;
     const q = seg(p, 0.1, 1), th = E.inOutSine(q) * PI / 2, s = Math.sin(th);
@@ -120,7 +120,7 @@ X.xjGateSwing = {
 
 /* 直角に抜ける — the line turns a quarter turn on its centre, then shoots out along its own length */
 X.xjQuarterTurn = {
-  name: '直角に抜ける', en: 'Quarter Turn', tags: ['graphic', 'pop', 'editorial'], w: 1.1, ae: 'stretch', outDur: OD,
+  name: '직각으로 빠짐', en: 'Quarter Turn', tags: ['graphic', 'pop', 'editorial'], w: 1.1, ae: 'stretch', outDur: OD,
   apply(env, it, p) {
     const dir = cutBit(env, 2) ? 1 : -1, go = cutBit(env, 3) ? 1 : -1, sz = it.size, c = at(it, 0.5, 0.5);
     const L0 = lenAlong(it), room = (it.vertical ? env.W : env.H) * 0.8;
@@ -138,7 +138,7 @@ X.xjQuarterTurn = {
 
 /* 針になって飛ぶ — the line is pressed together into one thin needle across the writing direction; the needle fires off */
 X.xjNeedle = {
-  name: '針になって飛ぶ', en: 'Needle Shot', tags: ['graphic', 'glitch', 'pop'], w: 1, ae: 'stretch', outDur: OD,
+  name: '바늘이 되어 날아감', en: 'Needle Shot', tags: ['graphic', 'glitch', 'pop'], w: 1, ae: 'stretch', outDur: OD,
   apply(env, it, p) {
     const sz = it.size, go = cutBit(env, 4) ? 1 : -1, c0 = inkOf(env, it);
     const q1 = ioC(seg(p, 0, 0.44)), u = iC(seg(p, 0.46, 1)), cr = crossV(it), b = lbox(it), cl = it.vertical ? b.w : b.h;
@@ -152,7 +152,7 @@ X.xjNeedle = {
 
 /* 大きな弧で去る — the line rides the rim of a big unseen wheel: it rolls back a little, then swings away along the arc */
 X.xjBigWheel = {
-  name: '大きな弧で去る', en: 'Big Wheel', tags: ['pop', 'emotional', 'graphic'], w: 1.2, ae: 'drift', outDur: OD,
+  name: '큰 호를 그리며 떠남', en: 'Big Wheel', tags: ['pop', 'emotional', 'graphic'], w: 1.2, ae: 'drift', outDur: OD,
   apply(env, it, p) {
     const sz = it.size, bb = dBox(it, 0), side = cutBit(env, 5) ? 1 : -1, dir = cutBit(env, 6) ? 1 : -1;
     const R = Math.max(env.H * 0.75, bb.w * 0.65), px = bb.cx, py = bb.cy + side * R;
@@ -166,7 +166,7 @@ X.xjBigWheel = {
 
 /* 角を軸に払う — pinned at a bottom corner, the line sweeps up like a wiper blade and shrinks into its pin; the pin pops */
 X.xjWiper = {
-  name: '角を軸に払う', en: 'Corner Sweep', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'shrink', outDur: OD,
+  name: '모서리 축 쓸기', en: 'Corner Sweep', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'shrink', outDur: OD,
   apply(env, it, p) {
     const sz = it.size, c = cutBit(env, 7) ? 0 : 1, pv = at(it, c, 1), a = al(it), acc = hot(env, it);
     pivot(it, pv[0], pv[1], (c ? 1 : -1) * 112 * ioC(seg(p, 0.06, 0.88)));
@@ -179,7 +179,7 @@ X.xjWiper = {
 
 /* 歯車送り — the line is turned in clicks, like a ratchet: every click a sharp 30° and a size smaller, the last click closes it */
 X.xjRatchet = {
-  name: '歯車送り', en: 'Ratchet Out', tags: ['graphic', 'glitch', 'pop'], w: 0.9, ae: 'shrink', minDur: 0.55, outDur: OD,
+  name: '톱니 넘김', en: 'Ratchet Out', tags: ['graphic', 'glitch', 'pop'], w: 0.9, ae: 'shrink', minDur: 0.55, outDur: OD,
   apply(env, it, p) {
     const n = 5, dir = cutBit(env, 8) ? 1 : -1, c = at(it, 0.5, 0.5);
     let r = 0, s = 0;
@@ -196,7 +196,7 @@ X.xjRatchet = {
 
 /* 糸で引き抜く — a string comes in from off-screen and catches the end of the line; two tugs, then the whole line is yanked out along it */
 X.xjYank = {
-  name: '糸で引き抜く', en: 'Yanked Away', tags: ['pop', 'graphic', 'emotional'], w: 1.1, ae: 'drift', minDur: 0.6, outDur: OD,
+  name: '실로 잡아 뺌', en: 'Yanked Away', tags: ['pop', 'graphic', 'emotional'], w: 1.1, ae: 'drift', minDur: 0.6, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), dx = cutBit(env, 9) ? 1 : -1, v = !!it.vertical;
     const d = [dx * 0.8, -0.6], hu = v ? 0.5 : (dx > 0 ? 1 : 0), hv = v ? 0 : 0.5;
@@ -218,7 +218,7 @@ X.xjYank = {
 
 /* 床が抜ける — a floor line appears under the line; the line hops, lands with a squash, the floor swings open and it drops straight through */
 X.xjTrapdoor = {
-  name: '床が抜ける', en: 'Trapdoor', tags: ['pop', 'graphic'], w: 1, ae: 'fall', minDur: 0.6, outDur: OD,
+  name: '바닥이 꺼짐', en: 'Trapdoor', tags: ['pop', 'graphic'], w: 1, ae: 'fall', minDur: 0.6, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), bb = dBox(it, 0), yf = bb.y1 + sz * 0.1, x0 = bb.x0 - sz * 0.2, x1 = bb.x1 + sz * 0.2, half = (x1 - x0) / 2;
     const h = seg(p, 0.08, 0.36), sq = Math.sin(PI * seg(p, 0.36, 0.5)), cr = Math.sin(PI * seg(p, 0, 0.1));
@@ -235,7 +235,7 @@ X.xjTrapdoor = {
 
 /* 縁から落ちる — the line slides along a ledge until more than half of it hangs over the end; it tips over the edge, slips off and falls */
 X.xjEdgeTeeter = {
-  name: '縁から落ちる', en: 'Off The Ledge', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'fall', minDur: 0.6, outDur: OD,
+  name: '가장자리에서 떨어짐', en: 'Off The Ledge', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'fall', minDur: 0.6, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), bb = dBox(it, 0), dir = cutBit(env, 10) ? 1 : -1;
     const yl = bb.y1 + sz * 0.08, ex = bb.cx + dir * bb.w * 0.1, sx0 = dir > 0 ? bb.x0 - sz * 0.2 : bb.x1 + sz * 0.2;
@@ -253,7 +253,7 @@ X.xjEdgeTeeter = {
 
 /* 横から弾かれる — a puck slides in from the side and hits the end of the line; the line shears with the blow and is knocked clean out, the puck stays behind */
 X.xjPuckHit = {
-  name: '横から弾かれる', en: 'Knocked Out', tags: ['pop', 'graphic'], w: 1, ae: 'scatter', minDur: 0.55, outDur: OD,
+  name: '옆에서 튕겨 나감', en: 'Knocked Out', tags: ['pop', 'graphic'], w: 1, ae: 'scatter', minDur: 0.55, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), bb = dBox(it, 0), dir = cutBit(env, 11) ? 1 : -1, s = sz * 0.3, t0 = 0.3;
     const hitX = (dir > 0 ? bb.x0 : bb.x1) - dir * s * 0.5, u = seg(p, t0, 1);
@@ -277,7 +277,7 @@ X.xjPuckHit = {
 
 /* ゴムで弾ける — pinned at one end, the line is stretched out long and thin like a rubber band; the pin lets go and it snaps away to the far side */
 X.xjRubberSnap = {
-  name: 'ゴムで弾ける', en: 'Rubber Snap', tags: ['pop', 'graphic'], w: 1.1, ae: 'stretch', minDur: 0.5, outDur: OD,
+  name: '고무줄 튕김', en: 'Rubber Snap', tags: ['pop', 'graphic'], w: 1.1, ae: 'stretch', minDur: 0.5, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), a0 = cutBit(env, 12) ? 0 : 1, sgn = a0 ? -1 : 1, t0 = 0.52;
     const pin = it.vertical ? at(it, 0.5, a0) : at(it, a0, 0.5), acc = hot(env, it);
@@ -297,7 +297,7 @@ X.xjRubberSnap = {
 
 /* 放り投げる — the line is tossed like a card: up and across in an arc, flipping over and over, getting smaller, and down out of the frame */
 X.xjCardToss = {
-  name: '放り投げる', en: 'Card Toss', tags: ['pop', 'emotional'], w: 1, ae: 'fall', minDur: 0.5, outDur: OD,
+  name: '휙 던지기', en: 'Card Toss', tags: ['pop', 'emotional'], w: 1, ae: 'fall', minDur: 0.5, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, bb = dBox(it, 0), dir = cutBit(env, 13) ? 1 : -1, c0 = inkOf(env, it), u = clamp(p);
     const c = at(it, 0.5, 0.5), ph = PI * 3.5 * Math.pow(u, 1.15), cs = Math.cos(ph), up = env.H * 0.7;
@@ -312,7 +312,7 @@ X.xjCardToss = {
 
 /* 壁にぶつかる — the line is thrown at the side of the frame, flattens against it, then slides down the wall and out */
 X.xjWallSplat = {
-  name: '壁にぶつかる', en: 'Wall Splat', tags: ['pop', 'graphic'], w: 0.9, ae: 'fall', minDur: 0.55, outDur: OD,
+  name: '벽에 부딪힘', en: 'Wall Splat', tags: ['pop', 'graphic'], w: 0.9, ae: 'fall', minDur: 0.55, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, bb = dBox(it, 0), dir = cutBit(env, 14) ? 1 : -1, d = dir > 0 ? env.W - bb.x1 : bb.x0;
     const q1 = iQ(seg(p, 0, 0.4)), sq = oC(seg(p, 0.4, 0.5)), rb = Math.sin(PI * seg(p, 0.5, 0.66)), f = seg(p, 0.58, 1);
@@ -330,7 +330,7 @@ X.xjWallSplat = {
 
 /* へたり込む — the air goes out of the line in three puffs: it sags lower and leans further each time, lies flat, and is whisked off along the ground */
 X.xjSlump = {
-  name: 'へたり込む', en: 'Slump', tags: ['emotional', 'pop', 'calm'], w: 1, ae: 'shrink', minDur: 0.55, outDur: OD,
+  name: '주저앉기', en: 'Slump', tags: ['emotional', 'pop', 'calm'], w: 1, ae: 'shrink', minDur: 0.55, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, bb = dBox(it, 0), dir = cutBit(env, 15) ? 1 : -1, Lv = [1, 0.68, 0.38, 0.09];
     const x = clamp(p / 0.54) * 3, i = Math.min(2, Math.floor(x)), fr = x - i;
@@ -344,7 +344,7 @@ X.xjSlump = {
 
 /* ばねで跳ぶ — the line is pressed down like a spring, lets go and leaps out of the top of the frame, still bouncing in the air */
 X.xjSpringHop = {
-  name: 'ばねで跳ぶ', en: 'Spring Leap', tags: ['pop', 'graphic'], w: 1, ae: 'drift', minDur: 0.5, outDur: OD,
+  name: '용수철 도약', en: 'Spring Leap', tags: ['pop', 'graphic'], w: 1, ae: 'drift', minDur: 0.5, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, bb = dBox(it, 0), c = ioC(seg(p, 0, 0.34)), u = seg(p, 0.37, 1);
     const ky = u > 0 ? 1 - 0.5 * Math.cos(u * 17) * Math.exp(-4.2 * u) : 1 - 0.5 * c;
@@ -357,7 +357,7 @@ X.xjSpringHop = {
 
 /* 揺さぶられる — something pulls the line one way, then harder the other, then harder again, and the last pull takes it out of the frame */
 X.xjTug = {
-  name: '揺さぶられる', en: 'Tug Of War', tags: ['pop', 'glitch', 'emotional'], w: 1, ae: 'drift', minDur: 0.55, outDur: OD,
+  name: '흔들어 당기기', en: 'Tug Of War', tags: ['pop', 'glitch', 'emotional'], w: 1, ae: 'drift', minDur: 0.55, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, bb = dBox(it, 0), dir = cutBit(env, 16) ? 1 : -1, W = env.W, off = offX(env, bb, dir, sz * 2);
     const K = [0, -0.045 * W, 0.08 * W, -0.13 * W], T = [0, 0.17, 0.36, 0.56];
@@ -382,7 +382,7 @@ X.xjTug = {
 
 /* ピント送り — the focus hunts: the line goes soft, nearly snaps sharp again, then the focus is pulled right away from it */
 X.xjFocusPull = {
-  name: 'ピント送り', en: 'Focus Pull', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'blur', outDur: OD,
+  name: '초점 훑기', en: 'Focus Pull', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'blur', outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), c = at(it, 0.5, 0.5);
     const b = p < 0.3 ? 0.5 * ioC(p / 0.3) : p < 0.48 ? lerp(0.5, 0.08, ioC(seg(p, 0.3, 0.48))) : lerp(0.08, 1, iQ(seg(p, 0.48, 1)));
@@ -398,7 +398,7 @@ X.xjFocusPull = {
 
 /* 二重像に割れる — the image doubles across the line, each of the two doubles again along it; the four thin images drift apart and fade */
 X.xjDoubleVision = {
-  name: '二重像に割れる', en: 'Double Vision', tags: ['emotional', 'glitch', 'calm'], w: 1.1, ae: 'blur', outDur: OD,
+  name: '이중상으로 갈라짐', en: 'Double Vision', tags: ['emotional', 'glitch', 'calm'], w: 1.1, ae: 'blur', outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), e1 = sz * 0.46 * oC(seg(p, 0, 0.7)), e2 = sz * 0.3 * oC(seg(p, 0.28, 1));
     const cr = crossV(it), ax = alongV(it);
@@ -421,7 +421,7 @@ X.xjDoubleVision = {
 
 /* 色が抜ける — the colour drains out of the line from one end to the other, leaving a pale print of it; the print then fades */
 X.xjColourDrain = {
-  name: '色が抜ける', en: 'Colour Drain', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'wipe', outDur: OD,
+  name: '색이 빠짐', en: 'Colour Drain', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'wipe', outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), bb = dBox(it, sz * 0.3), turned = Math.abs(Math.sin((it.rot || 0) * DEG)) > 0.72, v = !!it.vertical !== turned;
     const rev = cutBit(env, 17), c0 = inkOf(env, it), pale = mixC(c0, env.sc.bg, 0.8), band = sz * 0.45, N = 3;
@@ -445,7 +445,7 @@ X.xjColourDrain = {
 
 /* 尾を引いて飛ぶ — the line dips, then climbs away on a curve, shrinking, with a tail of its own earlier positions strung out behind it */
 X.xjComet = {
-  name: '尾を引いて飛ぶ', en: 'Comet Tail', tags: ['pop', 'emotional', 'graphic'], w: 1.2, ae: 'drift', outDur: OD,
+  name: '꼬리 끌며 날아감', en: 'Comet Tail', tags: ['pop', 'emotional', 'graphic'], w: 1.2, ae: 'drift', outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), bb = dBox(it, 0), dir = cutBit(env, 18) ? 1 : -1, off = offX(env, bb, dir, sz * 2), acc = hot(env, it), c0 = inkOf(env, it);
     const c = at(it, 0.5, 0.5), base = { x: it.x, y: it.y, size: it.size, rot: it.rot || 0, stroke: it.stroke };
@@ -472,7 +472,7 @@ X.xjComet = {
 
 /* 抜け殻が追う — the solid body of the line slips out sideways and leaves its empty outline standing; the shell shivers, then is sucked out after it */
 X.xjShellChase = {
-  name: '抜け殻が追う', en: 'Shell Follows', tags: ['graphic', 'emotional', 'pop'], w: 1, ae: 'stretch', minDur: 0.55, outDur: OD,
+  name: '허물이 따라감', en: 'Shell Follows', tags: ['graphic', 'emotional', 'pop'], w: 1, ae: 'stretch', minDur: 0.55, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), bb = dBox(it, 0), dir = cutBit(env, 19) ? 1 : -1, off = offX(env, bb, dir, sz * 2);
     const u = seg(p, 0.42, 0.96), e = iC(u), hollow = it.fill === false;
@@ -490,7 +490,7 @@ X.xjShellChase = {
 
 /* 影だけ残る — the line lifts off the page and its shadow parts from it; the line flies out of the top, the shadow stays a moment longer and fades */
 X.xjShadowStay = {
-  name: '影だけ残る', en: 'Shadow Stays', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'drift', minDur: 0.55, outDur: OD,
+  name: '그림자만 남음', en: 'Shadow Stays', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'drift', minDur: 0.55, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), bb = dBox(it, 0), c = at(it, 0.5, 0.5), c0 = inkOf(env, it);
     const base = { x: it.x, y: it.y, size: it.size, stroke: it.stroke };
@@ -509,7 +509,7 @@ X.xjShadowStay = {
 
 /* 焦点を越える — as through a lens: the image shrinks to a point at the focus, comes out the other side upside-down, large and soft, and dissolves */
 X.xjThroughFocus = {
-  name: '焦点を越える', en: 'Through Focus', tags: ['emotional', 'glitch', 'graphic'], w: 0.7, ae: 'shrink', minDur: 0.5, outDur: OD,
+  name: '초점 너머로', en: 'Through Focus', tags: ['emotional', 'glitch', 'graphic'], w: 0.7, ae: 'shrink', minDur: 0.5, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), c = at(it, 0.5, 0.5), t0 = 0.44;
     if (p < t0) { scaleAt(it, c[0], c[1], 1 - iC(p / t0)); return; }
@@ -525,7 +525,7 @@ X.xjThroughFocus = {
 
 /* 流れて滲む — the camera pans off: the line smears out both ways along itself into a flat band of light and thins away */
 X.xjPanSmear = {
-  name: '流れて滲む', en: 'Pan Smear', tags: ['emotional', 'calm', 'glitch'], w: 1.1, ae: 'blur', outDur: OS,
+  name: '흘러 번짐', en: 'Pan Smear', tags: ['emotional', 'calm', 'glitch'], w: 1.1, ae: 'blur', outDur: OS,
   apply(env, it, p) {
     const sz = it.size, a = al(it), ax = alongV(it), d = sz * 0.42 * oC(seg(p, 0, 0.85)), e = iQ(p), ca = 0.55 * seg(p, 0, 0.14);
     stretchAlong(it, 0.5, 1 + 0.3 * e, 1 - 0.45 * e);
@@ -541,7 +541,7 @@ X.xjPanSmear = {
 
 /* コマ落ちフェード — no in-betweens: the line drops through four held exposures, each paler and a notch lower, and the fifth frame is empty */
 X.xjStepFade = {
-  name: 'コマ落ちフェード', en: 'Stepped Fade', tags: ['calm', 'editorial', 'emotional'], w: 1, ae: 'blur', outDur: OS,
+  name: '끊기는 페이드', en: 'Stepped Fade', tags: ['calm', 'editorial', 'emotional'], w: 1, ae: 'blur', outDur: OS,
   apply(env, it, p) {
     const T = [0.07, 0.29, 0.51, 0.73, 0.92], sz = it.size;
     let s = 0; while (s < 5 && p >= T[s]) s++;
@@ -558,7 +558,7 @@ X.xjStepFade = {
 
 /* 残像コマ送り — the line leaves in four held poses, each a jump further along and a little more askew; the poses it has left stay as thin outlines for a beat */
 X.xjOnionSkin = {
-  name: '残像コマ送り', en: 'Onion Skin', tags: ['graphic', 'pop', 'glitch'], w: 1, ae: 'glitch', minDur: 0.5, outDur: OD,
+  name: '어니언 스킨', en: 'Onion Skin', tags: ['graphic', 'pop', 'glitch'], w: 1, ae: 'glitch', minDur: 0.5, outDur: OD,
   apply(env, it, p) {
     const sz = it.size, a = al(it), dir = cutBit(env, 20) ? 1 : -1, up = cutBit(env, 21) ? -1 : 1, acc = hot(env, it), c0 = inkOf(env, it);
     const c = at(it, 0.5, 0.5), base = { x: it.x, y: it.y, size: it.size, rot: it.rot || 0, stroke: it.stroke };

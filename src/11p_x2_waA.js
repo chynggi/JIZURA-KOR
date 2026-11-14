@@ -105,7 +105,7 @@ const arcP = (cx, cy, rx, ry, a0, a1, n = 20) => { const o = []; for (let i = 0;
 
 /* 1 屏風 — a zigzag folding screen that unfolds from the middle; the line runs across all panels */
 reg('wzByobu', {
-  name: '屏風', en: 'Folding Screen', tags: ['calm', 'editorial', 'emotional'], ae: 'center', w: 1.1, treat: 'safe', fits: FIT,
+  name: '병풍', en: 'Folding Screen', tags: ['calm', 'editorial', 'emotional'], ae: 'center', w: 1.1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st), n: rng.pick([4, 6, 6]), look: rng.pick(['gold', 'plain', 'hills']), sun: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, lw } = base(env);
@@ -134,7 +134,7 @@ reg('wzByobu', {
 
 /* 2 のぼり旗 — tall banner flags on poles; one column of the line per flag, the cloth edge flutters */
 reg('wzNobori', {
-  name: 'のぼり旗', en: 'Banner Flags', tags: ['pop', 'graphic', 'emotional'], ae: 'vcols', w: 1, treat: 'safe', fits: FIT, portrait: 1.2,
+  name: '노보리 깃발', en: 'Banner Flags', tags: ['pop', 'graphic', 'emotional'], ae: 'vcols', w: 1, treat: 'safe', fits: FIT, portrait: 1.2,
   plan(rng, cut, st) { return { font: fontPick(rng, st, true), multi: rng.chance(0.7), col: rng.pick(['accent', 'ink', 'paper']), sway: rng.range(0.7, 1.3), band: rng.chance(0.6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, lw, out, mo } = base(env);
@@ -169,7 +169,7 @@ reg('wzNobori', {
 
 /* 3 千社札 — votive name stickers: tall double-framed slips slapped on one after another */
 reg('wzSenjafuda', {
-  name: '千社札', en: 'Votive Stickers', tags: ['graphic', 'pop', 'editorial'], ae: 'labels', w: 1, treat: 'safe', fits: FIT,
+  name: '센자후다', en: 'Votive Stickers', tags: ['graphic', 'pop', 'editorial'], ae: 'labels', w: 1, treat: 'safe', fits: FIT,
   enterBias: { pop: 1.5, cut: 1.4, blur: 0.5 },
   plan(rng, cut, st) { return { font: fontPick(rng, st, true), inv: rng.chance(0.5), tilt: [rng.range(-4, 4), rng.range(-4, 4), rng.range(-4, 4)], dy: [rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)], head: rng.chance(0.7) }; },
   render(env) {
@@ -204,7 +204,7 @@ reg('wzSenjafuda', {
 
 /* 4 行灯 — a box lamp with paper sides that flickers on; the line is written on the lit paper */
 reg('wzAndon', {
-  name: '行灯', en: 'Paper Floor Lamp', tags: ['calm', 'emotional', 'graphic'], ae: 'center', w: 1, treat: 'safe', fits: FIT,
+  name: '안돈', en: 'Paper Floor Lamp', tags: ['calm', 'emotional', 'graphic'], ae: 'center', w: 1, treat: 'safe', fits: FIT,
   enterBias: { blur: 1.5, flicker: 1.6, cut: 1.2 },
   plan(rng, cut, st) { return { font: fontPick(rng, st), kind: rng.pick(['floor', 'floor', 'hang']), bars: rng.int(5, 8) }; },
   render(env) {
@@ -241,7 +241,7 @@ reg('wzAndon', {
 
 /* 5 色紙 — a square poem card; the columns are "scatter-written" at staggered heights */
 reg('wzShikishi', {
-  name: '色紙', en: 'Poem Card', tags: ['calm', 'emotional', 'editorial'], ae: 'vcols', w: 1.2, treat: 'safe', fits: FIT,
+  name: '시키시', en: 'Poem Card', tags: ['calm', 'emotional', 'editorial'], ae: 'vcols', w: 1.2, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st), flow: rng.pick(['down', 'up', 'wave']), tilt: rng.range(-2, 2), deco: rng.pick(['flecks', 'band', 'flecks']), seal: rng.chance(0.75) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw } = base(env);
@@ -276,7 +276,7 @@ reg('wzShikishi', {
 
 /* 6 風鈴 — wind chimes: a glass bell with the line on the paper strip that swings below it */
 reg('wzFurin', {
-  name: '風鈴', en: 'Wind Chime', tags: ['calm', 'emotional', 'pop'], ae: 'vcols', w: 0.8, treat: 'safe', fits: FIT, portrait: 1.2,
+  name: '풍경', en: 'Wind Chime', tags: ['calm', 'emotional', 'pop'], ae: 'vcols', w: 0.8, treat: 'safe', fits: FIT, portrait: 1.2,
   plan(rng, cut, st) { return { font: fontPick(rng, st), multi: rng.chance(0.7), pat: rng.pick(['dots', 'wave', 'ring']), ph: rng.range(0, 6), amp: rng.range(3.5, 6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, mo } = base(env);
@@ -319,7 +319,7 @@ reg('wzFurin', {
 
 /* 7 番付表 — a ranking sheet: columns shrink from right to left like a sumo banzuke, small print fills the rest */
 reg('wzBanzuke', {
-  name: '番付表', en: 'Ranking Sheet', tags: ['graphic', 'editorial', 'pop'], ae: 'vcols', w: 1, treat: 'safe', fits: FIT,
+  name: '반즈케표', en: 'Ranking Sheet', tags: ['graphic', 'editorial', 'pop'], ae: 'vcols', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st, true), ratio: rng.range(0.7, 0.82), tiers: rng.int(2, 3), stamp: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, no } = base(env);
@@ -361,7 +361,7 @@ reg('wzBanzuke', {
 
 /* 8 手ぬぐい — a long patterned cotton cloth that unrolls; a plain panel in the middle carries the line */
 reg('wzTenugui', {
-  name: '手ぬぐい', en: 'Printed Cotton Cloth', tags: ['pop', 'graphic', 'calm'], ae: 'pill', w: 1, treat: 'safe', fits: FIT,
+  name: '데누구이', en: 'Printed Cotton Cloth', tags: ['pop', 'graphic', 'calm'], ae: 'pill', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st), pat: rng.pick(['mame', 'shima', 'uroko']), col: rng.pick(['ink', 'accent', 'paper']), tilt: rng.range(-2.5, 2.5), rev: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw } = base(env);
@@ -406,7 +406,7 @@ reg('wzTenugui', {
 
 /* 9 竹簡 — bamboo slips tied with cords; each column of the line sits on its own slip, unrolled right to left */
 reg('wzChikkan', {
-  name: '竹簡', en: 'Bamboo Slips', tags: ['editorial', 'calm', 'graphic'], ae: 'vcols', w: 1, treat: 'safe', fits: FIT,
+  name: '죽간', en: 'Bamboo Slips', tags: ['editorial', 'calm', 'graphic'], ae: 'vcols', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st), extra: rng.int(1, 2), roll: rng.chance(0.6), cord: rng.pick(['accent', 'ink']) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw } = base(env);
@@ -443,7 +443,7 @@ reg('wzChikkan', {
 
 /* 10 将棋の駒 — every glyph is a five-sided shogi piece slapped onto the board grid */
 reg('wzShogi', {
-  name: '将棋の駒', en: 'Shogi Pieces', tags: ['graphic', 'pop', 'editorial'], ae: 'labels', w: 0.9, treat: false, fits: n => n >= 1 && n <= 12,
+  name: '쇼기 말', en: 'Shogi Pieces', tags: ['graphic', 'pop', 'editorial'], ae: 'labels', w: 0.9, treat: false, fits: n => n >= 1 && n <= 12,
   enterBias: { pop: 1.5, drop: 1.5, cut: 1.2 },
   plan(rng, cut, st) { return { font: fontPick(rng, st, true), red: rng.int(0, 11), hasRed: rng.chance(0.6), stars: rng.chance(0.7) }; },
   render(env) {
@@ -483,7 +483,7 @@ reg('wzShogi', {
 
 /* 11 のし紙 — gift wrapping paper: a red-and-white cord runs across and ties itself into a bow above the line */
 reg('wzNoshi', {
-  name: 'のし紙', en: 'Gift Wrap Cord', tags: ['pop', 'emotional', 'editorial'], ae: 'center', w: 1, treat: 'safe', fits: FIT,
+  name: '노시가미', en: 'Gift Wrap Cord', tags: ['pop', 'emotional', 'editorial'], ae: 'center', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st), knot: rng.pick(['cho', 'cho', 'kiri']), emblem: rng.chance(0.75), strands: rng.int(3, 5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw } = base(env);
@@ -520,7 +520,7 @@ reg('wzNoshi', {
 
 /* 12 源氏雲 — stepped cloud bands with round ends slide in from both sides; the line sits in the gap between them */
 reg('wzGenjiGumo', {
-  name: '源氏雲', en: 'Cloud Bands', tags: ['calm', 'emotional', 'editorial'], ae: 'center', w: 1.1, fits: FIT,
+  name: '겐지 구름', en: 'Cloud Bands', tags: ['calm', 'emotional', 'editorial'], ae: 'center', w: 1.1, fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st), col: rng.pick(['accent', 'fg', 'accent']), side: rng.pick(['diag', 'anti', 'both']), dust: rng.chance(0.7), seed: rng.int(1, 1e6) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, mo } = base(env);
@@ -547,7 +547,7 @@ reg('wzGenjiGumo', {
 
 /* 13 鳥居 — a shrine gate is raised (pillars, tie beam, curved top beam); the line stands between its pillars or beside it */
 reg('wzTorii', {
-  name: '鳥居', en: 'Torii Gate', tags: ['graphic', 'emotional', 'calm'], ae: 'center', w: 1, fits: FIT,
+  name: '도리이', en: 'Torii Gate', tags: ['graphic', 'emotional', 'calm'], ae: 'center', w: 1, fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st), pos: rng.pick(['in', 'in', 'side']), sun: rng.chance(0.5), flip: rng.chance(0.5) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw } = base(env);
@@ -587,7 +587,7 @@ reg('wzTorii', {
 
 /* 14 団扇 — a round paper fan swings in on its handle and keeps fanning gently; the line is printed on its face */
 reg('wzUchiwa', {
-  name: '団扇', en: 'Round Fan', tags: ['pop', 'calm', 'emotional'], ae: 'circle', w: 1, treat: 'safe', fits: FIT,
+  name: '둥근 부채', en: 'Round Fan', tags: ['pop', 'calm', 'emotional'], ae: 'circle', w: 1, treat: 'safe', fits: FIT,
   plan(rng, cut, st) { return { font: fontPick(rng, st), pat: rng.pick(['nami', 'maru', 'plain']), col: rng.pick(['paper', 'paper', 'accent']), dir: rng.pick([-1, 1]), ribs: rng.int(13, 19) }; },
   render(env) {
     const { W, H, sc, cut, Pm, M, port, txt, out, lw, mo } = base(env);
@@ -622,7 +622,7 @@ reg('wzUchiwa', {
 
 /* 15 簾 — a bamboo blind covers the screen, rolls up to uncover the line and comes down again at the end */
 reg('wzSudare', {
-  name: 'すだれ', en: 'Bamboo Blind', tags: ['calm', 'emotional', 'graphic'], ae: 'center', w: 0.9, fits: FIT,
+  name: '대나무 발', en: 'Bamboo Blind', tags: ['calm', 'emotional', 'graphic'], ae: 'center', w: 0.9, fits: FIT,
   enterBias: { cut: 1.6, blur: 1.2 },
   plan(rng, cut, st) { return { font: fontPick(rng, st), kind: rng.pick(['one', 'one', 'two']), lift: rng.range(0.24, 0.32), tassel: rng.chance(0.8) }; },
   render(env) {
@@ -734,7 +734,7 @@ const yukiwaPath = (ctx, x, y, R, rot) => {
 };
 
 /* 七宝 — a window (round, band or panel) of interlocking circles that wipes open; the knots pulse */
-D('wzShippo', '七宝', 'Interlocked Circles', ['calm', 'graphic', 'editorial'], 1, 'grid', 'front', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzShippo', '칠보', 'Interlocked Circles', ['calm', 'graphic', 'editorial'], 1, 'grid', 'front', (env, ctx, bb, p, t, o, u, mo) => {
   const r = 30 * u * (p.big ? 1.3 : 1), shape = p.v % 3;
   const w0 = shape === 0 ? r * 6.2 : shape === 1 ? cl(bwOf(bb) * 0.8, r * 8, env.W * 0.7) : r * 8, h0 = shape === 0 ? r * 6.2 : shape === 1 ? r * 3 : r * 4.4;
   const sp = spotFit(env, bb, w0, h0, p, 26 * u); if (!sp) return;
@@ -753,7 +753,7 @@ D('wzShippo', '七宝', 'Interlocked Circles', ['calm', 'graphic', 'editorial'],
 });
 
 /* 矢絣 — strips of arrow-feather chevrons beside the lyric (above / below it when the sides are full), scrolling in opposite directions */
-D('wzYagasuri', '矢絣', 'Arrow Feather Strips', ['graphic', 'pop', 'editorial'], 1, 'stripes', 'front', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzYagasuri', '야가스리', 'Arrow Feather Strips', ['graphic', 'pop', 'editorial'], 1, 'stripes', 'front', (env, ctx, bb, p, t, o, u, mo) => {
   const { W, H } = env, m = MG(env) * 0.7, sw = 46 * u * (p.big ? 1.3 : 1), gap = 14 * u, g0 = 30 * u;
   let horiz = false, plus = !!p.right;
   const fr = [W - m - bb.x1 - g0, bb.x0 - g0 - m, H - m - bb.y1 - g0, bb.y0 - g0 - m];
@@ -781,7 +781,7 @@ D('wzYagasuri', '矢絣', 'Arrow Feather Strips', ['graphic', 'pop', 'editorial'
 });
 
 /* 鱗 — rows of scale triangles under (or over) the lyric that pop up one by one and shimmer */
-D('wzUroko', '鱗文', 'Scale Triangles', ['graphic', 'pop', 'glitch'], 1, 'shapes', 'front', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzUroko', '비늘 무늬', 'Scale Triangles', ['graphic', 'pop', 'glitch'], 1, 'shapes', 'front', (env, ctx, bb, p, t, o, u, mo) => {
   const { W, H } = env, m = MG(env) * 0.7, b = 42 * u * (p.big ? 1.3 : 1), th = b * 0.82, g0 = 24 * u;
   const roomB = H - m - bb.y1 - g0, roomT = bb.y0 - g0 - m;
   let low = !!p.low; if ((low ? roomB : roomT) < th) low = !low;
@@ -801,7 +801,7 @@ D('wzUroko', '鱗文', 'Scale Triangles', ['graphic', 'pop', 'glitch'], 1, 'shap
 });
 
 /* 水引 — a red-and-white cord knot (three interlocked loops and two tails) tying itself beside the lyric */
-D('wzMizuhiki', '水引', 'Gift Cord Knot', ['pop', 'emotional', 'calm'], 0.9, 'shapes', 'front', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzMizuhiki', '미즈히키', 'Gift Cord Knot', ['pop', 'emotional', 'calm'], 0.9, 'shapes', 'front', (env, ctx, bb, p, t, o, u, mo) => {
   const s0 = 112 * u * (p.big ? 1.25 : 1), sp = spotFit(env, bb, s0 * 3.1, s0 * 2.1, p, 26 * u); if (!sp) return;
   const s = s0 * sp.k, cx = sp.x + s * 1.55, cy = sp.y + s * 1.1 + Math.sin(env.ltb * 1.4) * 3 * u * mo, cA = ACC(env), cB = env.sc.fg === cA ? env.sc.sub : env.sc.fg;
   ctx.lineCap = 'round'; ctx.lineWidth = 4.2 * u * Math.max(0.7, sp.k); ctx.globalAlpha = o;
@@ -819,7 +819,7 @@ D('wzMizuhiki', '水引', 'Gift Cord Knot', ['pop', 'emotional', 'calm'], 0.9, '
 });
 
 /* 流水 — bundles of staggered parallel water lines flowing behind the lower edge of the lyric, each ending in a curl */
-D('wzRyusui', '流水', 'Flowing Water', ['calm', 'emotional', 'editorial'], 1, 'waveform', 'back', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzRyusui', '흐르는 물', 'Flowing Water', ['calm', 'emotional', 'editorial'], 1, 'waveform', 'back', (env, ctx, bb, p, t, o, u, mo) => {
   const { W } = env, L = 3 + p.n, xa = Math.max(-20 * u, bb.x0 - 200 * u), xb = Math.min(W + 20 * u, bb.x1 + 200 * u), len = xb - xa, sp = 26 * u * (p.big ? 1.3 : 1), sub = visC(env, env.sc.sub);
   const y0 = (p.low ? bb.y1 : bb.y0) - (L - 1) * sp / 2, lam = 150 * u, A = 15 * u, ph = env.ltb * 0.9 * (0.3 + mo) * (p.right ? -1 : 1);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -837,7 +837,7 @@ D('wzRyusui', '流水', 'Flowing Water', ['calm', 'emotional', 'editorial'], 1, 
 }, { subtle: true });
 
 /* 雪輪 — notched snow-ring crests that bloom around the lyric and turn slowly */
-D('wzYukiwa', '雪輪', 'Snow Rings', ['calm', 'emotional', 'pop'], 1, 'rings', 'back', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzYukiwa', '유키와', 'Snow Rings', ['calm', 'emotional', 'pop'], 1, 'rings', 'back', (env, ctx, bb, p, t, o, u, mo) => {
   const { W, H } = env, n = 2 + p.n, m = MG(env), c = COL(env, p);
   for (let k = 0; k < n; k++) {
     const R = (46 + 60 * J.r(p.seed, k, 1)) * u * (p.big ? 1.3 : 1), a = (k / n + p.r) * TAU + J.rs(p.seed, k, 2) * 0.3, e = eback(t, 0.5, k * 0.1, 1.3); if (e <= 0) continue;
@@ -854,7 +854,7 @@ D('wzYukiwa', '雪輪', 'Snow Rings', ['calm', 'emotional', 'pop'], 1, 'rings', 
 });
 
 /* 千鳥 — a flock of plump plover silhouettes flapping along an arc over the lyric */
-D('wzChidori', '千鳥', 'Plovers', ['pop', 'calm', 'emotional'], 1, 'sparks', 'front', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzChidori', '물떼새', 'Plovers', ['pop', 'calm', 'emotional'], 1, 'sparks', 'front', (env, ctx, bb, p, t, o, u, mo) => {
   const { W, H } = env, m = MG(env) * 0.7, n = 2 + p.n, sz = 44 * u * (p.big ? 1.25 : 1), need = sz * 2.9;
   let up = !p.low; if ((up ? bb.y0 - m : H - m - bb.y1) < need) up = !up;
   if ((up ? bb.y0 - m : H - m - bb.y1) < need) return;
@@ -887,7 +887,7 @@ function cornerBox(env, bb, p, S, u) {
   return { x: best.r ? W : 0, y: best.l ? H : 0, sx: best.r ? -1 : 1, sy: best.l ? -1 : 1, w: byX ? Math.min(S, best.ax) : Math.min(S, W * 0.5), h: byX ? Math.min(S, H * 0.5) : Math.min(S, best.ay) };
 }
 /* 梅の枝 — an angular plum branch grows out of a corner and its five-petal blossoms open one by one */
-D('wzUme', '梅の枝', 'Plum Branch', ['emotional', 'calm', 'pop'], 1, 'leaders', 'front', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzUme', '매화 가지', 'Plum Branch', ['emotional', 'calm', 'pop'], 1, 'leaders', 'front', (env, ctx, bb, p, t, o, u, mo) => {
   const cb = cornerBox(env, bb, p, 400 * u * (p.big ? 1.25 : 1), u); if (!cb) return;
   const X = (ux, uy) => [cb.x + cb.sx * ux * cb.w, cb.y + cb.sy * uy * cb.h], k = Math.min(cb.w, cb.h) / (400 * u), br = env.sc.sub, c = ACC(env);
   const paths = [[[0, 0.1], [0.3, 0.2], [0.5, 0.42], [0.78, 0.5], [0.93, 0.74]], [[0.3, 0.2], [0.44, 0.06], [0.66, 0.1]], [[0.5, 0.42], [0.42, 0.66], [0.52, 0.88]], [[0.78, 0.5], [0.95, 0.4]]];
@@ -918,7 +918,7 @@ D('wzUme', '梅の枝', 'Plum Branch', ['emotional', 'calm', 'pop'], 1, 'leaders
 });
 
 /* 竹 — bamboo stalks grow up joint by joint in the margin beside the lyric (faint, behind it, when there is no margin); leaves sway at the joints */
-D('wzTake', '若竹', 'Bamboo Stalks', ['calm', 'graphic', 'emotional'], 1, 'bars', 'back', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzTake', '어린 대나무', 'Bamboo Stalks', ['calm', 'graphic', 'emotional'], 1, 'bars', 'back', (env, ctx, bb, p, t, o, u, mo) => {
   const { W, H } = env, g0 = 26 * u, freeR = W - bb.x1 - g0, freeL = bb.x0 - g0;
   let right = !!p.right; if ((right ? freeR : freeL) < 80 * u && (right ? freeL : freeR) >= 80 * u) right = !right;
   const free = right ? freeR : freeL, tight = free < 80 * u, al = tight ? 0.26 : 0.9;
@@ -946,7 +946,7 @@ D('wzTake', '若竹', 'Bamboo Stalks', ['calm', 'graphic', 'emotional'], 1, 'bar
 });
 
 /* 風車 — paper pinwheels on sticks that pop up beside the lyric and keep spinning */
-D('wzKazaguruma', '風車', 'Pinwheels', ['pop', 'calm', 'emotional'], 0.9, 'shapes', 'front', (env, ctx, bb, p, t, o, u, mo) => {
+D('wzKazaguruma', '바람개비', 'Pinwheels', ['pop', 'calm', 'emotional'], 0.9, 'shapes', 'front', (env, ctx, bb, p, t, o, u, mo) => {
   const s0 = 66 * u * (p.big ? 1.25 : 1), n = p.n, sp = spotFit(env, bb, n * s0 * 2.3, s0 * 3.5, p, 24 * u); if (!sp) return;
   const s = s0 * sp.k, cA = ACC(env), cB = env.sc.fg === cA ? env.sc.sub : env.sc.fg;
   for (let k = 0; k < n; k++) {
@@ -987,7 +987,7 @@ const fadeIn = (env, d = 0.7) => E.outCubic(cl(bgT(env) / d));
 const bg = (k, d) => J.register('bg', k, Object.assign({ wa: true }, d, { draw(env, Q) { const ctx = env.ctx; ctx.save(); try { d.draw(env, Q || {}, ctx); } finally { ctx.restore(); } } }), P);
 
 /* 七宝つなぎ — a drifting field of interlocking circles; the knots swell in a slow travelling wave */
-bg('wzBgShippo', { name: '七宝つなぎ', en: 'Circle Chain Field', tags: ['calm', 'editorial', 'emotional'], w: 0.9, subtle: true,
+bg('wzBgShippo', { name: '칠보 이음', en: 'Circle Chain Field', tags: ['calm', 'editorial', 'emotional'], w: 0.9, subtle: true,
   plan: rng => ({ seed: bs(rng), r: rng.range(0.065, 0.09), k: rng.range(0.07, 0.095), dx: rng.pick([1, -1]), acc: rng.chance(0.4) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, r = Umin(env) * (Q.r || 0.08), k = Q.k || 0.08, e = fadeIn(env);
@@ -1001,7 +1001,7 @@ bg('wzBgShippo', { name: '七宝つなぎ', en: 'Circle Chain Field', tags: ['ca
   } });
 
 /* 紗綾形 — linked-manji key fret set on the diagonal; the lattice slides along itself and the line weight breathes */
-bg('wzBgSayagata', { name: '紗綾形', en: 'Key Fret Pattern', tags: ['editorial', 'graphic', 'calm'], w: 0.8,
+bg('wzBgSayagata', { name: '사야가타', en: 'Key Fret Pattern', tags: ['editorial', 'graphic', 'calm'], w: 0.8,
   plan: rng => ({ seed: bs(rng), q: rng.range(0.015, 0.02), k: rng.range(0.06, 0.08), dir: rng.pick([1, -1]), rot: rng.pick([45, 45, 0]) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, q = Umin(env) * (Q.q || 0.017), k = Q.k || 0.07, e = fadeIn(env, 0.9);
@@ -1020,7 +1020,7 @@ bg('wzBgSayagata', { name: '紗綾形', en: 'Key Fret Pattern', tags: ['editoria
   } });
 
 /* 立涌 — rising-steam lines: mirrored wavy verticals whose swellings climb slowly and breathe */
-bg('wzBgTatewaku', { name: '立涌', en: 'Rising Steam Lines', tags: ['calm', 'emotional', 'editorial'], w: 1, subtle: true,
+bg('wzBgTatewaku', { name: '다테와쿠', en: 'Rising Steam Lines', tags: ['calm', 'emotional', 'editorial'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), d: rng.range(0.1, 0.14), k: rng.range(0.09, 0.115), dots: rng.chance(0.65), dir: rng.pick([1, -1]) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, d = Umin(env) * (Q.d || 0.12), k = Q.k || 0.085, e = fadeIn(env, 0.9);
@@ -1040,7 +1040,7 @@ bg('wzBgTatewaku', { name: '立涌', en: 'Rising Steam Lines', tags: ['calm', 'e
   } });
 
 /* 流水紋 — bundles of staggered parallel water lines sliding sideways at different speeds */
-bg('wzBgRyusui', { name: '流水紋', en: 'Flowing Water Lines', tags: ['calm', 'emotional', 'editorial'], w: 1, subtle: true,
+bg('wzBgRyusui', { name: '유수문', en: 'Flowing Water Lines', tags: ['calm', 'emotional', 'editorial'], w: 1, subtle: true,
   plan: rng => ({ seed: bs(rng), n: rng.int(6, 9), k: rng.range(0.085, 0.11), dir: rng.pick([1, -1]), acc: rng.chance(0.4) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, U = Umin(env), s = Q.seed || 1, n = Q.n || 6, k = Q.k || 0.085, e = fadeIn(env, 0.9), dy = U * 0.02;
@@ -1059,7 +1059,7 @@ bg('wzBgRyusui', { name: '流水紋', en: 'Flowing Water Lines', tags: ['calm', 
   } });
 
 /* 雪輪散らし — scattered snow-ring crests, some filled and some outlined, sinking and turning very slowly */
-bg('wzBgYukiwa', { name: '雪輪散らし', en: 'Scattered Snow Rings', tags: ['calm', 'emotional', 'pop'], w: 0.9,
+bg('wzBgYukiwa', { name: '유키와 흩뿌림', en: 'Scattered Snow Rings', tags: ['calm', 'emotional', 'pop'], w: 0.9,
   plan: rng => ({ seed: bs(rng), n: rng.int(10, 14), k: rng.range(0.065, 0.085), acc: rng.chance(0.5) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, U = Umin(env), s = Q.seed || 1, n = Math.min(16, Q.n || 10), k = Q.k || 0.07, e = fadeIn(env, 0.9), bt = bgT(env);
@@ -1075,7 +1075,7 @@ bg('wzBgYukiwa', { name: '雪輪散らし', en: 'Scattered Snow Rings', tags: ['
   } });
 
 /* 矢絣 — columns of arrow-feather chevrons; neighbouring columns slide up and down against each other */
-bg('wzBgYagasuri', { name: '矢絣', en: 'Arrow Feather Field', tags: ['graphic', 'pop', 'editorial'], w: 0.9,
+bg('wzBgYagasuri', { name: '야가스리', en: 'Arrow Feather Field', tags: ['graphic', 'pop', 'editorial'], w: 0.9,
   plan: rng => ({ seed: bs(rng), d: rng.range(0.085, 0.12), k: rng.range(0.045, 0.06), spd: rng.range(0.008, 0.016), acc: rng.chance(0.35) }),
   draw(env, Q, ctx) {
     const { W, H, sc } = env, t = env.t, U = Umin(env), d = U * (Q.d || 0.1), k = Q.k || 0.05, e = fadeIn(env, 0.8), ph = d * 0.85, nc = Math.min(40, Math.ceil(W / d) + 1), x00 = (W - nc * d) / 2;

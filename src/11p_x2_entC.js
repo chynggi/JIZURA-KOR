@@ -119,7 +119,7 @@ function postLocal(it, fn) {
 
 /* 片開き戸 — the whole line is a door hinged on one edge: it swings shut from edge-on, rebounds open once and closes */
 reg('xgGate', {
-  name: '片開き戸', en: 'Gate Swing', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'spin',
+  name: '외짝 문', en: 'Gate Swing', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'spin',
   inDur: dur => clamp(dur * 0.45, 0.22, 0.8),
   apply(env, it, p) {
     const vert = !!it.vertical, b = box(it), dir = dirOf(env, 11), size = it.size;
@@ -139,7 +139,7 @@ reg('xgGate', {
 
 /* 回転看板 — the line turns one and a half times around its own upright axis like a revolving sign, showing its dim back */
 reg('xgSignSpin', {
-  name: '回転看板', en: 'Sign Spin', tags: ['pop', 'graphic'], w: 0.9, ae: 'spin', minDur: 0.5,
+  name: '회전 간판', en: 'Sign Spin', tags: ['pop', 'graphic'], w: 0.9, ae: 'spin', minDur: 0.5,
   inDur: dur => clamp(dur * 0.45, 0.25, 0.85),
   apply(env, it, p) {
     const vert = !!it.vertical, b = box(it);
@@ -153,7 +153,7 @@ reg('xgSignSpin', {
 
 /* 前のめり — slides in and brakes hard: the body pitches forward on its front bottom corner, the tail lifts and drops back */
 reg('xgNoseDive', {
-  name: '前のめり', en: 'Nose Dive', tags: ['pop', 'graphic'], w: 1, ae: 'stretch', minDur: 0.5,
+  name: '앞으로 고꾸라짐', en: 'Nose Dive', tags: ['pop', 'graphic'], w: 1, ae: 'stretch', minDur: 0.5,
   inDur: dur => clamp(dur * 0.45, 0.25, 0.85),
   apply(env, it, p) {
     const dir = dirOf(env, 13), b = box(it), size = it.size;
@@ -170,7 +170,7 @@ reg('xgNoseDive', {
 
 /* 四分回転 — the line stands on end, turns a quarter and lands level with a small over-rotation */
 reg('xgQuarterTurn', {
-  name: '四分回転', en: 'Quarter Turn', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'spin',
+  name: '4분의 1 회전', en: 'Quarter Turn', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'spin',
   inDur: dur => clamp(dur * 0.4, 0.18, 0.7),
   apply(env, it, p) {
     const dir = dirOf(env, 15), b = box(it);
@@ -182,7 +182,7 @@ reg('xgQuarterTurn', {
 
 /* 角から展開 — the line grows out of one of its own corners while swinging round that corner */
 reg('xgCornerUnfurl', {
-  name: '角から展開', en: 'Corner Unfurl', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'zoom',
+  name: '모서리에서 펼침', en: 'Corner Unfurl', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'zoom',
   inDur: dur => clamp(dur * 0.42, 0.2, 0.75),
   apply(env, it, p) {
     const b = box(it), c = J.h(env.cut.seed | 0, 17) % 4;
@@ -195,7 +195,7 @@ reg('xgCornerUnfurl', {
 
 /* 弧で滑走 — the line rides in on a wide arc around a far pivot, like the tip of a wiper blade */
 reg('xgWiper', {
-  name: '弧で滑走', en: 'Arc Sweep', tags: ['graphic', 'pop', 'emotional'], w: 1.1, ae: 'spin',
+  name: '호를 그리며 활주', en: 'Arc Sweep', tags: ['graphic', 'pop', 'emotional'], w: 1.1, ae: 'spin',
   inDur: dur => clamp(dur * 0.42, 0.2, 0.75),
   apply(env, it, p) {
     const b = box(it), dir = dirOf(env, 19), up = J.h(env.cut.seed | 0, 20) & 1;
@@ -207,7 +207,7 @@ reg('xgWiper', {
 
 /* ぷるん — the whole line pops up from the ground like jelly: width and height overshoot out of phase */
 reg('xgJelly', {
-  name: 'ぷるん', en: 'Jelly Pop', tags: ['pop', 'emotional'], w: 1, ae: 'pop', minDur: 0.45,
+  name: '탱글', en: 'Jelly Pop', tags: ['pop', 'emotional'], w: 1, ae: 'pop', minDur: 0.45,
   inDur: dur => clamp(dur * 0.45, 0.22, 0.8),
   apply(env, it, p) {
     const b = box(it), ph = 1.0, d = Math.exp(-4 * p) * (1 - p * p * p);
@@ -222,7 +222,7 @@ reg('xgJelly', {
 
 /* 斜体起こし — the line lies sheared flat along its baseline and whips upright, leaning past vertical once */
 reg('xgShearUp', {
-  name: '斜体起こし', en: 'Shear Up', tags: ['editorial', 'graphic', 'pop'], w: 1, ae: 'stretch',
+  name: '기울임 세우기', en: 'Shear Up', tags: ['editorial', 'graphic', 'pop'], w: 1, ae: 'stretch',
   inDur: dur => clamp(dur * 0.42, 0.2, 0.75),
   apply(env, it, p) {
     const b = box(it), dir = dirOf(env, 23), size = it.size;
@@ -235,7 +235,7 @@ reg('xgShearUp', {
 
 /* 号外スピン — the line spins in from a dot, two full turns, like a headline hitting the screen */
 reg('xgNewsSpin', {
-  name: '号外スピン', en: 'Headline Spin', tags: ['pop', 'graphic'], w: 0.6, ae: 'spin', minDur: 0.5,
+  name: '호외 스핀', en: 'Headline Spin', tags: ['pop', 'graphic'], w: 0.6, ae: 'spin', minDur: 0.5,
   inDur: dur => clamp(dur * 0.45, 0.25, 0.8),
   apply(env, it, p) {
     const b = box(it), dir = dirOf(env, 25);
@@ -247,7 +247,7 @@ reg('xgNewsSpin', {
 
 /* コイン着地 — the line rattles flat like a coin settling: it tips back and forth faster and faster, less and less */
 reg('xgCoinSettle', {
-  name: 'コイン着地', en: 'Coin Settle', tags: ['pop', 'graphic'], w: 0.6, ae: 'spin', minDur: 0.6,
+  name: '동전 착지', en: 'Coin Settle', tags: ['pop', 'graphic'], w: 0.6, ae: 'spin', minDur: 0.6,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.95),
   apply(env, it, p) {
     const vert = !!it.vertical, b = box(it), ph = TAU * (1.5 * p + 4.5 * p * p), d = Math.pow(1 - p, 1.3);
@@ -261,7 +261,7 @@ reg('xgCoinSettle', {
 
 /* 空気入れ — pumped up in three puffs: each stroke swells the line past a size, it sags a little, the last one fills it */
 reg('xgPumpUp', {
-  name: '空気入れ', en: 'Pump Up', tags: ['pop'], w: 0.8, ae: 'pop', minDur: 0.55,
+  name: '바람 넣기', en: 'Pump Up', tags: ['pop'], w: 0.8, ae: 'pop', minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.9),
   apply(env, it, p) {
     const b = box(it), L = [0.02, 0.45, 0.75, 1], x3 = p * 3, k = Math.min(2, Math.floor(x3)), f = x3 - k;
@@ -280,7 +280,7 @@ reg('xgPumpUp', {
 
 /* どすん — the line falls as one heavy body, flattens on the floor and hops twice, squashing less each time */
 reg('xgHeavyDrop', {
-  name: 'どすん', en: 'Heavy Drop', tags: ['pop', 'graphic'], w: 1.1, ae: 'drop', minDur: 0.55,
+  name: '쿵', en: 'Heavy Drop', tags: ['pop', 'graphic'], w: 1.1, ae: 'drop', minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.9),
   apply(env, it, p) {
     const b = box(it), size = it.size, D = size * 2.6 + b.h * 0.5;
@@ -307,7 +307,7 @@ reg('xgHeavyDrop', {
 
 /* 押し棒 — a bar shoves the line into place at a steady pace; the bar pulls away and the squeezed line relaxes */
 reg('xgPushBar', {
-  name: '押し棒', en: 'Push Bar', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'stretch', minDur: 0.5,
+  name: '밀대', en: 'Push Bar', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'stretch', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.25, 0.85),
   apply(env, it, p) {
     const vert = !!it.vertical, dir = dirOf(env, 29), b = box(it), size = it.size, tP = 0.6, a = 0.25, v = 1 / (1 - a / 2);
@@ -331,7 +331,7 @@ reg('xgPushBar', {
 
 /* 壁当て — the line speeds up from the side, hits an unseen wall, crumples against it and springs back to its length */
 reg('xgWallHit', {
-  name: '壁当て', en: 'Wall Hit', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'stretch', minDur: 0.5,
+  name: '벽에 부딪힘', en: 'Wall Hit', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'stretch', minDur: 0.5,
   inDur: dur => clamp(dur * 0.45, 0.25, 0.8),
   apply(env, it, p) {
     const dir = dirOf(env, 31), b = box(it), size = it.size, tI = 0.4;
@@ -362,7 +362,7 @@ reg('xgWallHit', {
 
 /* 吊り看板 — the line is let down on two chains like a hanging sign and rocks until it hangs still */
 reg('xgHangSign', {
-  name: '吊り看板', en: 'Hanging Sign', tags: ['pop', 'emotional', 'calm'], w: 0.9, ae: 'drop', minDur: 0.6,
+  name: '매단 간판', en: 'Hanging Sign', tags: ['pop', 'emotional', 'calm'], w: 0.9, ae: 'drop', minDur: 0.6,
   inDur: dur => clamp(dur * 0.55, 0.35, 1.0),
   apply(env, it, p) {
     const b = box(it), size = it.size, dir = dirOf(env, 33), L = size * 0.9 + b.h * 0.5;
@@ -387,7 +387,7 @@ reg('xgHangSign', {
 
 /* 判子の跳ね — the line is pressed down hard like a rubber stamp; the die (an outline) lifts off again and leaves the print */
 reg('xgStampLift', {
-  name: '判子の跳ね', en: 'Stamp Lift', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'zoom',
+  name: '도장 튀기', en: 'Stamp Lift', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'zoom',
   inDur: dur => clamp(dur * 0.42, 0.2, 0.75),
   apply(env, it, p) {
     const b = box(it), size = it.size, dir = dirOf(env, 35), tI = 0.3, hot = hotOf(env, it), a0 = clamp(it.alpha ?? 1);
@@ -413,7 +413,7 @@ reg('xgStampLift', {
 
 /* ひらり着地 — the line sinks like a dropped sheet of paper, sliding from side to side and tilting with each swing */
 reg('xgPaperFall', {
-  name: 'ひらり着地', en: 'Paper Fall', tags: ['calm', 'emotional', 'pop'], w: 1, ae: 'drop', minDur: 0.6,
+  name: '사뿐 착지', en: 'Paper Fall', tags: ['calm', 'emotional', 'pop'], w: 1, ae: 'drop', minDur: 0.6,
   inDur: dur => clamp(dur * 0.55, 0.35, 1.1),
   apply(env, it, p) {
     const b = box(it), size = it.size, dir = dirOf(env, 37), ph = p * TAU * 1.75, d = Math.pow(1 - p, 1.2);
@@ -427,7 +427,7 @@ reg('xgPaperFall', {
 
 /* ラチェット — the line is cranked in click by click: four short jerks, each one stops dead with a tiny kick */
 reg('xgRatchet', {
-  name: 'ラチェット', en: 'Ratchet', tags: ['graphic', 'glitch', 'pop'], w: 0.9, ae: 'stretch', minDur: 0.5,
+  name: '래칫', en: 'Ratchet', tags: ['graphic', 'glitch', 'pop'], w: 0.9, ae: 'stretch', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.9),
   apply(env, it, p) {
     const vert = !!it.vertical, b = box(it), size = it.size, dir = dirOf(env, 39), N = 4;
@@ -441,7 +441,7 @@ reg('xgRatchet', {
 
 /* 滑車 — the line rides down a slanted wire on a pulley, is stopped short and swings forward under it */
 reg('xgZipLine', {
-  name: '滑車', en: 'Zip Line', tags: ['pop', 'graphic'], w: 0.6, ae: 'drop', minDur: 0.65,
+  name: '도르래', en: 'Zip Line', tags: ['pop', 'graphic'], w: 0.6, ae: 'drop', minDur: 0.65,
   inDur: dur => clamp(dur * 0.55, 0.35, 1.0),
   apply(env, it, p) {
     const b = box(it), size = it.size, dir = dirOf(env, 41), tS = 0.55, slope = 0.42, hang = size * 0.7;
@@ -471,7 +471,7 @@ reg('xgZipLine', {
 
 /* ピント迷い — autofocus hunting: the blurred line snaps sharp, slips out of focus once more and locks */
 reg('xgFocusHunt', {
-  name: 'ピント迷い', en: 'Focus Hunt', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'blur', minDur: 0.5,
+  name: '초점 헤맴', en: 'Focus Hunt', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'blur', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.95),
   apply(env, it, p) {
     const b = box(it), size = it.size;
@@ -485,7 +485,7 @@ reg('xgFocusHunt', {
 
 /* ストロボ — three flash exposures: the line is caught large and off to the side, closer, then on its mark, where it stays lit */
 reg('xgStrobe', {
-  name: 'ストロボ', en: 'Strobe', tags: ['glitch', 'pop', 'graphic'], w: 0.9, ae: 'flicker', minDur: 0.45,
+  name: '스트로보', en: 'Strobe', tags: ['glitch', 'pop', 'graphic'], w: 0.9, ae: 'flicker', minDur: 0.45,
   inDur: dur => clamp(dur * 0.42, 0.25, 0.7),
   apply(env, it, p) {
     const b = box(it), size = it.size, dir = dirOf(env, 45), hot = hotOf(env, it);
@@ -500,7 +500,7 @@ reg('xgStrobe', {
 
 /* 二重視 — double vision: two half-strength copies of the line drift across each other and fuse into one sharp line */
 reg('xgDoubleVision', {
-  name: '二重視', en: 'Double Vision', tags: ['emotional', 'glitch', 'calm'], w: 1, ae: 'blur', minDur: 0.5,
+  name: '이중 시야', en: 'Double Vision', tags: ['emotional', 'glitch', 'calm'], w: 1, ae: 'blur', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.95),
   apply(env, it, p) {
     const size = it.size, vert = !!it.vertical;
@@ -517,7 +517,7 @@ reg('xgDoubleVision', {
 
 /* 尾引き着地 — the line drops in ahead of a long trail of afterimages, which then catches up with it */
 reg('xgComet', {
-  name: '尾引き着地', en: 'Comet Trail', tags: ['pop', 'emotional', 'glitch'], w: 1, ae: 'drop',
+  name: '꼬리 끌며 착지', en: 'Comet Trail', tags: ['pop', 'emotional', 'glitch'], w: 1, ae: 'drop',
   inDur: dur => clamp(dur * 0.45, 0.22, 0.8),
   apply(env, it, p) {
     const size = it.size, vert = !!it.vertical, dir = vert ? dirOf(env, 49) : -1;
@@ -531,7 +531,7 @@ reg('xgComet', {
 
 /* 塗り合わせ — a hairline outline of the line waits in place; the solid fill slides in off-register and docks into it */
 reg('xgFillDock', {
-  name: '塗り合わせ', en: 'Fill Docking', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'slice', minDur: 0.5,
+  name: '채움 맞추기', en: 'Fill Docking', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'slice', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.25, 0.85),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 51), a0 = clamp(it.alpha ?? 1), col = colOf(it);
@@ -551,7 +551,7 @@ reg('xgFillDock', {
 
 /* 色替わり — the line pops up in the accent colour, then its own colour pours down through the glyphs behind a thin band */
 reg('xgColorPour', {
-  name: '色替わり', en: 'Colour Pour', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'wipe', minDur: 0.5,
+  name: '색 바뀜', en: 'Colour Pour', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'wipe', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.25, 0.85),
   apply(env, it, p) {
     const b = box(it), up = J.h(env.cut.seed | 0, 53) & 1, alt = hotOf(env, it);
@@ -570,7 +570,7 @@ reg('xgColorPour', {
 
 /* 厚み沈み — the line arrives as a long extruded block; the depth sinks back into the page until only the face is left */
 reg('xgBlockSink', {
-  name: '厚み沈み', en: 'Extrude Sink', tags: ['graphic', 'pop'], w: 1, ae: 'zoom',
+  name: '두께 가라앉음', en: 'Extrude Sink', tags: ['graphic', 'pop'], w: 1, ae: 'zoom',
   inDur: dur => clamp(dur * 0.45, 0.22, 0.8),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 55), ex0 = it.extrude && it.extrude.n > 0 ? it.extrude : null;
@@ -587,7 +587,7 @@ reg('xgBlockSink', {
 
 /* 色収差 — lens fringing: two coloured copies sit larger around the line and shrink onto it as the lens settles */
 reg('xgLensFringe', {
-  name: '色収差', en: 'Lens Fringe', tags: ['glitch', 'graphic', 'emotional'], w: 1, ae: 'zoom',
+  name: '색수차', en: 'Lens Fringe', tags: ['glitch', 'graphic', 'emotional'], w: 1, ae: 'zoom',
   inDur: dur => clamp(dur * 0.42, 0.2, 0.75),
   apply(env, it, p) {
     const b = box(it), k = Math.pow(1 - p, 2), a0 = clamp(it.alpha ?? 1);
@@ -610,7 +610,7 @@ reg('xgLensFringe', {
 
 /* 残像焼き — one bright flash of the line, then only a faint after-image is left, which slowly burns in to full strength */
 reg('xgAfterimage', {
-  name: '残像焼き', en: 'Afterimage', tags: ['emotional', 'calm', 'glitch'], w: 0.8, ae: 'flicker', minDur: 0.6,
+  name: '잔상 새김', en: 'Afterimage', tags: ['emotional', 'calm', 'glitch'], w: 0.8, ae: 'flicker', minDur: 0.6,
   inDur: dur => clamp(dur * 0.55, 0.35, 1.1),
   apply(env, it, p) {
     const b = box(it), hot = hotOf(env, it), tF = 0.1;
@@ -632,7 +632,7 @@ reg('xgAfterimage', {
 
 /* キーポーズ — three held drawings and the rest pose: far and tilted, big and leaning the other way, almost there, home */
 reg('xgKeyPoses', {
-  name: 'キーポーズ', en: 'Key Poses', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'pop', minDur: 0.5,
+  name: '키 포즈', en: 'Key Poses', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'pop', minDur: 0.5,
   inDur: dur => clamp(dur * 0.45, 0.28, 0.8),
   apply(env, it, p) {
     const b = box(it), size = it.size, dir = dirOf(env, 61);
@@ -651,7 +651,7 @@ reg('xgKeyPoses', {
 
 /* ラフから清書 — animator's pass: a shaky pencil outline on threes, a half-inked drawing, then the clean final line */
 reg('xgRoughCut', {
-  name: 'ラフから清書', en: 'Rough To Clean', tags: ['pop', 'emotional', 'editorial'], w: 0.9, ae: 'flicker', minDur: 0.55,
+  name: '초안에서 정서', en: 'Rough To Clean', tags: ['pop', 'emotional', 'editorial'], w: 0.9, ae: 'flicker', minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.9),
   apply(env, it, p) {
     const b = box(it), size = it.size, seed = env.cut.seed | 0, k = Math.min(5, Math.floor(p * 6));

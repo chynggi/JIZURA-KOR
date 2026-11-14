@@ -86,7 +86,7 @@ const label = (env, text, x, y, size, color, alpha, align) => env.draw({ text: S
 
 /* 植字キャレット — a hairline caret sets the glyphs one by one; the newest glyph sits in its body box as an outline for a moment */
 reg('enter', 'tzCaretSet', {
-  name: '植字キャレット', en: 'Caret Compose', tags: ['editorial', 'calm', 'graphic'], ae: 'type', w: 1.1, minDur: 0.9,
+  name: '식자 캐럿', en: 'Caret Compose', tags: ['editorial', 'calm', 'graphic'], ae: 'type', w: 1.1, minDur: 0.9,
   inDur: (dur, n) => clamp(0.075 * n + 0.3, 0.4, Math.min(1.4, dur * 0.55)),
   apply(env, it, p) {
     const plain = plainOf(it), nn = plain.length;
@@ -118,7 +118,7 @@ reg('enter', 'tzCaretSet', {
 
 /* 罫上スライド — a hairline shoots out under the line, the text slides along it and stops dead on a tick mark */
 reg('enter', 'tzRuleSlide', {
-  name: '罫上スライド', en: 'Slide To Tick', tags: ['editorial', 'graphic', 'pop'], ae: 'stretch', w: 1.2,
+  name: '괘선 위 슬라이드', en: 'Slide To Tick', tags: ['editorial', 'graphic', 'pop'], ae: 'stretch', w: 1.2,
   apply(env, it, p) {
     const V = !!it.vertical, lines = lineInfo(it), solo = soloOf(env, it);
     const dir = (J.h(env.cut.seed | 0, 61) & 1) ? 1 : -1;
@@ -142,7 +142,7 @@ reg('enter', 'tzRuleSlide', {
 
 /* 計数から組む — every slot first holds a small running figure; the figures lock to the glyphs from the line head on */
 reg('enter', 'tzCountSet', {
-  name: '計数から組む', en: 'Figures To Type', tags: ['editorial', 'glitch', 'graphic'], ae: 'scramble', w: 0.9, minDur: 0.8,
+  name: '숫자에서 짜기', en: 'Figures To Type', tags: ['editorial', 'glitch', 'graphic'], ae: 'scramble', w: 0.9, minDur: 0.8,
   inDur: (dur, n) => clamp(0.05 * n + 0.4, 0.45, Math.min(1.2, dur * 0.5)),
   apply(env, it, p) {
     const ord = orders(env, it), sub = subOf(env), ac = accentOf(env), seed = it.seed | 0, tick = env.step >> 1;
@@ -160,7 +160,7 @@ reg('enter', 'tzCountSet', {
 
 /* 詰め組み — the line appears loosely spaced; one gap after another closes up from the line head until it is set solid */
 reg('enter', 'tzCloseUp', {
-  name: '詰め組み', en: 'Close Up', tags: ['editorial', 'calm', 'graphic'], ae: 'stretch', w: 1.1,
+  name: '좁혀 짜기', en: 'Close Up', tags: ['editorial', 'calm', 'graphic'], ae: 'stretch', w: 1.1,
   apply(env, it, p) {
     const V = !!it.vertical, plain = plainOf(it);
     it.alpha = (it.alpha ?? 1) * clamp(p * 8);
@@ -188,7 +188,7 @@ reg('enter', 'tzCloseUp', {
 
 /* 細字から太字 — the line starts as a hairline-weight skeleton and gains weight until it reaches its real face */
 reg('enter', 'tzWeightUp', {
-  name: '細字から太字', en: 'Light To Bold', tags: ['calm', 'emotional', 'editorial'], ae: 'blur', w: 0.9,
+  name: '가는 글자에서 굵은 글자', en: 'Light To Bold', tags: ['calm', 'emotional', 'editorial'], ae: 'blur', w: 0.9,
   apply(env, it, p) {
     const e = E.outCubic(clamp((p - 0.06) / 0.94));
     if (it.fill === false || it.stroke > 0) {             // already outlined: draw the outline on, then let the fill follow
@@ -204,7 +204,7 @@ reg('enter', 'tzWeightUp', {
 
 /* 基線合わせ — the glyphs stand at uneven heights; an alignment guide passes along the line and each one snaps to the baseline */
 reg('enter', 'tzBaseAlign', {
-  name: '基線合わせ', en: 'Baseline Align', tags: ['editorial', 'graphic', 'pop'], ae: 'drop', w: 1.1,
+  name: '기준선 맞춤', en: 'Baseline Align', tags: ['editorial', 'graphic', 'pop'], ae: 'drop', w: 1.1,
   apply(env, it, p) {
     const V = !!it.vertical, lines = lineInfo(it), seed = it.seed | 0, solo = soloOf(env, it), ord = orders(env, it);
     const s = E.inOutCubic(clamp((p - 0.14) / 0.66)) * 1.14;
@@ -232,7 +232,7 @@ reg('enter', 'tzBaseAlign', {
 
 /* 級数上げ — the line is set small first and steps up through point sizes (hard cuts) to its size; a size note counts along */
 reg('enter', 'tzPointSize', {
-  name: '級数上げ', en: 'Point Size Up', tags: ['editorial', 'graphic', 'pop'], ae: 'zoom', w: 1, minDur: 0.7,
+  name: '크기 올림', en: 'Point Size Up', tags: ['editorial', 'graphic', 'pop'], ae: 'zoom', w: 1, minDur: 0.7,
   inDur: dur => clamp(dur * 0.34, 0.32, 0.6),
   apply(env, it, p) {
     const solo = soloOf(env, it), b = boxOf(it);
@@ -253,7 +253,7 @@ reg('enter', 'tzPointSize', {
 
 /* 番号が導く — a small line number appears first, a hairline runs out of it over the line and the glyphs cut on as it passes */
 reg('enter', 'tzIndexLead', {
-  name: '番号が導く', en: 'Index Leads', tags: ['editorial', 'graphic', 'calm'], ae: 'wipe', w: 1,
+  name: '번호가 이끎', en: 'Index Leads', tags: ['editorial', 'graphic', 'calm'], ae: 'wipe', w: 1,
   apply(env, it, p) {
     const V = !!it.vertical, lines = lineInfo(it), solo = soloOf(env, it), ord = orders(env, it), ac = accentOf(env), sub = subOf(env);
     const nL = Math.max(1, lines.length), st = Math.min(0.06, 0.3 / nL), span = 0.62 - (nL - 1) * st;
@@ -285,7 +285,7 @@ reg('enter', 'tzIndexLead', {
 
 /* テキスト枠 — a DTP text frame is drawn (hairline, with handles), the text flows into it, then the frame is deselected */
 reg('enter', 'tzTextFrame', {
-  name: 'テキスト枠', en: 'Text Frame', tags: ['editorial', 'graphic', 'pop'], ae: 'type', w: 1, minDur: 0.8,
+  name: '텍스트 틀', en: 'Text Frame', tags: ['editorial', 'graphic', 'pop'], ae: 'type', w: 1, minDur: 0.8,
   apply(env, it, p) {
     const V = !!it.vertical, lines = lineInfo(it), ord = orders(env, it), solo = soloOf(env, it), ac = accentOf(env);
     if (!lines.length) return;
@@ -311,7 +311,7 @@ reg('enter', 'tzTextFrame', {
 
 /* 縦罫に畳む — the line is condensed and set solid onto its centre until it is one upright hairline, which then shortens away */
 reg('exit', 'tzCondense', {
-  name: '縦罫に畳む', en: 'Condense To Rule', tags: ['editorial', 'graphic', 'calm'], ae: 'shrink', w: 1,
+  name: '세로 괘선으로 접기', en: 'Condense To Rule', tags: ['editorial', 'graphic', 'calm'], ae: 'shrink', w: 1,
   apply(env, it, p, cx) {
     p = sync(env, p, cx);
     const V = !!it.vertical, lines = lineInfo(it), Lm = new Map(lines.map(L => [L.li, L])), ac = accentOf(env);
@@ -335,7 +335,7 @@ reg('exit', 'tzCondense', {
 
 /* 校正で削る — a proofreader's slash is struck through each glyph in turn; the glyph is taken out, then its slash */
 reg('exit', 'tzProofDelete', {
-  name: '校正で削る', en: 'Proof Delete', tags: ['editorial', 'graphic', 'emotional'], ae: 'scatter', w: 1, minDur: 0.8,
+  name: '교정 삭제', en: 'Proof Delete', tags: ['editorial', 'graphic', 'emotional'], ae: 'scatter', w: 1, minDur: 0.8,
   outDur: (dur, n) => clamp(0.04 * n + 0.35, 0.4, Math.min(0.9, dur * 0.4)),
   apply(env, it, p, cx) {
     p = sync(env, p, cx);
@@ -355,7 +355,7 @@ reg('exit', 'tzProofDelete', {
 
 /* 半分ずつ断つ — a hairline runs through the middle of the line; alternate half-glyphs are cut away, then the rest, then the rule */
 reg('exit', 'tzHalfCut', {
-  name: '半分ずつ断つ', en: 'Cut By Halves', tags: ['graphic', 'editorial', 'glitch'], ae: 'slice', w: 1,
+  name: '반씩 자르기', en: 'Cut By Halves', tags: ['graphic', 'editorial', 'glitch'], ae: 'slice', w: 1,
   apply(env, it, p, cx) {
     p = sync(env, p, cx);
     const V = !!it.vertical, lines = lineInfo(it), plain = plainOf(it), solo = soloOf(env, it), ac = accentOf(env);
@@ -381,7 +381,7 @@ reg('exit', 'tzHalfCut', {
 
 /* 選択して削除 — the line is swept by a selection highlight, deleted in one cut, and a caret blinks once where it began */
 reg('exit', 'tzSelectDelete', {
-  name: '選択して削除', en: 'Select & Delete', tags: ['editorial', 'pop', 'glitch'], ae: 'wipe', w: 1,
+  name: '선택 후 삭제', en: 'Select & Delete', tags: ['editorial', 'pop', 'glitch'], ae: 'wipe', w: 1,
   apply(env, it, p, cx) {
     p = sync(env, p, cx);
     const V = !!it.vertical, lines = lineInfo(it), nL = Math.max(1, lines.length), solo = soloOf(env, it), ac = accentOf(env);
@@ -406,7 +406,7 @@ reg('exit', 'tzSelectDelete', {
 
 /* あふれ送り — the line is pushed a step at a time past a margin rule and is lost there, like overset text leaving its frame */
 reg('exit', 'tzOverset', {
-  name: 'あふれ送り', en: 'Overset', tags: ['editorial', 'graphic', 'pop'], ae: 'wipe', w: 1,
+  name: '넘침 넘기기', en: 'Overset', tags: ['editorial', 'graphic', 'pop'], ae: 'wipe', w: 1,
   apply(env, it, p, cx) {
     p = sync(env, p, cx);
     const solo = soloOf(env, it), b = boxOf(it), V = !!it.vertical, pad = it.size * 0.1, ac = accentOf(env);
@@ -441,7 +441,7 @@ reg('exit', 'tzOverset', {
 
 /* 罫が閉じる — a hairline above and one below the line close in on each other, taking the text between them; the one rule left retracts */
 reg('exit', 'tzRulesClose', {
-  name: '罫が閉じる', en: 'Rules Close', tags: ['editorial', 'calm', 'graphic'], ae: 'wipe', w: 1.1,
+  name: '괘선이 닫힘', en: 'Rules Close', tags: ['editorial', 'calm', 'graphic'], ae: 'wipe', w: 1.1,
   apply(env, it, p, cx) {
     p = sync(env, p, cx);
     const solo = soloOf(env, it), b = boxOf(it), V = !!it.vertical, pad = it.size * 0.14, ac = accentOf(env);
@@ -463,7 +463,7 @@ reg('exit', 'tzRulesClose', {
 
 /* 脚注になる — the line shrinks to note size at its own starting corner, a short separator rule is drawn over it, then both are cut */
 reg('exit', 'tzToFootnote', {
-  name: '脚注になる', en: 'To Footnote', tags: ['editorial', 'calm', 'emotional'], ae: 'shrink', w: 0.9, minDur: 0.9,
+  name: '각주가 됨', en: 'To Footnote', tags: ['editorial', 'calm', 'emotional'], ae: 'shrink', w: 0.9, minDur: 0.9,
   outDur: dur => clamp(dur * 0.36, 0.4, 0.75),
   apply(env, it, p, cx) {
     p = sync(env, p, cx);
@@ -488,7 +488,7 @@ reg('exit', 'tzToFootnote', {
 
 /* 字枠に還る — each glyph in turn is replaced by its empty hairline body box; the boxes are then taken away in the same order */
 reg('exit', 'tzToTofu', {
-  name: '字枠に還る', en: 'Back To Boxes', tags: ['graphic', 'editorial', 'glitch'], ae: 'scatter', w: 0.9,
+  name: '글자 틀로 돌아감', en: 'Back To Boxes', tags: ['graphic', 'editorial', 'glitch'], ae: 'scatter', w: 0.9,
   apply(env, it, p, cx) {
     p = sync(env, p, cx);
     const ord = orders(env, it), plain = plainOf(it), sx = it.sx || 1, sy = it.sy || 1;
@@ -510,7 +510,7 @@ reg('exit', 'tzToTofu', {
 
 /* 末尾キャレット — a hairline caret blinks after the last glyph, as if the line were still being written */
 reg('hold', 'tzCaretBlink', {
-  name: '末尾キャレット', en: 'End Caret', tags: ['calm', 'editorial', 'emotional'], ae: 'still', w: 1,
+  name: '끝 캐럿', en: 'End Caret', tags: ['calm', 'editorial', 'emotional'], ae: 'still', w: 1,
   apply(env, it, amt) {
     const plain = plainOf(it); if (!plain.length) return;
     const mk = clamp(motionK(env) * 2), N = cutN(env);
@@ -527,7 +527,7 @@ reg('hold', 'tzCaretBlink', {
 
 /* 伸びる下線 — a hairline underline grows slowly under the line for as long as the cut rests, a small tick at its head */
 reg('hold', 'tzUnderGrow', {
-  name: '伸びる下線', en: 'Growing Underline', tags: ['calm', 'editorial', 'emotional'], ae: 'still', w: 1,
+  name: '늘어나는 밑줄', en: 'Growing Underline', tags: ['calm', 'editorial', 'emotional'], ae: 'still', w: 1,
   apply(env, it, amt, cx) {
     const lines = lineInfo(it); if (!lines.length) return;
     const mk = clamp(motionK(env) * 2), al = amt * mk; if (al < 0.03) return;
@@ -544,7 +544,7 @@ reg('hold', 'tzUnderGrow', {
 
 /* 数える番号 — a small tabular number over the end of the line counts up quietly (on the beat when there is one) */
 reg('hold', 'tzIndexCount', {
-  name: '数える番号', en: 'Running Index', tags: ['editorial', 'graphic', 'calm'], ae: 'still', w: 0.8,
+  name: '세어 가는 번호', en: 'Running Index', tags: ['editorial', 'graphic', 'calm'], ae: 'still', w: 0.8,
   apply(env, it, amt, cx) {
     const lines = lineInfo(it); if (!lines.length) return;
     const mk = clamp(motionK(env) * 2), al = amt * mk; if (al < 0.03) return;
@@ -566,7 +566,7 @@ reg('hold', 'tzIndexCount', {
 
 /* 字詰めの手直し — now and then one gap in the line is kerned a hair wider or tighter (a tick marks it), then put back */
 reg('hold', 'tzKernNudge', {
-  name: '字詰めの手直し', en: 'Kerning Nudge', tags: ['calm', 'editorial', 'graphic'], ae: 'breathe', w: 0.9,
+  name: '자간 손질', en: 'Kerning Nudge', tags: ['calm', 'editorial', 'graphic'], ae: 'breathe', w: 0.9,
   apply(env, it, amt) {
     const plain = plainOf(it), lines = lineInfo(it); if (plain.length < 3 || !lines.length) return;
     const seed = it.seed | 0, V = !!it.vertical, ac = accentOf(env);
@@ -588,7 +588,7 @@ reg('hold', 'tzKernNudge', {
 
 /* 行き違う罫 — a short hairline over the line and one under it travel slowly in opposite directions */
 reg('hold', 'tzCounterRules', {
-  name: '行き違う罫', en: 'Passing Rules', tags: ['calm', 'editorial', 'graphic'], ae: 'drift', w: 0.9,
+  name: '엇갈리는 괘선', en: 'Passing Rules', tags: ['calm', 'editorial', 'graphic'], ae: 'drift', w: 0.9,
   apply(env, it, amt) {
     const lines = lineInfo(it); if (!lines.length || soloOf(env, it)) return;
     const mk = Math.min(1.3, motionK(env)); if (amt * mk < 0.03) return;
@@ -611,7 +611,7 @@ const qIn = (e, i, d = 0.05, dur = 0.5) => E.outExpo(clamp((e.lt - (i.delay || 0
 
 /* 行番号 — a small tabular line number is set before the line, divided from it by a hairline */
 reg('treat', 'tzLineNo', {
-  name: '行番号', en: 'Line Number', tags: ['editorial', 'graphic', 'calm'], ae: 'underline', w: 0.8,
+  name: '줄 번호', en: 'Line Number', tags: ['editorial', 'graphic', 'calm'], ae: 'underline', w: 0.8,
   plan: rng => ({ acc: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it) || nonSp(it) < 2) return;
@@ -639,7 +639,7 @@ reg('treat', 'tzLineNo', {
 
 /* 注番号 — one small superscript reference mark (a number or an asterisk) after the last glyph of the line */
 reg('treat', 'tzSuperNote', {
-  name: '注番号', en: 'Note Mark', tags: ['editorial', 'calm', 'emotional'], ae: 'emphasisDots', w: 0.8, safe: true,
+  name: '주석 번호', en: 'Note Mark', tags: ['editorial', 'calm', 'emotional'], ae: 'emphasisDots', w: 0.8, safe: true,
   plan: rng => ({ star: rng.chance(0.35), acc: rng.chance(0.7) }),
   apply(env, it, Pt) {
     if (!alive(it) || nonSp(it) < 2) return;
@@ -663,7 +663,7 @@ reg('treat', 'tzSuperNote', {
 
 /* 字面ガイド — type-design guide lines behind the text: body top and bottom (and a dashed centre line), running past both ends */
 reg('treat', 'tzTypeGuides', {
-  name: '字面ガイド', en: 'Type Guides', tags: ['editorial', 'graphic', 'calm'], ae: 'underline', w: 0.8,
+  name: '글자면 가이드', en: 'Type Guides', tags: ['editorial', 'graphic', 'calm'], ae: 'underline', w: 0.8,
   plan: rng => ({ mid: rng.chance(0.6), ext: rng.range(0.3, 0.55), acc: rng.chance(0.3) }),
   apply(env, it, Pt) {
     if (!alive(it) || nonSp(it) < 2) return;
@@ -685,7 +685,7 @@ reg('treat', 'tzTypeGuides', {
 /* 目次リーダー — like a contents entry: dot leaders run on from the end of the line to a small tabular number
    (set on a row of their own under the line when there is no room beside it) */
 reg('treat', 'tzTocLeader', {
-  name: '目次リーダー', en: 'Contents Leader', tags: ['editorial', 'graphic', 'calm'], ae: 'emphasisDots', w: 0.7,
+  name: '목차 점선', en: 'Contents Leader', tags: ['editorial', 'graphic', 'calm'], ae: 'emphasisDots', w: 0.7,
   plan: rng => ({ acc: rng.chance(0.5) }),
   apply(env, it, Pt) {
     if (!alive(it) || nonSp(it) < 3) return;
@@ -711,7 +711,7 @@ reg('treat', 'tzTocLeader', {
 
 /* かな小組み — hiragana are set a size smaller than kanji / katakana on the same baseline and closed up (no change for text without both) */
 reg('treat', 'tzKanaSmall', {
-  name: 'かな小組み', en: 'Small Kana', tags: ['editorial', 'emotional', 'calm'], ae: 'sizeWave', w: 1, safe: true,
+  name: '작은 가나', en: 'Small Kana', tags: ['editorial', 'emotional', 'calm'], ae: 'sizeWave', w: 1, safe: true,
   plan: rng => ({ k: rng.range(0.76, 0.84) }),
   apply(env, it, Pt) {
     if (!alive(it, 0.5)) return;
@@ -741,7 +741,7 @@ const cuOf = env => clamp(env.lt / Math.max(0.3, env.cut.dur));
 
 /* タブ送り — the frame sits a few tab stops off and is moved to centre one exact stop at a time, then stays put */
 reg('cam', 'tzTabStep', {
-  name: 'タブ送り', en: 'Tab Step', tags: ['editorial', 'graphic', 'pop'], w: 0.9, ae: 'snapPan',
+  name: '탭 넘김', en: 'Tab Step', tags: ['editorial', 'graphic', 'pop'], w: 0.9, ae: 'snapPan',
   plan: rng => ({ ax: rng.chance(0.7) ? 0 : 1, dir: rng.pick([1, -1]), n: rng.int(2, 3), a: rng.range(0.014, 0.02) }),
   get(env, Q) {
     const K = KM(env), n = Q.n || 2, dur = env.cut.dur, gap = Math.min(0.6, Math.max(0.2, dur * 0.6 / n));
@@ -752,7 +752,7 @@ reg('cam', 'tzTabStep', {
 
 /* 斜体から正体 — the frame starts slanted like an italic and is set upright in one clean move, then leans back by a hair */
 reg('cam', 'tzItalicSet', {
-  name: '斜体から正体', en: 'Italic To Roman', tags: ['editorial', 'pop', 'emotional'], w: 0.9, ae: 'dutch',
+  name: '기울임에서 정체로', en: 'Italic To Roman', tags: ['editorial', 'pop', 'emotional'], w: 0.9, ae: 'dutch',
   plan: rng => ({ dir: rng.pick([1, 1, -1]), a: rng.range(5.5, 8) }),
   get(env, Q) {
     const K = KM(env), d = Q.dir || 1, e = E.outExpo(clamp(env.lt / Math.min(0.55, Math.max(0.25, env.cut.dur * 0.4))));
@@ -761,7 +761,7 @@ reg('cam', 'tzItalicSet', {
 
 /* 行長合わせ — only the width of the frame changes: it starts a little wide (or narrow) and closes slowly to true measure */
 reg('cam', 'tzMeasureZoom', {
-  name: '行長合わせ', en: 'Measure Set', tags: ['calm', 'editorial', 'emotional'], w: 1, ae: 'push',
+  name: '행 길이 맞춤', en: 'Measure Set', tags: ['calm', 'editorial', 'emotional'], w: 1, ae: 'push',
   plan: rng => ({ wide: rng.chance(0.65), a: rng.range(0.045, 0.06) }),
   get(env, Q) {
     const K = KM(env), u = E.inOutSine(cuOf(env)), a = (Q.a || 0.05) * K * (1 - u);
@@ -770,7 +770,7 @@ reg('cam', 'tzMeasureZoom', {
 
 /* 方眼ステップ — the frame is moved like a plotter head: one small exact step at a time around a square, x and y never together */
 reg('cam', 'tzGridStep', {
-  name: '方眼ステップ', en: 'Grid Step', tags: ['graphic', 'editorial', 'glitch'], w: 0.8, ae: 'snapPan',
+  name: '모눈 스텝', en: 'Grid Step', tags: ['graphic', 'editorial', 'glitch'], w: 0.8, ae: 'snapPan',
   plan: rng => ({ per: rng.range(0.45, 0.6), a: rng.range(0.01, 0.014), cw: rng.pick([1, -1]), s0: rng.int(0, 3) }),
   get(env, Q) {
     const K = KM(env), C = [[-1, -1], [1, -1], [1, 1], [-1, 1]], dir = Q.cw || 1, s0 = Q.s0 | 0;
@@ -791,7 +791,7 @@ const fx = (k, d) => reg('fx', k, Object.assign({}, d, {
 }));
 
 /* 罫線フラッシュ — two or three hairlines (one heavier) shoot across the whole frame and retract from their tails */
-fx('tzRuleFlash', { name: '罫線フラッシュ', en: 'Rule Flash', tags: ['editorial', 'graphic', 'calm'], w: 1.1, dur: 6, amp: 1, mid: true, ae: 'flash',
+fx('tzRuleFlash', { name: '괘선 플래시', en: 'Rule Flash', tags: ['editorial', 'graphic', 'calm'], w: 1.1, dur: 6, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), n = 2 + (J.h(s, 1) % 2), w = hairPx(I), vert = J.r(s, 2) < 0.2, L = vert ? cw : ch, M = vert ? ch : cw;
     ctx.fillStyle = popC(sc); ctx.globalAlpha = clamp(amp1(ev));
@@ -805,7 +805,7 @@ fx('tzRuleFlash', { name: '罫線フラッシュ', en: 'Rule Flash', tags: ['edi
   } });
 
 /* 字抜き帯 — for a frame or two one band of the picture is knocked out: a plate in the text colour, the type in the background colour */
-fx('tzKnockBand', { name: '字抜き帯', en: 'Knockout Band', tags: ['graphic', 'editorial', 'pop'], w: 0.9, dur: 3, amp: 1, mid: true, scratch: true, ae: 'invert',
+fx('tzKnockBand', { name: '글자 뚫린 띠', en: 'Knockout Band', tags: ['graphic', 'editorial', 'pop'], w: 0.9, dur: 3, amp: 1, mid: true, scratch: true, ae: 'invert',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), dk = isDark(sc.bg);
@@ -825,7 +825,7 @@ fx('tzKnockBand', { name: '字抜き帯', en: 'Knockout Band', tags: ['graphic',
   } });
 
 /* 段ずらし — the frame is ruled into text columns; alternate columns step a line up / down (two exact steps) and are set back */
-fx('tzColumnShift', { name: '段ずらし', en: 'Column Shift', tags: ['graphic', 'editorial', 'glitch'], w: 0.9, dur: 8, amp: 1, mid: true, scratch: true, ae: 'slice',
+fx('tzColumnShift', { name: '단 밀기', en: 'Column Shift', tags: ['graphic', 'editorial', 'glitch'], w: 0.9, dur: 8, amp: 1, mid: true, scratch: true, ae: 'slice',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), n = 4 + (J.h(s, 1) % 3), sg = (s & 1) ? 1 : -1, d = ch * 0.04 * amp1(ev);
@@ -841,7 +841,7 @@ fx('tzColumnShift', { name: '段ずらし', en: 'Column Shift', tags: ['graphic'
   } });
 
 /* トンボ点滅 — printer's crop marks in the four corners and register marks on the edge centres blink on twice */
-fx('tzRegTicks', { name: 'トンボ点滅', en: 'Register Marks', tags: ['editorial', 'graphic', 'glitch'], w: 0.9, dur: 6, amp: 1, mid: true, ae: 'flash',
+fx('tzRegTicks', { name: '정합 표시 깜빡임', en: 'Register Marks', tags: ['editorial', 'graphic', 'glitch'], w: 0.9, dur: 6, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     if (!(k < 0.3 || (k >= 0.45 && k < 0.82))) return;
     const { cw, ch, sc } = I, m = Math.min(cw, ch), w = hairPx(I), ins = m * 0.07, len = m * 0.04, gap = m * 0.012;
@@ -859,7 +859,7 @@ fx('tzRegTicks', { name: 'トンボ点滅', en: 'Register Marks', tags: ['editor
   } });
 
 /* 方眼フラッシュ — a hairline baseline grid with column rules draws itself over the frame, line after line, and fades */
-fx('tzGridFlash', { name: '方眼フラッシュ', en: 'Grid Flash', tags: ['editorial', 'graphic', 'calm'], w: 0.9, dur: 8, amp: 1, mid: true, ae: 'flash',
+fx('tzGridFlash', { name: '모눈 플래시', en: 'Grid Flash', tags: ['editorial', 'graphic', 'calm'], w: 0.9, dur: 8, amp: 1, mid: true, ae: 'flash',
   draw(ctx, ev, k, I) {
     const { cw, ch, sc } = I, s = evS(ev), w = hairPx(I), rows = cw > ch ? 12 : 18, cols = cw > ch ? 6 : 4, rev = (s & 1) === 1;
     ctx.fillStyle = popC(sc); ctx.globalAlpha = 0.5 * clamp(amp1(ev)) * (k < 0.65 ? 1 : 1 - E.inCubic((k - 0.65) / 0.35));
@@ -874,7 +874,7 @@ fx('tzGridFlash', { name: '方眼フラッシュ', en: 'Grid Flash', tags: ['edi
   } });
 
 /* コマ位置送り — the whole frame is re-registered: three small exact hard steps around a square, back to true on the fourth */
-fx('tzFrameStep', { name: 'コマ位置送り', en: 'Frame Step', tags: ['graphic', 'glitch', 'editorial'], w: 0.9, dur: 8, amp: 1, mid: true, scratch: true, ae: 'shake',
+fx('tzFrameStep', { name: '프레임 스텝', en: 'Frame Step', tags: ['graphic', 'glitch', 'editorial'], w: 0.9, dur: 8, amp: 1, mid: true, scratch: true, ae: 'shake',
   draw(ctx, ev, k, I) {
     const { cw, ch, S, sc } = I; if (!S) return;
     const s = evS(ev), a = Math.min(cw, ch) * 0.024 * amp1(ev), i = Math.min(3, Math.floor(k * 4));
@@ -909,7 +909,7 @@ const trReg = (k, d) => reg('trans', k, Object.assign({}, d, {
 
 /* 罫割り — a hairline is drawn across the frame, splits in two, and the new cut is uncovered between the parting rules */
 trReg('tzRuleSplit', {
-  name: '罫割り', en: 'Rule Split', tags: ['editorial', 'calm', 'graphic'], ae: 'doorsOpen', w: 1, dur: 0.5,
+  name: '괘선 분할', en: 'Rule Split', tags: ['editorial', 'calm', 'graphic'], ae: 'doorsOpen', w: 1, dur: 0.5,
   plan: rng => ({ vert: rng.chance(0.3), at: rng.range(0.42, 0.58) }),
   draw(ctx, A, B, p, I, Pt) {
     const { cw, ch } = I, V = !!Pt.vert, L = V ? cw : ch, M = V ? ch : cw, c = Math.round(L * (Pt.at || 0.5)), ac = tAcc(I), lw = Math.max(2, Math.round(Math.min(cw, ch) * 0.003));
@@ -924,7 +924,7 @@ trReg('tzRuleSplit', {
 
 /* 段ごと差し替え — the frame is set in text columns; column after column is replaced in a hard cut, a hairline dropping down each one */
 trReg('tzColumnReplace', {
-  name: '段ごと差し替え', en: 'Column Replace', tags: ['editorial', 'graphic', 'pop'], ae: 'blinds', w: 0.9, dur: 0.5,
+  name: '단별 교체', en: 'Column Replace', tags: ['editorial', 'graphic', 'pop'], ae: 'blinds', w: 0.9, dur: 0.5,
   plan: rng => ({ n: rng.int(4, 7), rtl: rng.chance(0.4) }),
   draw(ctx, A, B, p, I, Pt) {
     const { cw, ch } = I, n = Pt.n || 5, ac = tAcc(I), lw = Math.max(2, Math.round(Math.min(cw, ch) * 0.0028));
@@ -941,7 +941,7 @@ trReg('tzColumnReplace', {
 
 /* 基線に畳む — the old cut is folded flat onto a baseline hairline from above and below; the new cut unfolds from the same line */
 trReg('tzBaselineFold', {
-  name: '基線に畳む', en: 'Baseline Fold', tags: ['editorial', 'graphic', 'emotional'], ae: 'cubeTurn', w: 0.9, dur: 0.5,
+  name: '기준선으로 접기', en: 'Baseline Fold', tags: ['editorial', 'graphic', 'emotional'], ae: 'cubeTurn', w: 0.9, dur: 0.5,
   plan: rng => ({ at: rng.range(0.5, 0.66) }),
   draw(ctx, A, B, p, I, Pt) {
     const { cw, ch, sc } = I, yb = Math.round(ch * (Pt.at || 0.58)), ac = tAcc(I), lw = Math.max(2, Math.round(Math.min(cw, ch) * 0.003));

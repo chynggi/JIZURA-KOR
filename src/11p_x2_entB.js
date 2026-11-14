@@ -116,7 +116,7 @@ function parts(it, list) {
 
 /* 角から円 — a circle grows out of one corner of the line until it has swallowed the whole of it */
 reg('xfCornerBloom', {
-  name: '角から円', en: 'Corner Bloom', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'wipe',
+  name: '모서리에서 원', en: 'Corner Bloom', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.4, 0.16, 0.7),
   apply(env, it, p) {
     const size = it.size, e = ioCubic(p), c = J.h(env.cut.seed | 0, 301) & 3;
@@ -134,7 +134,7 @@ reg('xfCornerBloom', {
 
 /* 山形ワイプ — the leading edge is an arrow head: the middle of the line is uncovered first, two outline chevrons run ahead */
 reg('xfChevron', {
-  name: '山形ワイプ', en: 'Chevron Wipe', tags: ['graphic', 'pop', 'editorial'], w: 1.2, ae: 'wipe',
+  name: '산 모양 와이프', en: 'Chevron Wipe', tags: ['graphic', 'pop', 'editorial'], w: 1.2, ae: 'wipe',
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 302), e = ioCubic(p), k = 0.6;
     const geo = b => { const g = uv(it, b), hv = g.T / 2; return { g, hv, tip: (g.L + k * hv + 1) * e, u: s => (dir > 0 ? g.U0 + s : g.U1 - s) }; };
@@ -155,7 +155,7 @@ reg('xfChevron', {
 
 /* 噛み合わせ — two saw-toothed jaws close on the line from above and below and mesh along a zigzag */
 reg('xfJaws', {
-  name: '噛み合わせ', en: 'Jaws', tags: ['graphic', 'pop', 'glitch'], w: 0.9, ae: 'wipe',
+  name: '맞물림', en: 'Jaws', tags: ['graphic', 'pop', 'glitch'], w: 0.9, ae: 'wipe',
   apply(env, it, p) {
     const size = it.size, e = ioCubic(p / 0.94), snap = sstep(0.8, 1, p);
     const geo = b => {
@@ -182,7 +182,7 @@ reg('xfJaws', {
 
 /* 斜めルーバー — slanted slats drift along the line while they open one after another, like a louvre turned by a cord */
 reg('xfSlantLouver', {
-  name: '斜めルーバー', en: 'Slant Louvre', tags: ['graphic', 'editorial', 'calm'], w: 1, ae: 'wipe',
+  name: '사선 루버', en: 'Slant Louvre', tags: ['graphic', 'editorial', 'calm'], w: 1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.42, 0.18, 0.75),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 304), k = 0.75 * dirOf(env, 305);
@@ -202,7 +202,7 @@ reg('xfSlantLouver', {
 
 /* 穴がつながる — a handful of round holes open at scattered points and grow until they merge into the whole line */
 reg('xfHolesMerge', {
-  name: '穴がつながる', en: 'Merging Holes', tags: ['pop', 'emotional', 'graphic'], w: 1, ae: 'wipe',
+  name: '구멍이 이어짐', en: 'Merging Holes', tags: ['pop', 'emotional', 'graphic'], w: 1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.42, 0.18, 0.75),
   apply(env, it, p) {
     const size = it.size, seed = it.seed | 0;
@@ -226,7 +226,7 @@ reg('xfHolesMerge', {
 
 /* 放射びらき — eight wedges fan out from the middle of the line, turning slightly as they widen into a full disc */
 reg('xfSunburst', {
-  name: '放射びらき', en: 'Sunburst', tags: ['pop', 'graphic', 'emotional'], w: 0.9, ae: 'wipe',
+  name: '방사형 열림', en: 'Sunburst', tags: ['pop', 'graphic', 'emotional'], w: 0.9, ae: 'wipe',
   apply(env, it, p) {
     const n = 8, dir = dirOf(env, 321), a0 = J.r(env.cut.seed | 0, 322) * TAU + (1 - oCubic(p)) * 0.8 * dir, ha = (PI / n) * ioCubic(p) * 1.03;
     const R = g => Math.hypot(g.L, g.T) / 2 + 2;
@@ -248,7 +248,7 @@ reg('xfSunburst', {
 
 /* 三連窓 — the line sits behind three panes; the middle one opens first, then the outer two, each framed while it grows */
 reg('xfTriptych', {
-  name: '三連窓', en: 'Triple Windows', tags: ['editorial', 'graphic', 'calm'], w: 1.1, ae: 'wipe',
+  name: '3연 창', en: 'Triple Windows', tags: ['editorial', 'graphic', 'calm'], w: 1.1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.42, 0.18, 0.75),
   apply(env, it, p) {
     const ORD = [1, 0, 2];
@@ -274,7 +274,7 @@ reg('xfTriptych', {
 
 /* 覗き窓 — a framed window travels along the line showing a glimpse of it, then stretches back and opens everything */
 reg('xfRovingWindow', {
-  name: '覗き窓', en: 'Roving Window', tags: ['editorial', 'emotional', 'graphic'], w: 1, ae: 'wipe', minDur: 0.6,
+  name: '들여다보는 창', en: 'Roving Window', tags: ['editorial', 'emotional', 'graphic'], w: 1, ae: 'wipe', minDur: 0.6,
   inDur: dur => clamp(dur * 0.5, 0.3, 0.95),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 331);
@@ -296,7 +296,7 @@ reg('xfRovingWindow', {
 
 /* 階段ワイプ — the line is uncovered column by column, each a little later, so the boundary is a moving staircase */
 reg('xfStaircase', {
-  name: '階段ワイプ', en: 'Staircase', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'wipe',
+  name: '계단 와이프', en: 'Staircase', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'wipe',
   apply(env, it, p) {
     const size = it.size, rev = dirOf(env, 341) < 0, up = dirOf(env, 342) < 0, s = 0.75;
     const cols = b => {
@@ -322,7 +322,7 @@ reg('xfStaircase', {
 
 /* 四分割リレー — the four quarters of the line are wiped one after another, the wipe turning a corner each time */
 reg('xfQuadRelay', {
-  name: '四分割リレー', en: 'Quad Relay', tags: ['graphic', 'editorial', 'glitch'], w: 0.9, ae: 'wipe', minDur: 0.5,
+  name: '4분할 릴레이', en: 'Quad Relay', tags: ['graphic', 'editorial', 'glitch'], w: 0.9, ae: 'wipe', minDur: 0.5,
   inDur: dur => clamp(dur * 0.45, 0.22, 0.8),
   apply(env, it, p) {
     const flip = dirOf(env, 351) < 0;
@@ -357,7 +357,7 @@ reg('xfQuadRelay', {
 
 /* ワイパー — an arm pivoting below the line sweeps across like a windscreen wiper and leaves the lyric behind it */
 reg('xfWiper', {
-  name: 'ワイパー', en: 'Wiper', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'wipe',
+  name: '와이퍼', en: 'Wiper', tags: ['pop', 'graphic', 'editorial'], w: 1, ae: 'wipe',
   inDur: dur => clamp(dur * 0.42, 0.18, 0.75),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 361), e = ioCubic(p / 0.94);
@@ -385,7 +385,7 @@ reg('xfWiper', {
 
 /* 渦巻き窓 — a thin spiral slit winds outwards from the middle of the line, then thickens until its turns touch */
 reg('xfSpiral', {
-  name: '渦巻き窓', en: 'Spiral Slit', tags: ['pop', 'emotional', 'graphic'], w: 0.8, ae: 'wipe', minDur: 0.5,
+  name: '소용돌이 창', en: 'Spiral Slit', tags: ['pop', 'emotional', 'graphic'], w: 0.8, ae: 'wipe', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.25, 0.9),
   apply(env, it, p) {
     const dir = dirOf(env, 371), th0 = J.r(env.cut.seed | 0, 372) * TAU, turns = 3;
@@ -413,7 +413,7 @@ reg('xfSpiral', {
 
 /* 十字びらき — a cross-shaped window: a slit along the line and a column across it widen together, the four corners close last */
 reg('xfCrossOpen', {
-  name: '十字びらき', en: 'Cross Open', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'wipe',
+  name: '십자 열림', en: 'Cross Open', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'wipe',
   apply(env, it, p) {
     const e1 = ioCubic(p), e2 = ioCubic(p * 1.15 - 0.15);
     const geo = b => { const g = uv(it, b); return { g, hu: (g.L / 2 + 0.5) * e2, hv: (g.T / 2 + 0.5) * e1 }; };
@@ -436,7 +436,7 @@ reg('xfCrossOpen', {
 
 /* 閉じる穴 — the line is revealed from its outer edge inwards: an oval blind spot over it shrinks to a point and is gone */
 reg('xfClosingHole', {
-  name: '閉じる穴', en: 'Closing Hole', tags: ['emotional', 'calm', 'graphic'], w: 0.9, ae: 'wipe',
+  name: '닫히는 구멍', en: 'Closing Hole', tags: ['emotional', 'calm', 'graphic'], w: 0.9, ae: 'wipe',
   inDur: dur => clamp(dur * 0.42, 0.18, 0.75),
   apply(env, it, p) {
     const size = it.size, e = 0.5 * oCubic(p) + 0.5 * ioCubic(p);
@@ -459,7 +459,7 @@ reg('xfClosingHole', {
 
 /* 織り目 — stripes along the line and stripes across it run in from alternate sides, weave a plaid, then thicken until it is solid */
 reg('xfWeave', {
-  name: '織り目', en: 'Weave', tags: ['graphic', 'editorial', 'pop'], w: 0.9, ae: 'wipe', minDur: 0.5,
+  name: '직조', en: 'Weave', tags: ['graphic', 'editorial', 'pop'], w: 0.9, ae: 'wipe', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.24, 0.85),
   apply(env, it, p) {
     const size = it.size, x1 = ioCubic(p / 0.55), x2 = ioCubic((p - 0.1) / 0.55), d = lerp(0.42, 1, ioCubic((p - 0.5) / 0.5));
@@ -480,7 +480,7 @@ reg('xfWeave', {
 
 /* すれ違いワイプ — the upper half is wiped from one end, the lower half from the other; the two bars pass each other mid-line */
 reg('xfPassingWipes', {
-  name: 'すれ違いワイプ', en: 'Passing Wipes', tags: ['graphic', 'editorial', 'pop'], w: 1.1, ae: 'wipe',
+  name: '엇갈림 와이프', en: 'Passing Wipes', tags: ['graphic', 'editorial', 'pop'], w: 1.1, ae: 'wipe',
   apply(env, it, p) {
     const dir = dirOf(env, 381), e = ioCubic(p);
     const geo = b => { const g = uv(it, b); return { g, a: dir > 0 ? g.U0 + g.L * e : g.U1 - g.L * e, z: dir > 0 ? g.U1 - g.L * e : g.U0 + g.L * e }; };
@@ -500,7 +500,7 @@ reg('xfPassingWipes', {
 
 /* 印字ヘッド — a print head shuttles back and forth, laying the line down one thin row at a time from the top */
 reg('xfPrintHead', {
-  name: '印字ヘッド', en: 'Print Head', tags: ['graphic', 'glitch', 'editorial'], w: 0.9, ae: 'wipe', minDur: 0.55,
+  name: '인쇄 헤드', en: 'Print Head', tags: ['graphic', 'glitch', 'editorial'], w: 0.9, ae: 'wipe', minDur: 0.55,
   inDur: dur => clamp(dur * 0.5, 0.28, 0.95),
   apply(env, it, p) {
     const size = it.size, first = dirOf(env, 391);
@@ -530,7 +530,7 @@ reg('xfPrintHead', {
 
 /* 二版合わせ — the line is split into two fields of hairline rows; one slides in from each side and they interleave */
 reg('xfTwoFields', {
-  name: '二版合わせ', en: 'Two Fields', tags: ['glitch', 'graphic', 'editorial'], w: 1, ae: 'slice',
+  name: '두 판 맞추기', en: 'Two Fields', tags: ['glitch', 'graphic', 'editorial'], w: 1, ae: 'slice',
   inDur: dur => clamp(dur * 0.42, 0.18, 0.75),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 401), b0 = box(it), g0 = uv(it, b0), D = size * 1.4 + g0.L * 0.18;
@@ -547,7 +547,7 @@ reg('xfTwoFields', {
 
 /* 三段ずれ — cut into three tiers that arrive one after another from the same side and spring back and forth into line */
 reg('xfThreeTier', {
-  name: '三段ずれ', en: 'Three-Tier Slip', tags: ['pop', 'graphic', 'glitch'], w: 1.1, ae: 'slice',
+  name: '3단 어긋남', en: 'Three-Tier Slip', tags: ['pop', 'graphic', 'glitch'], w: 1.1, ae: 'slice',
   inDur: dur => clamp(dur * 0.45, 0.2, 0.8),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 411), D = size * 1.7, list = [];
@@ -564,7 +564,7 @@ reg('xfThreeTier', {
 
 /* 帯の並べ替え — the line is cut into vertical strips standing in the wrong order; they hop over each other into place */
 reg('xfStripSort', {
-  name: '帯の並べ替え', en: 'Strip Sort', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'slice', minDur: 0.5,
+  name: '띠 재배열', en: 'Strip Sort', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'slice', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.25, 0.9),
   apply(env, it, p) {
     const size = it.size, seed = env.cut.seed | 0, g0 = uv(it, box(it)), N = clamp(Math.round(g0.L / (size * 0.95)), 3, 7), w = g0.L / N;
@@ -585,7 +585,7 @@ reg('xfStripSort', {
 
 /* イコライザ — columns of the line shoot up from behind a floor line to different beats, overshoot and settle */
 reg('xfEqualizer', {
-  name: 'イコライザ', en: 'Equalizer', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'slice',
+  name: '이퀄라이저', en: 'Equalizer', tags: ['pop', 'graphic', 'glitch'], w: 1, ae: 'slice',
   inDur: dur => clamp(dur * 0.45, 0.2, 0.8),
   apply(env, it, p) {
     const size = it.size, seed = env.cut.seed | 0, g0 = uv(it, box(it)), N = clamp(Math.round(g0.L / (size * 0.5)), 4, 14), w = g0.L / N, list = [];
@@ -608,7 +608,7 @@ reg('xfEqualizer', {
 
 /* 斜め帯合わせ — the line is cut into slanted strips that slide along their own slant, alternately down and up, into register */
 reg('xfDiagStrips', {
-  name: '斜め帯合わせ', en: 'Diagonal Strips', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'slice',
+  name: '사선 띠 맞추기', en: 'Diagonal Strips', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'slice',
   inDur: dur => clamp(dur * 0.45, 0.2, 0.8),
   apply(env, it, p) {
     const size = it.size, k = 0.6 * dirOf(env, 441), g0 = uv(it, box(it)), ak = Math.abs(k) * g0.T / 2;
@@ -630,7 +630,7 @@ reg('xfDiagStrips', {
 
 /* ダイヤル合わせ — the line is cut into concentric rings turned out of place; they rotate back like a combination lock, inner ring first */
 reg('xfRingDial', {
-  name: 'ダイヤル合わせ', en: 'Ring Dial', tags: ['graphic', 'glitch', 'pop'], w: 0.8, ae: 'spin', minDur: 0.5,
+  name: '다이얼 맞추기', en: 'Ring Dial', tags: ['graphic', 'glitch', 'pop'], w: 0.8, ae: 'spin', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.25, 0.9),
   apply(env, it, p) {
     const size = it.size, n = 4, dir = dirOf(env, 451), b0 = box(it), Rm = Math.hypot(b0.w, b0.h) / 2 + size * 0.15, list = [];
@@ -656,7 +656,7 @@ reg('xfRingDial', {
 
 /* 積み帯 — the line is built like a wall: the lowest strip drops in and bounces, then the next lands on top of it, and so on */
 reg('xfStackStrips', {
-  name: '積み帯', en: 'Stacked Strips', tags: ['pop', 'graphic'], w: 0.9, ae: 'drop', minDur: 0.5,
+  name: '쌓인 띠', en: 'Stacked Strips', tags: ['pop', 'graphic'], w: 0.9, ae: 'drop', minDur: 0.5,
   inDur: dur => clamp(dur * 0.5, 0.25, 0.9),
   apply(env, it, p) {
     const size = it.size, N = 4, g0 = uv(it, box(it)), h = g0.T / N, list = [];
@@ -677,7 +677,7 @@ reg('xfStackStrips', {
 
 /* 下線が掃く — an underline is drawn, lifts through the line uncovering what it has passed, and retracts as an overline */
 reg('xfUnderSweep', {
-  name: '下線が掃く', en: 'Underline Sweep', tags: ['editorial', 'calm', 'graphic', 'emotional'], w: 1.2, ae: 'wipe', minDur: 0.5,
+  name: '밑줄 쓸기', en: 'Underline Sweep', tags: ['editorial', 'calm', 'graphic', 'emotional'], w: 1.2, ae: 'wipe', minDur: 0.5,
   inDur: dur => clamp(dur * 0.45, 0.22, 0.8),
   apply(env, it, p) {
     const dir = dirOf(env, 501), grow = oQuart(p / 0.2), lift = ioCubic((p - 0.12) / 0.7), away = E.inCubic(clamp((p - 0.82) / 0.18));
@@ -695,7 +695,7 @@ reg('xfUnderSweep', {
 
 /* テープ剥がし — three strips of tape are slapped over the line, then peeled away one by one to show what is under them */
 reg('xfTapeOff', {
-  name: 'テープ剥がし', en: 'Tape Off', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'wipe', minDur: 0.6,
+  name: '테이프 떼기', en: 'Tape Off', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'wipe', minDur: 0.6,
   inDur: dur => clamp(dur * 0.55, 0.3, 1.0),
   apply(env, it, p) {
     const size = it.size, seed = env.cut.seed | 0, first = dirOf(env, 511), main = isMain(it, env);
@@ -731,7 +731,7 @@ reg('xfTapeOff', {
 
 /* スキャナ — a light bar passes down the line leaving only a hairline outline, then comes back up and fills it in */
 reg('xfScanner', {
-  name: 'スキャナ', en: 'Scanner', tags: ['glitch', 'editorial', 'calm', 'graphic'], w: 1, ae: 'wipe', minDur: 0.7,
+  name: '스캐너', en: 'Scanner', tags: ['glitch', 'editorial', 'calm', 'graphic'], w: 1, ae: 'wipe', minDur: 0.7,
   inDur: dur => clamp(dur * 0.55, 0.32, 1.0),
   apply(env, it, p) {
     const size = it.size, down = ioCubic(p / 0.46), up = ioCubic((p - 0.52) / 0.48), main = isMain(it, env);
@@ -754,7 +754,7 @@ reg('xfScanner', {
 
 /* 巻き上げシャッター — a slatted shutter rattles down over the line, then rolls up and uncovers it from the bottom */
 reg('xfRollerShutter', {
-  name: '巻き上げ', en: 'Roller Shutter', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'wipe', minDur: 0.6,
+  name: '말아 올리기', en: 'Roller Shutter', tags: ['graphic', 'pop', 'editorial'], w: 0.9, ae: 'wipe', minDur: 0.6,
   inDur: dur => clamp(dur * 0.55, 0.3, 1.0),
   apply(env, it, p) {
     const size = it.size, main = isMain(it, env), drop = oCubic(p / 0.2), rise = ioCubic((p - 0.3) / 0.7);
@@ -781,7 +781,7 @@ reg('xfRollerShutter', {
 
 /* 輪郭が先行 — two wipes chase each other along the line: the first leaves only outlines, the second fills them in */
 reg('xfOutlineLead', {
-  name: '輪郭が先行', en: 'Outline Leads', tags: ['editorial', 'graphic', 'calm', 'emotional'], w: 1.1, ae: 'wipe', minDur: 0.5,
+  name: '외곽선 먼저', en: 'Outline Leads', tags: ['editorial', 'graphic', 'calm', 'emotional'], w: 1.1, ae: 'wipe', minDur: 0.5,
   inDur: dur => clamp(dur * 0.48, 0.24, 0.85),
   apply(env, it, p) {
     const dir = dirOf(env, 601), main = isMain(it, env), e1 = ioCubic(p / 0.7), e2 = main ? ioCubic((p - 0.3) / 0.7) : ioCubic(p);
@@ -805,7 +805,7 @@ reg('xfOutlineLead', {
 
 /* なぞって流す — the outlines are traced on first, then a slanted flood of colour runs through and fills them */
 reg('xfTraceFlood', {
-  name: 'なぞって流す', en: 'Trace and Flood', tags: ['emotional', 'calm', 'editorial', 'pop'], w: 0.9, ae: 'wipe', minDur: 0.8,
+  name: '따라 그리고 채우기', en: 'Trace and Flood', tags: ['emotional', 'calm', 'editorial', 'pop'], w: 0.9, ae: 'wipe', minDur: 0.8,
   inDur: dur => clamp(dur * 0.55, 0.35, 1.05),
   apply(env, it, p) {
     const size = it.size, dir = dirOf(env, 611), k = 0.5;

@@ -71,7 +71,7 @@ const toItem = (it, X0, Y0) => { const r = -(it.rot || 0) * DEG, c = Math.cos(r)
 
 /* 中央から細る — starting in the middle of the line and spreading to both ends, each glyph narrows to a hairline, and the hairline then shortens to nothing */
 X.xhCentreThin = {
-  name: '中央から細る', en: 'Centre Thins', tags: ['editorial', 'graphic', 'calm'], w: 1.1, ae: 'stretch',
+  name: '가운데부터 가늘어짐', en: 'Centre Thins', tags: ['editorial', 'graphic', 'calm'], w: 1.1, ae: 'stretch',
   outDur: dur => clamp(dur * 0.4, 0.3, 0.8),
   apply(env, it, p) {
     const O = orders(env, it);
@@ -86,7 +86,7 @@ X.xhCentreThin = {
 
 /* かなが先に — the light glyphs (kana, lower case) soften and sink away first; the heavy ones (kanji, capitals) stand alone for a beat, then punch out one by one */
 X.xhKanaFirst = {
-  name: 'かなが先に', en: 'Kana First', tags: ['editorial', 'emotional', 'calm'], w: 1.1, ae: 'shrink', minDur: 0.6,
+  name: '가나 먼저', en: 'Kana First', tags: ['editorial', 'emotional', 'calm'], w: 1.1, ae: 'shrink', minDur: 0.6,
   outDur: dur => clamp(dur * 0.46, 0.36, 0.95),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size;
@@ -110,7 +110,7 @@ X.xhKanaFirst = {
 
 /* 櫛抜け — like two combs pulled apart: every other glyph slides up out of its own cell, then the remaining ones slide down out of theirs */
 X.xhCombOut = {
-  name: '櫛抜け', en: 'Comb Apart', tags: ['graphic', 'editorial', 'pop'], w: 1.2, ae: 'slice',
+  name: '빗살 빠짐', en: 'Comb Apart', tags: ['graphic', 'editorial', 'pop'], w: 1.2, ae: 'slice',
   outDur: dur => clamp(dur * 0.42, 0.32, 0.85),
   apply(env, it, p) {
     const O = orders(env, it), isx = it.sx || 1, isy = it.sy || 1;
@@ -128,7 +128,7 @@ X.xhCombOut = {
 
 /* 両端から抜ける — the outermost pair is pulled off outwards first, then pair after pair; the glyph in the middle is the last to go */
 X.xhEndsOut = {
-  name: '両端から抜ける', en: 'Ends Leave First', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'stretch',
+  name: '양 끝부터 빠짐', en: 'Ends Leave First', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'stretch',
   outDur: dur => clamp(dur * 0.42, 0.32, 0.85),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, mk = motionK(env);
@@ -147,7 +147,7 @@ X.xhEndsOut = {
 
 /* 指名されて消える — in a shuffled order, one glyph at a time lights up in the accent colour, swells, and snaps shut */
 X.xhRollCall = {
-  name: '指名されて消える', en: 'Roll Call', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'cut', minDur: 0.5,
+  name: '호명되어 사라짐', en: 'Roll Call', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'cut', minDur: 0.5,
   outDur: (dur, n) => clamp(dur * 0.44, 0.34, 0.9),
   apply(env, it, p) {
     const O = orders(env, it), seed = O.single ? (env.cut.seed | 0) : (it.seed | 0), hot = hotOf(env, it), N = Math.max(1, O.N);
@@ -168,7 +168,7 @@ X.xhRollCall = {
 
 /* 天井に貼り付く — one after another the glyphs squat, shoot straight up and splat flat against the top edge of the frame, where they slip out of sight */
 X.xhCeiling = {
-  name: '天井に貼り付く', en: 'Stick To Ceiling', tags: ['pop', 'graphic'], w: 0.7, ae: 'drift', minDur: 0.6,
+  name: '천장에 달라붙음', en: 'Stick To Ceiling', tags: ['pop', 'graphic'], w: 0.7, ae: 'drift', minDur: 0.6,
   outDur: dur => clamp(dur * 0.48, 0.4, 1.0),
   apply(env, it, p) {
     const O = orders(env, it), isy = it.sy || 1, r = (it.rot || 0) * DEG, cr = Math.cos(r), sr = Math.sin(r);
@@ -192,7 +192,7 @@ X.xhCeiling = {
 
 /* 指で弾く — each glyph in turn is pressed back, then flicked: it shoots off low and fast, spinning and shrinking into the distance */
 X.xhFlick = {
-  name: '指で弾く', en: 'Flicked Away', tags: ['pop', 'graphic'], w: 1.1, ae: 'scatter',
+  name: '손가락 튕기기', en: 'Flicked Away', tags: ['pop', 'graphic'], w: 1.1, ae: 'scatter',
   outDur: dur => clamp(dur * 0.44, 0.34, 0.9),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, dir = dirOf(it, 81), mk = motionK(env), dist = Math.max(env.W, env.H) * 0.42 * mk, seed = it.seed | 0;
@@ -209,7 +209,7 @@ X.xhFlick = {
 
 /* 遠くへ跳ねる — every glyph hops three times on the spot, each hop smaller and further away, until it is too far to see */
 X.xhHopFar = {
-  name: '遠くへ跳ねる', en: 'Hop Into Distance', tags: ['pop', 'emotional'], w: 1, ae: 'shrink', minDur: 0.6,
+  name: '멀리 뛰어감', en: 'Hop Into Distance', tags: ['pop', 'emotional'], w: 1, ae: 'shrink', minDur: 0.6,
   outDur: dur => clamp(dur * 0.5, 0.42, 1.05),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, isy = it.sy || 1, S = [1, 0.6, 0.3, 0.04];
@@ -230,7 +230,7 @@ X.xhHopFar = {
 
 /* コンベア送り — the line is fed towards its head in jerky steps like a conveyor; whatever passes the head tips over the end and drops */
 X.xhConveyor = {
-  name: 'コンベア送り', en: 'Conveyor', tags: ['graphic', 'pop', 'glitch'], w: 0.9, ae: 'fall', minDur: 0.6,
+  name: '컨베이어 운반', en: 'Conveyor', tags: ['graphic', 'pop', 'glitch'], w: 0.9, ae: 'fall', minDur: 0.6,
   outDur: dur => clamp(dur * 0.5, 0.42, 1.05),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, L = linePos(it);
@@ -257,7 +257,7 @@ X.xhConveyor = {
 
 /* カード集め — the glyphs are swept up like playing cards: one by one they slide onto the first glyph of their line, and the pile is flipped away */
 X.xhGather = {
-  name: 'カード集め', en: 'Gather The Cards', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'shrink', minDur: 0.6,
+  name: '카드 모으기', en: 'Gather The Cards', tags: ['pop', 'graphic', 'editorial'], w: 0.9, ae: 'shrink', minDur: 0.6,
   outDur: dur => clamp(dur * 0.48, 0.4, 1.0),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, L = linePos(it), seed = it.seed | 0;
@@ -279,7 +279,7 @@ X.xhGather = {
 
 /* 階段落ち — the line breaks into a staircase, each glyph one step lower than the one before; then the glyphs slide down the stairs and off, lowest first */
 X.xhStairs = {
-  name: '階段落ち', en: 'Down The Stairs', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'fall', minDur: 0.55,
+  name: '계단 굴러떨어짐', en: 'Down The Stairs', tags: ['graphic', 'pop', 'editorial'], w: 1, ae: 'fall', minDur: 0.55,
   outDur: dur => clamp(dur * 0.48, 0.4, 1.0),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, mk = motionK(env);
@@ -302,7 +302,7 @@ X.xhStairs = {
 
 /* 隣を呑み込む — starting at the head of the line, each glyph slides into its neighbour and is swallowed; the neighbour bulges, then is swallowed in turn, and the last one gulps and is gone */
 X.xhEatAlong = {
-  name: '隣を呑み込む', en: 'Swallow Along', tags: ['pop', 'emotional', 'graphic'], w: 1, ae: 'shrink', minDur: 0.55,
+  name: '옆을 삼킴', en: 'Swallow Along', tags: ['pop', 'emotional', 'graphic'], w: 1, ae: 'shrink', minDur: 0.55,
   outDur: dur => clamp(dur * 0.48, 0.4, 1.0),
   apply(env, it, p) {
     const O = orders(env, it), L = linePos(it);
@@ -329,7 +329,7 @@ X.xhEatAlong = {
 
 /* 席替え — neighbours trade places over and under each other, then trade again with the neighbour on the other side, fading with every exchange */
 X.xhShuffle = {
-  name: '席替え', en: 'Trade Places', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'scatter', minDur: 0.55,
+  name: '자리 바꾸기', en: 'Trade Places', tags: ['pop', 'graphic', 'glitch'], w: 0.9, ae: 'scatter', minDur: 0.55,
   outDur: dur => clamp(dur * 0.48, 0.4, 1.0),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, L = linePos(it);
@@ -357,7 +357,7 @@ X.xhShuffle = {
 
 /* 字ごとシャッター — every glyph has its own shutter: in a scattered order they close, alternately from the sides and from top and bottom, to a slit and out */
 X.xhShutters = {
-  name: '字ごとシャッター', en: 'Glyph Shutters', tags: ['graphic', 'editorial', 'glitch'], w: 1.1, ae: 'wipe',
+  name: '글자별 셔터', en: 'Glyph Shutters', tags: ['graphic', 'editorial', 'glitch'], w: 1.1, ae: 'wipe',
   outDur: dur => clamp(dur * 0.4, 0.3, 0.8),
   apply(env, it, p) {
     const O = orders(env, it), seed = O.single ? (env.cut.seed | 0) : (it.seed | 0);
@@ -373,7 +373,7 @@ X.xhShutters = {
 
 /* 踏み潰し — a heavy foot walks along the line: glyph after glyph is slammed flat onto the baseline into a dash, the neighbours jump, and the dashes shrink away */
 X.xhStomp = {
-  name: '踏み潰し', en: 'Stomped Flat', tags: ['pop', 'graphic'], w: 1, ae: 'shrink',
+  name: '짓밟기', en: 'Stomped Flat', tags: ['pop', 'graphic'], w: 1, ae: 'shrink',
   outDur: dur => clamp(dur * 0.46, 0.36, 0.95),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, isy = it.sy || 1, SP = 0.55, HIT = 0.26;
@@ -395,7 +395,7 @@ X.xhStomp = {
 
 /* コイン回転 — each glyph is tossed like a coin: it spins faster and faster about its upright axis while it rises and dwindles */
 X.xhCoinSpin = {
-  name: 'コイン回転', en: 'Coin Spin', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'shrink',
+  name: '동전 회전', en: 'Coin Spin', tags: ['pop', 'graphic', 'emotional'], w: 1, ae: 'shrink',
   outDur: dur => clamp(dur * 0.46, 0.36, 0.95),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size;
@@ -412,7 +412,7 @@ X.xhCoinSpin = {
 
 /* 一字ずつめくる — the glyphs are turned like pages, each swinging round its leading edge onto the place of the one before and fading as it lands */
 X.xhPageTurn = {
-  name: '一字ずつめくる', en: 'Page By Page', tags: ['editorial', 'calm', 'emotional'], w: 1.1, ae: 'wipe',
+  name: '한 글자씩 넘기기', en: 'Page By Page', tags: ['editorial', 'calm', 'emotional'], w: 1.1, ae: 'wipe',
   outDur: dur => clamp(dur * 0.46, 0.36, 0.95),
   apply(env, it, p) {
     const O = orders(env, it), isx = it.sx || 1, isy = it.sy || 1;
@@ -430,7 +430,7 @@ X.xhPageTurn = {
 
 /* 傾いて滑る — the glyphs tip over one by one as if the floor were tilted, then slide down the slope and off, the downhill ones first */
 X.xhTiltSlide = {
-  name: '傾いて滑る', en: 'Tilt And Slide', tags: ['pop', 'graphic', 'editorial'], w: 1.1, ae: 'drift',
+  name: '기울어 미끄러짐', en: 'Tilt And Slide', tags: ['pop', 'graphic', 'editorial'], w: 1.1, ae: 'drift',
   outDur: dur => clamp(dur * 0.46, 0.36, 0.95),
   apply(env, it, p) {
     const O = orders(env, it), dir = dirOf(it, 111), ANG = 22, mk = motionK(env), dist = Math.max(env.W, env.H) * 0.55 * mk;
@@ -447,7 +447,7 @@ X.xhTiltSlide = {
 
 /* 蛇腹畳み — the line folds up like a concertina: the glyphs lean alternately left and right, squeeze thin and close up against the head of the line, and the folded stack shuts */
 X.xhConcertina = {
-  name: '蛇腹畳み', en: 'Concertina', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'shrink',
+  name: '아코디언 접기', en: 'Concertina', tags: ['graphic', 'editorial', 'pop'], w: 1, ae: 'shrink',
   outDur: dur => clamp(dur * 0.44, 0.34, 0.9),
   apply(env, it, p) {
     const O = orders(env, it), L = linePos(it), isx = it.sx || 1, isy = it.sy || 1;
@@ -474,7 +474,7 @@ X.xhConcertina = {
 
 /* バーコード化 — each glyph is squeezed into a bar of its own width, so the line becomes a barcode; a reader then runs along it and the bars drop out */
 X.xhBarcode = {
-  name: 'バーコード化', en: 'Into Barcode', tags: ['graphic', 'glitch', 'editorial'], w: 0.9, ae: 'glitch', minDur: 0.55,
+  name: '바코드화', en: 'Into Barcode', tags: ['graphic', 'glitch', 'editorial'], w: 0.9, ae: 'glitch', minDur: 0.55,
   outDur: dur => clamp(dur * 0.48, 0.4, 1.0),
   apply(env, it, p) {
     const O = orders(env, it), seed = O.single ? (env.cut.seed | 0) : (it.seed | 0), isx = it.sx || 1, isy = it.sy || 1, vert = it.vertical;
@@ -495,7 +495,7 @@ X.xhBarcode = {
 
 /* 信号になる — the glyphs shrink into dots and dashes, a line of Morse in the accent colour, which is then keyed off signal by signal */
 X.xhMorse = {
-  name: '信号になる', en: 'Into Morse', tags: ['graphic', 'glitch', 'editorial'], w: 0.8, ae: 'glitch', minDur: 0.6,
+  name: '모스 신호로', en: 'Into Morse', tags: ['graphic', 'glitch', 'editorial'], w: 0.8, ae: 'glitch', minDur: 0.6,
   outDur: dur => clamp(dur * 0.5, 0.42, 1.05),
   apply(env, it, p) {
     const O = orders(env, it), seed = O.single ? (env.cut.seed | 0) : (it.seed | 0), hot = hotOf(env, it), vert = it.vertical;
@@ -515,7 +515,7 @@ X.xhMorse = {
 
 /* 句点で終わる — the sentence closes itself: the glyphs dwindle into the baseline one after another, the last one turns into a full stop that stays for a beat, then drops */
 X.xhFullStop = {
-  name: '句点で終わる', en: 'Full Stop', tags: ['editorial', 'calm', 'emotional'], w: 1, ae: 'shrink', minDur: 0.65,
+  name: '마침표로 끝', en: 'Full Stop', tags: ['editorial', 'calm', 'emotional'], w: 1, ae: 'shrink', minDur: 0.65,
   outDur: dur => clamp(dur * 0.5, 0.45, 1.1),
   apply(env, it, p) {
     const O = orders(env, it), size = it.size, isy = it.sy || 1, lay = layOf(it);
@@ -562,7 +562,7 @@ function pieceSetup(env, it, p, spread) {
 
 /* 段ずれ抜け — every glyph comes apart in horizontal layers: its strokes are drawn out row by row, alternately to the left and to the right */
 X.xhPieceStrata = {
-  name: '段ずれ抜け', en: 'Strata Slide Out', tags: ['graphic', 'editorial', 'glitch'], w: 1, ae: 'slice', pieces: true, minDur: 0.5,
+  name: '단 어긋나며 빠짐', en: 'Strata Slide Out', tags: ['graphic', 'editorial', 'glitch'], w: 1, ae: 'slice', pieces: true, minDur: 0.5,
   outDur: dur => clamp(dur * 0.46, 0.36, 0.95),
   apply(env, it, p) {
     const size = it.size, mk = motionK(env);
@@ -580,7 +580,7 @@ X.xhPieceStrata = {
 
 /* 画が痩せる — the glyphs lose their strokes in place: the smallest dots and ticks shrink to nothing first, the big strokes hold out longest */
 X.xhPieceThin = {
-  name: '画が痩せる', en: 'Strokes Wither', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'shrink', pieces: true, minDur: 0.5,
+  name: '획이 야윔', en: 'Strokes Wither', tags: ['emotional', 'calm', 'editorial'], w: 1.1, ae: 'shrink', pieces: true, minDur: 0.5,
   outDur: dur => clamp(dur * 0.48, 0.38, 1.0),
   apply(env, it, p) {
     const seed = it.seed | 0;
@@ -598,7 +598,7 @@ X.xhPieceThin = {
 
 /* 画が回る — every stroke starts to spin on its own centre like a propeller, faster and faster, until the whirling pieces dwindle to nothing */
 X.xhPieceSpin = {
-  name: '画が回る', en: 'Stroke Propellers', tags: ['pop', 'glitch', 'graphic'], w: 0.9, ae: 'scatter', pieces: true, minDur: 0.5,
+  name: '획이 돎', en: 'Stroke Propellers', tags: ['pop', 'glitch', 'graphic'], w: 0.9, ae: 'scatter', pieces: true, minDur: 0.5,
   outDur: dur => clamp(dur * 0.48, 0.38, 1.0),
   apply(env, it, p) {
     const size = it.size, seed = it.seed | 0;
@@ -616,7 +616,7 @@ X.xhPieceSpin = {
 
 /* 画が積もる — the strokes let go from the bottom up and drop into a little heap at the foot of each glyph; the heaps then sink away */
 X.xhPieceHeap = {
-  name: '画が積もる', en: 'Stroke Heaps', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'fall', pieces: true, shatter: true, minDur: 0.6,
+  name: '획이 쌓임', en: 'Stroke Heaps', tags: ['pop', 'emotional', 'graphic'], w: 0.9, ae: 'fall', pieces: true, shatter: true, minDur: 0.6,
   outDur: dur => clamp(dur * 0.52, 0.44, 1.1),
   apply(env, it, p) {
     const size = it.size, isx = it.sx || 1, isy = it.sy || 1, seed = it.seed | 0;
@@ -641,7 +641,7 @@ X.xhPieceHeap = {
 
 /* 偏と旁が別れる — each glyph parts down the middle: the strokes of its left side and of its right side draw apart, pause, and then fly off in opposite directions */
 X.xhPieceParts = {
-  name: '偏と旁が別れる', en: 'Radicals Part', tags: ['editorial', 'emotional', 'graphic'], w: 1.1, ae: 'slice', pieces: true, minDur: 0.5,
+  name: '부수가 갈라짐', en: 'Radicals Part', tags: ['editorial', 'emotional', 'graphic'], w: 1.1, ae: 'slice', pieces: true, minDur: 0.5,
   outDur: dur => clamp(dur * 0.48, 0.38, 1.0),
   apply(env, it, p) {
     const size = it.size, mk = motionK(env), far = Math.max(env.W, env.H) * 0.4 * mk;
