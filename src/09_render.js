@@ -111,6 +111,7 @@ class Renderer {
       const bx = backdrop.getContext('2d'); bx.setTransform(1, 0, 0, 1, 0, 0); bx.globalCompositeOperation = 'copy'; bx.drawImage(ctx.canvas, 0, 0); bx.globalCompositeOperation = 'source-over';
     }
     if (J.setLang) J.setLang(plan.lang || 'ja');           // faces follow the plan's lyric language
+    if (J.setNoSerif) J.setNoSerif(plan.noSerif, plan.noSerifFont);          // 정자체(명조·바탕) 제외
     if (J.setTypeset) J.setTypeset(plan.typeset);          // 文字整列
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -249,7 +250,7 @@ class Renderer {
         const Z = plan.centerFree && cut.zone ? cut.zone : null;
         const envOptions = {
           pass: P.pass, passColor: P.pass === 'A' ? csc.ghostA : P.pass === 'B' ? csc.ghostB : null,
-          t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo, layer, zone: Z,
+          t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo, layer, zone: Z, transparent: !!opt.transparent,
           hideText: morphOn, glyphLog: P.pass === 'main' ? opt.glyphLog || null : null,
         };
         let X = target, env = this.makeEnv(X, plan, cut, csc, envOptions), cam = null;

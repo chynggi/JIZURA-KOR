@@ -1451,7 +1451,74 @@ async def test_media_lyrics_insert(b, url):
     assert not errs, errs
     await pg.close()
 
-TESTS = [test_themes, test_project_file, test_export_menu, test_cropped_edges, test_cut_details, test_emphasis_frontmost,
+async def test_font_role_preview(b, url):
+    pg, errs = await new_page(b, url)
+    initial = await pg.evaluate('''() => {
+        J.uiApi.pause();
+        const p = J.ui.project;
+        p.lyrics = 'JIZURA'; p.style = 'noir'; p.fonts = {}; p.unify = false;
+        p.overrides = {0: {layout: 'marquee', single: true}}; p.lyricCutOptions = {};
+        J.addUserFont('test_courier', 'Courier New', 'Courier New', 400);
+        J.uiApi.syncUI(); J.uiApi.replan();
+        const cut = J.ui.plan.cuts.find(c => c.part === 0);
+        J.uiApi.seek((cut.start + cut.end) / 2);
+        return {font: cut.params.font, time: J.ui.t};
+    }''')
+    await pg.wait_for_function('!J.ui.need && document.querySelector("#viewMsg").hidden')
+    canvas = pg.locator('#view')
+    before = await canvas.evaluate('canvas => canvas.toDataURL()')
+    role = pg.locator('#fontRoles select').first
+    await role.select_option('test_courier', force=True)
+    await pg.wait_for_function('!J.ui.need && document.querySelector("#viewMsg").hidden')
+    assert await pg.evaluate('J.ui.plan.cuts.find(c => c.part === 0).params.font') == 'test_courier'
+    assert await canvas.evaluate('canvas => canvas.toDataURL()') != before
+    assert await pg.evaluate('J.ui.t') == initial['time']
+    await role.select_option('', force=True)
+    await pg.wait_for_function('!J.ui.need && document.querySelector("#viewMsg").hidden')
+    assert await pg.evaluate('J.ui.plan.cuts.find(c => c.part === 0).params.font') == initial['font']
+    assert await canvas.evaluate('canvas => canvas.toDataURL()') == before
+    assert not errs, errs
+    await pg.close()
+
+
+async def test_interlude_scenes(b, url):
+    pg, errs = await new_page(b, url)
+    await pg.locator('#lyrics').fill('')
+    await pg.locator('[data-lyric-insert="interlude"]').click()
+    assert (await pg.locator('#lyrics').input_value()).strip() == '[간주]'
+    await pg.wait_for_function('J.ui.plan.cuts.some(c => c.layout === "interlude")')
+    result = await pg.evaluate("""() => {
+        const plan = J.ui.plan;
+        const cut = plan.cuts.find(c => c.layout === 'interlude');
+        const cv = document.createElement('canvas'); cv.width = 320; cv.height = 180;
+        const cx = cv.getContext('2d');
+        const photo = document.createElement('canvas'); photo.width = photo.height = 80;
+        const px = photo.getContext('2d'); px.fillStyle = '#0f0'; px.fillRect(0, 0, 80, 80);
+        J.mediaAssets.set('test-photo', {element: photo});
+        plan.media.cuts = [{ itemId: 'test-photo', type: 'image', opacity: 100, start: cut.start, end: cut.end }];
+        cut.params.glyphs = ['A'];
+        const renderer = new J.Renderer();
+        const render = id => {
+            cut.params.scenes = id ? [{id, start: 0, end: cut.dur, seed: 873}] : [];
+            renderer.frame(cx, plan, cut.start + cut.dur * .55, {
+                scale: 320 / plan.W, noHud: true, noPost: true, noMedia: true, noGhost: true
+            });
+            return cv.toDataURL();
+        };
+        const baseline = render(null);
+        const ids = ['pulse','light','frame','glyph','chroma','panel','radar',
+                     'paper','blueprint','photo','domino','route','ink'];
+        const images = ids.map(render);
+        const photoFrame = images[ids.indexOf('photo')];
+        J.mediaAssets.delete('test-photo');
+        return { distinct: new Set([baseline, ...images]).size, fallback: render('photo') !== photoFrame };
+    }""")
+    assert result == {'distinct': 14, 'fallback': True}, result
+    assert not errs, errs
+    await pg.close()
+
+
+TESTS = [test_themes, test_font_role_preview, test_interlude_scenes, test_project_file, test_export_menu, test_cropped_edges, test_cut_details, test_emphasis_frontmost,
          test_lyric_compositing, test_lyric_features, test_media_rhythm, test_media_phases,
          test_media_random_order, test_media_auto_placement, test_media_effects, test_media_layer_settings, test_media_lyrics_insert]
 

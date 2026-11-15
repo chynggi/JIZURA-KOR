@@ -30,6 +30,8 @@ J.defaultProject = () => ({
   lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' — picks the faces each font key is drawn with
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
   unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
+  noSerifFont: '',                // 정자체 제외의 대체 글꼴 키 ('' = 같은 굵기의 고딕, 그 밖에는 사용자가 고른 글꼴)
+  noSerif: false,                 // 정자체(명조·바탕) 제외: 세리프 계열 글꼴을 모든 프리셋·연출에서 고딕으로 바꿔 그린다
   typeset: false,                 // 文字整列: kana tracking, small particles / big first character, Latin sizing, 0.2 s lead, restraint
   centerDir: 'tb',                // 中央を空ける on tall frames: 'tb' = top / bottom, 'lr' = left / right
   centerFree: false,              // 中央を空ける: lay the cuts out in side bands (left / right or top / bottom) around a character
@@ -76,6 +78,10 @@ J.parseLyrics = (raw) => {
     return text.slice(avoidOverlap ? 2 : 1).trim();
   };
   const rows = String(raw || '').replace(/\r/g, '').split('\n');
+  const standaloneInterlude = b => {
+    lines.push({ text: '', interlude: true, secs: b.sec, lrc: b.at, note: b.text, sourceLine: b.src, src: b.src, gapBefore: pendingGap, emph: [] });
+    pendingGap = false;
+  };
   for (let ri = 0; ri < rows.length; ri++) {
     let s0 = protectLyricEscapes(rows[ri].trim());
     if (!s0) { if (lines.length) pendingGap = true; continue; }
@@ -86,7 +92,12 @@ J.parseLyrics = (raw) => {
     // (N = extra seconds for auto timing, 문구 = small caption, timestamp = the previous line ends and the interlude starts there)
     // upstream spellings are accepted too: [間奏] [间奏] [interlude] [instrumental] [inst] [간주: 8]
     const bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[\s*(?:간주|間奏|间奏|interlude|instrumental|inst)(?:\s*[:：]?\s*(\d+(?:\.\d+)?)\s*(?:초|秒|sec|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
-    if (bm) { pendingBreak = { sec: bm[3] != null ? +bm[3] : null, at: bm[1] != null ? +bm[1] * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] ? restoreLyricEscapes(bm[4]) : null }; continue; }
+    if (bm) {
+      const marker = { sec: bm[3] != null ? +bm[3] : null, at: bm[1] != null ? +bm[1] * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] ? restoreLyricEscapes(bm[4]) : null, src: ri };
+      if (!lines.length) standaloneInterlude(marker);
+      else pendingBreak = marker;
+      continue;
+    }
     // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
     const om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
     if (om) { outro = { at: om[1] != null ? +om[1] * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] != null ? +om[3] : null }; continue; }
@@ -157,6 +168,7 @@ J.parseLyrics = (raw) => {
     if (times.length) times.forEach(t => lines.push(Object.assign({}, base, { lrc: t }, marks ? { marks: marks.map(k => ({ t: k.t + t - times[0], ci: k.ci })) } : {})));
     else lines.push(Object.assign({}, base, { lrc: null }));
   }
+  if (pendingBreak) standaloneInterlude(pendingBreak);
   // mixed LRC and plain lines keep the written order; fully timed lyrics sort by timestamp
   if (lines.length && lines.every(l => l.lrc != null)) lines.sort((a, b) => a.lrc - b.lrc);
   return { lines, meta, outro };
@@ -292,6 +304,7 @@ J.computeTiming = (project, parsed, audio) => {
   let lastFix = -Infinity;
   for (let i = 0; i < fixed.length; i++) if (fixed[i] != null) { if (fixed[i] < lastFix + 0.05) fixed[i] = lastFix + 0.05; lastFix = fixed[i]; }
   const natural = i => {         // estimated length of line i
+    if (lines[i].interlude) return Math.max(.35, lines[i].secs ?? (beat ? beat * 2 : .8));
     const n = [...lines[i].text].length;
     let d = J.clamp(0.8 + n * 0.17, 1.3, 5.2) * (T.lineScale || 1);
     if (beat) d = Math.max(2, Math.round(d / beat)) * beat;
@@ -340,6 +353,7 @@ J.computeTiming = (project, parsed, audio) => {
     const next = starts.findIndex((_, j) => j > i && insertionEnds[j] == null);
     if (next >= 0) return Math.max(s + 0.35, starts[next]);
     if (outro && outro.at != null) return Math.max(s + 0.35, outro.at);
+    if (lines[i].interlude) return s + natural(i);
     const n = [...lines[i].text].length;
     let d = J.clamp(0.8 + n * 0.17, 1.5, 5.2) * (T.lineScale || 1);
     if (beat) d = Math.max(2, Math.round(d / beat)) * beat;
@@ -425,10 +439,14 @@ J.plan = (project, audio, chain) => {
     typeset: !!project.typeset, unify: !!project.unify,
     assets: project.assets || [],                           // 소재 (settings only; the images are in J.ASSETS)
     lang: J.resolveLang ? J.resolveLang(project) : 'ja',   // 歌詞の言語 (auto → detected)
+    noSerif: !!project.noSerif, noSerifFont: typeof project.noSerifFont === 'string' ? project.noSerifFont : '',   // 정자체(명조·바탕) 제외 + 대체 글꼴
   };
   if (J.setLang) J.setLang(plan.lang);                     // chunking + measuring below use this language
+  if (J.setNoSerif) J.setNoSerif(plan.noSerif, plan.noSerifFont);
   if (J.setTypeset) J.setTypeset(plan.typeset);
   const beats = plan.beats;
+  const interludeBeat = beats.length > 1 ? (beats.at(-1) - beats[0]) / (beats.length - 1) : project.timing?.bpm > 0 ? 60 / project.timing.bpm : 0;
+  const interludeBeatOrigin = beats[0] ?? project.timing?.beatOffset ?? 0;
   const snap = (t) => {
     if (!beats.length || !(project.timing && project.timing.snap)) return t;
     let lo = 0, hi = beats.length - 1;
@@ -446,7 +464,7 @@ J.plan = (project, audio, chain) => {
   const blockLooks = new Map(), cutBlock = new Map();
   if (chain?.replay?.blockLooks) for (const [k, v] of chain.replay.blockLooks) blockLooks.set(k, { ...v });
   let paragraph = 0;
-  let schemeIdx = 0, creditDone = false;
+  let schemeIdx = 0;
   const nSchemes = st.schemes.length;
   const addEvent = (t, type, amp, dur) => plan.events.push({ t, type, amp, dur });
   const evOwner = new WeakMap(); Object.defineProperty(plan, 'evOwner', { value: evOwner });
@@ -473,8 +491,8 @@ J.plan = (project, audio, chain) => {
       plan.lines.push({ index: li, src: ln.src, lrc: ln.lrc, text: '', interlude: true, secs: ln.secs, start: s, end: e, visEnd: e, note: null, impact: false, emph: [], chunks: [], seed: lineSeed });
       const bg = ov.bg && J.BG[ov.bg] ? ov.bg : pickBg(rng, st, en, fx, bgHistory); bgHistory.push(bg);
       const dur = e - s, showTitle = dur >= 6 && !!(title || artist);
-      plan.cuts.push(makeCut({ text: '', lineText: '', line: li, start: s, end: e, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.4, outDur: 0.4,
-        params: { variant: 'quiet', showTitle, titleText: showTitle ? [title, artist].filter(Boolean).join('  /  ') : '' }, decor: Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, Object.assign({}, fx, { decor: Math.max(0.6, fx.decor) }), 'interlude', history),
+      plan.cuts.push(makeCut({ text: '', lineText: '', line: li, part: 0, start: s, end: e, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.4, outDur: 0.4,
+        params: { variant: fx.interCount === 'on' ? 'counter' : 'quiet', caption: ln.note, showTitle, titleText: showTitle ? [title, artist].filter(Boolean).join('  /  ') : '' }, decor: Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, Object.assign({}, fx, { decor: Math.max(0.6, fx.decor) }), 'interlude', history),
         scheme: schemeIdx, seed: J.h(lineSeed, 405), bg, bgP: J.BG[bg] && J.BG[bg].plan ? J.BG[bg].plan(rng, st) : {}, cam: 'push', camP: {} }));
       if (en.fx == null || en.fx.chroma !== false) addEvent(s, 'chroma', 1 + fx.chroma, 0.25);
       for (let t = s + 1.2; t < e - 0.8; t += J.clamp(dur / 4, 1.6, 3.2)) {          // a few effect accents so a long interlude keeps moving
@@ -823,9 +841,8 @@ J.plan = (project, audio, chain) => {
       // marked interlude: one random screen effect from the library, no lyric text
       if (marked) { const pick = pickFx(r2, st, en, fx, true, fxHistory, 'force'); if (pick) { const D2 = J.FXE[pick]; addEvent(iStart - (D2.pre ? D2.pre / 24 : 0), pick, D2.amp || 1, (D2.dur || 4) / 24); fxHistory.push(pick); } }
       // long interludes (> 6 s) become 2–3 cuts, each boundary snapped to the nearest beat
-      const L = nextStart - iStart, nSeg = L > 6 ? Math.min(3, Math.ceil(L / 4)) : 1, bounds = [iStart];
-      for (let k = 1; k < nSeg; k++) bounds.push(snap(iStart + L * k / nSeg));
-      bounds.push(nextStart);
+      const L = nextStart - iStart, nSeg = L > 6 ? Math.min(3, Math.ceil(L / 4)) : 1;
+      const bounds = jzInterludeBounds(L, nSeg, interludeBeat, interludeBeatOrigin - iStart).map(local => iStart + local);
       const next = parsed.lines[li + 1].text;
       for (let k = 0; k < nSeg; k++) {
         const rk = k ? J.rng(J.h(lineSeed, 404, k)) : r2;
@@ -837,13 +854,11 @@ J.plan = (project, audio, chain) => {
           params.variant = fx.interCount === 'off' ? rk.pick(pool.concat('rings')) : rk.pick(pool);
         }
         if (nSeg > 1) params.end = nextStart;
+        params.caption = nb?.text;
         if (params.variant === 'preview') params.next = next;
         if (params.variant === 'countdown') params.beat = project.timing && project.timing.bpm > 0 ? 60 / project.timing.bpm : 0;
-        // 첫 간주에 크레딧: the first interlude long enough shows the song title and artist
-        const credit = k === 0 && fx.interCredit && title && !creditDone && bounds[1] - bounds[0] >= 2;
-        if (credit) { params.variant = 'credit'; creditDone = true; }
         const sch = k && nSchemes > 1 ? (schemeIdx + k) % nSchemes : schemeIdx;
-        plan.cuts.push(makeCut({ text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, part: k ? `interlude:${k}` : 'interlude', start: bounds[k], end: bounds[k + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(rk, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: sch, seed: k ? J.h(lineSeed, 405, k) : J.h(lineSeed, 405) }));
+        plan.cuts.push(makeCut({ text: (nb && nb.text) || '', lineText: '', line: li, part: k ? `interlude:${k}` : 'interlude', start: bounds[k], end: bounds[k + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(rk, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: sch, seed: k ? J.h(lineSeed, 405, k) : J.h(lineSeed, 405) }));
       }
     }
     if (chain?.record) chain.record.lines[li] = { h: history.slice(chainMark.h), b: bgHistory.slice(chainMark.b), f: fxHistory.slice(chainMark.f), scheme: schemeIdx };

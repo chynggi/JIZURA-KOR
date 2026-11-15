@@ -25,6 +25,15 @@ function stableDetails(project,layer,cut,options,locked){
     const override=project.overrides?.[cut.line]||{};
     for(const [field,param] of Object.entries(effectParams))if(override[field]&&override[field]!==result[field]){result[field]=override[field];delete result[param];}
     if(Array.isArray(override.decor))result.decor=copyEffects(cut.decor);
+    // Keep the saved layout parameters, but resolve its automatic fonts from the current style.
+    const currentParams=result.layout===cut.layout && !explicit.fonts ? cut.params : null;
+    for(const {path} of J.cutFontParams(result.params)){
+      const parent=path.slice(0,-1).reduce((value,key)=>value[key],result.params);
+      const key=path.at(-1);
+      const font=path.reduce((value,key)=>value?.[key],currentParams);
+      if(J.FONTS[font])parent[key]=font;
+      else delete parent[key];  // applyCutDetails fills defaults for the resolved layout
+    }
   }else{
     const override={...project[layer]?.overrides?.[cut.itemId],...options};
     if(override.technique!=null&&override.technique!==saved.native.technique)return {};
@@ -35,7 +44,7 @@ function stableDetails(project,layer,cut,options,locked){
 }
 J.captureAutoEffects=(project,plan)=>{
   for(const layer of ['lyrics','media','foreground'])for(const cut of (layer==='lyrics'?plan.cuts:plan[layer]?.cuts)||[]){
-    if(layer==='lyrics'&&(!Number.isInteger(cut.part)||cut.line<0))continue;
+    if(layer==='lyrics'&&(!Number.isInteger(cut.part)||cut.line<0||cut.layout==='interlude'))continue;
     const index=layer==='lyrics'?cut.line:cut.index,options=layer==='lyrics'
       ?((project.lyricCutOptions||={})[`${cut.line}:${cut.part}`]||={})
       :((project[layer].cutOverrides||={})[index]||={});

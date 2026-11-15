@@ -482,10 +482,72 @@ JZ_LAYOUTS.title = function (ctx) {
     return jzBB(L);
 };
 
+function jzBuildInterludeGlyph(ctx, scene, times, frames, index) {
+    var model = frames[0][index], glyphs = ctx.P.glyphs;
+    var glyph = glyphs[model.glyph.index % glyphs.length];
+    var size = Math.min(ctx.W, ctx.H) * .11, pos = [], angles = [], fades = [];
+    var L = jzNoGhost(jzText(ctx, glyph, { font: jzFontOf(ctx, '_', 'display'), size: size, x: 0, y: 0, color: ctx.sc[model.color] }));
+    L.inPoint = scene.start; L.outPoint = Math.min(ctx.cut.dur, scene.end);
+    var anchor = jzXf(L, 'ADBE Anchor Point').value;
+    var y = anchor[1] + size * (model.glyph.index % 5 - 2) * .13;
+    jzMaskRect(L, anchor[0] - size * .43, y - size * .08, anchor[0] + size * .43, y + size * .08);
+    for (var i = 0; i < frames.length; i++) {
+        var mark = frames[i][index];
+        pos.push([mark.glyph.x, mark.glyph.y]);
+        angles.push(mark.glyph.angle * 180 / Math.PI);
+        fades.push(mark.alpha * 100);
+    }
+    jzXf(L, 'ADBE Position').setValuesAtTimes(times, pos);
+    jzXf(L, 'ADBE Rotate Z').setValuesAtTimes(times, angles);
+    jzXf(L, 'ADBE Opacity').setValuesAtTimes(times, fades);
+}
+
+function jzBuildInterludeScenes(ctx) {
+    var scenes = ctx.P.scenes, c = ctx.cut, sc = ctx.sc;
+    for (var si = 0; si < scenes.length; si++) {
+        var scene = scenes[si], span = scene.end - scene.start;
+        if (!(span > 0)) continue;
+        // Browser image assets are not part of an AE plan.
+        if (scene.id === 'photo') scene = { id: 'light', seed: scene.seed, start: scene.start, end: scene.end };
+        var steps = Math.max(2, Math.min(96, Math.ceil(span * 12))), frames = [], times = [];
+        var beat = ctx.P.sceneBeat || Math.max(.25, span / 4);
+        var offset = ctx.P.sceneBeat ? ctx.P.sceneBeatOffset || 0 : scene.start;
+        for (var i = 0; i <= steps; i++) {
+            var local = span * i / steps, beatTime = (scene.start + local - offset) / beat;
+            var beatIndex = Math.floor(beatTime), phase = beatTime - beatIndex;
+            var strong = Math.exp(-phase * 6) * (beatIndex % 4 === 0 ? 1 : .4);
+            times.push(scene.start + local);
+            frames.push(jzInterludeFrame(scene, ctx.W, ctx.H, i / steps, phase, strong));
+        }
+        if (!frames[0].length) continue;
+        var L = jzNoGhost(jzShapeLayer(ctx, 'JZ Interlude ' + scene.id, 0, 0));
+        L.inPoint = scene.start; L.outPoint = Math.min(c.dur, scene.end);
+        for (var j = 0; j < frames[0].length; j++) {
+            var model = frames[0][j], group = jzGrp(L), paths = [], fades = [], widths = [];
+            jzAddPath(group, model.points, model.close);
+            if (model.width) jzAddStroke(group, sc[model.color], model.width);
+            else jzAddFill(group, sc[model.color]);
+            for (i = 0; i < frames.length; i++) {
+                var frame = frames[i][j], path = new Shape();
+                path.vertices = frame.points; path.closed = frame.close;
+                paths.push(path); fades.push(frame.alpha * 100); widths.push(frame.width);
+            }
+            var vectors = jzVecs(group);
+            vectors.property(1).property('ADBE Vector Shape').setValuesAtTimes(times, paths);
+            if (model.width) vectors.property(2).property('ADBE Vector Stroke Width').setValuesAtTimes(times, widths);
+            jzGX(group).property('ADBE Vector Group Opacity').setValuesAtTimes(times, fades);
+            if (model.glyph && ctx.P.glyphs && ctx.P.glyphs.length) jzBuildInterludeGlyph(ctx, scene, times, frames, j);
+        }
+    }
+}
+
 JZ_LAYOUTS.interlude = function (ctx) {
     var W = ctx.W, H = ctx.H, sc = ctx.sc, c = ctx.cut;
-    if (jzP(ctx, 'variant', 'counter') === 'quiet') {       // [간주] (upstream): background and decorations only (+ the title on long ones)
-        if (jzP(ctx, 'showTitle', false) && jzP(ctx, 'titleText', '')) jzNoGhost(jzSmall(ctx, jzP(ctx, 'titleText', ''), { size: Math.max(12, H * 0.024), color: sc.sub, x: W / 2, y: H * 0.88, track: 0.3 }));
+    var variant = jzP(ctx, 'variant', 'counter'), hasScenes = ctx.P.scenes && ctx.P.scenes.length;
+    var caption = ctx.P.caption || (ctx.P.showTitle ? ctx.P.titleText : '');
+    if (hasScenes) jzBuildInterludeScenes(ctx);
+    if (caption && variant !== 'credit') jzNoGhost(jzSmall(ctx, caption, { size: Math.max(12, H * 0.022), color: sc.fg, x: W / 2, y: H * .86, track: .18 }));
+    if (variant === 'quiet') {
         return { x0: W * 0.3, x1: W * 0.7, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2 };
     }
     // 첫 간주에 크레딧: song title large + artist (same composition as the title card)
@@ -494,14 +556,17 @@ JZ_LAYOUTS.interlude = function (ctx) {
         if (c.note) { var a = jzSmall(ctx, c.note, { size: Math.max(16, H * 0.03), color: sc.sub, x: W / 2, y: H / 2 + jzFontSize(L) * 0.95, track: 0.3 }); jzFadeIO(ctx, a, 0.3, 0.4); jzNoGhost(a); }
         return jzBB(L);
     }
-    var S = jzNoGhost(jzShapeLayer(ctx, 'rings', W / 2, H / 2));
-    for (var k = 0; k < 3; k++) { var g = jzGrp(S); jzAddEllipse(g, H * (0.4 + k * 0.2), H * (0.4 + k * 0.2)); jzAddStroke(g, sc.sub, 1.2, 50); }
-    jzSetExpr(jzXf(S, 'ADBE Scale'), 'var s=100*(1+0.04*Math.sin(time*2));[s,s]');
-    if (jzP(ctx, 'variant', 'counter') === 'counter') {
+    if (!hasScenes) {
+        var S = jzNoGhost(jzShapeLayer(ctx, 'rings', W / 2, H / 2));
+        for (var k = 0; k < 3; k++) { var g = jzGrp(S); jzAddEllipse(g, H * (0.4 + k * 0.2), H * (0.4 + k * 0.2)); jzAddStroke(g, sc.sub, 1.2, 50); }
+        jzSetExpr(jzXf(S, 'ADBE Scale'), 'var s=100*(1+0.04*Math.sin(time*2));[s,s]');
+    }
+    if (variant === 'counter') {
         var n = jzText(ctx, '0.0', { font: jzFontOf(ctx, '_', 'display'), size: H * 0.36, color: sc.fg, x: W / 2, y: H / 2, opacity: 0.9 });
         try { n.property('ADBE Text Properties').property('ADBE Text Document').expression = 'Math.max(0,' + jzN(jzP(ctx, 'end', null) != null ? jzP(ctx, 'end', 0) - c.start : c.dur) + '-time).toFixed(1)'; } catch (e) {}
     }
-    jzNoGhost(jzSmall(ctx, c.text || '— interlude —', { size: Math.max(12, H * 0.022), color: sc.sub, x: W / 2, y: H * 0.82, track: 0.4 }));
+    if (variant === 'preview' && ctx.P.next) jzNoGhost(jzSmall(ctx, ctx.P.next, { size: H * .07, color: sc.sub, x: W / 2, y: H / 2 }));
+    if (!hasScenes && !caption) jzNoGhost(jzSmall(ctx, c.text || '— interlude —', { size: Math.max(12, H * 0.022), color: sc.sub, x: W / 2, y: H * 0.82, track: 0.4 }));
     return { x0: W * 0.35, x1: W * 0.65, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2 };
 };
 

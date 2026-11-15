@@ -16,11 +16,11 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parent
-PAGES_ORIGIN = 'https://chynggi.github.io'
+PAGES_ORIGIN = 'http://localhost:6778'
 MAX_BODY = 65536
 LETTERS = string.ascii_uppercase
 MAX_OPTIONS = 24
-DEFAULT_URL = {'systemone': 'http://127.0.0.1:8000/v1/systemone', 'llm': 'http://127.0.0.1:11434/v1/chat/completions'}
+DEFAULT_URL = {'systemone': 'http://127.0.0.1:7112/v1/systemone', 'llm': 'http://127.0.0.1:7112/v1/chat/completions'}
 
 
 class BackendError(Exception):

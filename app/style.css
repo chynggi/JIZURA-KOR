@@ -193,6 +193,9 @@ button.remove-media-cut:hover, button.remove-media-cut:focus-visible { color: #f
 .col-stage { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; min-width: 0; }
 .viewport { position: relative; width: 100%; background: #000; border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; }
 .viewport canvas { display: block; width: 100%; height: auto; max-height: none; object-fit: contain; }
+.viewport-resizer { display: none; flex: none; height: 10px; margin: -4px 0; cursor: ns-resize; touch-action: none; position: relative; z-index: 2; }
+.viewport-resizer::after { content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 4px; margin: -2px 0 0 -22px; border-radius: 2px; background: var(--line2); transition: background .12s; }
+.viewport-resizer:hover::after, .viewport-resizer:focus-visible::after, .viewport-resizer.dragging::after { background: var(--amber); }
 .area-edit-overlay { position: absolute; z-index: 4; touch-action: none; pointer-events: none; }
 .area-edit-rect { position: absolute; box-sizing: border-box; border: 2px solid var(--amber); background: rgba(245,165,12,0.12); box-shadow: 0 0 0 1px #000; pointer-events: none; }
 :root { --rotate-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M25 13a10 10 0 1 0 1 7' fill='none' stroke='%23ffffff' stroke-width='4'/%3E%3Cpath d='M25 13a10 10 0 1 0 1 7' fill='none' stroke='%23101620' stroke-width='2'/%3E%3Cpath d='M23 4v10h8' fill='none' stroke='%23ffffff' stroke-width='4'/%3E%3Cpath d='M23 4v10h8' fill='none' stroke='%23101620' stroke-width='2'/%3E%3C/svg%3E") 16 16, crosshair; }
@@ -378,6 +381,9 @@ button.chip[aria-pressed=true] { border-color: var(--cyan); color: var(--cyan); 
 .color-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .color-row label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); }
 .color-row input[type=color] { width: 100%; height: 28px; padding: 0; border: 1px solid var(--line); background: transparent; border-radius: var(--r); }
+.noserif-font-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; margin: 2px 0 8px 22px; font-size: 12px; color: var(--muted); }
+.noserif-font-row select { min-width: 0; }
+.noserif-font-row.off { opacity: .55; }
 .font-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; align-items: center; margin-bottom: 6px; font-size: 12px; }
 .font-import select { min-width: 0; flex: 1 1 150px; }
 .composite-font { display: grid; gap: 8px; font-size: 12px; }
@@ -485,6 +491,9 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
   html.fixed-ok .col-stage { overflow: hidden auto; }
   html.fixed-ok .viewport { flex: 1 1 0; min-height: 180px; }
   html.fixed-ok .viewport canvas { max-height: none; }
+  html.fixed-ok .viewport-resizer { display: block; }
+  /* 사용자가 높이를 지정하면(가로 폭은 그대로) 남는 높이를 받는 대신 그 높이로 고정 */
+  html.fixed-ok .col-stage.vp-custom .viewport:not(.preview-fullscreen):not(:fullscreen) { flex: none; height: var(--vp-h); min-height: 0; }
 }
 
 /* ---------- responsive ---------- */

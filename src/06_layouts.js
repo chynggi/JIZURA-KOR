@@ -687,8 +687,16 @@ J.LAYOUTS = {
     render(env) {
       const { W, H, sc } = env, P = env.cut.params, lb = env.ltb;
       const fs = J.clamp(H * 0.022, 12, 22);
+      const caption = P.caption || (P.showTitle ? P.titleText : '');
+      if (P.scenes) {
+        J.drawInterludeScene(env);
+        if (caption && P.variant !== 'credit') {
+          const alpha = J.clamp(env.lt / 0.4) * J.clamp((env.cut.dur - env.lt) / 0.4);
+          env.draw({ text: caption, font: env.st.fonts.body[0], size: fs, x: W / 2, y: H * .86, track: .18, color: sc.fg, alpha, ghost: false });
+        }
+      }
       if (P.variant === 'quiet') {                        // [간주] (upstream): nothing but the song title on long interludes
-        if (P.showTitle && P.titleText) {
+        if (!P.scenes && P.showTitle && P.titleText) {
           const a = J.clamp(env.lt / 0.8) * J.clamp((env.cut.dur - env.lt) / 0.8);
           env.draw({ text: P.titleText, font: env.st.fonts.body[0], size: fs * 1.1, x: W / 2, y: H * 0.88, track: 0.3, color: sc.sub, alpha: a, ghost: false });
         }
@@ -738,8 +746,10 @@ J.LAYOUTS = {
           env.rect(x0 + i * gap + gap * 0.18, H / 2 - h / 2, gap * 0.64, h, i % 8 === 3 ? sc.accent : sc.fg, 0.85 * aIn, true);
         }
       }
-      for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.2 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k) + 0.06 * pb * (3 - k) / 3), null, sc.sub, 1.2, 0.5, false);
-      env.draw({ text: env.cut.text || '— interlude —', font: env.st.fonts.body[0], size: fs, x: W / 2, y: H * 0.82, track: 0.4, color: sc.sub, ghost: false });
+      if (!P.scenes) {
+        for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.2 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k) + 0.06 * pb * (3 - k) / 3), null, sc.sub, 1.2, 0.5, false);
+        env.draw({ text: env.cut.text || '— interlude —', font: env.st.fonts.body[0], size: fs, x: W / 2, y: H * 0.82, track: 0.4, color: sc.sub, ghost: false });
+      }
       return { x0: W * 0.35, x1: W * 0.65, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2, boxes: [] };
     },
   },

@@ -210,6 +210,9 @@ button.remove-media-cut:hover, button.remove-media-cut:focus-visible { color: #f
 .col-stage { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; min-width: 0; }
 .viewport { position: relative; width: 100%; background: #000; border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; }
 .viewport canvas { display: block; width: 100%; height: auto; max-height: none; object-fit: contain; }
+.viewport-resizer { display: none; flex: none; height: 10px; margin: -4px 0; cursor: ns-resize; touch-action: none; position: relative; z-index: 2; }
+.viewport-resizer::after { content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 4px; margin: -2px 0 0 -22px; border-radius: 2px; background: var(--line2); transition: background .12s; }
+.viewport-resizer:hover::after, .viewport-resizer:focus-visible::after, .viewport-resizer.dragging::after { background: var(--amber); }
 .area-edit-overlay { position: absolute; z-index: 4; touch-action: none; pointer-events: none; }
 .area-edit-rect { position: absolute; box-sizing: border-box; border: 2px solid var(--amber); background: rgba(245,165,12,0.12); box-shadow: 0 0 0 1px #000; pointer-events: none; }
 :root { --rotate-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M25 13a10 10 0 1 0 1 7' fill='none' stroke='%23ffffff' stroke-width='4'/%3E%3Cpath d='M25 13a10 10 0 1 0 1 7' fill='none' stroke='%23101620' stroke-width='2'/%3E%3Cpath d='M23 4v10h8' fill='none' stroke='%23ffffff' stroke-width='4'/%3E%3Cpath d='M23 4v10h8' fill='none' stroke='%23101620' stroke-width='2'/%3E%3C/svg%3E") 16 16, crosshair; }
@@ -395,6 +398,9 @@ button.chip[aria-pressed=true] { border-color: var(--cyan); color: var(--cyan); 
 .color-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .color-row label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); }
 .color-row input[type=color] { width: 100%; height: 28px; padding: 0; border: 1px solid var(--line); background: transparent; border-radius: var(--r); }
+.noserif-font-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; margin: 2px 0 8px 22px; font-size: 12px; color: var(--muted); }
+.noserif-font-row select { min-width: 0; }
+.noserif-font-row.off { opacity: .55; }
 .font-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; align-items: center; margin-bottom: 6px; font-size: 12px; }
 .font-import select { min-width: 0; flex: 1 1 150px; }
 .composite-font { display: grid; gap: 8px; font-size: 12px; }
@@ -502,6 +508,9 @@ dialog.terms .terms-fork h3 { color: var(--cyan); }
   html.fixed-ok .col-stage { overflow: hidden auto; }
   html.fixed-ok .viewport { flex: 1 1 0; min-height: 180px; }
   html.fixed-ok .viewport canvas { max-height: none; }
+  html.fixed-ok .viewport-resizer { display: block; }
+  /* 사용자가 높이를 지정하면(가로 폭은 그대로) 남는 높이를 받는 대신 그 높이로 고정 */
+  html.fixed-ok .col-stage.vp-custom .viewport:not(.preview-fullscreen):not(:fullscreen) { flex: none; height: var(--vp-h); min-height: 0; }
 }
 
 /* ---------- responsive ---------- */
@@ -1178,13 +1187,13 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
           <div id="lyricPlaybackHighlight" class="lyric-playback-highlight" aria-hidden="true" hidden><div></div></div>
         </div>
         <div id="lyricInputTools" class="lyric-input-tools" role="group" aria-label="가사 입력 보조">
-          <button type="button" data-lyric-insert="cut" title="컷 경계(/)">컷</button><button type="button" data-lyric-insert="break" title="한 컷 안의 줄바꿈(\n)">줄바꿈</button><button type="button" data-lyric-insert="strong" title="*강조*">강조</button><button type="button" data-lyric-insert="soft" title="~억제~">억제</button><button type="button" data-lyric-insert="scene" title="{ … }: 여러 행을 한 장면으로 겹쳐 표시">1장면</button><button type="button" data-lyric-insert="separate" title="{- … -}: 한 장면으로 남기되 서로 겹치지 않게">겹치지 않는 1장면</button><button type="button" data-lyric-insert="empty" title="｜　　　｜: 글자 없이 연출만 나오는 행">빈 가사</button>
+          <button type="button" data-lyric-insert="cut" title="컷 경계(/)">컷</button><button type="button" data-lyric-insert="break" title="한 컷 안의 줄바꿈(\n)">줄바꿈</button><button type="button" data-lyric-insert="strong" title="*강조*">강조</button><button type="button" data-lyric-insert="soft" title="~억제~">억제</button><button type="button" data-lyric-insert="scene" title="{ … }: 여러 행을 한 장면으로 겹쳐 표시">1장면</button><button type="button" data-lyric-insert="separate" title="{- … -}: 한 장면으로 남기되 서로 겹치지 않게">겹치지 않는 1장면</button><button type="button" data-lyric-insert="interlude" title="[간주]: 가사 사이에 스타일별 연출 삽입">간주</button>
         </div>
         <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option><option value="en">English</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
             <li>한 행이 한 프레이즈입니다. 빈 행은 약간의 간격을 둡니다</li>
-            <li><code>｜　　　｜</code> … 전각 세로선으로 감싼 공백은 글자 없이 연출만 나오는 가사 행이 됩니다</li>
+            <li><code>[간주]</code> … 가사 사이에 스타일별 간주를 넣습니다. 이전 프로젝트의 <code>｜　　　｜</code>도 간주로 재생됩니다</li>
             <li><code>새벽의 색을/기억해</code> … <code>/</code>으로 컷 경계 지정</li>
             <li><code>{</code>와 <code>}</code>로 감싼 여러 행 … 마지막 컷이 사라질 때까지 차례로 겹쳐 표시</li>
             <li><code>{-</code>와 <code>-}</code>로 감싼 여러 행 … 차례로 남겨 표시하면서 가사끼리 겹치지 않게 배치</li>
@@ -1275,6 +1284,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="미리보기">
       <div class="viewport" id="viewport"><button id="exitPreviewFullscreen" class="fullscreen-exit" type="button">전체 화면 종료</button><div class="fullscreen-transport"><button id="fullscreenPlay" type="button" aria-label="재생">▶</button><span id="fullscreenTime" class="tc"></span><input id="fullscreenScrub" type="range" min="0" max="10000" value="0" aria-label="재생 위치"></div><canvas id="view" width="1280" height="720"></canvas><div id="itemFrames" class="item-frames"></div><div id="areaEditOverlay" class="area-edit-overlay" aria-label="표시 위치와 크기 편집" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span><span class="area-rotate-handle n" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle e" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle s" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle w" data-handle="rotate" role="button" aria-label="회전"></span></div><span class="area-edit-hint">드래그하여 가사 표시 범위 지정</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
+      <div id="viewportResizer" class="viewport-resizer" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="미리보기 높이 조절" title="위아래로 드래그하여 미리보기 높이 조절(가로 폭은 그대로) · 더블클릭: 자동 · 방향키: 미세 조정"></div>
       <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>가로세로 비율 고정</label><label>너비(화면 비율 %)<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>높이(화면 비율 %)<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">각도(°)<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">전체 영역으로 초기화</button><button id="areaResetAuto" class="ghost" type="button">자동 배치로 되돌리기</button><button id="areaApplyOne" class="primary" disabled>이 행에만 적용</button><button id="areaApplyFollowing" disabled>이후 전부 적용</button><button id="areaDelete" type="button" title="이 컷을 삭제합니다">삭제</button><button id="areaCancel" class="ghost">취소</button></div>
       <div class="preview-options"><label class="item-frame-toggle"><input id="showItemFrames" type="checkbox" checked><span id="showItemFramesLabel">편집 모드</span></label><button id="effectFavorites" type="button" class="ghost small">☆ 즐겨찾기 연출</button><button id="previewScreenshot" type="button" class="ghost small" title="미리보기를 PNG로 저장">스크린숏</button><button id="previewFullscreen" type="button" class="ghost small">전체 화면 미리보기</button></div>
       <div class="transport">
@@ -1304,14 +1314,14 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       </div>
       <div class="timeline-zoom"><button id="timelineZoomOut" type="button" aria-label="타임라인 축소">−</button><span id="timelineZoomValue" aria-live="polite">100%</span><button id="timelineZoomIn" type="button" aria-label="타임라인 확대">＋</button></div>
       </div>
+      <p class="hint timeline-link-hint">끝의 ◀▶를 드래그하면 전체 길이를 바꿀 수 있습니다. 재생 시간의 분모를 클릭하면 직접 입력할 수 있습니다. 사슬 표시를 다른 타임라인의 사슬로 드래그하면 연결됩니다. ×로 해제합니다.</p>
       <div class="timeline-with-visibility"><div id="layerVisibilityControls" class="layer-visibility-controls"></div><div id="timelineScroll" class="timeline-scroll"><div id="timelineStack" class="timeline-stack">
         <canvas id="foregroundTimeline" aria-label="전경 타임라인(경계를 드래그하여 시작 시각 변경, 그 외에는 재생 위치 이동)"></canvas>
         <canvas id="timeline" aria-label="타임라인(클릭으로 이동, 행 구분은 드래그로 조정)"></canvas>
         <canvas id="mediaTimeline" aria-label="배경 타임라인(경계를 드래그하여 시작 시각 변경, 그 외에는 재생 위치 이동)"></canvas>
         <svg id="timelineLinks" class="timeline-links" aria-label="타임라인 경계 링크"></svg>
         <button id="timelineDurationHandle" class="timeline-duration-handle" type="button" title="드래그하여 동영상 전체 길이 변경" aria-label="동영상 전체 길이를 드래그하여 변경"><span aria-hidden="true">◀▶</span></button>
-      </div></div>
-      <p class="hint timeline-link-hint">끝의 ◀▶를 드래그하면 전체 길이를 바꿀 수 있습니다. 재생 시간의 분모를 클릭하면 직접 입력할 수 있습니다. 사슬 표시를 다른 타임라인의 사슬로 드래그하면 연결됩니다. ×로 해제합니다.</p>
+      </div></div></div>
       <!-- 컷 패널: 재생 위치(또는 고른 컷) 하나를 편집하는 곳 — ① 컷별 기법 교체 ② 레이어 상세 ③ 이 행의 후보·우타하메 -->
       <div id="cutPanel" class="cut-panel" aria-label="컷 편집">
         <div class="cut-sec cut-sec-pick" data-cut-section="pick">
@@ -1359,6 +1369,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
             <label class="check"><input class="horror-toggle" type="checkbox"><span>호러 연출도 사용<small>으스스한 분위기의 부품(약 50개)과 배색 세트 3종. 켜면 자동으로 만들기의 분위기에 「호러」가 추가됩니다</small></span></label>
             <label class="check"><input class="unify-toggle" type="checkbox"><span>통일감</span></label>
             <label class="check"><input class="typeset-toggle" type="checkbox"><span>문자 정렬</span></label>
+            <label class="check"><input class="noserif-toggle" type="checkbox"><span>정자체(명조·바탕) 제외<small>궁서·바탕처럼 획 끝이 장식된 글꼴을 모든 연출에서 아래 대체 글꼴로 바꿉니다</small></span></label>
+            <label class="noserif-font-row"><span>대체 글꼴</span><select class="noserif-font" aria-label="정자체 대체 글꼴" title="정자체(명조·바탕) 대신 쓸 글꼴 — 아래 「글꼴 추가」로 올린 PC 글꼴·글꼴 파일도 고를 수 있습니다"></select></label>
           </div>
         </div>
         <div class="easy-sec">
@@ -1410,12 +1422,14 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
         <div id="styleGrid" class="style-grid"></div>
         <h3>글꼴 역할</h3>
         <div id="fontRoles"></div>
+        <label class="check"><input class="noserif-toggle" type="checkbox"><span>정자체(명조·바탕) 제외<small>궁서·바탕처럼 획 끝이 장식된 글꼴을 모든 연출에서 아래 대체 글꼴로 바꿉니다</small></span></label>
+        <label class="noserif-font-row"><span>대체 글꼴</span><select class="noserif-font" aria-label="정자체 대체 글꼴" title="정자체(명조·바탕) 대신 쓸 글꼴 — 아래 「글꼴 추가」로 올린 PC 글꼴·글꼴 파일도 고를 수 있습니다"></select></label>
         <div class="row" style="margin-top:8px">
           <input id="localFont" type="text" placeholder="PC 글꼴 이름(예: 나눔명조)" style="flex:1">
           <button id="btnAddFont">추가</button>
         </div>
         <div class="row" style="margin-top:8px"><label class="file">글꼴 파일(.ttf/.otf)<input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2"></label></div>
-        <div class="row font-import" style="margin-top:8px"><button id="btnListFonts" type="button">PC 글꼴 목록 표시</button><select id="installedFonts" aria-label="PC 글꼴" hidden></select><button id="btnImportFont" type="button" hidden>선택한 글꼴 가져오기</button></div>
+        <div class="row font-import" style="margin-top:8px"><button id="btnListFonts" type="button">PC 글꼴 목록 표시</button><select id="installedFonts" aria-label="PC 글꼴" hidden></select><span id="installedFontsNote" class="muted" hidden></span><button id="btnImportFont" type="button" hidden>선택한 글꼴 가져오기</button></div>
         <h3>합성 글꼴</h3><div class="composite-font"><label>설정 이름<input id="compositeName" type="text" maxlength="60"></label><label>기준 글꼴<select id="compositeBase"></select></label><div id="compositeParts"></div><button id="btnSaveComposite" type="button">합성 글꼴 저장</button><div id="compositeList"></div></div>
         <h3>강조색·색 어긋남</h3>
         <label class="check"><input id="accentOn" type="checkbox"><span>내 색으로 덮어쓰기<small>전체 장면에 적용. 배경에 맞춰 밝기를 자동 조절합니다</small></span></label>
@@ -1433,6 +1447,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
         <div class="unify-box">
           <label class="check"><input class="unify-toggle" type="checkbox"><span>통일감</span></label>
           <label class="check"><input class="typeset-toggle" type="checkbox"><span>문자 정렬</span></label>
+          <label class="check"><input class="noserif-toggle" type="checkbox"><span>정자체(명조·바탕) 제외<small>궁서·바탕처럼 획 끝이 장식된 글꼴을 모든 연출에서 아래 대체 글꼴로 바꿉니다</small></span></label>
+          <label class="noserif-font-row"><span>대체 글꼴</span><select class="noserif-font" aria-label="정자체 대체 글꼴" title="정자체(명조·바탕) 대신 쓸 글꼴 — 아래 「글꼴 추가」로 올린 PC 글꼴·글꼴 파일도 고를 수 있습니다"></select></label>
         </div>
         <div id="fxSliders"></div>
         <div class="row" style="margin-top:6px">
@@ -2004,6 +2020,72 @@ J.restoreUserFonts = async (list) => {
 /* uploaded faces the plan draws with but this page does not have */
 J.missingUserFonts = (keys) => (keys || []).filter(k => J.SAFE_FONT_KEY.test(k) && J.FONTS[k] && J.FONTS[k].user && !J.FONTS[k].loaded).map(k => J.FONTS[k].label);
 
+/* ---------- PC 글꼴의 현지어 이름 ----------
+   queryLocalFonts() 는 영문 이름(KoreanHSGDB 등)만 준다. 글꼴 파일의 name 테이블에는 한국어·일본어·중국어 이름도 들어 있으므로
+   그것을 읽어 목록·메뉴에 쓴다. 기준 언어: 시스템(브라우저) 언어 → JIZURA 화면 언어 → 영문 */
+J.fontNameLangId = () => {
+  const pick = tag => { tag = String(tag || '').toLowerCase(); return tag.startsWith('ko') ? 0x412 : tag.startsWith('ja') ? 0x411 : /^zh-(tw|hk|mo|hant)/.test(tag) ? 0x404 : tag.startsWith('zh') ? 0x804 : 0; };
+  return pick(typeof navigator !== 'undefined' && navigator.language) || pick(typeof document !== 'undefined' && document.documentElement.lang) || 0;
+};
+const NAME_CACHE_KEY = 'jizura.fontNames.v1';
+let nameCache = null;
+const nameCacheGet = () => {
+  if (nameCache) return nameCache;
+  try { nameCache = JSON.parse(localStorage.getItem(NAME_CACHE_KEY) || 'null'); } catch (e) { nameCache = null; }
+  if (!nameCache || typeof nameCache !== 'object' || !nameCache.names) nameCache = { names: {} };
+  return nameCache;
+};
+const fontNameId = font => J.fontNameLangId() + '|' + (font.postscriptName || font.fullName || font.family);
+J.saveFontNameCache = () => { try { localStorage.setItem(NAME_CACHE_KEY, JSON.stringify(nameCache || { names: {} })); } catch (e) {} };
+J.cachedLocalFontName = font => { if (!J.fontNameLangId()) return ''; const v = nameCacheGet().names[fontNameId(font)]; return typeof v === 'string' ? v : ''; };
+const nameTables = async (blob, off) => {              // {nameID: {languageID: string}} of the sfnt at byte offset `off` (Windows platform records only)
+  const dv = new DataView(await blob.slice(off, off + 12).arrayBuffer());
+  const num = dv.getUint16(4);
+  if (!num || num > 200) return null;
+  const dir = new DataView(await blob.slice(off + 12, off + 12 + num * 16).arrayBuffer());
+  let at = -1, len = 0;
+  for (let i = 0; i < num; i++) if (dir.getUint32(i * 16) === 0x6e616d65) { at = dir.getUint32(i * 16 + 8); len = dir.getUint32(i * 16 + 12); break; }   // 'name'
+  if (at < 0 || len < 6 || len > 4e6) return null;
+  const t = new DataView(await blob.slice(at, at + len).arrayBuffer());
+  const count = t.getUint16(2), strings = t.getUint16(4), out = {}, dec = new TextDecoder('utf-16be');
+  for (let i = 0; i < count && 6 + i * 12 + 12 <= len; i++) {
+    const o = 6 + i * 12, platform = t.getUint16(o), enc = t.getUint16(o + 2), lang = t.getUint16(o + 4), id = t.getUint16(o + 6), n = t.getUint16(o + 8), so = strings + t.getUint16(o + 10);
+    if (platform !== 3 || (enc !== 1 && enc !== 10) || so + n > len) continue;
+    (out[id] || (out[id] = {}))[lang] = dec.decode(new Uint8Array(t.buffer, t.byteOffset + so, n));
+  }
+  return out;
+};
+/* 현지어 이름(full name). 없으면 ''. font = FontData (queryLocalFonts). 한 번 읽은 결과는 이 브라우저에 기억한다 */
+J.localFontName = async (font) => {
+  const lang = J.fontNameLangId();
+  if (!lang) return '';
+  const cache = nameCacheGet(), ck = fontNameId(font);
+  if (typeof cache.names[ck] === 'string') return cache.names[ck];
+  let label = '';
+  try {
+    const blob = await font.blob(), head = new DataView(await blob.slice(0, 16).arrayBuffer());
+    let offsets = [0];
+    if (head.getUint32(0) === 0x74746366) {              // 'ttcf': 글꼴 모음 → 모든 글꼴을 보고, PostScript 이름이 같은 것을 쓴다
+      const n = Math.min(head.getUint32(8), 64), offs = new DataView(await blob.slice(12, 12 + n * 4).arrayBuffer());
+      offsets = Array.from({ length: n }, (_, i) => offs.getUint32(i * 4));
+    }
+    let names = null;
+    for (const off of offsets) {
+      const nt = await nameTables(blob, off);
+      if (!nt) continue;
+      if (!names) names = nt;
+      if (nt[6] && Object.values(nt[6]).includes(font.postscriptName)) { names = nt; break; }
+    }
+    if (names) {
+      const g = id => (names[id] && names[id][lang]) || '';
+      const full = g(4), fam = g(16) || g(1), sty = g(17) || g(2);
+      label = full || (fam ? (sty && !/^(regular|normal)$/i.test(sty) ? fam + ' ' + sty : fam) : '');
+    }
+  } catch (e) { return ''; }                               // 기억하지 않음: 다음에 다시 시도
+  cache.names[ck] = label;
+  return label;
+};
+
 J.fontCSS = (key, px, ch) => {
   if (ch != null) key = J.fontForChar(key, ch);
   else if (J.FONTS[key]?.composite) key = J.FONTS[key].composite.base;
@@ -2376,8 +2458,29 @@ J.POOLS = {
 J.pool = (kind) => { const P = J.POOLS[J.lang] || J.POOLS.ja; return P[kind] || J.POOLS.ja[kind]; };
 const SERIF_KINDS = { mincho: 1, brush: 1, hand: 1 };
 const faceCache = new Map();
+/* 정자체(명조·바탕) 제외: 켜면 세리프 계열 글꼴 키(명조·바탕·교과서체·Yuji Syuku)가 대체 글꼴로 바뀌어 그려진다.
+   대체 글꼴(J.NO_SERIF_FONT)은 사용자가 고른 글꼴 키(올린 글꼴·PC 글꼴 포함). 비어 있으면 같은 굵기의 고딕 키.
+   프리셋·연출·컷별 글꼴 지정 모두 faceOf 를 거치므로 이 한 곳에서 전부 걸러진다. 계획(plan.noSerif / noSerifFont)마다 planner / renderer 가 맞춘다. */
+J.NO_SERIF = false;
+J.NO_SERIF_FONT = '';
+J.noSerifFontOk = (key) => typeof key === 'string' && !!J.FONTS[key] && !J.FONTS[key].composite && !J.isSerifFont(key);
+J.setNoSerif = (on, font) => {
+  on = !!on;
+  font = on && J.noSerifFontOk(font) ? font : '';
+  if (on === J.NO_SERIF && font === J.NO_SERIF_FONT) return;
+  J.NO_SERIF = on; J.NO_SERIF_FONT = font;
+  faceCache.clear();
+  if (J.glyphs) J.glyphs.clear();
+  if (J.metrics) J.metrics.clear();
+};
+J.isSerifFont = (key) => {
+  const f = J.FONTS[key];
+  return !!f && !f.user && !f.composite && (f.kind === 'mincho' || f.kind === 'hand' || key === 'brush');
+};
+const sansFor = (weight) => (weight >= 800 ? 'gothic_black' : weight >= 600 ? 'gothic_bold' : weight >= 400 ? 'gothic_med' : 'gothic_light');
 /* the face a font key is drawn with in the current language: {family (quoted), weight, fb, gf, label, name (family, for captions)} */
 J.faceOf = (key) => {
+  if (J.NO_SERIF && J.isSerifFont(key)) key = J.NO_SERIF_FONT && J.noSerifFontOk(J.NO_SERIF_FONT) ? J.NO_SERIF_FONT : sansFor(J.FONTS[key].weight);
   const f = J.FONTS[key] || J.FONTS.gothic_bold;
   const L = J.LANG_FACES[J.lang];
   if (!L || f.user) return f;                               // Japanese: the catalogue face itself (fontCSS runs per draw — no allocation)
@@ -2717,7 +2820,8 @@ J.weightNow = (env) => {
   return 1e-3 + (1 - Math.pow(1 - k, 3)) * (1 - 1e-3);
 };
 J.varFontCSS = (key, px, e) => {
-  const f = J.FONTS[key] || {}, serif = f.kind === 'mincho';
+  if (J.NO_SERIF && J.NO_SERIF_FONT && J.isSerifFont(key)) { const g = J.faceOf(key); return `${g.weight} ${px.toFixed(2)}px ${g.family},${g.fb || 'sans-serif'}`; }   // 대체 글꼴은 굵기 변화 없이 그대로
+  const f = J.FONTS[key] || {}, serif = f.kind === 'mincho' && !J.NO_SERIF;
   const w = Math.round(serif ? 200 + e * 700 : 100 + e * 800), kr = J.lang === 'ko';
   return `${w} ${px.toFixed(2)}px ${serif ? (kr ? '"Noto Serif KR"' : '"Noto Serif JP"') : (kr ? '"Noto Sans KR"' : '"Noto Sans JP"')},${f.fb || 'sans-serif'}`;
 };
@@ -4220,8 +4324,16 @@ J.LAYOUTS = {
     render(env) {
       const { W, H, sc } = env, P = env.cut.params, lb = env.ltb;
       const fs = J.clamp(H * 0.022, 12, 22);
+      const caption = P.caption || (P.showTitle ? P.titleText : '');
+      if (P.scenes) {
+        J.drawInterludeScene(env);
+        if (caption && P.variant !== 'credit') {
+          const alpha = J.clamp(env.lt / 0.4) * J.clamp((env.cut.dur - env.lt) / 0.4);
+          env.draw({ text: caption, font: env.st.fonts.body[0], size: fs, x: W / 2, y: H * .86, track: .18, color: sc.fg, alpha, ghost: false });
+        }
+      }
       if (P.variant === 'quiet') {                        // [간주] (upstream): nothing but the song title on long interludes
-        if (P.showTitle && P.titleText) {
+        if (!P.scenes && P.showTitle && P.titleText) {
           const a = J.clamp(env.lt / 0.8) * J.clamp((env.cut.dur - env.lt) / 0.8);
           env.draw({ text: P.titleText, font: env.st.fonts.body[0], size: fs * 1.1, x: W / 2, y: H * 0.88, track: 0.3, color: sc.sub, alpha: a, ghost: false });
         }
@@ -4271,8 +4383,10 @@ J.LAYOUTS = {
           env.rect(x0 + i * gap + gap * 0.18, H / 2 - h / 2, gap * 0.64, h, i % 8 === 3 ? sc.accent : sc.fg, 0.85 * aIn, true);
         }
       }
-      for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.2 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k) + 0.06 * pb * (3 - k) / 3), null, sc.sub, 1.2, 0.5, false);
-      env.draw({ text: env.cut.text || '— interlude —', font: env.st.fonts.body[0], size: fs, x: W / 2, y: H * 0.82, track: 0.4, color: sc.sub, ghost: false });
+      if (!P.scenes) {
+        for (let k = 0; k < 3; k++) env.circle(W / 2, H / 2, H * (0.2 + k * 0.1) * (1 + 0.04 * Math.sin(lb * 2 + k) + 0.06 * pb * (3 - k) / 3), null, sc.sub, 1.2, 0.5, false);
+        env.draw({ text: env.cut.text || '— interlude —', font: env.st.fonts.body[0], size: fs, x: W / 2, y: H * 0.82, track: 0.4, color: sc.sub, ghost: false });
+      }
       return { x0: W * 0.35, x1: W * 0.65, y0: H * 0.3, y1: H * 0.7, cx: W / 2, cy: H / 2, boxes: [] };
     },
   },
@@ -4282,6 +4396,174 @@ J.ENTER_ORDER = ['cut', 'assemble', 'slice', 'type', 'pop', 'drop', 'stretch', '
 J.HOLD_ORDER = ['still', 'jitter', 'drift', 'breathe', 'wave', 'glitchtick'];
 J.EXIT_ORDER = ['cut', 'explode', 'fall', 'drift', 'slice', 'wipe', 'shrink', 'blur', 'stretch', 'scatter', 'glitch'];
 })();
+
+/* Shared by Canvas and the After Effects build. Keep this file ES3-compatible. */
+function jzInterludeBounds(duration, segments, beat, barOffset) {
+  var bounds = [0], bar = beat > 0 ? beat * 4 : 0;
+  var interval = duration / segments, origin = barOffset || 0;
+  for (var i = 1; i < segments; i++) {
+    var at = interval * i;
+    if (bar > 0) {
+      var aligned = origin + Math.round((at - origin) / bar) * bar;
+      if (Math.abs(at - aligned) < interval * .45) at = aligned;
+    }
+    bounds.push(at);
+  }
+  bounds.push(duration);
+  return bounds;
+}
+
+function jzInterludeSequence(duration, style, seed, beat, previous, hasPhoto, barOffset, previousScene) {
+  var themed = {
+    noir: ['chroma'], crimson: ['panel', 'domino'], caution: ['panel'], magenta: ['domino'],
+    paper: ['paper', 'ink', 'photo'], hud: ['radar'], specimen: ['photo'],
+    transit: ['route'], blueprint: ['blueprint', 'route'], mono: ['ink']
+  };
+  var options = themed[style] instanceof Array ? themed[style] : [];
+  var common = ['pulse', 'light', 'frame'];
+  if (previous) common.push('glyph');
+  var segments = duration > 6 ? Math.min(8, Math.ceil(duration / 4)) : 1;
+  var bounds = jzInterludeBounds(duration, segments, beat, barOffset), result = [], last = previousScene || '';
+  var i, j;
+  for (i = 1; i < bounds.length; i++) {
+    var pool = common.slice();
+    for (j = 0; j < options.length; j++) {
+      var id = options[j];
+      if (id !== 'photo' || hasPhoto((bounds[i - 1] + bounds[i]) / 2)) pool.push(id, id, id);
+    }
+    var choices = [];
+    for (j = 0; j < pool.length; j++) if (pool[j] !== last) choices.push(pool[j]);
+    var n = ((seed >>> 0) + i * 7919) % 104729;
+    n = (n * n * 8191 + n * 131) % 104729;
+    last = choices[n % choices.length];
+    result.push({ id: last, start: bounds[i - 1], end: bounds[i], seed: n });
+  }
+  return result;
+}
+
+function jzInterludeFrame(scene, W, H, q, phase, strong) {
+  var id = scene.id, shapes = [], U = Math.min(W, H), X = W / 2, Y = H / 2, TAU = Math.PI * 2;
+  var edge = Math.max(0, Math.min(1, 10 * q, 14 * (1 - q)));
+  var weight = U * (0.002 + strong * 0.002), i, j, x, y, a, b, s, p, r, pts;
+  function mark(points, color, alpha, width, close) {
+    shapes.push({ points: points, color: color, alpha: alpha * edge, width: width || 0, close: close !== false });
+  }
+  function ring(cx, cy, radius, color, alpha, width, from, span) {
+    var points = [], k, angle;
+    from = from || 0; span = span || TAU;
+    for (k = 0; k <= 24; k++) {
+      angle = from + span * k / 24;
+      points.push([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius]);
+    }
+    mark(points, color, alpha, width, false);
+  }
+  function box(cx, cy, w, h, rot, color, alpha, width) {
+    var corners = [[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]], points = [], k;
+    var c = Math.cos(rot), sn = Math.sin(rot);
+    for (k = 0; k < corners.length; k++) points.push([cx+c*corners[k][0]-sn*corners[k][1],cy+sn*corners[k][0]+c*corners[k][1]]);
+    mark(points, color, alpha, width);
+  }
+  function rand(k) { var v = Math.sin(scene.seed * 0.31 + k * 127.1) * 43758.5453; return v - Math.floor(v); }
+
+  if (id === 'pulse') {
+    for (i = 0; i < 5; i++) {
+      p = (phase + i / 5) % 1; r = U * (0.035 + p * (0.58 + strong * 0.24)) * (1 - 0.72 * Math.pow(q, 9));
+      ring(X, Y, r, i % 2 ? 'accent' : 'accent2', (1 - p) * 0.8, weight * (1 + (1 - p) * 1.5));
+    }
+  } else if (id === 'light') {
+    for (i = 0; i < 4; i++) {
+      x = W * ((q * 1.7 + i / 4) % 1.4 - 0.2); s = U * (0.025 + strong * 0.035);
+      mark([[x-s,0],[x,0],[x+H*.45,H],[x+H*.45+s,H]], i % 2 ? 'accent2' : 'accent', 0.12 + strong * 0.28);
+    }
+    box(X,Y,W*.95,H*.92,0,'accent',0.2 + strong * 0.7,weight);
+  } else if (id === 'frame') {
+    for (i = 0; i < 6; i++) {
+      s = Math.pow(1.6, i / 2 + q * 2) * 0.22;
+      box(X + W * .06 * Math.sin(q * TAU), Y, W*s, H*s, (i - 2) * .052 * (1 - q), i % 2 ? 'accent' : 'fg', .2 + (5-i)*.1, weight);
+    }
+  } else if (id === 'glyph') {
+    for (i = 0; i < 15; i++) {
+      a = i * TAU / 15 + q * TAU; r = U * (.04 + Math.sin(q * Math.PI) * (.18 + .27 * rand(i)));
+      x = X + r * Math.cos(a); y = Y + r * Math.sin(a) * .78;
+      box(x,y,U*(.024+.055*rand(i+20)),U*.009,a,'accent',.27 + strong*.4);
+      shapes[shapes.length - 1].glyph = { x: x, y: y, angle: a, index: i };
+    }
+  } else if (id === 'chroma') {
+    for (i = 0; i < 8; i++) {
+      a = q * TAU / 2 + i * TAU / 8;
+      x = X + U * .21 * Math.cos(a); y = Y + U * .21 * Math.sin(a);
+      s = U * .012 * (1 - strong);
+      box(x-s,y,U*.26,U*.08,a,'ghostA',.75,weight*1.4);
+      box(x+s,y,U*.26,U*.08,a,'ghostB',.75,weight*1.4);
+    }
+  } else if (id === 'panel') {
+    for (i = 0; i < 7; i++) {
+      x = W * ((i - 1) / 5 + (i % 2 ? 1 : -1) * (.12 * q + strong * .065));
+      mark([[x,0],[x+W*.1,0],[x-W*.2,H],[x-W*.31,H]],i % 2 ? 'accent' : 'dim',.34 + strong*.4);
+    }
+  } else if (id === 'radar') {
+    for (i = 1; i <= 4; i++) ring(X,Y,U*.105*i,'sub',.36,weight);
+    a = q * TAU * 2;
+    for (i = 0; i < 10; i++) {
+      b = a - .038 * i;
+      mark([[X,Y],[X+U*.43*Math.cos(b),Y+U*.43*Math.sin(b)]],'accent',.67-i*.06,weight,false);
+    }
+    for (i = 0; i < 11; i++) {
+      b = rand(i)*TAU; r = U*(.06+.35*rand(i+13));
+      p = ((a-b+TAU*2)%TAU)/TAU;
+      box(X+r*Math.cos(b),Y+r*Math.sin(b),U*.014,U*.014,Math.PI/4,'accent2',(1-p)*.95);
+    }
+  } else if (id === 'paper') {
+    for (i = 0; i < 7; i++) {
+      p = Math.min(1, Math.max(0, q * 2.4 - i * .18)); x = W * (.2+.6*rand(i));
+      y = H * (.2+.6*rand(i+10)) - H*.7*(1-p)*(1-p); s = U * (.14+.26*rand(i+20));
+      mark([[x-s/2,y-s/3],[x+s/2,y-s/3+U*.025],[x+s*.43,y+s/3],[x-s*.48,y+s*.26]],i % 3 ? 'sub' : 'accent',.42*p);
+      for (j = 0; j < 5; j++) box(x+s*(j-2)*.15,y+s*.14,U*.009,U*.009,0,'fg',.5*p);
+    }
+  } else if (id === 'blueprint' || id === 'route') {
+    for (i = 0; i < 6; i++) {
+      p = Math.min(1, Math.max(0, q * 1.8 - i * .12));
+      x = W*(.09+rand(i)*.37); y = H*(.13 + i*.145);
+      a = id === 'route' ? X : W*(.54+.33*rand(i+14)); b = id === 'route' ? Y : H*(.18+rand(i+24)*.64);
+      pts = [[x,y],[x+(a-x)*Math.min(1,2*p),y],[p>.5?a:x+(a-x)*2*p,y+(b-y)*Math.max(0,2*p-1)]];
+      mark(pts, i % 2 ? 'accent' : 'accent2', .72 * p, weight*(id === 'route' ? 2 : 1), false);
+      box(pts[2][0],pts[2][1],U*.018,U*.018,id === 'route' ? Math.PI/4 : 0,'fg',.8*p);
+    }
+    if(id === 'blueprint') for(i=1;i<9;i++) {
+      mark([[W*i/9,0],[W*i/9,H]],'sub',.2,weight*.5,false);
+      mark([[0,H*i/9],[W,H*i/9]],'sub',.2,weight*.5,false);
+    }
+  } else if (id === 'photo') {
+    for (i = 0; i < 4; i++) {
+      p = Math.min(1, Math.max(0,q*2.5-i*.3));
+      x = W*(.20+.60*rand(i)); y = H*(.25+.5*rand(i+10)) - H*.74*(1-p)*(1-p);
+      s = U*(.26+.13*rand(i+20)); a = (rand(i+30)-.5)*.6;
+      if(i===3){
+        b=Math.pow(q,8); x+=(X-x)*b; y+=(Y-y)*b; s+=(Math.max(W,H)*1.4-s)*b; a*=1-b;
+      }
+      box(x,y,s,s*.78,a,'fg',p*.95);
+      shapes[shapes.length - 1].photo = { x: x, y: y, size: s, angle: a, index: i };
+    }
+  } else if (id === 'domino') {
+    for (i = 0; i < 12; i++) {
+      p = Math.min(1,Math.max(0,q*1.65-i*.08));
+      x=W*(.1+.8*(i%4)/3); y=H*(.2+.6*Math.floor(i/4)/2);
+      box(x,y,U*.17,U*(.012+.17*Math.sin(p*Math.PI/2)),(i%2?1:-1)*.32*(1-p),i%2?'accent2':'accent',p*(.42+strong*.43));
+    }
+  } else if (id === 'ink') {
+    for (i = 0; i < 9; i++) {
+      a = rand(i)*TAU; r = U*(.08+.31*rand(i+10))*Math.pow(q,.55);
+      x = X + W*.6*(1-q)*Math.cos(a); y = Y + H*.6*(1-q)*Math.sin(a);
+      pts = [];
+      for(j=0;j<13;j++){
+        b=j*TAU/13; s=r*(.65+.45*rand(i*13+j+20));
+        pts.push([x+s*Math.cos(b),y+s*.85*Math.sin(b)]);
+      }
+      mark(pts,i%3?'dim':'accent',.35+strong*.29);
+    }
+  }
+  return shapes;
+}
 
 /* ============================================================
    JIZURA — decor (graphic elements around / behind the lyric) + HUD
@@ -4576,6 +4858,8 @@ J.defaultProject = () => ({
   lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' — picks the faces each font key is drawn with
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
   unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
+  noSerifFont: '',                // 정자체 제외의 대체 글꼴 키 ('' = 같은 굵기의 고딕, 그 밖에는 사용자가 고른 글꼴)
+  noSerif: false,                 // 정자체(명조·바탕) 제외: 세리프 계열 글꼴을 모든 프리셋·연출에서 고딕으로 바꿔 그린다
   typeset: false,                 // 文字整列: kana tracking, small particles / big first character, Latin sizing, 0.2 s lead, restraint
   centerDir: 'tb',                // 中央を空ける on tall frames: 'tb' = top / bottom, 'lr' = left / right
   centerFree: false,              // 中央を空ける: lay the cuts out in side bands (left / right or top / bottom) around a character
@@ -4622,6 +4906,10 @@ J.parseLyrics = (raw) => {
     return text.slice(avoidOverlap ? 2 : 1).trim();
   };
   const rows = String(raw || '').replace(/\r/g, '').split('\n');
+  const standaloneInterlude = b => {
+    lines.push({ text: '', interlude: true, secs: b.sec, lrc: b.at, note: b.text, sourceLine: b.src, src: b.src, gapBefore: pendingGap, emph: [] });
+    pendingGap = false;
+  };
   for (let ri = 0; ri < rows.length; ri++) {
     let s0 = protectLyricEscapes(rows[ri].trim());
     if (!s0) { if (lines.length) pendingGap = true; continue; }
@@ -4632,7 +4920,12 @@ J.parseLyrics = (raw) => {
     // (N = extra seconds for auto timing, 문구 = small caption, timestamp = the previous line ends and the interlude starts there)
     // upstream spellings are accepted too: [間奏] [间奏] [interlude] [instrumental] [inst] [간주: 8]
     const bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[\s*(?:간주|間奏|间奏|interlude|instrumental|inst)(?:\s*[:：]?\s*(\d+(?:\.\d+)?)\s*(?:초|秒|sec|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
-    if (bm) { pendingBreak = { sec: bm[3] != null ? +bm[3] : null, at: bm[1] != null ? +bm[1] * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] ? restoreLyricEscapes(bm[4]) : null }; continue; }
+    if (bm) {
+      const marker = { sec: bm[3] != null ? +bm[3] : null, at: bm[1] != null ? +bm[1] * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] ? restoreLyricEscapes(bm[4]) : null, src: ri };
+      if (!lines.length) standaloneInterlude(marker);
+      else pendingBreak = marker;
+      continue;
+    }
     // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
     const om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
     if (om) { outro = { at: om[1] != null ? +om[1] * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] != null ? +om[3] : null }; continue; }
@@ -4703,6 +4996,7 @@ J.parseLyrics = (raw) => {
     if (times.length) times.forEach(t => lines.push(Object.assign({}, base, { lrc: t }, marks ? { marks: marks.map(k => ({ t: k.t + t - times[0], ci: k.ci })) } : {})));
     else lines.push(Object.assign({}, base, { lrc: null }));
   }
+  if (pendingBreak) standaloneInterlude(pendingBreak);
   // mixed LRC and plain lines keep the written order; fully timed lyrics sort by timestamp
   if (lines.length && lines.every(l => l.lrc != null)) lines.sort((a, b) => a.lrc - b.lrc);
   return { lines, meta, outro };
@@ -4838,6 +5132,7 @@ J.computeTiming = (project, parsed, audio) => {
   let lastFix = -Infinity;
   for (let i = 0; i < fixed.length; i++) if (fixed[i] != null) { if (fixed[i] < lastFix + 0.05) fixed[i] = lastFix + 0.05; lastFix = fixed[i]; }
   const natural = i => {         // estimated length of line i
+    if (lines[i].interlude) return Math.max(.35, lines[i].secs ?? (beat ? beat * 2 : .8));
     const n = [...lines[i].text].length;
     let d = J.clamp(0.8 + n * 0.17, 1.3, 5.2) * (T.lineScale || 1);
     if (beat) d = Math.max(2, Math.round(d / beat)) * beat;
@@ -4886,6 +5181,7 @@ J.computeTiming = (project, parsed, audio) => {
     const next = starts.findIndex((_, j) => j > i && insertionEnds[j] == null);
     if (next >= 0) return Math.max(s + 0.35, starts[next]);
     if (outro && outro.at != null) return Math.max(s + 0.35, outro.at);
+    if (lines[i].interlude) return s + natural(i);
     const n = [...lines[i].text].length;
     let d = J.clamp(0.8 + n * 0.17, 1.5, 5.2) * (T.lineScale || 1);
     if (beat) d = Math.max(2, Math.round(d / beat)) * beat;
@@ -4971,10 +5267,14 @@ J.plan = (project, audio, chain) => {
     typeset: !!project.typeset, unify: !!project.unify,
     assets: project.assets || [],                           // 소재 (settings only; the images are in J.ASSETS)
     lang: J.resolveLang ? J.resolveLang(project) : 'ja',   // 歌詞の言語 (auto → detected)
+    noSerif: !!project.noSerif, noSerifFont: typeof project.noSerifFont === 'string' ? project.noSerifFont : '',   // 정자체(명조·바탕) 제외 + 대체 글꼴
   };
   if (J.setLang) J.setLang(plan.lang);                     // chunking + measuring below use this language
+  if (J.setNoSerif) J.setNoSerif(plan.noSerif, plan.noSerifFont);
   if (J.setTypeset) J.setTypeset(plan.typeset);
   const beats = plan.beats;
+  const interludeBeat = beats.length > 1 ? (beats.at(-1) - beats[0]) / (beats.length - 1) : project.timing?.bpm > 0 ? 60 / project.timing.bpm : 0;
+  const interludeBeatOrigin = beats[0] ?? project.timing?.beatOffset ?? 0;
   const snap = (t) => {
     if (!beats.length || !(project.timing && project.timing.snap)) return t;
     let lo = 0, hi = beats.length - 1;
@@ -4992,7 +5292,7 @@ J.plan = (project, audio, chain) => {
   const blockLooks = new Map(), cutBlock = new Map();
   if (chain?.replay?.blockLooks) for (const [k, v] of chain.replay.blockLooks) blockLooks.set(k, { ...v });
   let paragraph = 0;
-  let schemeIdx = 0, creditDone = false;
+  let schemeIdx = 0;
   const nSchemes = st.schemes.length;
   const addEvent = (t, type, amp, dur) => plan.events.push({ t, type, amp, dur });
   const evOwner = new WeakMap(); Object.defineProperty(plan, 'evOwner', { value: evOwner });
@@ -5019,8 +5319,8 @@ J.plan = (project, audio, chain) => {
       plan.lines.push({ index: li, src: ln.src, lrc: ln.lrc, text: '', interlude: true, secs: ln.secs, start: s, end: e, visEnd: e, note: null, impact: false, emph: [], chunks: [], seed: lineSeed });
       const bg = ov.bg && J.BG[ov.bg] ? ov.bg : pickBg(rng, st, en, fx, bgHistory); bgHistory.push(bg);
       const dur = e - s, showTitle = dur >= 6 && !!(title || artist);
-      plan.cuts.push(makeCut({ text: '', lineText: '', line: li, start: s, end: e, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.4, outDur: 0.4,
-        params: { variant: 'quiet', showTitle, titleText: showTitle ? [title, artist].filter(Boolean).join('  /  ') : '' }, decor: Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, Object.assign({}, fx, { decor: Math.max(0.6, fx.decor) }), 'interlude', history),
+      plan.cuts.push(makeCut({ text: '', lineText: '', line: li, part: 0, start: s, end: e, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.4, outDur: 0.4,
+        params: { variant: fx.interCount === 'on' ? 'counter' : 'quiet', caption: ln.note, showTitle, titleText: showTitle ? [title, artist].filter(Boolean).join('  /  ') : '' }, decor: Array.isArray(ov.decor) ? ov.decor.filter(id => J.DECOR[id]).map(id => decorParams(rng, id)) : pickDecor(rng, st, en, Object.assign({}, fx, { decor: Math.max(0.6, fx.decor) }), 'interlude', history),
         scheme: schemeIdx, seed: J.h(lineSeed, 405), bg, bgP: J.BG[bg] && J.BG[bg].plan ? J.BG[bg].plan(rng, st) : {}, cam: 'push', camP: {} }));
       if (en.fx == null || en.fx.chroma !== false) addEvent(s, 'chroma', 1 + fx.chroma, 0.25);
       for (let t = s + 1.2; t < e - 0.8; t += J.clamp(dur / 4, 1.6, 3.2)) {          // a few effect accents so a long interlude keeps moving
@@ -5369,9 +5669,8 @@ J.plan = (project, audio, chain) => {
       // marked interlude: one random screen effect from the library, no lyric text
       if (marked) { const pick = pickFx(r2, st, en, fx, true, fxHistory, 'force'); if (pick) { const D2 = J.FXE[pick]; addEvent(iStart - (D2.pre ? D2.pre / 24 : 0), pick, D2.amp || 1, (D2.dur || 4) / 24); fxHistory.push(pick); } }
       // long interludes (> 6 s) become 2–3 cuts, each boundary snapped to the nearest beat
-      const L = nextStart - iStart, nSeg = L > 6 ? Math.min(3, Math.ceil(L / 4)) : 1, bounds = [iStart];
-      for (let k = 1; k < nSeg; k++) bounds.push(snap(iStart + L * k / nSeg));
-      bounds.push(nextStart);
+      const L = nextStart - iStart, nSeg = L > 6 ? Math.min(3, Math.ceil(L / 4)) : 1;
+      const bounds = jzInterludeBounds(L, nSeg, interludeBeat, interludeBeatOrigin - iStart).map(local => iStart + local);
       const next = parsed.lines[li + 1].text;
       for (let k = 0; k < nSeg; k++) {
         const rk = k ? J.rng(J.h(lineSeed, 404, k)) : r2;
@@ -5383,13 +5682,11 @@ J.plan = (project, audio, chain) => {
           params.variant = fx.interCount === 'off' ? rk.pick(pool.concat('rings')) : rk.pick(pool);
         }
         if (nSeg > 1) params.end = nextStart;
+        params.caption = nb?.text;
         if (params.variant === 'preview') params.next = next;
         if (params.variant === 'countdown') params.beat = project.timing && project.timing.bpm > 0 ? 60 / project.timing.bpm : 0;
-        // 첫 간주에 크레딧: the first interlude long enough shows the song title and artist
-        const credit = k === 0 && fx.interCredit && title && !creditDone && bounds[1] - bounds[0] >= 2;
-        if (credit) { params.variant = 'credit'; creditDone = true; }
         const sch = k && nSchemes > 1 ? (schemeIdx + k) % nSchemes : schemeIdx;
-        plan.cuts.push(makeCut({ text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, part: k ? `interlude:${k}` : 'interlude', start: bounds[k], end: bounds[k + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(rk, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: sch, seed: k ? J.h(lineSeed, 405, k) : J.h(lineSeed, 405) }));
+        plan.cuts.push(makeCut({ text: (nb && nb.text) || '', lineText: '', line: li, part: k ? `interlude:${k}` : 'interlude', start: bounds[k], end: bounds[k + 1], layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params, decor: pickDecor(rk, st, en, Object.assign({}, fx, { decor: 1 }), 'interlude'), scheme: sch, seed: k ? J.h(lineSeed, 405, k) : J.h(lineSeed, 405) }));
       }
     }
     if (chain?.record) chain.record.lines[li] = { h: history.slice(chainMark.h), b: bgHistory.slice(chainMark.b), f: fxHistory.slice(chainMark.f), scheme: schemeIdx };
@@ -6073,9 +6370,9 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
   enabled.hold.still = true;
   // fonts: sometimes swap the headline / mincho faces for another catalogue face
   const fonts = {};
-  const faces = Object.entries(J.FONTS).filter(([k, f]) => !f.user && !['mono', 'pixel'].includes(f.kind) && (!J.randomOk || J.randomOk(project, 'font', k)));
+  const faces = Object.entries(J.FONTS).filter(([k, f]) => !f.user && !['mono', 'pixel'].includes(f.kind) && !(project.noSerif && J.isSerifFont(k)) && (!J.randomOk || J.randomOk(project, 'font', k)));
   if (rnd() < 0.4) fonts.display = pick(faces.filter(([k, f]) => f.weight >= 700 || f.kind === 'display' || f.kind === 'round'))[0];
-  if (rnd() < 0.3) fonts.serif = pick(faces.filter(([k, f]) => f.kind === 'mincho' || f.kind === 'brush'))[0];
+  if (rnd() < 0.3 && !project.noSerif) fonts.serif = pick(faces.filter(([k, f]) => f.kind === 'mincho' || f.kind === 'brush'))[0];
   if (mood === 'chaos' && rnd() < 0.2) fonts.display = 'dot';
   // colours: style palette most of the time, a fresh accent / ghost pair otherwise
   const colors = Object.assign({}, project.colors, { enabled: false, accentOn: false });
@@ -9701,6 +9998,15 @@ function stableDetails(project,layer,cut,options,locked){
     const override=project.overrides?.[cut.line]||{};
     for(const [field,param] of Object.entries(effectParams))if(override[field]&&override[field]!==result[field]){result[field]=override[field];delete result[param];}
     if(Array.isArray(override.decor))result.decor=copyEffects(cut.decor);
+    // Keep the saved layout parameters, but resolve its automatic fonts from the current style.
+    const currentParams=result.layout===cut.layout && !explicit.fonts ? cut.params : null;
+    for(const {path} of J.cutFontParams(result.params)){
+      const parent=path.slice(0,-1).reduce((value,key)=>value[key],result.params);
+      const key=path.at(-1);
+      const font=path.reduce((value,key)=>value?.[key],currentParams);
+      if(J.FONTS[font])parent[key]=font;
+      else delete parent[key];  // applyCutDetails fills defaults for the resolved layout
+    }
   }else{
     const override={...project[layer]?.overrides?.[cut.itemId],...options};
     if(override.technique!=null&&override.technique!==saved.native.technique)return {};
@@ -9711,7 +10017,7 @@ function stableDetails(project,layer,cut,options,locked){
 }
 J.captureAutoEffects=(project,plan)=>{
   for(const layer of ['lyrics','media','foreground'])for(const cut of (layer==='lyrics'?plan.cuts:plan[layer]?.cuts)||[]){
-    if(layer==='lyrics'&&(!Number.isInteger(cut.part)||cut.line<0))continue;
+    if(layer==='lyrics'&&(!Number.isInteger(cut.part)||cut.line<0||cut.layout==='interlude'))continue;
     const index=layer==='lyrics'?cut.line:cut.index,options=layer==='lyrics'
       ?((project.lyricCutOptions||={})[`${cut.line}:${cut.part}`]||={})
       :((project[layer].cutOverrides||={})[index]||={});
@@ -10995,6 +11301,118 @@ J.generatePersonMask = async (cut,{fps=24,signal,onProgress=()=>{}}={}) => {
 };
 })();
 
+/* Use one set of scenes without changing the identity or timing of saved cuts. */
+(() => {
+'use strict';
+J.interludeSequence = jzInterludeSequence;
+
+function photoAt(plan, t) {
+  if (plan.layerVisibility?.media === false) return null;
+  const cuts = J.mediaCutsAt(plan, t);
+  return cuts.findLast(cut => cut.type === 'image' && cut.opacity > 0 && J.mediaAssets.has(cut.itemId));
+}
+
+J.refreshInterludeScenes = (plan, timing) => {
+  const beats = plan.beats || [];
+  const beat = beats.length > 1 ? (beats.at(-1) - beats[0]) / (beats.length - 1) : timing?.bpm > 0 ? 60 / timing.bpm : 0;
+  const origin = beats[0] ?? timing?.beatOffset ?? 0;
+  let previous = '';
+  let lineIndex = 0;
+  let previousEnd = -Infinity, previousScene = '';
+  for (const cut of plan.cuts) {
+    while (lineIndex < plan.lines.length && plan.lines[lineIndex].start <= cut.start + 1e-6) {
+      const line = plan.lines[lineIndex++];
+      if (!line.interlude && line.text.trim()) previous = line.text.trim();
+    }
+    if (cut.layout !== 'interlude' || cut.dur <= 0) continue;
+    const glyphs = [...previous.replace(/\s/g, '')].slice(-12);
+    const scenes = J.interludeSequence(cut.dur, plan.styleKey, cut.seed, beat, glyphs.length,
+      local => !!photoAt(plan, cut.start + local), origin - cut.start,
+      Math.abs(cut.start - previousEnd) < .001 ? previousScene : '');
+    cut.params = { ...cut.params, scenes, glyphs, sceneBeat: beat, sceneBeatOffset: origin - cut.start };
+    previousEnd = cut.end;
+    previousScene = scenes.at(-1).id;
+  }
+};
+
+const planLyrics = J.plan;
+J.plan = (project, ...args) => {
+  const plan = planLyrics(project, ...args);
+  for (const cut of plan.cuts) {
+    if (!cut.effectsOnly) continue;
+    cut.layout = 'interlude';
+    cut.text = ''; cut.lineText = ''; cut.words = [];
+    cut.params = { variant: plan.fx.interCount === 'on' ? 'counter' : 'quiet', caption: cut.note };
+    cut.companion = null; cut.zone = null;
+    delete cut.effectsOnly;
+    const line = plan.lines[cut.line];
+    if (line) line.interlude = true;
+  }
+  if (plan.fx.interCredit && plan.title) {
+    const first = plan.cuts.find(cut => cut.layout === 'interlude' && cut.dur >= 2);
+    if (first) {
+      first.params = { ...first.params, variant: 'credit' };
+      first.text = plan.title;
+      first.note = plan.artist;
+    }
+  }
+  J.refreshInterludeScenes(plan, project.timing);
+  return plan;
+};
+
+J.drawInterludeScene = env => {
+  if (env.pass !== 'main') return;
+  const { ctx, W, H, cut, plan, sc } = env;
+  const local = env.ltb;
+  const scene = cut.params.scenes?.find(entry => local >= entry.start && local <= entry.end);
+  if (!scene) return;
+  const q = J.clamp((local - scene.start) / (scene.end - scene.start));
+  const beat = env.beat?.len || cut.params.sceneBeat || Math.max(.25, (scene.end - scene.start) / 4);
+  const beatTime = (local - (cut.params.sceneBeat ? cut.params.sceneBeatOffset : scene.start)) / beat;
+  const beatIndex = env.beat?.index ?? Math.floor(beatTime);
+  const phase = env.beat ? J.clamp(env.beat.since / beat) : beatTime - beatIndex;
+  const strong = Math.exp(-phase * 6) * (beatIndex % 4 === 0 ? 1 : .4);
+  const photo = scene.id === 'photo' && !env.transparent && photoAt(plan, env.t);
+  const image = photo && J.mediaAssets.get(photo.itemId)?.element;
+  const sw = image?.naturalWidth || image?.width, sh = image?.naturalHeight || image?.height;
+  const shapes = jzInterludeFrame(scene.id === 'photo' && !(sw && sh) ? { ...scene, id: 'light' } : scene, W, H, q, phase, strong);
+  for (const shape of shapes) {
+    const color = sc[shape.color];
+    if (shape.width) env.line(shape.close ? [...shape.points, shape.points[0]] : shape.points, color, shape.width, shape.alpha, false);
+    else env.poly(shape.points, color, shape.alpha, false);
+    if (shape.photo && sw && sh) {
+      const { x, y, size, angle, index } = shape.photo;
+      const cropW = Math.min(sw, sh * 1.35) * .65, cropH = cropW / 1.35;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.globalAlpha = shape.alpha;
+      ctx.drawImage(image, (sw - cropW) * index / 3, (sh - cropH) * (3 - index) / 3,
+        cropW, cropH, -size * .46, -size * .36, size * .92, size * .68);
+      ctx.restore();
+    }
+    if (shape.glyph && cut.params.glyphs?.length) {
+      const { x, y, angle, index } = shape.glyph;
+      const size = Math.min(W, H) * .11;
+      const glyph = cut.params.glyphs[index % cut.params.glyphs.length];
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.rect(-size * .43, size * (index % 5 - 2) * .13 - size * .08, size * .86, size * .16);
+      ctx.clip();
+      ctx.globalAlpha = shape.alpha;
+      ctx.fillStyle = color;
+      ctx.font = J.fontCSS(env.st.fonts.display[0], size, glyph);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(glyph, 0, 0);
+      ctx.restore();
+    }
+  }
+};
+})();
+
 /* ============================================================
    JIZURA — frame renderer: background, chroma passes, HUD, post FX
    ============================================================ */
@@ -11108,6 +11526,7 @@ class Renderer {
       const bx = backdrop.getContext('2d'); bx.setTransform(1, 0, 0, 1, 0, 0); bx.globalCompositeOperation = 'copy'; bx.drawImage(ctx.canvas, 0, 0); bx.globalCompositeOperation = 'source-over';
     }
     if (J.setLang) J.setLang(plan.lang || 'ja');           // faces follow the plan's lyric language
+    if (J.setNoSerif) J.setNoSerif(plan.noSerif, plan.noSerifFont);          // 정자체(명조·바탕) 제외
     if (J.setTypeset) J.setTypeset(plan.typeset);          // 文字整列
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -11246,7 +11665,7 @@ class Renderer {
         const Z = plan.centerFree && cut.zone ? cut.zone : null;
         const envOptions = {
           pass: P.pass, passColor: P.pass === 'A' ? csc.ghostA : P.pass === 'B' ? csc.ghostB : null,
-          t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo, layer, zone: Z,
+          t: tp, lt, ltb: lt + P.lag, step: Math.floor(tp / clock + 1e-6), scale, allowFilter, energy, beat: beatInfo, layer, zone: Z, transparent: !!opt.transparent,
           hideText: morphOn, glyphLog: P.pass === 'main' ? opt.glyphLog || null : null,
         };
         let X = target, env = this.makeEnv(X, plan, cut, csc, envOptions), cam = null;
@@ -12475,8 +12894,10 @@ J.planForAE = (plan, project, range) => {
   clean.fontTable = Object.fromEntries(Object.entries(J.FONTS).map(([k, f]) => [k, { label: f.label, family: f.family.replace(/"/g, ''), weight: f.weight, kind: f.kind }]));
   // lyric language: the face each key is drawn with in the browser for this plan (the panel maps keys → AE fonts per language)
   clean.lang = plan.lang || 'ja';
-  if (J.setLang && J.faceOf && clean.lang !== 'ja') {
+  clean.noSerif = !!plan.noSerif; clean.noSerifFont = plan.noSerifFont || '';
+  if (J.setLang && J.faceOf && (clean.lang !== 'ja' || clean.noSerif)) {
     J.setLang(clean.lang);
+    if (J.setNoSerif) J.setNoSerif(clean.noSerif, clean.noSerifFont);
     for (const k of Object.keys(clean.fontTable)) { const f = J.faceOf(k); clean.fontTable[k].langFamily = f.family.replace(/"/g, ''); clean.fontTable[k].langWeight = f.weight; }
   }
   // モーフ has no After Effects counterpart yet: build it as the closest transition (an ink-blob dissolve)
@@ -67077,6 +67498,7 @@ function composePlan(project) {
     plan[layer].duration = plan.duration;
     const last = plan[layer].cuts.at(-1); if (last && !last.manualEnd && last.videoDuration == null) last.end = plan.duration;
   }
+  if (plan.media.cuts.some(cut => cut.type === 'image')) J.refreshInterludeScenes(plan, project.timing);
   return plan;
 }
 function replan() {
@@ -67130,7 +67552,7 @@ let thumbFonts = null;
 async function ensureFonts() {
   const txt = S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS + J.drawingText(S.plan);
   const keys = J.fontsOfPlan(S.plan);                       // only the faces this plan draws with
-  const key = txt + '|' + keys.join(',') + '|' + Object.keys(J.FONTS).length + '|' + J.lang;   // the lyric language changes the faces
+  const key = txt + '|' + keys.join(',') + '|' + Object.keys(J.FONTS).length + '|' + J.lang + '|' + J.NO_SERIF;   // the lyric language / 정자체 제외 changes the faces
   if (key === fontKey) return;
   fontKey = key;
   showMsg('글꼴 불러오는 중…');
@@ -67163,6 +67585,46 @@ function sizeViewport() {
   c.style.width = cssW + 'px'; c.style.height = cssH + 'px';
   positionAreaEditor();
   S.need = true;
+}
+/* 미리보기 높이 조절: 뷰포트 아래 손잡이를 위아래로 드래그. 가로 폭은 그대로, 높이만 고정값(--vp-h)이 된다. 더블클릭 = 자동(남는 높이) */
+const PREVIEW_H_KEY = 'jizura.previewHeight';
+function previewHeightLimits() {
+  const vp = $('viewport'), ar = S.plan ? S.plan.W / S.plan.H : 16 / 9;
+  return [140, Math.max(140, Math.min(window.innerHeight * 0.95, vp.clientWidth / ar + 2))];   // 폭에 비해 더 커도 검은 여백만 늘어나므로 화면 비율까지만
+}
+function setPreviewHeight(h, save = true) {
+  const stage = document.querySelector('.col-stage');
+  if (h == null) { stage.classList.remove('vp-custom'); stage.style.removeProperty('--vp-h'); S.previewH = null; }
+  else {
+    const [lo, hi] = previewHeightLimits(); h = Math.round(J.clamp(h, lo, hi));
+    S.previewH = h; stage.style.setProperty('--vp-h', h + 'px'); stage.classList.add('vp-custom');
+  }
+  if (save) { try { if (S.previewH == null) localStorage.removeItem(PREVIEW_H_KEY); else localStorage.setItem(PREVIEW_H_KEY, String(S.previewH)); } catch (e) {} }
+  if (S.plan) sizeViewport();
+}
+function bindPreviewResizer() {
+  const bar = $('viewportResizer'), vp = $('viewport'); if (!bar) return;
+  let saved = null; try { saved = parseFloat(localStorage.getItem(PREVIEW_H_KEY)); } catch (e) {}
+  if (saved > 0) setPreviewHeight(saved, false);
+  let drag = null;
+  bar.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    drag = { y: e.clientY, h: vp.getBoundingClientRect().height }; bar.setPointerCapture(e.pointerId); bar.classList.add('dragging'); e.preventDefault();
+  });
+  bar.addEventListener('pointermove', e => { if (drag) setPreviewHeight(drag.h + e.clientY - drag.y, false); });
+  const end = e => {
+    if (!drag) return; drag = null; bar.classList.remove('dragging');
+    try { bar.releasePointerCapture(e.pointerId); } catch (x) {}
+    if (S.previewH != null) setPreviewHeight(S.previewH);          // save
+  };
+  bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+  bar.addEventListener('dblclick', () => setPreviewHeight(null));
+  bar.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 80 : 20;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); setPreviewHeight((S.previewH || vp.getBoundingClientRect().height) + (e.key === 'ArrowDown' ? step : -step)); }
+    else if (e.key === 'Home' || e.key === 'Escape') { e.preventDefault(); setPreviewHeight(null); }
+  });
+  window.addEventListener('resize', () => { if (S.previewH != null) setPreviewHeight(S.previewH, false); });
 }
 // preview only: dotted outline of the centre that 中央を空ける keeps free (never in exports)
 function drawCenterGuide(ctx, k) {
@@ -68691,7 +69153,7 @@ function drawItemFrames() {
     const cx=(area.x+area.w/2)*view.width,cy=(area.y+area.h/2)*view.height,a=(area.angle||0)*Math.PI/180;
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>{x*=area.w*view.width/2;y*=area.h*view.height/2;return [cx+x*Math.cos(a)-y*Math.sin(a),cy+x*Math.sin(a)+y*Math.cos(a)];});
     const actions=S.areaEdit&&!selected?[]:['lock','dice','disableReroll','copy','paste',...(layer==='lyrics'?['frontmost']:[]),'details'];
-    const frameName=layer==='lyrics'?(String(cut.text||'').trim()||L('빈 가사','Empty lyrics')):(cut.name||L('이미지 없음','No image'));
+    const frameName=layer==='lyrics'?(cut.layout==='interlude'?L('간주','Interlude'):String(cut.text||'').trim()):(cut.name||L('이미지 없음','No image'));
     const labelWidth=Math.min(160,Math.max(36,[...frameName].length*10+8));
     const width=Math.min(view.width,actions.length*25+labelWidth),x=J.clamp(points[0][0],0,Math.max(0,view.width-width));
     let y=J.clamp(points[0][1],0,Math.max(0,view.height-26));
@@ -70472,6 +70934,21 @@ function fontSelectOptions(sel) {
     return `<option value="${escapeHtml(k)}" style="font-family:${escapeHtml(g.family)},sans-serif;font-weight:${g.weight}" ${sel === k ? 'selected' : ''}>${escapeHtml(f.label + alt)}</option>`;
   }).join('');
 }
+/* 정자체(명조·바탕) 제외: 체크박스(간편 설정 / 스타일 / 연출 탭)와 대체 글꼴 드롭다운은 같은 project.noSerif / noSerifFont 를 보여 주며 서로 연동된다 */
+function renderNoSerifFont() {
+  const cur = S.project.noSerifFont || '';
+  const opts = '<option value="">자동(같은 굵기의 고딕)</option>' + Object.entries(J.FONTS).filter(([k]) => J.noSerifFontOk(k)).map(([k, f]) => {
+    const g = J.faceOf ? J.faceOf(k) : f;
+    return `<option value="${escapeHtml(k)}" style="font-family:${escapeHtml(g.family)},sans-serif;font-weight:${g.weight}">${escapeHtml(f.label)}${f.user ? ' (내 글꼴)' : ''}</option>`;
+  }).join('');
+  document.querySelectorAll('.noserif-font').forEach(sel => { sel.innerHTML = opts; sel.value = [...sel.options].some(o => o.value === cur) ? cur : ''; });
+  syncNoSerifUI();
+}
+function syncNoSerifUI() {
+  const on = S.project.noSerif === true;
+  document.querySelectorAll('.noserif-toggle').forEach(el => { el.checked = on; });
+  document.querySelectorAll('.noserif-font').forEach(sel => { sel.disabled = !on; sel.closest('.noserif-font-row').classList.toggle('off', !on); });
+}
 function renderFontRoles() {
   const box = $('fontRoles'); box.innerHTML = '';
   [['display', '제목'], ['serif', '명조'], ['body', '작은 글자']].forEach(([role, label]) => {
@@ -70481,6 +70958,7 @@ function renderFontRoles() {
     box.appendChild(row);
   });
   renderCompositeFonts();
+  renderNoSerifFont();
 }
 function renderCompositeFonts() {
   const choices = Object.entries(J.FONTS).filter(([, f]) => !f.composite).map(([key, f]) => `<option value="${escapeHtml(key)}" style="font-family:${escapeHtml((J.faceOf ? J.faceOf(key) : f).family)},sans-serif">${escapeHtml(f.label)}</option>`).join('');
@@ -72024,6 +72502,7 @@ function syncUI() {
   for (const set of J.SET_ORDER) document.querySelectorAll('.' + set + '-toggle').forEach(el => { el.checked = J.setOn(S.project, set); });
   document.querySelectorAll('.unify-toggle').forEach(el => { el.checked = S.project.unify === true; });
   document.querySelectorAll('.typeset-toggle').forEach(el => { el.checked = S.project.typeset === true; });
+  document.querySelectorAll('.noserif-toggle').forEach(el => { el.checked = S.project.noSerif === true; });
   $('lyricLang').value = J.LANG_LABEL[S.project.lang] ? S.project.lang : 'auto'; langNote();
   document.querySelectorAll('.themeSel').forEach(el => { el.value = J.OMAKASE_THEMES[S.project.themeId] ? S.project.themeId : ''; });
   renderFontRoles(); renderColors(); renderFx(); renderTech(); renderMediaEffects(); syncOut(); drawStyleGrid();
@@ -72333,14 +72812,12 @@ function bind() {
     const button=e.target.closest('[data-lyric-insert]'); if (!button) return;
     const input=$('lyrics'), start=input.selectionStart, end=input.selectionEnd;
     const selected=input.value.slice(start,end), kind=button.dataset.lyricInsert;
-    const pairs={cut:['/','/'],break:['\\n','\\n'],strong:['*','*'],soft:['~','~'],scene:['{','}'],separate:['{-','-}'],empty:['｜','｜']};
+    const pairs={cut:['/','/'],break:['\\n','\\n'],strong:['*','*'],soft:['~','~'],scene:['{','}'],separate:['{-','-}'],interlude:['','']};
     let [before,after]=pairs[kind], middle=selected;
-    if (kind==='empty') {
-      // Preserve the selected text's half/full-width spacing, but remove its glyphs.
-      const blank = selected ? [...selected].map(ch=>ch==='\n'?'\n':/[\u0000-\u007f\uff61-\uff9f]/.test(ch)?' ':'　').join('') : '　　　　';
+    if (kind==='interlude') {
       before=start && input.value[start-1]!=='\n'?'\n':'';
-      middle=blank.split('\n').map(line=>'｜'+(line || '　　　　')+'｜').join('\n');
-      after='\n';
+      middle='[간주]';
+      after=input.value[end]==='\n'?'':'\n';
     }
     if (kind==='cut' || kind==='break') { if (!selected) after=''; }
     if (kind==='scene' || kind==='separate') {
@@ -72355,7 +72832,7 @@ function bind() {
     replan();
     input.focus();
     const cursor=start+before.length+middle.length+after.length;
-    if (kind==='empty') input.setSelectionRange(cursor,cursor);
+    if (kind==='interlude') input.setSelectionRange(cursor,cursor);
     else input.setSelectionRange(start+before.length,start+before.length+middle.length);
   });
   for (const event of ['focus','blur','scroll']) $('lyrics').addEventListener(event, syncLyricPlaybackHighlight);
@@ -72628,6 +73105,14 @@ function bind() {
   setSwitch('extra2-toggle', 'extra2', true, '추가 연출 2: 사용', '추가 연출 2: 사용 안 함');
   setSwitch('horror-toggle', 'horror', true, '호러 연출: 사용(자동으로 만들기의 분위기에 「호러」가 추가됩니다)', '호러 연출: 사용 안 함');
   setSwitch('unify-toggle', 'unify', true, '통일감: 켬(파트별로 맞추고 킬링 파트·모프·굵기도 사용)', '통일감: 끔');
+  document.querySelectorAll('.noserif-font').forEach(sel => sel.addEventListener('change', e => {
+    remember(); S.project.noSerifFont = e.target.value;
+    document.querySelectorAll('.noserif-font').forEach(x => { x.value = e.target.value; });
+    fontKey = ''; replan(); renderFontRoles(); drawStyleGrid(); commit(); flushSave();
+    toast('정자체 대체 글꼴: ' + (e.target.value && J.FONTS[e.target.value] ? J.FONTS[e.target.value].label : '자동(같은 굵기의 고딕)'));
+  }));
+  setSwitch('noserif-toggle', 'noSerif', true, '정자체(명조·바탕) 제외: 켬(세리프 글꼴을 대체 글꼴로 바꿈)', '정자체(명조·바탕) 제외: 끔');
+  document.querySelectorAll('.noserif-toggle').forEach(el => el.addEventListener('change', () => { fontKey = ''; renderFontRoles(); }));   // 글꼴 메뉴의 「→ 실제 글꼴」 표시도 갱신
   setSwitch('typeset-toggle', 'typeset', true, '문자 정렬: 켬(자간·조사·영문·0.2초 먼저·효과 절제)', '문자 정렬: 끔');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
@@ -72656,6 +73141,37 @@ function bind() {
     S.project.fonts.display = key; $('localFont').value = '';
     fontKey = ''; renderFontRoles(); replan();
   });
+  /* PC 글꼴: 목록·메뉴에는 시스템 언어(없으면 화면 언어)의 이름을 우선 보여 준다 — 글꼴 파일 안의 현지어 이름을 읽어 오며, 한 번 읽은 이름은 이 브라우저에 기억한다 */
+  const localFontKey = font => 'local_' + Array.from(font.family + '_' + (font.style || '')).map(ch => ch.codePointAt(0).toString(16)).join('_');
+  const fontOptionLabel = (font, local) => local || font.fullName || `${font.family} ${font.style || ''}`.trim();
+  let localizeRun = 0;
+  async function localizeFontList(selector) {
+    const run = ++localizeRun;
+    if (!J.fontNameLangId()) return;
+    const options = [...selector.options], note = $('installedFontsNote');
+    let done = 0, changed = false, next = 0;
+    const worker = async () => {
+      while (run === localizeRun && next < options.length) {
+        const option = options[next++], font = option._font;
+        const local = await J.localFontName(font);
+        if (run !== localizeRun) return;
+        option._local = local;
+        if (local) option.textContent = local;
+        const saved = (S.project.userFonts || []).find(u => u.key === localFontKey(font));
+        if (local && saved && saved.label !== local) { saved.label = local; if (J.FONTS[saved.key]) J.FONTS[saved.key].label = local; changed = true; }
+        if (++done % 20 === 0) { if (note) note.textContent = `이름 확인 중… ${done}/${options.length}`; await new Promise(r => setTimeout(r)); }
+      }
+    };
+    if (note) { note.hidden = false; note.textContent = `이름 확인 중… 0/${options.length}`; }
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    if (run !== localizeRun) return;
+    J.saveFontNameCache();
+    const selected = selector.value;                                     // 현지어 이름 기준으로 다시 정렬
+    const sorted = options.sort((a, b) => a.textContent.localeCompare(b.textContent, document.documentElement.lang || undefined));
+    selector.innerHTML = ''; sorted.forEach(o => selector.appendChild(o)); selector.value = selected;
+    if (note) note.hidden = true;
+    if (changed) { renderFontRoles(); flushSave(); }
+  }
   $('btnListFonts').addEventListener('click', async () => {
     if (typeof window.queryLocalFonts !== 'function') { toast('이 브라우저에서는 PC 글꼴 목록을 가져올 수 없습니다'); return; }
     try {
@@ -72664,19 +73180,21 @@ function bind() {
       for (const font of fonts) if (font.family) unique.set(`${font.family}\u0000${font.style}`, font);
       const selector = $('installedFonts'); selector.innerHTML = '';
       for (const font of [...unique.values()].sort((a, b) => (a.family + a.style).localeCompare(b.family + b.style))) {
-        const option = document.createElement('option'); option.value = font.postscriptName || font.fullName; option.textContent = font.fullName || `${font.family} ${font.style}`;
+        const option = document.createElement('option'); option.value = font.postscriptName || font.fullName;
+        option._local = J.cachedLocalFontName(font); option.textContent = fontOptionLabel(font, option._local);
         option.style.fontFamily = `"${font.family.replace(/"/g, '')}"`; option._font = font; selector.appendChild(option);
       }
       selector.hidden = !$('installedFonts').options.length; $('btnImportFont').hidden = selector.hidden;
       if (selector.hidden) toast('글꼴을 찾을 수 없습니다');
+      else localizeFontList(selector);
     } catch (error) { toast('PC 글꼴 목록 가져오기가 허용되지 않았습니다'); }
   });
-  $('btnImportFont').addEventListener('click', () => {
-    const selector = $('installedFonts'), font = selector.selectedOptions[0]?._font;
+  $('btnImportFont').addEventListener('click', async () => {
+    const selector = $('installedFonts'), option = selector.selectedOptions[0], font = option?._font;
     if (!font) return;
     const family = font.family, weight = /bold|black|heavy|太|[6-9]00/i.test(font.style || '') ? 700 : 400;
-    const key = 'local_' + Array.from(family + '_' + (font.style || '')).map(ch => ch.codePointAt(0).toString(16)).join('_');
-    const label = font.fullName || `${family} ${font.style || ''}`;
+    const key = localFontKey(font);
+    const label = fontOptionLabel(font, option._local || await J.localFontName(font));
     J.addUserFont(key, label, family, weight);
     S.project.userFonts = (S.project.userFonts || []).filter(item => item.key !== key).concat([{ key, label, family, weight }]);
     S.project.fonts.display = key; fontKey = ''; renderFontRoles(); replan();
@@ -72876,6 +73394,7 @@ function bind() {
     else if (e.code === 'KeyL' && !e.metaKey && !e.ctrlKey && !e.altKey) { const i = lineAtPlayhead(); if (i >= 0 && !S.exporting && !S.plan.lines[i].interlude) { e.preventDefault(); toggleLyricLineLock(i); } }
   });
   window.addEventListener('resize', () => { sizeViewport(); drawTimeline(); drawTimelineLinks(); });
+  bindPreviewResizer();
   if (window.ResizeObserver) new ResizeObserver(() => { sizeViewport(); drawTimeline(); drawTimelineLinks(); }).observe($('viewport'));
   if(window.ResizeObserver){const observer=new ResizeObserver(sizeViewport);for(const el of document.querySelector('.col-stage').children)if(el.id!=='viewport')observer.observe(el);}
   if (window.ResizeObserver) new ResizeObserver(drawTimelineLinks).observe($('timelineStack'));
@@ -72952,7 +73471,7 @@ async function loadAudioFile(f, restored) {
 
 /* ---------------- かんたんモードの案内ツアー ---------------- */
 const TOUR = [
-  { t: () => $('lyrics'), title: '1. 가사 넣기', text: '한 행이 한 프레이즈가 됩니다. 빈 행은 약간 간격을 두고, [간주 8]이라고 쓰면 8초 간주(배경과 장식만)가 됩니다.' },
+  { t: () => $('lyrics'), title: '1. 가사 넣기', text: '한 행이 한 프레이즈가 됩니다. 빈 행은 약간 간격을 두고, [간주 8]이라고 쓰면 스타일에 맞는 8초 간주가 들어갑니다.' },
   { t: () => $('audioFile').closest('label') || $('audioFile'), title: '2. 곡 불러오기', text: 'mp3 등을 불러오면 박자를 감지해 컷 전환을 맞춥니다. 곡이 없어도 만들 수 있습니다. 「탭으로 동기화」로 행의 시작을 맞출 수도 있습니다.' },
   { t: () => $('btnOmakaseBig'), title: '3. 자동으로 만들기', text: '스타일·분위기·동작·배색·구성을 통째로 정합니다. 누를 때마다 다른 안이 되고, 「◀ 이전 안」으로 돌아갈 수 있습니다.' },
   { t: () => $('btnPlay'), title: '4. 재생해서 확인하기', text: '재생해 보세요. 아래 타임라인에서는 행 구분을 드래그해 옮길 수 있습니다(＋−로 확대).' },

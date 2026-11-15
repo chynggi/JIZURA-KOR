@@ -99,18 +99,24 @@ function jzParseLyrics(raw) {
         // (N = extra seconds for auto timing, 문구 = small caption, timestamp = the previous line ends and the interlude starts there)
         // upstream spellings are accepted too: [間奏] [间奏] [interlude] [instrumental] [inst] [간주: 8]
         var bm = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[\s*(?:간주|間奏|间奏|interlude|instrumental|inst)(?:\s*[:：]?\s*(\d+(?:\.\d+)?)\s*(?:초|秒|sec|s)?)?\s*(?:\|\s*([^\]]*?)\s*)?\]$/i);
-        if (bm) { brk = { sec: bm[3] ? parseFloat(bm[3]) : null, at: bm[1] ? parseInt(bm[1], 10) * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] || null }; continue; }
+        if (bm) {
+            var marker = { sec: bm[3] ? parseFloat(bm[3]) : null, at: bm[1] ? parseInt(bm[1], 10) * 60 + parseFloat(bm[2].replace(':', '.')) : null, text: bm[4] || null };
+            if (!lines.length) { lines.push(jzInterludeLine(marker, gap)); gap = false; }
+            else brk = marker;
+            continue;
+        }
         // [마무리] / [End 8] / [03:45.00][마무리] : end card after the last line (at = start time, N = length when there is no song)
         var om = s0.match(/^(?:\[(\d+):(\d+(?:[.:]\d+)?)\])?\[(?:마무리|end)(?:\s+(\d+(?:\.\d+)?)\s*(?:초|s)?)?\]$/i);
         if (om) { outro = { at: om[1] ? parseInt(om[1], 10) * 60 + parseFloat(om[2].replace(':', '.')) : null, sec: om[3] ? parseFloat(om[3]) : null }; continue; }
         var s = s0, times = [], m;
         while ((m = s.match(/^\[(\d+):(\d+(?:[.:]\d+)?)\]/))) { times.push(parseInt(m[1], 10) * 60 + parseFloat(m[2].replace(':', '.'))); s = s.substr(m[0].length); }
         s = jzTrim(s);
-        // 間奏: [間奏] / [間奏 8] — also [interlude] [inst] [间奏] [간주]
-        var im = s.match(/^\[\s*(\u9593\u594F|\u95F4\u594F|interlude|instrumental|inst|\uAC04\uC8FC)(?:\s*[:\uFF1A]?\s*(\d+(?:\.\d+)?)\s*(?:s|sec|\u79D2|\uCD08)?)?\s*\]$/i);
+        var im = s.match(/^｜([ \t\u3000]+)｜$/);
         if (im) {
-            var ib = { text: '', interlude: true, secs: im[2] ? parseFloat(im[2]) : null, note: null, impact: false, emph: [], manual: null, gapBefore: gap, lrc: null };
+            var ib = jzInterludeLine({sec: null, at: null, text: null}, gap);
+            ib.text = im[1]; ib.legacyBlank = true; ib.breakBefore = brk;
             gap = false;
+            brk = null; outro = null;
             if (times.length) { for (var it = 0; it < times.length; it++) { var ic = jzCopy(ib); ic.lrc = times[it]; lines.push(ic); } }
             else lines.push(ib);
             continue;
@@ -151,7 +157,11 @@ function jzParseLyrics(raw) {
         if (times.length) { for (var t = 0; t < times.length; t++) { var c = jzCopy(base); c.lrc = times[t]; if (marks) { c.marks = []; for (var mk2 = 0; mk2 < marks.length; mk2++) c.marks.push({ t: marks[mk2].t + times[t] - times[0], ci: marks[mk2].ci }); } lines.push(c); } }
         else lines.push(base);
     }
+    if (brk) lines.push(jzInterludeLine(brk, gap));
     return { lines: lines, meta: meta, outro: outro };
+}
+function jzInterludeLine(b, gap) {
+    return { text: '', interlude: true, secs: b.sec, note: b.text, impact: false, emph: [], manual: null, gapBefore: gap, lrc: b.at };
 }
 function jzCopy(o) { var r = {}; for (var k in o) if (o.hasOwnProperty(k)) r[k] = o[k]; return r; }
 

@@ -128,8 +128,29 @@ J.POOLS = {
 J.pool = (kind) => { const P = J.POOLS[J.lang] || J.POOLS.ja; return P[kind] || J.POOLS.ja[kind]; };
 const SERIF_KINDS = { mincho: 1, brush: 1, hand: 1 };
 const faceCache = new Map();
+/* 정자체(명조·바탕) 제외: 켜면 세리프 계열 글꼴 키(명조·바탕·교과서체·Yuji Syuku)가 대체 글꼴로 바뀌어 그려진다.
+   대체 글꼴(J.NO_SERIF_FONT)은 사용자가 고른 글꼴 키(올린 글꼴·PC 글꼴 포함). 비어 있으면 같은 굵기의 고딕 키.
+   프리셋·연출·컷별 글꼴 지정 모두 faceOf 를 거치므로 이 한 곳에서 전부 걸러진다. 계획(plan.noSerif / noSerifFont)마다 planner / renderer 가 맞춘다. */
+J.NO_SERIF = false;
+J.NO_SERIF_FONT = '';
+J.noSerifFontOk = (key) => typeof key === 'string' && !!J.FONTS[key] && !J.FONTS[key].composite && !J.isSerifFont(key);
+J.setNoSerif = (on, font) => {
+  on = !!on;
+  font = on && J.noSerifFontOk(font) ? font : '';
+  if (on === J.NO_SERIF && font === J.NO_SERIF_FONT) return;
+  J.NO_SERIF = on; J.NO_SERIF_FONT = font;
+  faceCache.clear();
+  if (J.glyphs) J.glyphs.clear();
+  if (J.metrics) J.metrics.clear();
+};
+J.isSerifFont = (key) => {
+  const f = J.FONTS[key];
+  return !!f && !f.user && !f.composite && (f.kind === 'mincho' || f.kind === 'hand' || key === 'brush');
+};
+const sansFor = (weight) => (weight >= 800 ? 'gothic_black' : weight >= 600 ? 'gothic_bold' : weight >= 400 ? 'gothic_med' : 'gothic_light');
 /* the face a font key is drawn with in the current language: {family (quoted), weight, fb, gf, label, name (family, for captions)} */
 J.faceOf = (key) => {
+  if (J.NO_SERIF && J.isSerifFont(key)) key = J.NO_SERIF_FONT && J.noSerifFontOk(J.NO_SERIF_FONT) ? J.NO_SERIF_FONT : sansFor(J.FONTS[key].weight);
   const f = J.FONTS[key] || J.FONTS.gothic_bold;
   const L = J.LANG_FACES[J.lang];
   if (!L || f.user) return f;                               // Japanese: the catalogue face itself (fontCSS runs per draw — no allocation)

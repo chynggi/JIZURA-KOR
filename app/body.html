@@ -69,13 +69,13 @@
           <div id="lyricPlaybackHighlight" class="lyric-playback-highlight" aria-hidden="true" hidden><div></div></div>
         </div>
         <div id="lyricInputTools" class="lyric-input-tools" role="group" aria-label="가사 입력 보조">
-          <button type="button" data-lyric-insert="cut" title="컷 경계(/)">컷</button><button type="button" data-lyric-insert="break" title="한 컷 안의 줄바꿈(\n)">줄바꿈</button><button type="button" data-lyric-insert="strong" title="*강조*">강조</button><button type="button" data-lyric-insert="soft" title="~억제~">억제</button><button type="button" data-lyric-insert="scene" title="{ … }: 여러 행을 한 장면으로 겹쳐 표시">1장면</button><button type="button" data-lyric-insert="separate" title="{- … -}: 한 장면으로 남기되 서로 겹치지 않게">겹치지 않는 1장면</button><button type="button" data-lyric-insert="empty" title="｜　　　｜: 글자 없이 연출만 나오는 행">빈 가사</button>
+          <button type="button" data-lyric-insert="cut" title="컷 경계(/)">컷</button><button type="button" data-lyric-insert="break" title="한 컷 안의 줄바꿈(\n)">줄바꿈</button><button type="button" data-lyric-insert="strong" title="*강조*">강조</button><button type="button" data-lyric-insert="soft" title="~억제~">억제</button><button type="button" data-lyric-insert="scene" title="{ … }: 여러 행을 한 장면으로 겹쳐 표시">1장면</button><button type="button" data-lyric-insert="separate" title="{- … -}: 한 장면으로 남기되 서로 겹치지 않게">겹치지 않는 1장면</button><button type="button" data-lyric-insert="interlude" title="[간주]: 가사 사이에 스타일별 연출 삽입">간주</button>
         </div>
         <label class="lang-row">가사 언어<select id="lyricLang"><option value="auto">자동 판정</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="ko">한국어</option><option value="en">English</option></select><span id="langNote" class="muted"></span></label>
         <div id="syntax" class="syntax" hidden>
           <ul>
             <li>한 행이 한 프레이즈입니다. 빈 행은 약간의 간격을 둡니다</li>
-            <li><code>｜　　　｜</code> … 전각 세로선으로 감싼 공백은 글자 없이 연출만 나오는 가사 행이 됩니다</li>
+            <li><code>[간주]</code> … 가사 사이에 스타일별 간주를 넣습니다. 이전 프로젝트의 <code>｜　　　｜</code>도 간주로 재생됩니다</li>
             <li><code>새벽의 색을/기억해</code> … <code>/</code>으로 컷 경계 지정</li>
             <li><code>{</code>와 <code>}</code>로 감싼 여러 행 … 마지막 컷이 사라질 때까지 차례로 겹쳐 표시</li>
             <li><code>{-</code>와 <code>-}</code>로 감싼 여러 행 … 차례로 남겨 표시하면서 가사끼리 겹치지 않게 배치</li>
@@ -166,6 +166,7 @@
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="미리보기">
       <div class="viewport" id="viewport"><button id="exitPreviewFullscreen" class="fullscreen-exit" type="button">전체 화면 종료</button><div class="fullscreen-transport"><button id="fullscreenPlay" type="button" aria-label="재생">▶</button><span id="fullscreenTime" class="tc"></span><input id="fullscreenScrub" type="range" min="0" max="10000" value="0" aria-label="재생 위치"></div><canvas id="view" width="1280" height="720"></canvas><div id="itemFrames" class="item-frames"></div><div id="areaEditOverlay" class="area-edit-overlay" aria-label="표시 위치와 크기 편집" hidden><div id="areaEditRect" class="area-edit-rect"><span class="area-edit-handle nw" data-handle="nw"></span><span class="area-edit-handle ne" data-handle="ne"></span><span class="area-edit-handle sw" data-handle="sw"></span><span class="area-edit-handle se" data-handle="se"></span><span class="area-rotate-handle n" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle e" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle s" data-handle="rotate" role="button" aria-label="회전"></span><span class="area-rotate-handle w" data-handle="rotate" role="button" aria-label="회전"></span></div><span class="area-edit-hint">드래그하여 가사 표시 범위 지정</span></div><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
+      <div id="viewportResizer" class="viewport-resizer" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="미리보기 높이 조절" title="위아래로 드래그하여 미리보기 높이 조절(가로 폭은 그대로) · 더블클릭: 자동 · 방향키: 미세 조정"></div>
       <div id="areaEditControls" class="area-edit-controls" hidden><span id="areaEditTitle"></span><div id="mediaAreaSizeControls" class="media-area-size-controls" hidden><label><input id="mediaAreaAspectLock" type="checkbox" checked>가로세로 비율 고정</label><label>너비(화면 비율 %)<input id="mediaAreaWidth" type="number" min="0.5" max="400" step="0.5"></label><label>높이(화면 비율 %)<input id="mediaAreaHeight" type="number" min="0.5" max="400" step="0.5"></label><label id="mediaAreaAngleField">각도(°)<input id="mediaAreaAngle" type="number" min="-180" max="180" step="0.1"></label></div><button id="areaResetFull" class="ghost" type="button">전체 영역으로 초기화</button><button id="areaResetAuto" class="ghost" type="button">자동 배치로 되돌리기</button><button id="areaApplyOne" class="primary" disabled>이 행에만 적용</button><button id="areaApplyFollowing" disabled>이후 전부 적용</button><button id="areaDelete" type="button" title="이 컷을 삭제합니다">삭제</button><button id="areaCancel" class="ghost">취소</button></div>
       <div class="preview-options"><label class="item-frame-toggle"><input id="showItemFrames" type="checkbox" checked><span id="showItemFramesLabel">편집 모드</span></label><button id="effectFavorites" type="button" class="ghost small">☆ 즐겨찾기 연출</button><button id="previewScreenshot" type="button" class="ghost small" title="미리보기를 PNG로 저장">스크린숏</button><button id="previewFullscreen" type="button" class="ghost small">전체 화면 미리보기</button></div>
       <div class="transport">
@@ -195,14 +196,14 @@
       </div>
       <div class="timeline-zoom"><button id="timelineZoomOut" type="button" aria-label="타임라인 축소">−</button><span id="timelineZoomValue" aria-live="polite">100%</span><button id="timelineZoomIn" type="button" aria-label="타임라인 확대">＋</button></div>
       </div>
+      <p class="hint timeline-link-hint">끝의 ◀▶를 드래그하면 전체 길이를 바꿀 수 있습니다. 재생 시간의 분모를 클릭하면 직접 입력할 수 있습니다. 사슬 표시를 다른 타임라인의 사슬로 드래그하면 연결됩니다. ×로 해제합니다.</p>
       <div class="timeline-with-visibility"><div id="layerVisibilityControls" class="layer-visibility-controls"></div><div id="timelineScroll" class="timeline-scroll"><div id="timelineStack" class="timeline-stack">
         <canvas id="foregroundTimeline" aria-label="전경 타임라인(경계를 드래그하여 시작 시각 변경, 그 외에는 재생 위치 이동)"></canvas>
         <canvas id="timeline" aria-label="타임라인(클릭으로 이동, 행 구분은 드래그로 조정)"></canvas>
         <canvas id="mediaTimeline" aria-label="배경 타임라인(경계를 드래그하여 시작 시각 변경, 그 외에는 재생 위치 이동)"></canvas>
         <svg id="timelineLinks" class="timeline-links" aria-label="타임라인 경계 링크"></svg>
         <button id="timelineDurationHandle" class="timeline-duration-handle" type="button" title="드래그하여 동영상 전체 길이 변경" aria-label="동영상 전체 길이를 드래그하여 변경"><span aria-hidden="true">◀▶</span></button>
-      </div></div>
-      <p class="hint timeline-link-hint">끝의 ◀▶를 드래그하면 전체 길이를 바꿀 수 있습니다. 재생 시간의 분모를 클릭하면 직접 입력할 수 있습니다. 사슬 표시를 다른 타임라인의 사슬로 드래그하면 연결됩니다. ×로 해제합니다.</p>
+      </div></div></div>
       <!-- 컷 패널: 재생 위치(또는 고른 컷) 하나를 편집하는 곳 — ① 컷별 기법 교체 ② 레이어 상세 ③ 이 행의 후보·우타하메 -->
       <div id="cutPanel" class="cut-panel" aria-label="컷 편집">
         <div class="cut-sec cut-sec-pick" data-cut-section="pick">
@@ -250,6 +251,8 @@
             <label class="check"><input class="horror-toggle" type="checkbox"><span>호러 연출도 사용<small>으스스한 분위기의 부품(약 50개)과 배색 세트 3종. 켜면 자동으로 만들기의 분위기에 「호러」가 추가됩니다</small></span></label>
             <label class="check"><input class="unify-toggle" type="checkbox"><span>통일감</span></label>
             <label class="check"><input class="typeset-toggle" type="checkbox"><span>문자 정렬</span></label>
+            <label class="check"><input class="noserif-toggle" type="checkbox"><span>정자체(명조·바탕) 제외<small>궁서·바탕처럼 획 끝이 장식된 글꼴을 모든 연출에서 아래 대체 글꼴로 바꿉니다</small></span></label>
+            <label class="noserif-font-row"><span>대체 글꼴</span><select class="noserif-font" aria-label="정자체 대체 글꼴" title="정자체(명조·바탕) 대신 쓸 글꼴 — 아래 「글꼴 추가」로 올린 PC 글꼴·글꼴 파일도 고를 수 있습니다"></select></label>
           </div>
         </div>
         <div class="easy-sec">
@@ -301,12 +304,14 @@
         <div id="styleGrid" class="style-grid"></div>
         <h3>글꼴 역할</h3>
         <div id="fontRoles"></div>
+        <label class="check"><input class="noserif-toggle" type="checkbox"><span>정자체(명조·바탕) 제외<small>궁서·바탕처럼 획 끝이 장식된 글꼴을 모든 연출에서 아래 대체 글꼴로 바꿉니다</small></span></label>
+        <label class="noserif-font-row"><span>대체 글꼴</span><select class="noserif-font" aria-label="정자체 대체 글꼴" title="정자체(명조·바탕) 대신 쓸 글꼴 — 아래 「글꼴 추가」로 올린 PC 글꼴·글꼴 파일도 고를 수 있습니다"></select></label>
         <div class="row" style="margin-top:8px">
           <input id="localFont" type="text" placeholder="PC 글꼴 이름(예: 나눔명조)" style="flex:1">
           <button id="btnAddFont">추가</button>
         </div>
         <div class="row" style="margin-top:8px"><label class="file">글꼴 파일(.ttf/.otf)<input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2"></label></div>
-        <div class="row font-import" style="margin-top:8px"><button id="btnListFonts" type="button">PC 글꼴 목록 표시</button><select id="installedFonts" aria-label="PC 글꼴" hidden></select><button id="btnImportFont" type="button" hidden>선택한 글꼴 가져오기</button></div>
+        <div class="row font-import" style="margin-top:8px"><button id="btnListFonts" type="button">PC 글꼴 목록 표시</button><select id="installedFonts" aria-label="PC 글꼴" hidden></select><span id="installedFontsNote" class="muted" hidden></span><button id="btnImportFont" type="button" hidden>선택한 글꼴 가져오기</button></div>
         <h3>합성 글꼴</h3><div class="composite-font"><label>설정 이름<input id="compositeName" type="text" maxlength="60"></label><label>기준 글꼴<select id="compositeBase"></select></label><div id="compositeParts"></div><button id="btnSaveComposite" type="button">합성 글꼴 저장</button><div id="compositeList"></div></div>
         <h3>강조색·색 어긋남</h3>
         <label class="check"><input id="accentOn" type="checkbox"><span>내 색으로 덮어쓰기<small>전체 장면에 적용. 배경에 맞춰 밝기를 자동 조절합니다</small></span></label>
@@ -324,6 +329,8 @@
         <div class="unify-box">
           <label class="check"><input class="unify-toggle" type="checkbox"><span>통일감</span></label>
           <label class="check"><input class="typeset-toggle" type="checkbox"><span>문자 정렬</span></label>
+          <label class="check"><input class="noserif-toggle" type="checkbox"><span>정자체(명조·바탕) 제외<small>궁서·바탕처럼 획 끝이 장식된 글꼴을 모든 연출에서 아래 대체 글꼴로 바꿉니다</small></span></label>
+          <label class="noserif-font-row"><span>대체 글꼴</span><select class="noserif-font" aria-label="정자체 대체 글꼴" title="정자체(명조·바탕) 대신 쓸 글꼴 — 아래 「글꼴 추가」로 올린 PC 글꼴·글꼴 파일도 고를 수 있습니다"></select></label>
         </div>
         <div id="fxSliders"></div>
         <div class="row" style="margin-top:6px">

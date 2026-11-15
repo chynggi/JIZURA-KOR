@@ -151,6 +151,72 @@ J.restoreUserFonts = async (list) => {
 /* uploaded faces the plan draws with but this page does not have */
 J.missingUserFonts = (keys) => (keys || []).filter(k => J.SAFE_FONT_KEY.test(k) && J.FONTS[k] && J.FONTS[k].user && !J.FONTS[k].loaded).map(k => J.FONTS[k].label);
 
+/* ---------- PC 글꼴의 현지어 이름 ----------
+   queryLocalFonts() 는 영문 이름(KoreanHSGDB 등)만 준다. 글꼴 파일의 name 테이블에는 한국어·일본어·중국어 이름도 들어 있으므로
+   그것을 읽어 목록·메뉴에 쓴다. 기준 언어: 시스템(브라우저) 언어 → JIZURA 화면 언어 → 영문 */
+J.fontNameLangId = () => {
+  const pick = tag => { tag = String(tag || '').toLowerCase(); return tag.startsWith('ko') ? 0x412 : tag.startsWith('ja') ? 0x411 : /^zh-(tw|hk|mo|hant)/.test(tag) ? 0x404 : tag.startsWith('zh') ? 0x804 : 0; };
+  return pick(typeof navigator !== 'undefined' && navigator.language) || pick(typeof document !== 'undefined' && document.documentElement.lang) || 0;
+};
+const NAME_CACHE_KEY = 'jizura.fontNames.v1';
+let nameCache = null;
+const nameCacheGet = () => {
+  if (nameCache) return nameCache;
+  try { nameCache = JSON.parse(localStorage.getItem(NAME_CACHE_KEY) || 'null'); } catch (e) { nameCache = null; }
+  if (!nameCache || typeof nameCache !== 'object' || !nameCache.names) nameCache = { names: {} };
+  return nameCache;
+};
+const fontNameId = font => J.fontNameLangId() + '|' + (font.postscriptName || font.fullName || font.family);
+J.saveFontNameCache = () => { try { localStorage.setItem(NAME_CACHE_KEY, JSON.stringify(nameCache || { names: {} })); } catch (e) {} };
+J.cachedLocalFontName = font => { if (!J.fontNameLangId()) return ''; const v = nameCacheGet().names[fontNameId(font)]; return typeof v === 'string' ? v : ''; };
+const nameTables = async (blob, off) => {              // {nameID: {languageID: string}} of the sfnt at byte offset `off` (Windows platform records only)
+  const dv = new DataView(await blob.slice(off, off + 12).arrayBuffer());
+  const num = dv.getUint16(4);
+  if (!num || num > 200) return null;
+  const dir = new DataView(await blob.slice(off + 12, off + 12 + num * 16).arrayBuffer());
+  let at = -1, len = 0;
+  for (let i = 0; i < num; i++) if (dir.getUint32(i * 16) === 0x6e616d65) { at = dir.getUint32(i * 16 + 8); len = dir.getUint32(i * 16 + 12); break; }   // 'name'
+  if (at < 0 || len < 6 || len > 4e6) return null;
+  const t = new DataView(await blob.slice(at, at + len).arrayBuffer());
+  const count = t.getUint16(2), strings = t.getUint16(4), out = {}, dec = new TextDecoder('utf-16be');
+  for (let i = 0; i < count && 6 + i * 12 + 12 <= len; i++) {
+    const o = 6 + i * 12, platform = t.getUint16(o), enc = t.getUint16(o + 2), lang = t.getUint16(o + 4), id = t.getUint16(o + 6), n = t.getUint16(o + 8), so = strings + t.getUint16(o + 10);
+    if (platform !== 3 || (enc !== 1 && enc !== 10) || so + n > len) continue;
+    (out[id] || (out[id] = {}))[lang] = dec.decode(new Uint8Array(t.buffer, t.byteOffset + so, n));
+  }
+  return out;
+};
+/* 현지어 이름(full name). 없으면 ''. font = FontData (queryLocalFonts). 한 번 읽은 결과는 이 브라우저에 기억한다 */
+J.localFontName = async (font) => {
+  const lang = J.fontNameLangId();
+  if (!lang) return '';
+  const cache = nameCacheGet(), ck = fontNameId(font);
+  if (typeof cache.names[ck] === 'string') return cache.names[ck];
+  let label = '';
+  try {
+    const blob = await font.blob(), head = new DataView(await blob.slice(0, 16).arrayBuffer());
+    let offsets = [0];
+    if (head.getUint32(0) === 0x74746366) {              // 'ttcf': 글꼴 모음 → 모든 글꼴을 보고, PostScript 이름이 같은 것을 쓴다
+      const n = Math.min(head.getUint32(8), 64), offs = new DataView(await blob.slice(12, 12 + n * 4).arrayBuffer());
+      offsets = Array.from({ length: n }, (_, i) => offs.getUint32(i * 4));
+    }
+    let names = null;
+    for (const off of offsets) {
+      const nt = await nameTables(blob, off);
+      if (!nt) continue;
+      if (!names) names = nt;
+      if (nt[6] && Object.values(nt[6]).includes(font.postscriptName)) { names = nt; break; }
+    }
+    if (names) {
+      const g = id => (names[id] && names[id][lang]) || '';
+      const full = g(4), fam = g(16) || g(1), sty = g(17) || g(2);
+      label = full || (fam ? (sty && !/^(regular|normal)$/i.test(sty) ? fam + ' ' + sty : fam) : '');
+    }
+  } catch (e) { return ''; }                               // 기억하지 않음: 다음에 다시 시도
+  cache.names[ck] = label;
+  return label;
+};
+
 J.fontCSS = (key, px, ch) => {
   if (ch != null) key = J.fontForChar(key, ch);
   else if (J.FONTS[key]?.composite) key = J.FONTS[key].composite.base;

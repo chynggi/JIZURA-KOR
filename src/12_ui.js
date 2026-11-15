@@ -322,6 +322,7 @@ function composePlan(project) {
     plan[layer].duration = plan.duration;
     const last = plan[layer].cuts.at(-1); if (last && !last.manualEnd && last.videoDuration == null) last.end = plan.duration;
   }
+  if (plan.media.cuts.some(cut => cut.type === 'image')) J.refreshInterludeScenes(plan, project.timing);
   return plan;
 }
 function replan() {
@@ -375,7 +376,7 @@ let thumbFonts = null;
 async function ensureFonts() {
   const txt = S.project.lyrics + (S.project.title || '') + (S.project.artist || '') + HUD_CHARS + J.drawingText(S.plan);
   const keys = J.fontsOfPlan(S.plan);                       // only the faces this plan draws with
-  const key = txt + '|' + keys.join(',') + '|' + Object.keys(J.FONTS).length + '|' + J.lang;   // the lyric language changes the faces
+  const key = txt + '|' + keys.join(',') + '|' + Object.keys(J.FONTS).length + '|' + J.lang + '|' + J.NO_SERIF;   // the lyric language / 정자체 제외 changes the faces
   if (key === fontKey) return;
   fontKey = key;
   showMsg('글꼴 불러오는 중…');
@@ -408,6 +409,46 @@ function sizeViewport() {
   c.style.width = cssW + 'px'; c.style.height = cssH + 'px';
   positionAreaEditor();
   S.need = true;
+}
+/* 미리보기 높이 조절: 뷰포트 아래 손잡이를 위아래로 드래그. 가로 폭은 그대로, 높이만 고정값(--vp-h)이 된다. 더블클릭 = 자동(남는 높이) */
+const PREVIEW_H_KEY = 'jizura.previewHeight';
+function previewHeightLimits() {
+  const vp = $('viewport'), ar = S.plan ? S.plan.W / S.plan.H : 16 / 9;
+  return [140, Math.max(140, Math.min(window.innerHeight * 0.95, vp.clientWidth / ar + 2))];   // 폭에 비해 더 커도 검은 여백만 늘어나므로 화면 비율까지만
+}
+function setPreviewHeight(h, save = true) {
+  const stage = document.querySelector('.col-stage');
+  if (h == null) { stage.classList.remove('vp-custom'); stage.style.removeProperty('--vp-h'); S.previewH = null; }
+  else {
+    const [lo, hi] = previewHeightLimits(); h = Math.round(J.clamp(h, lo, hi));
+    S.previewH = h; stage.style.setProperty('--vp-h', h + 'px'); stage.classList.add('vp-custom');
+  }
+  if (save) { try { if (S.previewH == null) localStorage.removeItem(PREVIEW_H_KEY); else localStorage.setItem(PREVIEW_H_KEY, String(S.previewH)); } catch (e) {} }
+  if (S.plan) sizeViewport();
+}
+function bindPreviewResizer() {
+  const bar = $('viewportResizer'), vp = $('viewport'); if (!bar) return;
+  let saved = null; try { saved = parseFloat(localStorage.getItem(PREVIEW_H_KEY)); } catch (e) {}
+  if (saved > 0) setPreviewHeight(saved, false);
+  let drag = null;
+  bar.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    drag = { y: e.clientY, h: vp.getBoundingClientRect().height }; bar.setPointerCapture(e.pointerId); bar.classList.add('dragging'); e.preventDefault();
+  });
+  bar.addEventListener('pointermove', e => { if (drag) setPreviewHeight(drag.h + e.clientY - drag.y, false); });
+  const end = e => {
+    if (!drag) return; drag = null; bar.classList.remove('dragging');
+    try { bar.releasePointerCapture(e.pointerId); } catch (x) {}
+    if (S.previewH != null) setPreviewHeight(S.previewH);          // save
+  };
+  bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+  bar.addEventListener('dblclick', () => setPreviewHeight(null));
+  bar.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 80 : 20;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); setPreviewHeight((S.previewH || vp.getBoundingClientRect().height) + (e.key === 'ArrowDown' ? step : -step)); }
+    else if (e.key === 'Home' || e.key === 'Escape') { e.preventDefault(); setPreviewHeight(null); }
+  });
+  window.addEventListener('resize', () => { if (S.previewH != null) setPreviewHeight(S.previewH, false); });
 }
 // preview only: dotted outline of the centre that 中央を空ける keeps free (never in exports)
 function drawCenterGuide(ctx, k) {
@@ -1936,7 +1977,7 @@ function drawItemFrames() {
     const cx=(area.x+area.w/2)*view.width,cy=(area.y+area.h/2)*view.height,a=(area.angle||0)*Math.PI/180;
     const points=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>{x*=area.w*view.width/2;y*=area.h*view.height/2;return [cx+x*Math.cos(a)-y*Math.sin(a),cy+x*Math.sin(a)+y*Math.cos(a)];});
     const actions=S.areaEdit&&!selected?[]:['lock','dice','disableReroll','copy','paste',...(layer==='lyrics'?['frontmost']:[]),'details'];
-    const frameName=layer==='lyrics'?(String(cut.text||'').trim()||L('빈 가사','Empty lyrics')):(cut.name||L('이미지 없음','No image'));
+    const frameName=layer==='lyrics'?(cut.layout==='interlude'?L('간주','Interlude'):String(cut.text||'').trim()):(cut.name||L('이미지 없음','No image'));
     const labelWidth=Math.min(160,Math.max(36,[...frameName].length*10+8));
     const width=Math.min(view.width,actions.length*25+labelWidth),x=J.clamp(points[0][0],0,Math.max(0,view.width-width));
     let y=J.clamp(points[0][1],0,Math.max(0,view.height-26));
@@ -3717,6 +3758,21 @@ function fontSelectOptions(sel) {
     return `<option value="${escapeHtml(k)}" style="font-family:${escapeHtml(g.family)},sans-serif;font-weight:${g.weight}" ${sel === k ? 'selected' : ''}>${escapeHtml(f.label + alt)}</option>`;
   }).join('');
 }
+/* 정자체(명조·바탕) 제외: 체크박스(간편 설정 / 스타일 / 연출 탭)와 대체 글꼴 드롭다운은 같은 project.noSerif / noSerifFont 를 보여 주며 서로 연동된다 */
+function renderNoSerifFont() {
+  const cur = S.project.noSerifFont || '';
+  const opts = '<option value="">자동(같은 굵기의 고딕)</option>' + Object.entries(J.FONTS).filter(([k]) => J.noSerifFontOk(k)).map(([k, f]) => {
+    const g = J.faceOf ? J.faceOf(k) : f;
+    return `<option value="${escapeHtml(k)}" style="font-family:${escapeHtml(g.family)},sans-serif;font-weight:${g.weight}">${escapeHtml(f.label)}${f.user ? ' (내 글꼴)' : ''}</option>`;
+  }).join('');
+  document.querySelectorAll('.noserif-font').forEach(sel => { sel.innerHTML = opts; sel.value = [...sel.options].some(o => o.value === cur) ? cur : ''; });
+  syncNoSerifUI();
+}
+function syncNoSerifUI() {
+  const on = S.project.noSerif === true;
+  document.querySelectorAll('.noserif-toggle').forEach(el => { el.checked = on; });
+  document.querySelectorAll('.noserif-font').forEach(sel => { sel.disabled = !on; sel.closest('.noserif-font-row').classList.toggle('off', !on); });
+}
 function renderFontRoles() {
   const box = $('fontRoles'); box.innerHTML = '';
   [['display', '제목'], ['serif', '명조'], ['body', '작은 글자']].forEach(([role, label]) => {
@@ -3726,6 +3782,7 @@ function renderFontRoles() {
     box.appendChild(row);
   });
   renderCompositeFonts();
+  renderNoSerifFont();
 }
 function renderCompositeFonts() {
   const choices = Object.entries(J.FONTS).filter(([, f]) => !f.composite).map(([key, f]) => `<option value="${escapeHtml(key)}" style="font-family:${escapeHtml((J.faceOf ? J.faceOf(key) : f).family)},sans-serif">${escapeHtml(f.label)}</option>`).join('');
@@ -5269,6 +5326,7 @@ function syncUI() {
   for (const set of J.SET_ORDER) document.querySelectorAll('.' + set + '-toggle').forEach(el => { el.checked = J.setOn(S.project, set); });
   document.querySelectorAll('.unify-toggle').forEach(el => { el.checked = S.project.unify === true; });
   document.querySelectorAll('.typeset-toggle').forEach(el => { el.checked = S.project.typeset === true; });
+  document.querySelectorAll('.noserif-toggle').forEach(el => { el.checked = S.project.noSerif === true; });
   $('lyricLang').value = J.LANG_LABEL[S.project.lang] ? S.project.lang : 'auto'; langNote();
   document.querySelectorAll('.themeSel').forEach(el => { el.value = J.OMAKASE_THEMES[S.project.themeId] ? S.project.themeId : ''; });
   renderFontRoles(); renderColors(); renderFx(); renderTech(); renderMediaEffects(); syncOut(); drawStyleGrid();
@@ -5578,14 +5636,12 @@ function bind() {
     const button=e.target.closest('[data-lyric-insert]'); if (!button) return;
     const input=$('lyrics'), start=input.selectionStart, end=input.selectionEnd;
     const selected=input.value.slice(start,end), kind=button.dataset.lyricInsert;
-    const pairs={cut:['/','/'],break:['\\n','\\n'],strong:['*','*'],soft:['~','~'],scene:['{','}'],separate:['{-','-}'],empty:['｜','｜']};
+    const pairs={cut:['/','/'],break:['\\n','\\n'],strong:['*','*'],soft:['~','~'],scene:['{','}'],separate:['{-','-}'],interlude:['','']};
     let [before,after]=pairs[kind], middle=selected;
-    if (kind==='empty') {
-      // Preserve the selected text's half/full-width spacing, but remove its glyphs.
-      const blank = selected ? [...selected].map(ch=>ch==='\n'?'\n':/[\u0000-\u007f\uff61-\uff9f]/.test(ch)?' ':'　').join('') : '　　　　';
+    if (kind==='interlude') {
       before=start && input.value[start-1]!=='\n'?'\n':'';
-      middle=blank.split('\n').map(line=>'｜'+(line || '　　　　')+'｜').join('\n');
-      after='\n';
+      middle='[간주]';
+      after=input.value[end]==='\n'?'':'\n';
     }
     if (kind==='cut' || kind==='break') { if (!selected) after=''; }
     if (kind==='scene' || kind==='separate') {
@@ -5600,7 +5656,7 @@ function bind() {
     replan();
     input.focus();
     const cursor=start+before.length+middle.length+after.length;
-    if (kind==='empty') input.setSelectionRange(cursor,cursor);
+    if (kind==='interlude') input.setSelectionRange(cursor,cursor);
     else input.setSelectionRange(start+before.length,start+before.length+middle.length);
   });
   for (const event of ['focus','blur','scroll']) $('lyrics').addEventListener(event, syncLyricPlaybackHighlight);
@@ -5873,6 +5929,14 @@ function bind() {
   setSwitch('extra2-toggle', 'extra2', true, '추가 연출 2: 사용', '추가 연출 2: 사용 안 함');
   setSwitch('horror-toggle', 'horror', true, '호러 연출: 사용(자동으로 만들기의 분위기에 「호러」가 추가됩니다)', '호러 연출: 사용 안 함');
   setSwitch('unify-toggle', 'unify', true, '통일감: 켬(파트별로 맞추고 킬링 파트·모프·굵기도 사용)', '통일감: 끔');
+  document.querySelectorAll('.noserif-font').forEach(sel => sel.addEventListener('change', e => {
+    remember(); S.project.noSerifFont = e.target.value;
+    document.querySelectorAll('.noserif-font').forEach(x => { x.value = e.target.value; });
+    fontKey = ''; replan(); renderFontRoles(); drawStyleGrid(); commit(); flushSave();
+    toast('정자체 대체 글꼴: ' + (e.target.value && J.FONTS[e.target.value] ? J.FONTS[e.target.value].label : '자동(같은 굵기의 고딕)'));
+  }));
+  setSwitch('noserif-toggle', 'noSerif', true, '정자체(명조·바탕) 제외: 켬(세리프 글꼴을 대체 글꼴로 바꿈)', '정자체(명조·바탕) 제외: 끔');
+  document.querySelectorAll('.noserif-toggle').forEach(el => el.addEventListener('change', () => { fontKey = ''; renderFontRoles(); }));   // 글꼴 메뉴의 「→ 실제 글꼴」 표시도 갱신
   setSwitch('typeset-toggle', 'typeset', true, '문자 정렬: 켬(자간·조사·영문·0.2초 먼저·효과 절제)', '문자 정렬: 끔');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
@@ -5901,6 +5965,37 @@ function bind() {
     S.project.fonts.display = key; $('localFont').value = '';
     fontKey = ''; renderFontRoles(); replan();
   });
+  /* PC 글꼴: 목록·메뉴에는 시스템 언어(없으면 화면 언어)의 이름을 우선 보여 준다 — 글꼴 파일 안의 현지어 이름을 읽어 오며, 한 번 읽은 이름은 이 브라우저에 기억한다 */
+  const localFontKey = font => 'local_' + Array.from(font.family + '_' + (font.style || '')).map(ch => ch.codePointAt(0).toString(16)).join('_');
+  const fontOptionLabel = (font, local) => local || font.fullName || `${font.family} ${font.style || ''}`.trim();
+  let localizeRun = 0;
+  async function localizeFontList(selector) {
+    const run = ++localizeRun;
+    if (!J.fontNameLangId()) return;
+    const options = [...selector.options], note = $('installedFontsNote');
+    let done = 0, changed = false, next = 0;
+    const worker = async () => {
+      while (run === localizeRun && next < options.length) {
+        const option = options[next++], font = option._font;
+        const local = await J.localFontName(font);
+        if (run !== localizeRun) return;
+        option._local = local;
+        if (local) option.textContent = local;
+        const saved = (S.project.userFonts || []).find(u => u.key === localFontKey(font));
+        if (local && saved && saved.label !== local) { saved.label = local; if (J.FONTS[saved.key]) J.FONTS[saved.key].label = local; changed = true; }
+        if (++done % 20 === 0) { if (note) note.textContent = `이름 확인 중… ${done}/${options.length}`; await new Promise(r => setTimeout(r)); }
+      }
+    };
+    if (note) { note.hidden = false; note.textContent = `이름 확인 중… 0/${options.length}`; }
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    if (run !== localizeRun) return;
+    J.saveFontNameCache();
+    const selected = selector.value;                                     // 현지어 이름 기준으로 다시 정렬
+    const sorted = options.sort((a, b) => a.textContent.localeCompare(b.textContent, document.documentElement.lang || undefined));
+    selector.innerHTML = ''; sorted.forEach(o => selector.appendChild(o)); selector.value = selected;
+    if (note) note.hidden = true;
+    if (changed) { renderFontRoles(); flushSave(); }
+  }
   $('btnListFonts').addEventListener('click', async () => {
     if (typeof window.queryLocalFonts !== 'function') { toast('이 브라우저에서는 PC 글꼴 목록을 가져올 수 없습니다'); return; }
     try {
@@ -5909,19 +6004,21 @@ function bind() {
       for (const font of fonts) if (font.family) unique.set(`${font.family}\u0000${font.style}`, font);
       const selector = $('installedFonts'); selector.innerHTML = '';
       for (const font of [...unique.values()].sort((a, b) => (a.family + a.style).localeCompare(b.family + b.style))) {
-        const option = document.createElement('option'); option.value = font.postscriptName || font.fullName; option.textContent = font.fullName || `${font.family} ${font.style}`;
+        const option = document.createElement('option'); option.value = font.postscriptName || font.fullName;
+        option._local = J.cachedLocalFontName(font); option.textContent = fontOptionLabel(font, option._local);
         option.style.fontFamily = `"${font.family.replace(/"/g, '')}"`; option._font = font; selector.appendChild(option);
       }
       selector.hidden = !$('installedFonts').options.length; $('btnImportFont').hidden = selector.hidden;
       if (selector.hidden) toast('글꼴을 찾을 수 없습니다');
+      else localizeFontList(selector);
     } catch (error) { toast('PC 글꼴 목록 가져오기가 허용되지 않았습니다'); }
   });
-  $('btnImportFont').addEventListener('click', () => {
-    const selector = $('installedFonts'), font = selector.selectedOptions[0]?._font;
+  $('btnImportFont').addEventListener('click', async () => {
+    const selector = $('installedFonts'), option = selector.selectedOptions[0], font = option?._font;
     if (!font) return;
     const family = font.family, weight = /bold|black|heavy|太|[6-9]00/i.test(font.style || '') ? 700 : 400;
-    const key = 'local_' + Array.from(family + '_' + (font.style || '')).map(ch => ch.codePointAt(0).toString(16)).join('_');
-    const label = font.fullName || `${family} ${font.style || ''}`;
+    const key = localFontKey(font);
+    const label = fontOptionLabel(font, option._local || await J.localFontName(font));
     J.addUserFont(key, label, family, weight);
     S.project.userFonts = (S.project.userFonts || []).filter(item => item.key !== key).concat([{ key, label, family, weight }]);
     S.project.fonts.display = key; fontKey = ''; renderFontRoles(); replan();
@@ -6121,6 +6218,7 @@ function bind() {
     else if (e.code === 'KeyL' && !e.metaKey && !e.ctrlKey && !e.altKey) { const i = lineAtPlayhead(); if (i >= 0 && !S.exporting && !S.plan.lines[i].interlude) { e.preventDefault(); toggleLyricLineLock(i); } }
   });
   window.addEventListener('resize', () => { sizeViewport(); drawTimeline(); drawTimelineLinks(); });
+  bindPreviewResizer();
   if (window.ResizeObserver) new ResizeObserver(() => { sizeViewport(); drawTimeline(); drawTimelineLinks(); }).observe($('viewport'));
   if(window.ResizeObserver){const observer=new ResizeObserver(sizeViewport);for(const el of document.querySelector('.col-stage').children)if(el.id!=='viewport')observer.observe(el);}
   if (window.ResizeObserver) new ResizeObserver(drawTimelineLinks).observe($('timelineStack'));
@@ -6197,7 +6295,7 @@ async function loadAudioFile(f, restored) {
 
 /* ---------------- かんたんモードの案内ツアー ---------------- */
 const TOUR = [
-  { t: () => $('lyrics'), title: '1. 가사 넣기', text: '한 행이 한 프레이즈가 됩니다. 빈 행은 약간 간격을 두고, [간주 8]이라고 쓰면 8초 간주(배경과 장식만)가 됩니다.' },
+  { t: () => $('lyrics'), title: '1. 가사 넣기', text: '한 행이 한 프레이즈가 됩니다. 빈 행은 약간 간격을 두고, [간주 8]이라고 쓰면 스타일에 맞는 8초 간주가 들어갑니다.' },
   { t: () => $('audioFile').closest('label') || $('audioFile'), title: '2. 곡 불러오기', text: 'mp3 등을 불러오면 박자를 감지해 컷 전환을 맞춥니다. 곡이 없어도 만들 수 있습니다. 「탭으로 동기화」로 행의 시작을 맞출 수도 있습니다.' },
   { t: () => $('btnOmakaseBig'), title: '3. 자동으로 만들기', text: '스타일·분위기·동작·배색·구성을 통째로 정합니다. 누를 때마다 다른 안이 되고, 「◀ 이전 안」으로 돌아갈 수 있습니다.' },
   { t: () => $('btnPlay'), title: '4. 재생해서 확인하기', text: '재생해 보세요. 아래 타임라인에서는 행 구분을 드래그해 옮길 수 있습니다(＋−로 확대).' },

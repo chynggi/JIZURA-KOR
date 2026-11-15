@@ -111,9 +111,9 @@ J.omakase = (project, rnd = Math.random, choices = {}) => {
   enabled.hold.still = true;
   // fonts: sometimes swap the headline / mincho faces for another catalogue face
   const fonts = {};
-  const faces = Object.entries(J.FONTS).filter(([k, f]) => !f.user && !['mono', 'pixel'].includes(f.kind) && (!J.randomOk || J.randomOk(project, 'font', k)));
+  const faces = Object.entries(J.FONTS).filter(([k, f]) => !f.user && !['mono', 'pixel'].includes(f.kind) && !(project.noSerif && J.isSerifFont(k)) && (!J.randomOk || J.randomOk(project, 'font', k)));
   if (rnd() < 0.4) fonts.display = pick(faces.filter(([k, f]) => f.weight >= 700 || f.kind === 'display' || f.kind === 'round'))[0];
-  if (rnd() < 0.3) fonts.serif = pick(faces.filter(([k, f]) => f.kind === 'mincho' || f.kind === 'brush'))[0];
+  if (rnd() < 0.3 && !project.noSerif) fonts.serif = pick(faces.filter(([k, f]) => f.kind === 'mincho' || f.kind === 'brush'))[0];
   if (mood === 'chaos' && rnd() < 0.2) fonts.display = 'dot';
   // colours: style palette most of the time, a fresh accent / ghost pair otherwise
   const colors = Object.assign({}, project.colors, { enabled: false, accentOn: false });

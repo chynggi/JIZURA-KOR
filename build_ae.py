@@ -27,6 +27,7 @@ if a.lang == 'en':
             if key in data['names'].get(group, {}): data['names'][group][key] = name
             if key in data['meta'].get(group, {}): data['meta'][group][key]['name'] = name
 body = '\n'.join(localize_ae(open(f'ae/{p}.jsx', encoding='utf-8').read()) if a.lang == 'en' and p == '90_ui' else open(f'ae/{p}.jsx', encoding='utf-8').read() for p in parts)
+body = open('src/06a_interlude_geometry.js', encoding='utf-8').read() + '\n' + body
 VERSION = open('VERSION', encoding='utf-8').read().strip()
 body = body.replace('@VERSION@', VERSION)
 head = '''/*  JIZURA 字面 — lyric motion panel for Adobe After Effects  (v@VERSION@)

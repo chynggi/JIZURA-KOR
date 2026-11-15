@@ -298,6 +298,7 @@ function jzMakePlan(o) {
         else {
             var n0 = jzChars(lines[i - 1].text).length, d0 = jzClamp(0.8 + n0 * 0.17, 1.3, 5.2) * (o.lineScale || 1);
             if (beat) d0 = Math.max(2, Math.round(d0 / beat)) * beat;
+            if (lines[i - 1].interlude && !lines[i - 1].legacyBlank) d0 = jzInterludeDuration(lines[i - 1], beat);
             var bk = lines[i].breakBefore;
             s = starts[i - 1] + d0 + (bk && bk.sec != null ? bk.sec : lines[i].gapBefore || bk ? (beat ? beat * 2 : 0.8) : 0);
         }
@@ -309,6 +310,7 @@ function jzMakePlan(o) {
         if (nbk && nbk.at != null) ends.push(Math.max(starts[i] + 0.35, Math.min(nbk.at, starts[i + 1])));
         else if (i < lines.length - 1) ends.push(Math.max(starts[i] + 0.35, starts[i + 1]));
         else if (outro && outro.at != null) ends.push(Math.max(starts[i] + 0.35, outro.at));
+        else if (lines[i].interlude && !lines[i].legacyBlank) ends.push(starts[i] + jzInterludeDuration(lines[i], beat));
         else { var nl = jzChars(lines[i].text).length, dl = jzClamp(0.8 + nl * 0.17, 1.5, 5.2) * (o.lineScale || 1); if (beat) dl = Math.max(2, Math.round(dl / beat)) * beat; var lmk = lines[i].marks; ends.push(Math.max(starts[i] + dl, lmk && lmk.length ? lmk[lmk.length - 1].t + 0.4 : 0)); } // word times: the last line lasts until its last sung word
     }
     var duration = o.duration || ((ends.length ? ends[ends.length - 1] : 3) + (outro ? (outro.sec != null ? outro.sec : 4) : 0.9));
@@ -325,9 +327,28 @@ function jzMakePlan(o) {
         var tr = new JzRng(jzHash(o.seed, 999));
         plan.cuts.push({ text: title, note: artist, lineText: title, line: -1, start: 0.1, end: starts[0] - 0.04, layout: 'title', enter: tr.pick(['blur', 'type', 'wipe', 'assemble']), exit: tr.pick(['blur', 'drift', 'wipe']), hold: 'still', inDur: 0.3, outDur: 0.3, params: { font: tr.pick(st.fonts.display) }, decor: [], scheme: 0, seed: jzHash(o.seed, 999, 1) % 1000000, treat: 'none', bg: 'none', cam: 'push' });
     }
-    var F = 1 / 24;
+    var F = 1 / 24, previousWords = '', lastIdleEnd = -Infinity, lastIdleScene = '';
+    function interludeScenes(start, end, seed) {
+        var next = jzInterludeSequence(end - start, o.style, seed, beat, previousWords, jzNoInterludePhoto,
+            (o.beatOffset || 0) - start, Math.abs(start - lastIdleEnd) < .001 ? lastIdleScene : '');
+        lastIdleEnd = end; lastIdleScene = next[next.length - 1].id;
+        return next;
+    }
     for (var li = 0; li < lines.length; li++) {
         var ln = lines[li], s0 = starts[li], e0 = ends[li], rng = new JzRng(jzHash(o.seed, li + 1));
+        if (ln.interlude) {
+            var idleSeed = jzHash(jzHash(o.seed, li + 1, 0), 405), idleDur = e0 - s0;
+            var quiet = { variant: fx.interCount === 'on' ? 'counter' : 'quiet', caption: ln.note, sceneBeat: beat, sceneBeatOffset: (o.beatOffset || 0) - s0,
+                glyphs: jzChars(previousWords.replace(/\s/g, '')).slice(-12),
+                scenes: interludeScenes(s0, e0, idleSeed) };
+            var idleCredit = fx.interCredit && title && !creditDone && idleDur >= 2;
+            if (idleCredit) { quiet.variant = 'credit'; creditDone = true; }
+            plan.lines.push({ index: li, text: '', interlude: true, start: s0, end: e0, visEnd: e0 });
+            plan.cuts.push({ text: idleCredit ? title : '', note: idleCredit ? artist : null, lineText: '', line: li, part: 0, start: s0, end: e0, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: .25, outDur: .25, params: quiet,
+                decor: jzPickDecor(rng, st, en, { decor: fx.decor }, 'interlude', []), scheme: schemeIdx, seed: idleSeed, treat: 'none', bg: 'none', cam: 'push' });
+            continue;
+        }
+        previousWords = ln.text || previousWords;
         var nch = jzCount(ln.text), visEnd = Math.min(e0, s0 + Math.max(3.6, nch * 0.5 + 1.2));
         // before a marked [간주] the line only keeps its natural length, the rest of the gap becomes the interlude
         // (with a timestamp on the marker the line already ends there)
@@ -423,15 +444,20 @@ function jzMakePlan(o) {
         if (li < lines.length - 1 && starts[li + 1] - iStart > (marked ? 0.3 : 1.3)) {
             var r2 = new JzRng(jzHash(o.seed, li, 404));
             if (marked) ev(iStart, r2.pick(['chroma', 'shake', 'zoom']), 1, 0.25); // one random screen effect, no lyric text
-            // long interludes (> 6 s) become 2–3 cuts (same rule as the browser, without beat snapping)
+            // Long interludes use the same bar boundaries as the browser when BPM is known.
             var iLen = starts[li + 1] - iStart, nSeg = iLen > 6 ? Math.min(3, Math.ceil(iLen / 4)) : 1;
+            var bounds = jzInterludeBounds(iLen, nSeg, beat, (o.beatOffset || 0) - iStart);
             for (var sk = 0; sk < nSeg; sk++) {
-                var rk = sk ? new JzRng(jzHash(o.seed, li, 404, sk)) : r2, b0 = iStart + iLen * sk / nSeg, b1 = sk === nSeg - 1 ? starts[li + 1] : iStart + iLen * (sk + 1) / nSeg;
+                var rk = sk ? new JzRng(jzHash(o.seed, li, 404, sk)) : r2, b0 = iStart + bounds[sk], b1 = iStart + bounds[sk + 1];
                 var variant = fx.interCount === 'on' ? 'counter' : fx.interCount === 'off' ? 'rings' : rk.pick(['counter', 'rings']);
                 // 첫 간주에 크레딧: the first interlude long enough shows the song title and artist
-                var credit = sk === 0 && fx.interCredit && title && !creditDone && b1 - b0 >= 2;
+                var credit = fx.interCredit && title && !creditDone && b1 - b0 >= 2;
                 if (credit) { variant = 'credit'; creditDone = true; }
-                var ip = { variant: variant }; if (nSeg > 1) ip.end = starts[li + 1];
+                var lineSeed = jzHash(o.seed, li + 1, 0), sceneSeed = sk ? jzHash(lineSeed, 405, sk) : jzHash(lineSeed, 405);
+                var ip = { variant: variant, caption: nb && nb.text, sceneBeat: beat, sceneBeatOffset: (o.beatOffset || 0) - b0,
+                    glyphs: jzChars(previousWords.replace(/\s/g, '')).slice(-12),
+                    scenes: interludeScenes(b0, b1, sceneSeed) };
+                if (nSeg > 1) ip.end = starts[li + 1];
                 plan.cuts.push({ index: plan.cuts.length, text: credit ? title : (nb && nb.text) || title || '', note: credit ? artist : null, lineText: '', line: li, start: b0, end: b1, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.3, outDur: 0.3, params: ip, decor: jzPickDecor(rk, st, en, { decor: 1 }, 'interlude', []), scheme: sk && nS > 1 ? (schemeIdx + sk) % nS : schemeIdx, seed: (sk ? jzHash(o.seed, li, 405, sk) : jzHash(o.seed, li, 405)) % 1000000, treat: 'none', bg: 'none', cam: 'push' });
             }
         }
@@ -451,3 +477,5 @@ function jzMakePlan(o) {
     plan.events.sort(function (a, b) { return a.t - b.t; });
     return plan;
 }
+function jzNoInterludePhoto() { return false; }
+function jzInterludeDuration(line, beat) { return Math.max(.35, line.secs != null ? line.secs : beat ? beat * 2 : .8); }

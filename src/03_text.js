@@ -315,7 +315,8 @@ J.weightNow = (env) => {
   return 1e-3 + (1 - Math.pow(1 - k, 3)) * (1 - 1e-3);
 };
 J.varFontCSS = (key, px, e) => {
-  const f = J.FONTS[key] || {}, serif = f.kind === 'mincho';
+  if (J.NO_SERIF && J.NO_SERIF_FONT && J.isSerifFont(key)) { const g = J.faceOf(key); return `${g.weight} ${px.toFixed(2)}px ${g.family},${g.fb || 'sans-serif'}`; }   // 대체 글꼴은 굵기 변화 없이 그대로
+  const f = J.FONTS[key] || {}, serif = f.kind === 'mincho' && !J.NO_SERIF;
   const w = Math.round(serif ? 200 + e * 700 : 100 + e * 800), kr = J.lang === 'ko';
   return `${w} ${px.toFixed(2)}px ${serif ? (kr ? '"Noto Serif KR"' : '"Noto Serif JP"') : (kr ? '"Noto Sans KR"' : '"Noto Sans JP"')},${f.fb || 'sans-serif'}`;
 };
