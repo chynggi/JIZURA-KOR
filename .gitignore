@@ -1,4 +1,5 @@
 .commandcode
+.claude
 dev/
 __pycache__/
 build/
