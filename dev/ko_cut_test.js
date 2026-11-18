@@ -14,11 +14,16 @@ assert.equal(J.parseLyrics('[00:01.00]혹<00:01.10>시나 <00:01.30> 너도<00:0
 
 // --- break costs
 const glued = [['한', '번쯤은'], ['이런', '경험한'], ['짜릿한', '걸까'], ['딸기', '중에'], ['경험한', '적'], ['적', '있을까?'],
-  ['만나게', '된'], ['맛보고', '싶어'], ['녹을', '것'], ['것', '같아'], ['잡아먹어', '버릴'], ['헤매', '왔던'], ['딸기', '같은'], ['가지', '마']];
+  ['만나게', '된'], ['맛보고', '싶어'], ['녹을', '것'], ['것', '같아'], ['잡아먹어', '버릴'], ['헤매', '왔던'], ['딸기', '같은'], ['가지', '마'],
+  ['너', '때문에'], ['우리', '사이'], ['내', '맘속까지'], ['오직', '너만'], ['할', '수'], ['수', '없어'], ['꿈', '같아'], ['앉아', '있어'], ['갈', '겁니다']];
 for (const [a, b] of glued) assert.ok(J.koBreakCost(a, b) >= 3, `${a}|${b} stays together`);
-const free = [['혹시나', '너도'], ['속에서', '오직'], ['네가', '와'], ['너를', '보고'], ['그리고', '나는'], ['바쁘고', '바쁘고']];
+const free = [['혹시나', '너도'], ['속에서', '오직'], ['네가', '와'], ['너를', '보고'], ['그리고', '나는'], ['바쁘고', '바쁘고'],
+  ['우리', '같이'], ['그리고', '있잖아'], ['속에서', '와'], ['그대', '가']];
 for (const [a, b] of free) assert.ok(J.koBreakCost(a, b) < 3, `${a}|${b} may break`);
 assert.ok(J.koBreakCost('그래,', '우린') < 0, 'a comma is a good place to cut');
+// AE reads the same dictionary from ae/data.json (re-run node tools/export_ae_data.js after editing src/02c_ko_dict.js)
+const aeData = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'ae', 'data.json'), 'utf8'));
+assert.equal(JSON.stringify(aeData.koDict), JSON.stringify(J.KO_DICT), 'ae/data.json koDict is up to date');
 
 // --- whole plan: no cut of a Korean line starts at a glued boundary, at any density / seed
 const line = '혹시나 너도 한 번쯤은 이런 경험한 적 있을까?';

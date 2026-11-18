@@ -60,10 +60,23 @@ function jzPartition(chunks, k) {
     return groups;
 }
 // 한국어 컷 나누기 (브라우저 J.koBreakCost / partitionKo와 같은 규칙): 3 = 붙여 둘 곳, 음수 = 끊기 좋은 곳
-var JZ_KO_GLUE = 3;
-var JZ_KO_DET = ' 한 두 세 네 그 이 저 새 첫 온 각 몇 헌 옛 뭔 웬 딴 내 이런 저런 그런 요런 고런 조런 어떤 무슨 어느 모든 여러 온갖 갖은 아무 ';
-var JZ_KO_BOUND = /^(것|거|건|걸|게|수|적|줄|때|데|듯|만큼|뿐|번|채|리|바|지|중|대로|척|체|양|뻔|터|탓|덕분|쯤|무렵|동안|순간|속)(이|가|은|는|을|를|에|에서|에게|에도|에는|도|만|야|이야|요|예요|이에요|이다|다|지|지만|니까|까|일까|인지|지도|로|으로|처럼|라|이라|라도|이라도|쯤|쯤은|이고|이며|인데|이나|나|이란|란)?$/;
-var JZ_KO_AFTER_NOUN = /^(중|때|쯤|만큼|뿐|대로|무렵|동안|순간|속|덕분|탓)/;
+// 단어 목록은 JZ_DATA.koDict (src/02c_ko_dict.js를 tools/export_ae_data.js가 내보낸 것)
+var JZ_KO_GLUE = 3, JZ_KO_RE = null;
+function jzKoAlt(l) { var o = []; for (var i = 0; i < l.length; i++) o.push(String(l[i]).replace(/\*$/, '\\S*')); return o.join('|'); }
+function jzKoWhole(l) { return new RegExp('^(?:' + jzKoAlt(l) + ')$'); }
+function jzKoEnds(l) { return new RegExp('(?:' + jzKoAlt(l) + ')$'); }
+function jzKoRules() {
+    if (JZ_KO_RE) return JZ_KO_RE;
+    var D = JZ_DATA.koDict, R = {}, i, k;
+    R.det = jzKoWhole(D.det);
+    R.bound = new RegExp('^(?:' + jzKoAlt(D.bound) + ')(?:' + jzKoAlt(D.boundTail) + ')?$');
+    R.afterNoun = new RegExp('^(?:' + jzKoAlt(D.boundAfterNoun) + ')(?:' + jzKoAlt(D.boundTail) + ')?$');
+    R.boundVerb = []; for (i = 0; i < D.boundVerb.length; i++) R.boundVerb.push([jzKoWhole(D.boundVerb[i].a), jzKoWhole(D.boundVerb[i].b)]);
+    R.auxAfter = {}; for (k in D.auxAfter) if (D.auxAfter.hasOwnProperty(k)) R.auxAfter[k] = jzKoWhole(D.auxAfter[k]);
+    R.auxA = jzKoWhole(D.auxA); R.notVerb = jzKoWhole(D.notVerb); R.notVerbEnd = jzKoEnds(D.notVerbEnd); R.like = jzKoWhole(D.like);
+    R.connective = jzKoEnds(D.connective); R.fin = jzKoEnds(D['final']);
+    return (JZ_KO_RE = R);
+}
 function jzHangulParts(c) { var k = String(c || '').charCodeAt(0) - 0xac00; return k >= 0 && k < 11172 ? { jung: Math.floor(k / 28) % 21, jong: k % 28 } : null; }
 function jzIsKoText(t) {
     var s = String(t || '').replace(/\s/g, ''), n = jzChars(s).length;
@@ -73,20 +86,18 @@ function jzKoBreakCost(a, b) {
     var A = jzTrim(a), B = jzTrim(b);
     if (/[,，.。!?！？…~、]$/.test(A)) return -0.4;
     var a0 = A.replace(/[-‐–—'"’”)\]」』）]+$/, ''), b0 = B.replace(/[-‐–—.,!?…~'"’”)\]」』）]+$/, '');
-    var ca = jzChars(a0), la = ca.length ? ca[ca.length - 1] : '', pa = jzHangulParts(la);
+    var ca = jzChars(a0), la = ca.length ? ca[ca.length - 1] : '', pa = jzHangulParts(la), R = jzKoRules(), i;
     if (!pa || !jzHangulParts(b0.charAt(0))) return 0;
-    if (JZ_KO_DET.indexOf(' ' + a0 + ' ') >= 0) return JZ_KO_GLUE;
-    if (JZ_KO_BOUND.test(b0) && (pa.jong === 4 || pa.jong === 8 || JZ_KO_AFTER_NOUN.test(b0))) return JZ_KO_GLUE;
-    if (/^(것|거|듯|뻔|척|체|양|법|모양)$/.test(a0) && /^(같|하|했|해|한|할|싶)/.test(b0)) return JZ_KO_GLUE;
-    if (/^(적|수|줄|리|법|일)$/.test(a0) && /^(있|없|않|모르|몰)/.test(b0)) return JZ_KO_GLUE;
-    if (la === '게' && /^(되|된|될|됐|돼|됩|하|해|했|할|한|만들)/.test(b0)) return JZ_KO_GLUE;
-    if (la === '고' && /^(싶|있|계|말)/.test(b0)) return JZ_KO_GLUE;
-    if (la === '지' && /^(않|못|말|마$|마요|마라|마세)/.test(b0)) return JZ_KO_GLUE;
+    if (R.det.test(a0)) return JZ_KO_GLUE;
+    if ((pa.jong === 4 || pa.jong === 8) && R.bound.test(b0) || R.afterNoun.test(b0)) return JZ_KO_GLUE;
+    for (i = 0; i < R.boundVerb.length; i++) if (R.boundVerb[i][0].test(a0) && R.boundVerb[i][1].test(b0)) return JZ_KO_GLUE;
+    var verb = !R.notVerb.test(a0);
+    if (verb && R.auxAfter.hasOwnProperty(la) && R.auxAfter[la].test(b0)) return JZ_KO_GLUE;
     var jg = pa.jung;
-    if (ca.length >= 2 && !pa.jong && (jg === 0 || jg === 1 || jg === 4 || jg === 6 || jg === 9 || jg === 10 || jg === 14) && la !== '가' && la !== '와'
-        && /^(버리\S*|버린|버릴|버렸\S*|버려\S*|버렷|와|와서|와도|왔\S*|온|올|오고|오는|오던|오면|가|가서|가도|갔\S*|간|갈|가고|가는|가던|가면|봐|봐서|봐도|봤\S*|본|볼|보고|보는|보던|보면|보자|줘|줘서|줬\S*|준|줄|주고|주는|주던|주면|주세요|둬|뒀\S*|둔|둘|두고|놓\S*|놔\S*|있\S*|댔\S*|대)$/.test(b0)) return JZ_KO_GLUE;
-    if (/^같(은|이|아|아요|았\S*|다|던|애|게)?$/.test(b0)) return JZ_KO_GLUE;
-    if (/(고|서|며|면|지만|는데|은데|니까|도록|려고|다가|거든)$/.test(a0)) return -0.15;
+    if (ca.length >= 2 && !pa.jong && (jg === 0 || jg === 1 || jg === 4 || jg === 6 || jg === 9 || jg === 10 || jg === 14) && verb && !R.notVerbEnd.test(a0) && R.auxA.test(b0)) return JZ_KO_GLUE;
+    if (R.like.test(b0)) return JZ_KO_GLUE;
+    if (R.connective.test(a0)) return -0.15;
+    if (ca.length >= 2 && R.fin.test(a0)) return -0.1;
     return 0;
 }
 function jzPartitionKo(chunks, k) {

@@ -55,6 +55,7 @@ const data = {
   // v1 keys (kept for older panel code)
   layoutOrder: orders.layout, enterOrder: orders.enter, holdOrder: orders.hold, exitOrder: orders.exit, decorOrder: orders.decor,
   moods: JJ.MOODS, moodOrder: Object.keys(JJ.MOODS), ghostPairs: JJ.GHOST_PAIRS,
+  koDict: JJ.KO_DICT,   // 한국어 컷 나누기 사전 (src/02c_ko_dict.js)
   fonts: Object.fromEntries(Object.entries(JJ.FONTS).map(([k, f]) => [k, { label: f.label, family: f.family.replace(/"/g, ''), weight: f.weight, kind: f.kind, extra: !!f.extra }])),
 };
 fs.writeFileSync(path.join(ROOT, 'ae', 'data.json'), JSON.stringify(data));

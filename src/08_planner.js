@@ -1183,30 +1183,39 @@ function partition(chunks, k) {
   return groups;
 }
 /* 한국어 컷 나누기: 어절 a와 b 사이에서 끊는 비용. KO_GLUE = 붙여 둘 곳(관형사+체언, 관형형+의존명사, 본용언+보조용언),
-   음수 = 끊기 좋은 곳(쉼표·마침표, 연결어미 뒤) */
+   음수 = 끊기 좋은 곳(쉼표·마침표, 연결어미·문장 끝 뒤). 단어 목록은 02c_ko_dict.js의 J.KO_DICT (AE와 공유) */
 const KO_GLUE = 3;
-const KO_DET = new Set('한 두 세 네 그 이 저 새 첫 온 각 몇 헌 옛 뭔 웬 딴 내 이런 저런 그런 요런 고런 조런 어떤 무슨 어느 모든 여러 온갖 갖은 아무'.split(' '));
-const KO_BOUND = /^(것|거|건|걸|게|수|적|줄|때|데|듯|만큼|뿐|번|채|리|바|지|중|대로|척|체|양|뻔|터|탓|덕분|쯤|무렵|동안|순간|속)(이|가|은|는|을|를|에|에서|에게|에도|에는|도|만|야|이야|요|예요|이에요|이다|다|지|지만|니까|까|일까|인지|지도|로|으로|처럼|라|이라|라도|이라도|쯤|쯤은|이고|이며|인데|이나|나|이란|란)?$/;
-const KO_AFTER_NOUN = /^(중|때|쯤|만큼|뿐|대로|무렵|동안|순간|속|덕분|탓)/;
+let koRe = null;
+const koRules = () => {
+  if (koRe) return koRe;
+  const D = J.KO_DICT, alt = l => l.map(w => w.replace(/\*$/, '\\S*')).join('|');
+  const whole = l => new RegExp('^(?:' + alt(l) + ')$'), ends = l => new RegExp('(?:' + alt(l) + ')$');
+  return (koRe = {
+    det: whole(D.det), bound: new RegExp('^(?:' + alt(D.bound) + ')(?:' + alt(D.boundTail) + ')?$'),
+    afterNoun: new RegExp('^(?:' + alt(D.boundAfterNoun) + ')(?:' + alt(D.boundTail) + ')?$'),
+    boundVerb: D.boundVerb.map(r => [whole(r.a), whole(r.b)]),
+    auxAfter: Object.fromEntries(Object.entries(D.auxAfter).map(([k, l]) => [k, whole(l)])),
+    auxA: whole(D.auxA), notVerb: whole(D.notVerb), notVerbEnd: ends(D.notVerbEnd), like: whole(D.like),
+    connective: ends(D.connective), final: ends(D.final),
+  });
+};
 const hangulParts = c => { const k = (c || '').charCodeAt(0) - 0xac00; return k >= 0 && k < 11172 ? { jung: ((k / 28) | 0) % 21, jong: k % 28 } : null; };
 J.koBreakCost = (a, b) => {
   const A = String(a).trim(), B = String(b).trim();
   if (/[,，.。!?！？…~、]$/.test(A)) return -0.4;
   const a0 = A.replace(/[-‐–—'"’”)\]」』）]+$/, ''), b0 = B.replace(/[-‐–—.,!?…~'"’”)\]」』）]+$/, '');
-  const la = [...a0].pop() || '', pa = hangulParts(la);
+  const la = [...a0].pop() || '', pa = hangulParts(la), n = [...a0].length, R = koRules();
   if (!pa || !hangulParts([...b0][0])) return 0;
-  if (KO_DET.has(a0)) return KO_GLUE;                                                                  // 한 번쯤은 · 이런 경험
-  if (KO_BOUND.test(b0) && (pa.jong === 4 || pa.jong === 8 || KO_AFTER_NOUN.test(b0))) return KO_GLUE;  // 짜릿한 걸까 · 딸기 중에
-  if (/^(것|거|듯|뻔|척|체|양|법|모양)$/.test(a0) && /^(같|하|했|해|한|할|싶)/.test(b0)) return KO_GLUE;  // 녹을 것 같아
-  if (/^(적|수|줄|리|법|일)$/.test(a0) && /^(있|없|않|모르|몰)/.test(b0)) return KO_GLUE;               // 경험한 적 있을까
-  if (la === '게' && /^(되|된|될|됐|돼|됩|하|해|했|할|한|만들)/.test(b0)) return KO_GLUE;               // 만나게 된
-  if (la === '고' && /^(싶|있|계|말)/.test(b0)) return KO_GLUE;                                       // 맛보고 싶어
-  if (la === '지' && /^(않|못|말|마$|마요|마라|마세)/.test(b0)) return KO_GLUE;                        // 가지 마
-  // -아/-어 + 보조용언 (잡아먹어 버릴 · 헤매 왔던) — 조사 '가'·'와'로 끝나는 말(네가 와)은 빼고
-  if ([...a0].length >= 2 && !pa.jong && [0, 1, 4, 6, 9, 10, 14].includes(pa.jung) && la !== '가' && la !== '와'
-    && /^(버리\S*|버린|버릴|버렸\S*|버려\S*|버렷|와|와서|와도|왔\S*|온|올|오고|오는|오던|오면|가|가서|가도|갔\S*|간|갈|가고|가는|가던|가면|봐|봐서|봐도|봤\S*|본|볼|보고|보는|보던|보면|보자|줘|줘서|줬\S*|준|줄|주고|주는|주던|주면|주세요|둬|뒀\S*|둔|둘|두고|놓\S*|놔\S*|있\S*|댔\S*|대)$/.test(b0)) return KO_GLUE;
-  if (/^같(은|이|아|아요|았\S*|다|던|애|게)?$/.test(b0)) return KO_GLUE;                              // 딸기 같은 건
-  if (/(고|서|며|면|지만|는데|은데|니까|도록|려고|다가|거든)$/.test(a0)) return -0.15;
+  if (R.det.test(a0)) return KO_GLUE;                                                                   // 한 번쯤은 · 이런 경험
+  if ((pa.jong === 4 || pa.jong === 8) && R.bound.test(b0) || R.afterNoun.test(b0)) return KO_GLUE;     // 짜릿한 걸까 · 딸기 중에
+  if (R.boundVerb.some(([ra, rb]) => ra.test(a0) && rb.test(b0))) return KO_GLUE;                      // 녹을 것 같아 · 경험한 적 있을까
+  const verb = !R.notVerb.test(a0);
+  if (verb && R.auxAfter[la] && R.auxAfter[la].test(b0)) return KO_GLUE;                               // 만나게 된 · 맛보고 싶어 · 가지 마
+  // -아/-어 + 보조용언 (잡아먹어 버릴 · 헤매 왔던) — 조사로 끝나는 말(네가 와 · 속에서 와)은 빼고
+  if (n >= 2 && !pa.jong && [0, 1, 4, 6, 9, 10, 14].includes(pa.jung) && verb && !R.notVerbEnd.test(a0) && R.auxA.test(b0)) return KO_GLUE;
+  if (R.like.test(b0)) return KO_GLUE;                                                                  // 딸기 같은 건
+  if (R.connective.test(a0)) return -0.15;
+  if (n >= 2 && R.final.test(a0)) return -0.1;
   return 0;
 };
 /* 한국어 줄: 글자 수를 고르게 하되 붙여 둘 어절 사이는 피하고 쉼표·연결어미 뒤를 고르는 분할 (k개, 동적 계획법) */
