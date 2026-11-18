@@ -59,6 +59,54 @@ function jzPartition(chunks, k) {
     if (cur.length) groups.push(cur);
     return groups;
 }
+// 한국어 컷 나누기 (브라우저 J.koBreakCost / partitionKo와 같은 규칙): 3 = 붙여 둘 곳, 음수 = 끊기 좋은 곳
+var JZ_KO_GLUE = 3;
+var JZ_KO_DET = ' 한 두 세 네 그 이 저 새 첫 온 각 몇 헌 옛 뭔 웬 딴 내 이런 저런 그런 요런 고런 조런 어떤 무슨 어느 모든 여러 온갖 갖은 아무 ';
+var JZ_KO_BOUND = /^(것|거|건|걸|게|수|적|줄|때|데|듯|만큼|뿐|번|채|리|바|지|중|대로|척|체|양|뻔|터|탓|덕분|쯤|무렵|동안|순간|속)(이|가|은|는|을|를|에|에서|에게|에도|에는|도|만|야|이야|요|예요|이에요|이다|다|지|지만|니까|까|일까|인지|지도|로|으로|처럼|라|이라|라도|이라도|쯤|쯤은|이고|이며|인데|이나|나|이란|란)?$/;
+var JZ_KO_AFTER_NOUN = /^(중|때|쯤|만큼|뿐|대로|무렵|동안|순간|속|덕분|탓)/;
+function jzHangulParts(c) { var k = String(c || '').charCodeAt(0) - 0xac00; return k >= 0 && k < 11172 ? { jung: Math.floor(k / 28) % 21, jong: k % 28 } : null; }
+function jzIsKoText(t) {
+    var s = String(t || '').replace(/\s/g, ''), n = jzChars(s).length;
+    return /[가-힣]/.test(s) && (s.match(/[A-Za-zÀ-ɏḀ-ỿ]/g) || []).length / Math.max(1, n) < 0.6;
+}
+function jzKoBreakCost(a, b) {
+    var A = jzTrim(a), B = jzTrim(b);
+    if (/[,，.。!?！？…~、]$/.test(A)) return -0.4;
+    var a0 = A.replace(/[-‐–—'"’”)\]」』）]+$/, ''), b0 = B.replace(/[-‐–—.,!?…~'"’”)\]」』）]+$/, '');
+    var ca = jzChars(a0), la = ca.length ? ca[ca.length - 1] : '', pa = jzHangulParts(la);
+    if (!pa || !jzHangulParts(b0.charAt(0))) return 0;
+    if (JZ_KO_DET.indexOf(' ' + a0 + ' ') >= 0) return JZ_KO_GLUE;
+    if (JZ_KO_BOUND.test(b0) && (pa.jong === 4 || pa.jong === 8 || JZ_KO_AFTER_NOUN.test(b0))) return JZ_KO_GLUE;
+    if (/^(것|거|듯|뻔|척|체|양|법|모양)$/.test(a0) && /^(같|하|했|해|한|할|싶)/.test(b0)) return JZ_KO_GLUE;
+    if (/^(적|수|줄|리|법|일)$/.test(a0) && /^(있|없|않|모르|몰)/.test(b0)) return JZ_KO_GLUE;
+    if (la === '게' && /^(되|된|될|됐|돼|됩|하|해|했|할|한|만들)/.test(b0)) return JZ_KO_GLUE;
+    if (la === '고' && /^(싶|있|계|말)/.test(b0)) return JZ_KO_GLUE;
+    if (la === '지' && /^(않|못|말|마$|마요|마라|마세)/.test(b0)) return JZ_KO_GLUE;
+    var jg = pa.jung;
+    if (ca.length >= 2 && !pa.jong && (jg === 0 || jg === 1 || jg === 4 || jg === 6 || jg === 9 || jg === 10 || jg === 14) && la !== '가' && la !== '와'
+        && /^(버리\S*|버린|버릴|버렸\S*|버려\S*|버렷|와|와서|와도|왔\S*|온|올|오고|오는|오던|오면|가|가서|가도|갔\S*|간|갈|가고|가는|가던|가면|봐|봐서|봐도|봤\S*|본|볼|보고|보는|보던|보면|보자|줘|줘서|줬\S*|준|줄|주고|주는|주던|주면|주세요|둬|뒀\S*|둔|둘|두고|놓\S*|놔\S*|있\S*|댔\S*|대)$/.test(b0)) return JZ_KO_GLUE;
+    if (/^같(은|이|아|아요|았\S*|다|던|애|게)?$/.test(b0)) return JZ_KO_GLUE;
+    if (/(고|서|며|면|지만|는데|은데|니까|도록|려고|다가|거든)$/.test(a0)) return -0.15;
+    return 0;
+}
+function jzPartitionKo(chunks, k) {
+    var n = chunks.length, lens = [], tot = 0, brk = [], best = [], from = [], g, i, j;
+    for (i = 0; i < n; i++) { lens.push(jzChars(chunks[i]).length + 1); tot += lens[i]; brk.push(i < n - 1 ? jzKoBreakCost(chunks[i], chunks[i + 1]) : 0); }
+    var target = tot / k;
+    for (g = 0; g <= k; g++) { best.push([]); from.push([]); for (i = 0; i <= n; i++) { best[g].push(Infinity); from[g].push(0); } }
+    best[0][0] = 0;
+    for (g = 1; g <= k; g++) for (i = g; i <= n; i++) {
+        var len = 0;
+        for (j = i - 1; j >= g - 1; j--) {
+            len += lens[j];
+            var dv = (len - target) / target, c = best[g - 1][j] + dv * dv + (j > 0 ? brk[j - 1] : 0);
+            if (c < best[g][i]) { best[g][i] = c; from[g][i] = j; }
+        }
+    }
+    var groups = [];
+    for (g = k, i = n; g > 0; g--) { j = from[g][i]; groups.unshift(chunks.slice(j, i)); i = j; }
+    return groups;
+}
 
 // ---------------------------------------------------------------- picks (ES3 port of the browser planner; weights come from JZ_DATA.meta)
 var JZ_PORTRAIT_W = { vcols: 1.9, condensed: 1.3, huge: 1.3, center: 1.2, stack: 1.1, mixed: 0.7, marquee: 0.6, wave: 0.6, diag: 0.8, type: 0.8, gloss: 0.5 };
@@ -170,7 +218,8 @@ function jzSplitHalf(t, lang) {
     if (words.length >= 2) {
         var total = 0, acc = 0, best = 1, bd = 1e9, sep = /[A-Za-z]/.test(t) ? ' ' : '';
         for (k = 0; k < words.length; k++) total += jzChars(String(words[k]).replace(/\s+/g, '')).length;
-        for (k = 1; k < words.length; k++) { acc += jzChars(String(words[k - 1]).replace(/\s+/g, '')).length; var d = Math.abs(acc - total / 2); if (d < bd) { bd = d; best = k; } }
+        var ko = jzIsKoText(t);   // 한국어는 붙여 둘 어절 사이(한 번 · 만나게 된)를 피한다
+        for (k = 1; k < words.length; k++) { acc += jzChars(String(words[k - 1]).replace(/\s+/g, '')).length; var d = Math.abs(acc - total / 2) + (ko ? jzKoBreakCost(words[k - 1], words[k]) * total / 4 : 0); if (d < bd) { bd = d; best = k; } }
         return [jzTrim(words.slice(0, best).join(sep)), jzTrim(words.slice(best).join(sep))];
     }
     if (n <= 3 || /^[A-Za-z0-9'’-]+$/.test(t)) return [t, t];
@@ -366,9 +415,12 @@ function jzMakePlan(o) {
         var chunks = ln.manual || (plan.lang === 'en' ? jzPhraseChunks(jzChunk(ln.text)) : jzChunk(ln.text)), L = jzLerp(1.3, 0.5, fx.density), nC = Math.round(D / L);
         var maxC = chunks.length + (chunks.length >= 2 && D > 2 ? 1 : 0); nC = jzClamp(nC, 1, Math.max(1, maxC));
         if (zones) nC = Math.max(1, Math.min(nC, Math.floor(chunks.length / 2)));   // 中央を空ける: ≥ 2 words per cut (each cut is split in two)
-        var nG = Math.min(nC, chunks.length), groups = [];
+        // 한국어: 붙여 둘 어절 사이에서는 끊지 않으니 컷 수도 끊을 수 있는 곳만큼만
+        var koLine = !ln.manual && jzIsKoText(ln.text), koMax = 1;
+        if (koLine) for (i = 1; i < chunks.length; i++) if (jzKoBreakCost(chunks[i - 1], chunks[i]) < JZ_KO_GLUE) koMax++;
+        var nG = Math.min(nC, chunks.length, koLine ? koMax : Infinity), groups = [];
         if (nG <= 1) groups = [ln.text];
-        else { var pg = jzPartition(chunks, nG); for (i = 0; i < pg.length; i++) groups.push(pg[i].join(/[A-Za-z]/.test(pg[i].join('')) ? ' ' : '')); }
+        else { var pg = koLine ? jzPartitionKo(chunks, nG) : jzPartition(chunks, nG); for (i = 0; i < pg.length; i++) groups.push(pg[i].join(/[A-Za-z]/.test(pg[i].join('')) ? ' ' : '')); }
         var recap = !mk && nC > groups.length && groups.length >= 2, units = [], tot = 0;
         for (i = 0; i < groups.length; i++) { units.push({ text: groups[i], w: jzChars(groups[i]).length + 1.6 }); tot += units[i].w; }
         if (recap) { var rw = tot / units.length * 1.25; units.push({ text: ln.text, w: rw, recap: true }); tot += rw; }

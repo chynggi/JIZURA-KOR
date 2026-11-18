@@ -126,7 +126,14 @@ function jzParseLyrics(raw) {
         // extended LRC word times: <mm:ss.xx> before a word marks when it is sung (kept as \u0001 until the text is final)
         var WT = /<(\d+):(\d+(?:[.:]\d+)?)>[ \t]*/g, wt = [];
         if (note) note = jzTrim(note.replace(WT, '')) || null;
-        s = s.replace(WT, function (all, a, b) { wt.push(parseInt(a, 10) * 60 + parseFloat(b.replace(':', '.'))); return '\u0001'; });
+        s = s.replace(/<(\d+):(\d+(?:[.:]\d+)?)>/g, function (all, a, b) { wt.push(parseInt(a, 10) * 60 + parseFloat(b.replace(':', '.'))); return '\u0001'; });
+        // spaces around the marks: one word break stays where the first space was — also when a syllable's end time
+        // sits before it (혹<t>시<t>나<t> <t>너<t>도) — and none at the line's start or end (same as the browser)
+        if (wt.length) s = s.replace(/[ \t\u0001]+/g, function (run, off, all) {
+            if (!/[ \t]/.test(run)) return run;
+            var bare = run.replace(/[ \t]/g, ''), i = run.search(/[ \t]/);
+            return !off || off + run.length === all.length ? bare : bare.substr(0, i) + ' ' + bare.substr(i);
+        });
         var wtail = '';
         if (wt.length) { var wtm = s.match(/\s*\u0001+$/); if (wtm) { wtail = wtm[0]; s = s.substr(0, s.length - wtail.length); } }
         var impact = false;

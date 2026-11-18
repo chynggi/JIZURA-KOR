@@ -303,7 +303,14 @@ function jzParseLyrics(raw) {
         // extended LRC word times: <mm:ss.xx> before a word marks when it is sung (kept as \u0001 until the text is final)
         var WT = /<(\d+):(\d+(?:[.:]\d+)?)>[ \t]*/g, wt = [];
         if (note) note = jzTrim(note.replace(WT, '')) || null;
-        s = s.replace(WT, function (all, a, b) { wt.push(parseInt(a, 10) * 60 + parseFloat(b.replace(':', '.'))); return '\u0001'; });
+        s = s.replace(/<(\d+):(\d+(?:[.:]\d+)?)>/g, function (all, a, b) { wt.push(parseInt(a, 10) * 60 + parseFloat(b.replace(':', '.'))); return '\u0001'; });
+        // spaces around the marks: one word break stays where the first space was \u2014 also when a syllable's end time
+        // sits before it (\uD639<t>\uC2DC<t>\uB098<t> <t>\uB108<t>\uB3C4) \u2014 and none at the line's start or end (same as the browser)
+        if (wt.length) s = s.replace(/[ \t\u0001]+/g, function (run, off, all) {
+            if (!/[ \t]/.test(run)) return run;
+            var bare = run.replace(/[ \t]/g, ''), i = run.search(/[ \t]/);
+            return !off || off + run.length === all.length ? bare : bare.substr(0, i) + ' ' + bare.substr(i);
+        });
         var wtail = '';
         if (wt.length) { var wtm = s.match(/\s*\u0001+$/); if (wtm) { wtail = wtm[0]; s = s.substr(0, s.length - wtail.length); } }
         var impact = false;
@@ -949,6 +956,54 @@ function jzPartition(chunks, k) {
     if (cur.length) groups.push(cur);
     return groups;
 }
+// \uD55C\uAD6D\uC5B4 \uCEF7 \uB098\uB204\uAE30 (\uBE0C\uB77C\uC6B0\uC800 J.koBreakCost / partitionKo\uC640 \uAC19\uC740 \uADDC\uCE59): 3 = \uBD99\uC5EC \uB458 \uACF3, \uC74C\uC218 = \uB04A\uAE30 \uC88B\uC740 \uACF3
+var JZ_KO_GLUE = 3;
+var JZ_KO_DET = ' \uD55C \uB450 \uC138 \uB124 \uADF8 \uC774 \uC800 \uC0C8 \uCCAB \uC628 \uAC01 \uBA87 \uD5CC \uC61B \uBB54 \uC6EC \uB534 \uB0B4 \uC774\uB7F0 \uC800\uB7F0 \uADF8\uB7F0 \uC694\uB7F0 \uACE0\uB7F0 \uC870\uB7F0 \uC5B4\uB5A4 \uBB34\uC2A8 \uC5B4\uB290 \uBAA8\uB4E0 \uC5EC\uB7EC \uC628\uAC16 \uAC16\uC740 \uC544\uBB34 ';
+var JZ_KO_BOUND = /^(\uAC83|\uAC70|\uAC74|\uAC78|\uAC8C|\uC218|\uC801|\uC904|\uB54C|\uB370|\uB4EF|\uB9CC\uD07C|\uBFD0|\uBC88|\uCC44|\uB9AC|\uBC14|\uC9C0|\uC911|\uB300\uB85C|\uCC99|\uCCB4|\uC591|\uBED4|\uD130|\uD0D3|\uB355\uBD84|\uCBE4|\uBB34\uB835|\uB3D9\uC548|\uC21C\uAC04|\uC18D)(\uC774|\uAC00|\uC740|\uB294|\uC744|\uB97C|\uC5D0|\uC5D0\uC11C|\uC5D0\uAC8C|\uC5D0\uB3C4|\uC5D0\uB294|\uB3C4|\uB9CC|\uC57C|\uC774\uC57C|\uC694|\uC608\uC694|\uC774\uC5D0\uC694|\uC774\uB2E4|\uB2E4|\uC9C0|\uC9C0\uB9CC|\uB2C8\uAE4C|\uAE4C|\uC77C\uAE4C|\uC778\uC9C0|\uC9C0\uB3C4|\uB85C|\uC73C\uB85C|\uCC98\uB7FC|\uB77C|\uC774\uB77C|\uB77C\uB3C4|\uC774\uB77C\uB3C4|\uCBE4|\uCBE4\uC740|\uC774\uACE0|\uC774\uBA70|\uC778\uB370|\uC774\uB098|\uB098|\uC774\uB780|\uB780)?$/;
+var JZ_KO_AFTER_NOUN = /^(\uC911|\uB54C|\uCBE4|\uB9CC\uD07C|\uBFD0|\uB300\uB85C|\uBB34\uB835|\uB3D9\uC548|\uC21C\uAC04|\uC18D|\uB355\uBD84|\uD0D3)/;
+function jzHangulParts(c) { var k = String(c || '').charCodeAt(0) - 0xac00; return k >= 0 && k < 11172 ? { jung: Math.floor(k / 28) % 21, jong: k % 28 } : null; }
+function jzIsKoText(t) {
+    var s = String(t || '').replace(/\s/g, ''), n = jzChars(s).length;
+    return /[\uAC00-\uD7A3]/.test(s) && (s.match(/[A-Za-z\u00C0-\u024F\u1E00-\u1EFF]/g) || []).length / Math.max(1, n) < 0.6;
+}
+function jzKoBreakCost(a, b) {
+    var A = jzTrim(a), B = jzTrim(b);
+    if (/[,\uFF0C.\u3002!?\uFF01\uFF1F\u2026~\u3001]$/.test(A)) return -0.4;
+    var a0 = A.replace(/[-\u2010\u2013\u2014'"\u2019\u201D)\]\u300D\u300F\uFF09]+$/, ''), b0 = B.replace(/[-\u2010\u2013\u2014.,!?\u2026~'"\u2019\u201D)\]\u300D\u300F\uFF09]+$/, '');
+    var ca = jzChars(a0), la = ca.length ? ca[ca.length - 1] : '', pa = jzHangulParts(la);
+    if (!pa || !jzHangulParts(b0.charAt(0))) return 0;
+    if (JZ_KO_DET.indexOf(' ' + a0 + ' ') >= 0) return JZ_KO_GLUE;
+    if (JZ_KO_BOUND.test(b0) && (pa.jong === 4 || pa.jong === 8 || JZ_KO_AFTER_NOUN.test(b0))) return JZ_KO_GLUE;
+    if (/^(\uAC83|\uAC70|\uB4EF|\uBED4|\uCC99|\uCCB4|\uC591|\uBC95|\uBAA8\uC591)$/.test(a0) && /^(\uAC19|\uD558|\uD588|\uD574|\uD55C|\uD560|\uC2F6)/.test(b0)) return JZ_KO_GLUE;
+    if (/^(\uC801|\uC218|\uC904|\uB9AC|\uBC95|\uC77C)$/.test(a0) && /^(\uC788|\uC5C6|\uC54A|\uBAA8\uB974|\uBAB0)/.test(b0)) return JZ_KO_GLUE;
+    if (la === '\uAC8C' && /^(\uB418|\uB41C|\uB420|\uB410|\uB3FC|\uB429|\uD558|\uD574|\uD588|\uD560|\uD55C|\uB9CC\uB4E4)/.test(b0)) return JZ_KO_GLUE;
+    if (la === '\uACE0' && /^(\uC2F6|\uC788|\uACC4|\uB9D0)/.test(b0)) return JZ_KO_GLUE;
+    if (la === '\uC9C0' && /^(\uC54A|\uBABB|\uB9D0|\uB9C8$|\uB9C8\uC694|\uB9C8\uB77C|\uB9C8\uC138)/.test(b0)) return JZ_KO_GLUE;
+    var jg = pa.jung;
+    if (ca.length >= 2 && !pa.jong && (jg === 0 || jg === 1 || jg === 4 || jg === 6 || jg === 9 || jg === 10 || jg === 14) && la !== '\uAC00' && la !== '\uC640'
+        && /^(\uBC84\uB9AC\S*|\uBC84\uB9B0|\uBC84\uB9B4|\uBC84\uB838\S*|\uBC84\uB824\S*|\uBC84\uB837|\uC640|\uC640\uC11C|\uC640\uB3C4|\uC654\S*|\uC628|\uC62C|\uC624\uACE0|\uC624\uB294|\uC624\uB358|\uC624\uBA74|\uAC00|\uAC00\uC11C|\uAC00\uB3C4|\uAC14\S*|\uAC04|\uAC08|\uAC00\uACE0|\uAC00\uB294|\uAC00\uB358|\uAC00\uBA74|\uBD10|\uBD10\uC11C|\uBD10\uB3C4|\uBD24\S*|\uBCF8|\uBCFC|\uBCF4\uACE0|\uBCF4\uB294|\uBCF4\uB358|\uBCF4\uBA74|\uBCF4\uC790|\uC918|\uC918\uC11C|\uC92C\S*|\uC900|\uC904|\uC8FC\uACE0|\uC8FC\uB294|\uC8FC\uB358|\uC8FC\uBA74|\uC8FC\uC138\uC694|\uB46C|\uB480\S*|\uB454|\uB458|\uB450\uACE0|\uB193\S*|\uB194\S*|\uC788\S*|\uB314\S*|\uB300)$/.test(b0)) return JZ_KO_GLUE;
+    if (/^\uAC19(\uC740|\uC774|\uC544|\uC544\uC694|\uC558\S*|\uB2E4|\uB358|\uC560|\uAC8C)?$/.test(b0)) return JZ_KO_GLUE;
+    if (/(\uACE0|\uC11C|\uBA70|\uBA74|\uC9C0\uB9CC|\uB294\uB370|\uC740\uB370|\uB2C8\uAE4C|\uB3C4\uB85D|\uB824\uACE0|\uB2E4\uAC00|\uAC70\uB4E0)$/.test(a0)) return -0.15;
+    return 0;
+}
+function jzPartitionKo(chunks, k) {
+    var n = chunks.length, lens = [], tot = 0, brk = [], best = [], from = [], g, i, j;
+    for (i = 0; i < n; i++) { lens.push(jzChars(chunks[i]).length + 1); tot += lens[i]; brk.push(i < n - 1 ? jzKoBreakCost(chunks[i], chunks[i + 1]) : 0); }
+    var target = tot / k;
+    for (g = 0; g <= k; g++) { best.push([]); from.push([]); for (i = 0; i <= n; i++) { best[g].push(Infinity); from[g].push(0); } }
+    best[0][0] = 0;
+    for (g = 1; g <= k; g++) for (i = g; i <= n; i++) {
+        var len = 0;
+        for (j = i - 1; j >= g - 1; j--) {
+            len += lens[j];
+            var dv = (len - target) / target, c = best[g - 1][j] + dv * dv + (j > 0 ? brk[j - 1] : 0);
+            if (c < best[g][i]) { best[g][i] = c; from[g][i] = j; }
+        }
+    }
+    var groups = [];
+    for (g = k, i = n; g > 0; g--) { j = from[g][i]; groups.unshift(chunks.slice(j, i)); i = j; }
+    return groups;
+}
 
 // ---------------------------------------------------------------- picks (ES3 port of the browser planner; weights come from JZ_DATA.meta)
 var JZ_PORTRAIT_W = { vcols: 1.9, condensed: 1.3, huge: 1.3, center: 1.2, stack: 1.1, mixed: 0.7, marquee: 0.6, wave: 0.6, diag: 0.8, type: 0.8, gloss: 0.5 };
@@ -1060,7 +1115,8 @@ function jzSplitHalf(t, lang) {
     if (words.length >= 2) {
         var total = 0, acc = 0, best = 1, bd = 1e9, sep = /[A-Za-z]/.test(t) ? ' ' : '';
         for (k = 0; k < words.length; k++) total += jzChars(String(words[k]).replace(/\s+/g, '')).length;
-        for (k = 1; k < words.length; k++) { acc += jzChars(String(words[k - 1]).replace(/\s+/g, '')).length; var d = Math.abs(acc - total / 2); if (d < bd) { bd = d; best = k; } }
+        var ko = jzIsKoText(t);   // \uD55C\uAD6D\uC5B4\uB294 \uBD99\uC5EC \uB458 \uC5B4\uC808 \uC0AC\uC774(\uD55C \uBC88 \u00B7 \uB9CC\uB098\uAC8C \uB41C)\uB97C \uD53C\uD55C\uB2E4
+        for (k = 1; k < words.length; k++) { acc += jzChars(String(words[k - 1]).replace(/\s+/g, '')).length; var d = Math.abs(acc - total / 2) + (ko ? jzKoBreakCost(words[k - 1], words[k]) * total / 4 : 0); if (d < bd) { bd = d; best = k; } }
         return [jzTrim(words.slice(0, best).join(sep)), jzTrim(words.slice(best).join(sep))];
     }
     if (n <= 3 || /^[A-Za-z0-9'\u2019-]+$/.test(t)) return [t, t];
@@ -1256,9 +1312,12 @@ function jzMakePlan(o) {
         var chunks = ln.manual || (plan.lang === 'en' ? jzPhraseChunks(jzChunk(ln.text)) : jzChunk(ln.text)), L = jzLerp(1.3, 0.5, fx.density), nC = Math.round(D / L);
         var maxC = chunks.length + (chunks.length >= 2 && D > 2 ? 1 : 0); nC = jzClamp(nC, 1, Math.max(1, maxC));
         if (zones) nC = Math.max(1, Math.min(nC, Math.floor(chunks.length / 2)));   // \u4E2D\u592E\u3092\u7A7A\u3051\u308B: \u2265 2 words per cut (each cut is split in two)
-        var nG = Math.min(nC, chunks.length), groups = [];
+        // \uD55C\uAD6D\uC5B4: \uBD99\uC5EC \uB458 \uC5B4\uC808 \uC0AC\uC774\uC5D0\uC11C\uB294 \uB04A\uC9C0 \uC54A\uC73C\uB2C8 \uCEF7 \uC218\uB3C4 \uB04A\uC744 \uC218 \uC788\uB294 \uACF3\uB9CC\uD07C\uB9CC
+        var koLine = !ln.manual && jzIsKoText(ln.text), koMax = 1;
+        if (koLine) for (i = 1; i < chunks.length; i++) if (jzKoBreakCost(chunks[i - 1], chunks[i]) < JZ_KO_GLUE) koMax++;
+        var nG = Math.min(nC, chunks.length, koLine ? koMax : Infinity), groups = [];
         if (nG <= 1) groups = [ln.text];
-        else { var pg = jzPartition(chunks, nG); for (i = 0; i < pg.length; i++) groups.push(pg[i].join(/[A-Za-z]/.test(pg[i].join('')) ? ' ' : '')); }
+        else { var pg = koLine ? jzPartitionKo(chunks, nG) : jzPartition(chunks, nG); for (i = 0; i < pg.length; i++) groups.push(pg[i].join(/[A-Za-z]/.test(pg[i].join('')) ? ' ' : '')); }
         var recap = !mk && nC > groups.length && groups.length >= 2, units = [], tot = 0;
         for (i = 0; i < groups.length; i++) { units.push({ text: groups[i], w: jzChars(groups[i]).length + 1.6 }); tot += units[i].w; }
         if (recap) { var rw = tot / units.length * 1.25; units.push({ text: ln.text, w: rw, recap: true }); tot += rw; }

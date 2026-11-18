@@ -123,7 +123,14 @@ J.parseLyrics = (raw) => {
     // extended LRC word times: <mm:ss.xx> before a word marks when it is sung (kept as \u0001 until the text is final)
     const WT = /<(\d+):(\d+(?:[.:]\d+)?)>[ \t]*/g, wt = [];
     if (note) note = note.replace(WT, '').trim() || null;
-    s = s.replace(WT, (_, a, b) => { wt.push(+a * 60 + parseFloat(b.replace(':', '.'))); return '\u0001'; });
+    s = s.replace(/<(\d+):(\d+(?:[.:]\d+)?)>/g, (_, a, b) => { wt.push(+a * 60 + parseFloat(b.replace(':', '.'))); return '\u0001'; });
+    // spaces around the marks: one word break stays where the first space was — also when a syllable's end time
+    // sits before it (혹<t>시<t>나<t> <t>너<t>도) — and none at the line's start or end
+    if (wt.length) s = s.replace(/[ \t\u0001]+/g, (run, off, all) => {
+      if (!/[ \t]/.test(run)) return run;
+      const bare = run.replace(/[ \t]/g, ''), i = run.search(/[ \t]/);
+      return !off || off + run.length === all.length ? bare : bare.slice(0, i) + ' ' + bare.slice(i);
+    });
     const wtail = wt.length ? (s.match(/\s*\u0001+$/) || [''])[0] : '';
     if (wtail) s = s.slice(0, s.length - wtail.length);
     let impact = false;
@@ -539,10 +546,13 @@ J.plan = (project, audio, chain) => {
     if (fixedN) { nC = fixedN; chunks2 = splitToCount(chunks, fixedN); }
     // groups of chunks
     let groups;
-    const nG = Math.min(nC, chunks2.length);
+    // 한국어: 붙여 둘 어절 사이(한 번쯤은 · 만나게 된 거야)에서는 끊지 않으니 컷 수도 끊을 수 있는 곳만큼만 (컷 수를 지정한 줄은 그대로)
+    const ko = !multiline && !ln.manual && /[가-힣]/.test(ln.text) && !J.isLatinText(ln.text);
+    const koMax = ko && !fixedN ? 1 + chunks2.slice(1).filter((c, i) => J.koBreakCost(chunks2[i], c) < KO_GLUE).length : Infinity;
+    const nG = Math.min(nC, chunks2.length, koMax);
     if (multiline && !ov.single) groups = chunks2;
     else if (nG <= 1) groups = [ln.text];
-    else groups = partition(chunks2, nG).map(g => J.joinWords(g));
+    else groups = (ko ? partitionKo : partition)(chunks2, nG).map(g => J.joinWords(g));
     // A locked line keeps the division it had when it was locked, as long as its text is unchanged.
     const lockedUnits = ov.lock && ov.lockedUnits?.text === ln.text && Array.isArray(ov.lockedUnits.groups) && ov.lockedUnits.groups.length ? ov.lockedUnits : null;
     if (lockedUnits) groups = lockedUnits.groups.slice();
@@ -1076,7 +1086,9 @@ function splitHalf(text, lang) {
   if (words.length >= 2) {
     const L = w => [...w.replace(/\s+/g, '')].length, total = words.reduce((a2, w) => a2 + L(w), 0);
     let acc = 0, best = 1, bd = 1e9;
-    for (let k = 1; k < words.length; k++) { acc += L(words[k - 1]); const d = Math.abs(acc - total / 2); if (d < bd) { bd = d; best = k; } }
+    // 한국어는 붙여 둘 어절 사이(한 번 · 만나게 된)를 피한다
+    const ko = /[가-힣]/.test(t) && !J.isLatinText(t);
+    for (let k = 1; k < words.length; k++) { acc += L(words[k - 1]); const d = Math.abs(acc - total / 2) + (ko ? J.koBreakCost(words[k - 1], words[k]) * total / 4 : 0); if (d < bd) { bd = d; best = k; } }
     const sep = /[A-Za-z]/.test(t) ? ' ' : '';
     return [words.slice(0, best).join(sep).trim(), words.slice(best).join(sep).trim()];
   }
@@ -1168,6 +1180,53 @@ function partition(chunks, k) {
     cur.push(c); acc += lens[i];
   });
   if (cur.length) groups.push(cur);
+  return groups;
+}
+/* 한국어 컷 나누기: 어절 a와 b 사이에서 끊는 비용. KO_GLUE = 붙여 둘 곳(관형사+체언, 관형형+의존명사, 본용언+보조용언),
+   음수 = 끊기 좋은 곳(쉼표·마침표, 연결어미 뒤) */
+const KO_GLUE = 3;
+const KO_DET = new Set('한 두 세 네 그 이 저 새 첫 온 각 몇 헌 옛 뭔 웬 딴 내 이런 저런 그런 요런 고런 조런 어떤 무슨 어느 모든 여러 온갖 갖은 아무'.split(' '));
+const KO_BOUND = /^(것|거|건|걸|게|수|적|줄|때|데|듯|만큼|뿐|번|채|리|바|지|중|대로|척|체|양|뻔|터|탓|덕분|쯤|무렵|동안|순간|속)(이|가|은|는|을|를|에|에서|에게|에도|에는|도|만|야|이야|요|예요|이에요|이다|다|지|지만|니까|까|일까|인지|지도|로|으로|처럼|라|이라|라도|이라도|쯤|쯤은|이고|이며|인데|이나|나|이란|란)?$/;
+const KO_AFTER_NOUN = /^(중|때|쯤|만큼|뿐|대로|무렵|동안|순간|속|덕분|탓)/;
+const hangulParts = c => { const k = (c || '').charCodeAt(0) - 0xac00; return k >= 0 && k < 11172 ? { jung: ((k / 28) | 0) % 21, jong: k % 28 } : null; };
+J.koBreakCost = (a, b) => {
+  const A = String(a).trim(), B = String(b).trim();
+  if (/[,，.。!?！？…~、]$/.test(A)) return -0.4;
+  const a0 = A.replace(/[-‐–—'"’”)\]」』）]+$/, ''), b0 = B.replace(/[-‐–—.,!?…~'"’”)\]」』）]+$/, '');
+  const la = [...a0].pop() || '', pa = hangulParts(la);
+  if (!pa || !hangulParts([...b0][0])) return 0;
+  if (KO_DET.has(a0)) return KO_GLUE;                                                                  // 한 번쯤은 · 이런 경험
+  if (KO_BOUND.test(b0) && (pa.jong === 4 || pa.jong === 8 || KO_AFTER_NOUN.test(b0))) return KO_GLUE;  // 짜릿한 걸까 · 딸기 중에
+  if (/^(것|거|듯|뻔|척|체|양|법|모양)$/.test(a0) && /^(같|하|했|해|한|할|싶)/.test(b0)) return KO_GLUE;  // 녹을 것 같아
+  if (/^(적|수|줄|리|법|일)$/.test(a0) && /^(있|없|않|모르|몰)/.test(b0)) return KO_GLUE;               // 경험한 적 있을까
+  if (la === '게' && /^(되|된|될|됐|돼|됩|하|해|했|할|한|만들)/.test(b0)) return KO_GLUE;               // 만나게 된
+  if (la === '고' && /^(싶|있|계|말)/.test(b0)) return KO_GLUE;                                       // 맛보고 싶어
+  if (la === '지' && /^(않|못|말|마$|마요|마라|마세)/.test(b0)) return KO_GLUE;                        // 가지 마
+  // -아/-어 + 보조용언 (잡아먹어 버릴 · 헤매 왔던) — 조사 '가'·'와'로 끝나는 말(네가 와)은 빼고
+  if ([...a0].length >= 2 && !pa.jong && [0, 1, 4, 6, 9, 10, 14].includes(pa.jung) && la !== '가' && la !== '와'
+    && /^(버리\S*|버린|버릴|버렸\S*|버려\S*|버렷|와|와서|와도|왔\S*|온|올|오고|오는|오던|오면|가|가서|가도|갔\S*|간|갈|가고|가는|가던|가면|봐|봐서|봐도|봤\S*|본|볼|보고|보는|보던|보면|보자|줘|줘서|줬\S*|준|줄|주고|주는|주던|주면|주세요|둬|뒀\S*|둔|둘|두고|놓\S*|놔\S*|있\S*|댔\S*|대)$/.test(b0)) return KO_GLUE;
+  if (/^같(은|이|아|아요|았\S*|다|던|애|게)?$/.test(b0)) return KO_GLUE;                              // 딸기 같은 건
+  if (/(고|서|며|면|지만|는데|은데|니까|도록|려고|다가|거든)$/.test(a0)) return -0.15;
+  return 0;
+};
+/* 한국어 줄: 글자 수를 고르게 하되 붙여 둘 어절 사이는 피하고 쉼표·연결어미 뒤를 고르는 분할 (k개, 동적 계획법) */
+function partitionKo(chunks, k) {
+  const n = chunks.length, lens = chunks.map(c => [...c].length + 1);
+  const target = lens.reduce((a, b) => a + b, 0) / k;
+  const brk = chunks.map((c, i) => i < n - 1 ? J.koBreakCost(c, chunks[i + 1]) : 0);
+  const best = [], from = [];
+  for (let g = 0; g <= k; g++) { best.push(Array(n + 1).fill(Infinity)); from.push(Array(n + 1).fill(0)); }
+  best[0][0] = 0;
+  for (let g = 1; g <= k; g++) for (let i = g; i <= n; i++) {
+    let len = 0;
+    for (let j = i - 1; j >= g - 1; j--) {
+      len += lens[j];
+      const c = best[g - 1][j] + ((len - target) / target) ** 2 + (j > 0 ? brk[j - 1] : 0);
+      if (c < best[g][i]) { best[g][i] = c; from[g][i] = j; }
+    }
+  }
+  const groups = [];
+  for (let g = k, i = n; g > 0; g--) { const j = from[g][i]; groups.unshift(chunks.slice(j, i)); i = j; }
   return groups;
 }
 // 統一感重視 (themeBalance 'unified', set per plan): the same effect again is favoured instead of avoided.
